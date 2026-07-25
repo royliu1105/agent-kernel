@@ -17,10 +17,12 @@ The plan is split into these documents:
 9. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
 10. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
 11. [Development Plan](development-plan.md): 30-day v0.1 plan and daily working method.
-12. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-13. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-14. [ADR 0002](adr/0002-storage.md): storage decision.
-15. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+12. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
+13. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+14. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+15. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+16. [ADR 0002](adr/0002-storage.md): storage decision.
+17. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
 
 ## Current Baseline
 
