@@ -53,6 +53,19 @@ class RunStepStatus(StrEnum):
     SKIPPED = "skipped"
 
 
+class RunEventType(StrEnum):
+    RUN_CREATED = "run_created"
+    RUN_QUEUED = "run_queued"
+    RUN_STARTED = "run_started"
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+    RUN_CANCELED = "run_canceled"
+    STEP_CREATED = "step_created"
+    STEP_UPDATED = "step_updated"
+    TOOL_CALL_REQUESTED = "tool_call_requested"
+    APPROVAL_REQUESTED = "approval_requested"
+
+
 class ToolCallStatus(StrEnum):
     REQUESTED = "requested"
     POLICY_CHECKED = "policy_checked"
@@ -131,6 +144,16 @@ class RunStep(KernelModel):
     latency_ms: int | None = None
     started_at: datetime | None = None
     ended_at: datetime | None = None
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class RunEvent(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    run_id: UUID
+    sequence: int
+    type: RunEventType
+    payload: dict[str, Any] = Field(default_factory=dict)
+    trace_id: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
 
 

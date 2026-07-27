@@ -42,45 +42,54 @@ Day 2 should not cover:
 Resolve or explicitly defer these before implementation goes too far:
 
 - What minimal `Agent` fields must be persisted on Day 2?
+  - Resolved: identity, name, description, status, policy references, policy JSON, metadata,
+    created timestamp.
 - What minimal `Run` fields must be persisted on Day 2?
+  - Resolved: identity, agent reference, status, input/output payloads, trace/error fields,
+    token/cost totals, start/end/create timestamps.
 - Should IDs be UUIDs at the database layer from the start?
+  - Resolved: domain/API use UUIDs; database stores 36-character strings for initial
+    SQLite/Postgres portability.
 - Should API request/response schemas reuse domain models or have separate DTOs?
+  - Resolved: separate HTTP DTOs in `agent_kernel_api.schemas`.
 - How should `RunEvent` be represented for timeline reconstruction?
+  - Resolved: append-only per-run timeline with monotonic `sequence` and JSON payload.
 - What is the first migration naming convention?
+  - Resolved: `0001_create_execution_tables`.
 
 ## Tasks
 
-- [ ] Check current git status.
-- [ ] Read `docs/specs/run-lifecycle.md`.
-- [ ] Refine `docs/specs/run-lifecycle.md` if implementation semantics become clearer.
-- [ ] Add storage dependencies: SQLAlchemy, Alembic, psycopg.
-- [ ] Add database settings/config surface.
-- [ ] Add SQLAlchemy declarative base and session factory.
-- [ ] Add Alembic configuration.
-- [ ] Create initial migration for core execution tables.
-- [ ] Add storage models for `Agent`, `Run`, `RunStep`, and `RunEvent`.
-- [ ] Add repository methods for creating and reading agents.
-- [ ] Add repository methods for creating and reading runs.
-- [ ] Add minimal API schemas for agent/run create/read.
-- [ ] Add `POST /v1/agents`.
-- [ ] Add `GET /v1/agents/{agent_id}`.
-- [ ] Add `POST /v1/agents/{agent_id}/runs`.
-- [ ] Add `GET /v1/runs/{run_id}`.
-- [ ] Add `GET /v1/runs/{run_id}/events`.
-- [ ] Add unit tests for state defaults and transition guard helpers if introduced.
-- [ ] Add integration tests for API create/read flow.
-- [ ] Update `docs/milestones.md` Phase 1 progress.
+- [x] Check current git status.
+- [x] Read `docs/specs/run-lifecycle.md`.
+- [x] Refine `docs/specs/run-lifecycle.md` if implementation semantics become clearer.
+- [x] Add storage dependencies: SQLAlchemy, Alembic, psycopg.
+- [x] Add database settings/config surface.
+- [x] Add SQLAlchemy declarative base and session factory.
+- [x] Add Alembic configuration.
+- [x] Create initial migration for core execution tables.
+- [x] Add storage models for `Agent`, `Run`, `RunStep`, and `RunEvent`.
+- [x] Add repository methods for creating and reading agents.
+- [x] Add repository methods for creating and reading runs.
+- [x] Add minimal API schemas for agent/run create/read.
+- [x] Add `POST /v1/agents`.
+- [x] Add `GET /v1/agents/{agent_id}`.
+- [x] Add `POST /v1/agents/{agent_id}/runs`.
+- [x] Add `GET /v1/runs/{run_id}`.
+- [x] Add `GET /v1/runs/{run_id}/events`.
+- [x] Add unit tests for state defaults and transition guard helpers if introduced.
+- [x] Add integration tests for API create/read flow.
+- [x] Update `docs/milestones.md` Phase 1 progress.
 
 ## Acceptance
 
-- [ ] Database migration can be generated/applied against local Postgres.
-- [ ] Agent can be created through API.
-- [ ] Agent can be fetched through API.
-- [ ] Run can be created for an agent through API.
-- [ ] Run can be fetched through API.
-- [ ] Run events endpoint returns an empty or initial timeline.
-- [ ] Tests cover the create agent -> create run -> inspect run path.
-- [ ] Phase 1 checklist is updated for completed items.
+- [x] Database migration can be generated/applied against local Postgres.
+- [x] Agent can be created through API.
+- [x] Agent can be fetched through API.
+- [x] Run can be created for an agent through API.
+- [x] Run can be fetched through API.
+- [x] Run events endpoint returns an empty or initial timeline.
+- [x] Tests cover the create agent -> create run -> inspect run path.
+- [x] Phase 1 checklist is updated for completed items.
 
 ## Verification
 
@@ -114,3 +123,25 @@ curl http://127.0.0.1:8000/healthz
 - Do not start the full agent loop until the run state is stored and inspectable.
 - Prefer small repository/service seams over endpoint-local database logic.
 - The existing Docker containers may already be running from Day 1.
+
+## Completion Notes
+
+- Implemented `Agent`, `Run`, `RunStep`, and `RunEvent` storage models.
+- Added Alembic migration `0001_create_execution_tables`.
+- Added repository methods for creating/loading agents, creating/loading runs, and listing run events.
+- Added HTTP DTOs and Day 2 API endpoints.
+- Verified migration against local SQLite and Docker Postgres.
+- Verification passed:
+  - `uv sync`
+  - `uv run pytest`
+  - `uv run ruff check .`
+  - `uv run mypy .`
+  - `uv run alembic upgrade head`
+  - `DATABASE_URL=postgresql+psycopg://... uv run alembic upgrade head`
+  - `docker compose ps`
+  - `docker compose config`
+
+Known caveat:
+
+- FastAPI `TestClient` currently emits a Starlette deprecation warning about `httpx`.
+  Tests pass; this should be revisited when the dependency ecosystem settles.

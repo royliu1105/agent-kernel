@@ -7,12 +7,15 @@ from kernel_core.models import (
     ApprovalStatus,
     RiskLevel,
     Run,
+    RunEvent,
+    RunEventType,
     RunStatus,
     RunStep,
     RunStepStatus,
     RunStepType,
     ToolCall,
     ToolCallStatus,
+    utc_now,
 )
 
 __all__ = [
@@ -22,10 +25,13 @@ __all__ = [
     "ApprovalStatus",
     "RiskLevel",
     "Run",
+    "RunEvent",
+    "RunEventType",
     "RunStatus",
     "RunStep",
     "RunStepStatus",
     "RunStepType",
     "ToolCall",
     "ToolCallStatus",
+    "utc_now",
 ]

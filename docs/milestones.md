@@ -77,10 +77,10 @@ Create the first real agent run lifecycle.
 
 Checklist:
 
-- [ ] Domain models.
-- [ ] Postgres schema.
-- [ ] Alembic migrations.
-- [ ] Repository layer.
+- [x] Domain models.
+- [x] Postgres schema.
+- [x] Alembic migrations.
+- [x] Repository layer.
 - [ ] `LLMProvider` interface.
 - [ ] OpenAI provider.
 - [ ] Mock provider.
@@ -89,17 +89,17 @@ Checklist:
 - [ ] Prompt versioning.
 - [ ] Run state machine.
 - [ ] Agent loop.
-- [ ] Run event stream.
-- [ ] API run endpoints.
+- [x] Run event stream.
+- [x] API run endpoints.
 - [ ] CLI run commands.
 
 Acceptance:
 
-- [ ] Create agent.
-- [ ] Create run.
+- [x] Create agent.
+- [x] Create run.
 - [ ] Worker executes run.
 - [ ] Final output is persisted.
-- [ ] Timeline is persisted.
+- [x] Timeline is persisted.
 - [ ] Mock provider deterministic tests pass.
 - [ ] OpenAI smoke path is documented.
 

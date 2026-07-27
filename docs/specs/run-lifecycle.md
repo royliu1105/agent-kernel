@@ -28,6 +28,16 @@ Initial entities:
 - `Approval`
 - `RunEvent`
 
+Day 2 storage contract:
+
+- IDs are UUIDs in the domain and API, stored as 36-character strings in the initial database
+  schema for SQLite/Postgres portability.
+- API request/response schemas are separate DTOs. Domain models stay infrastructure-free.
+- `RunEvent` is append-only timeline data scoped to a run.
+- Event `sequence` is monotonically increasing per run.
+- The first persisted event for a run is `run_created` with payload `{ "status": "created" }`.
+- The first migration is named `0001_create_execution_tables`.
+
 Initial run states:
 
 ```text
@@ -56,7 +66,17 @@ Detailed transition rules will be completed during Phase 1 implementation.
 
 ## API / CLI
 
-Expected API:
+Day 2 API:
+
+```http
+POST /v1/agents
+GET  /v1/agents/{agent_id}
+POST /v1/agents/{agent_id}/runs
+GET  /v1/runs/{run_id}
+GET  /v1/runs/{run_id}/events
+```
+
+Expected later API:
 
 ```http
 POST /v1/agents/{agent_id}/runs

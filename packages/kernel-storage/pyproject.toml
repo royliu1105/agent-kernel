@@ -3,7 +3,12 @@ name = "kernel-storage"
 version = "0.1.0"
 description = "Storage adapters for Agent Kernel."
 requires-python = ">=3.12,<3.13"
-dependencies = ["kernel-core"]
+dependencies = [
+  "alembic>=1.14.0",
+  "kernel-core",
+  "psycopg[binary]>=3.2.0",
+  "sqlalchemy>=2.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]
