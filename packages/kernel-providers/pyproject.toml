@@ -3,7 +3,10 @@ name = "kernel-providers"
 version = "0.1.0"
 description = "LLM provider adapters for Agent Kernel."
 requires-python = ">=3.12,<3.13"
-dependencies = ["kernel-core"]
+dependencies = [
+  "kernel-core",
+  "pydantic>=2.8.0",
+]
 
 [build-system]
 requires = ["hatchling"]

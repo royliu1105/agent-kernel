@@ -70,6 +70,21 @@ class RunStateMachine:
 
         return self.validate(run, RunStatus.QUEUED)
 
+    def start(self, run: Run) -> RunTransition:
+        """Validate that a run can start execution."""
+
+        return self.validate(run, RunStatus.RUNNING)
+
+    def succeed(self, run: Run) -> RunTransition:
+        """Validate that a run can complete successfully."""
+
+        return self.validate(run, RunStatus.SUCCEEDED)
+
+    def fail(self, run: Run) -> RunTransition:
+        """Validate that a run can fail."""
+
+        return self.validate(run, RunStatus.FAILED)
+
     def cancel(self, run: Run) -> RunTransition:
         """Validate that a run can be canceled."""
 

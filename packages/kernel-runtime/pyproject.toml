@@ -3,7 +3,11 @@ name = "kernel-runtime"
 version = "0.1.0"
 description = "Agent runtime package for Agent Kernel."
 requires-python = ">=3.12,<3.13"
-dependencies = ["kernel-core"]
+dependencies = [
+  "kernel-core",
+  "kernel-providers",
+  "kernel-storage",
+]
 
 [build-system]
 requires = ["hatchling"]

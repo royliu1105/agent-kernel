@@ -136,6 +136,58 @@ class RunRepository:
         self._session.commit()
         return _run_from_record(record)
 
+    def complete(
+        self,
+        *,
+        run_id: UUID,
+        output_payload: dict[str, Any],
+        input_tokens_total: int,
+        output_tokens_total: int,
+        estimated_cost_total: float,
+        event_payload: dict[str, Any],
+    ) -> Run | None:
+        record = self._session.get(RunRecord, str(run_id))
+        if record is None:
+            return None
+
+        _apply_status(record, RunStatus.SUCCEEDED)
+        record.output_payload = output_payload
+        record.input_tokens_total = input_tokens_total
+        record.output_tokens_total = output_tokens_total
+        record.estimated_cost_total = estimated_cost_total
+        self._add_event_record(
+            run_id=run_id,
+            event_type=RunEventType.RUN_COMPLETED,
+            payload=event_payload,
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _run_from_record(record)
+
+    def fail(
+        self,
+        *,
+        run_id: UUID,
+        error_type: str,
+        error_message: str,
+        event_payload: dict[str, Any],
+    ) -> Run | None:
+        record = self._session.get(RunRecord, str(run_id))
+        if record is None:
+            return None
+
+        _apply_status(record, RunStatus.FAILED)
+        record.error_type = error_type
+        record.error_message = error_message
+        self._add_event_record(
+            run_id=run_id,
+            event_type=RunEventType.RUN_FAILED,
+            payload=event_payload,
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _run_from_record(record)
+
     def list_queued(self, *, limit: int = 100) -> list[Run]:
         statement = (
             select(RunRecord)
@@ -153,6 +205,26 @@ class RunRepository:
         if current is None:
             return 1
         return int(current) + 1
+
+    def _add_event_record(
+        self,
+        *,
+        run_id: UUID,
+        event_type: RunEventType,
+        payload: dict[str, Any],
+        trace_id: str | None,
+    ) -> None:
+        sequence = self._next_event_sequence(run_id)
+        self._session.add(
+            RunEventRecord(
+                id=str(RunEvent(run_id=run_id, sequence=sequence, type=event_type).id),
+                run_id=str(run_id),
+                sequence=sequence,
+                type=event_type.value,
+                payload=payload,
+                trace_id=trace_id,
+            )
+        )
 
 
 def _agent_to_record(agent: Agent) -> AgentRecord:

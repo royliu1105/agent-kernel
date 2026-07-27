@@ -94,6 +94,19 @@ Day 3 transition events:
 | `failed` | `run_failed` |
 | `canceled` | `run_canceled` |
 
+Day 4 execution semantics:
+
+- The runtime execution service executes one queued run at a time.
+- A run must be `queued` before execution starts.
+- Execution starts by transitioning `queued -> running` and appending `run_started`.
+- The initial execution service performs one non-streaming provider call.
+- Provider success persists `runs.output` with shape `{ "text": "...", "provider": "...",
+  "model": "...", "usage": { ... } }`.
+- Provider success transitions `running -> succeeded` and appends `run_completed`.
+- Provider failure persists `error_type` and `error_message`.
+- Provider failure transitions `running -> failed` and appends `run_failed`.
+- Day 4 execution is API-free and worker-free; the polling worker loop is introduced later.
+
 ## API / CLI
 
 Day 2 API:

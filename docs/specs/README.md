@@ -5,6 +5,7 @@ This directory will hold lightweight specs for core Agent Kernel capabilities.
 Required specs:
 
 - [run-lifecycle.md](run-lifecycle.md)
+- [providers.md](providers.md)
 - [tool-calling.md](tool-calling.md)
 - [approval-resume.md](approval-resume.md)
 - [rag.md](rag.md)

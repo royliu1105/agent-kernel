@@ -81,9 +81,9 @@ Checklist:
 - [x] Postgres schema.
 - [x] Alembic migrations.
 - [x] Repository layer.
-- [ ] `LLMProvider` interface.
+- [x] `LLMProvider` interface.
 - [ ] OpenAI provider.
-- [ ] Mock provider.
+- [x] Mock provider.
 - [ ] Replay provider baseline.
 - [ ] Model router.
 - [ ] Prompt versioning.
@@ -98,9 +98,9 @@ Acceptance:
 - [x] Create agent.
 - [x] Create run.
 - [ ] Worker executes run.
-- [ ] Final output is persisted.
+- [x] Final output is persisted.
 - [x] Timeline is persisted.
-- [ ] Mock provider deterministic tests pass.
+- [x] Mock provider deterministic tests pass.
 - [ ] OpenAI smoke path is documented.
 
 ### Phase 2: Day 8-12 - Tools, Policy, and Approval

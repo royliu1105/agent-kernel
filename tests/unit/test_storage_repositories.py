@@ -82,3 +82,50 @@ def test_run_repository_lists_queued_runs(sqlite_session_factory: sessionmaker[S
 
     assert [run.id for run in queued] == [queued_run.id]
     assert created_run.id not in {run.id for run in queued}
+
+
+def test_run_repository_completes_run_with_output_and_usage(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="ops-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "finish"})
+
+        completed = RunRepository(session).complete(
+            run_id=run.id,
+            output_payload={"text": "done"},
+            input_tokens_total=3,
+            output_tokens_total=2,
+            estimated_cost_total=0.0,
+            event_payload={"from_status": "running", "to_status": "succeeded"},
+        )
+        events = RunRepository(session).list_events(run.id)
+
+    assert completed is not None
+    assert completed.status is RunStatus.SUCCEEDED
+    assert completed.output == {"text": "done"}
+    assert completed.input_tokens_total == 3
+    assert completed.output_tokens_total == 2
+    assert events[-1].type is RunEventType.RUN_COMPLETED
+
+
+def test_run_repository_fails_run_with_error_details(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="ops-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "fail"})
+
+        failed = RunRepository(session).fail(
+            run_id=run.id,
+            error_type="provider_error",
+            error_message="provider unavailable",
+            event_payload={"from_status": "running", "to_status": "failed"},
+        )
+        events = RunRepository(session).list_events(run.id)
+
+    assert failed is not None
+    assert failed.status is RunStatus.FAILED
+    assert failed.error_type == "provider_error"
+    assert failed.error_message == "provider unavailable"
+    assert events[-1].type is RunEventType.RUN_FAILED
