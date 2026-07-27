@@ -100,6 +100,9 @@ Day 4 execution semantics:
 - A run must be `queued` before execution starts.
 - Execution starts by transitioning `queued -> running` and appending `run_started`.
 - The initial execution service performs one non-streaming provider call.
+- Day 5 execution routes provider-prefixed model strings such as `mock:mock-small` and
+  `openai:gpt-4.1-mini`.
+- The provider receives the model name without the routing prefix.
 - Provider success persists `runs.output` with shape `{ "text": "...", "provider": "...",
   "model": "...", "usage": { ... } }`.
 - Provider success transitions `running -> succeeded` and appends `run_completed`.

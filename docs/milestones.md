@@ -82,11 +82,11 @@ Checklist:
 - [x] Alembic migrations.
 - [x] Repository layer.
 - [x] `LLMProvider` interface.
-- [ ] OpenAI provider.
+- [x] OpenAI provider.
 - [x] Mock provider.
 - [ ] Replay provider baseline.
-- [ ] Model router.
-- [ ] Prompt versioning.
+- [x] Model router.
+- [x] Prompt versioning.
 - [x] Run state machine.
 - [ ] Agent loop.
 - [x] Run event stream.
@@ -101,7 +101,7 @@ Acceptance:
 - [x] Final output is persisted.
 - [x] Timeline is persisted.
 - [x] Mock provider deterministic tests pass.
-- [ ] OpenAI smoke path is documented.
+- [x] OpenAI smoke path is documented.
 
 ### Phase 2: Day 8-12 - Tools, Policy, and Approval
 

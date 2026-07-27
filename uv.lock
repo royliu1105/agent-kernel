@@ -386,12 +386,14 @@ name = "kernel-providers"
 version = "0.1.0"
 source = { editable = "packages/kernel-providers" }
 dependencies = [
+    { name = "httpx" },
     { name = "kernel-core" },
     { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "pydantic", specifier = ">=2.8.0" },
 ]
@@ -415,6 +417,7 @@ dependencies = [
     { name = "kernel-core" },
     { name = "kernel-providers" },
     { name = "kernel-storage" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
@@ -422,6 +425,7 @@ requires-dist = [
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-providers", editable = "packages/kernel-providers" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
+    { name = "pydantic", specifier = ">=2.8.0" },
 ]
 
 [[package]]

@@ -7,11 +7,11 @@ and later third-party or local providers without changing runtime execution sema
 
 ## Non-Goals
 
-- Streaming responses in Day 4.
-- Tool/function calling in Day 4.
+- Streaming responses in Day 4/5.
+- Tool/function calling in Day 4/5.
 - Provider-specific SDK configuration.
-- Model routing and fallback.
-- Prompt version management.
+- Multi-provider fallback.
+- Prompt database management.
 
 ## User Stories
 
@@ -22,7 +22,7 @@ and later third-party or local providers without changing runtime execution sema
 
 ## Domain Model
 
-Day 4 provider types:
+Provider types:
 
 - `LLMMessage`
 - `LLMRequest`
@@ -30,6 +30,9 @@ Day 4 provider types:
 - `LLMUsage`
 - `LLMProvider`
 - `LLMProviderError`
+- `ModelRouter`
+- `ModelRoute`
+- `UnknownModelRouteError`
 
 Message roles:
 
@@ -55,6 +58,22 @@ Day 4 response shape:
 }
 ```
 
+Day 5 routing model:
+
+```text
+mock:<model>   -> MockLLMProvider
+openai:<model> -> OpenAIProvider
+```
+
+The prefix is routing metadata. The provider receives the model name without the prefix.
+
+Day 5 OpenAI baseline:
+
+- Uses the OpenAI Responses API shape.
+- Reads credentials from `OPENAI_API_KEY`.
+- Uses `httpx` behind a small adapter so tests can mock transport.
+- Normal tests must not access the network or require an API key.
+
 ## State Transitions
 
 Provider calls do not own run state. The runtime execution service owns run transitions and uses
@@ -64,18 +83,25 @@ provider responses or provider errors to decide whether a run succeeds or fails.
 
 No provider API or CLI is exposed in Day 4.
 
+Day 5 does not expose provider management through API or CLI. Provider selection is driven by the
+run input model string.
+
 ## Failure Modes
 
 - Provider raises a typed `LLMProviderError`.
 - Provider returns invalid data.
 - Runtime constructs an invalid request from run input.
+- Model string has no provider prefix.
+- Model string references an unregistered provider.
 
 Day 4 handles typed provider failures by marking the run as `failed` and storing error details.
+
+Day 5 handles unknown model routes with `UnknownModelRouteError` before making a provider call.
 
 ## Security
 
 - Mock provider never performs network I/O.
-- Real provider credentials are intentionally out of scope for Day 4.
+- Real provider credentials are read from environment variables and must never be committed.
 - Provider request metadata should not contain secrets.
 
 ## Observability
@@ -90,3 +116,14 @@ run record.
 - Mock provider can fail deterministically.
 - Runtime success path persists final output and usage.
 - Runtime failure path persists error type/message.
+- Router selects mock and OpenAI providers by prefix.
+- OpenAI adapter tests mock transport and do not use network.
+- Unknown provider route fails clearly.
+
+## Manual Smoke
+
+Optional real-provider smoke testing should be explicit and kept out of normal CI:
+
+```bash
+OPENAI_API_KEY=... uv run pytest -m openai_smoke
+```

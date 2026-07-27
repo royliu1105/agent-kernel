@@ -1,7 +1,7 @@
 import pytest
 from kernel_core import RunEventType, RunStatus
 from kernel_providers import LLMProviderError, MockLLMProvider
-from kernel_runtime import RunExecutionService
+from kernel_runtime import ModelRouter, RunExecutionService
 from kernel_storage import AgentRepository, RunRepository
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -15,7 +15,7 @@ async def test_execution_service_completes_queued_run(
         run_repository = RunRepository(session)
         run = run_repository.create(
             agent_id=agent.id,
-            input_payload={"task": "summarize notes", "model": "mock-small"},
+            input_payload={"task": "summarize notes", "model": "mock:mock-small"},
         )
         queued = run_repository.apply_transition(
             run_id=run.id,
@@ -103,3 +103,32 @@ async def test_execution_service_rejects_unqueued_run(
                 run_id=run.id,
                 repository=run_repository,
             )
+
+
+@pytest.mark.asyncio
+async def test_execution_service_can_execute_through_model_router(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="research-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"task": "route me", "model": "mock:mock-routed"},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+        router = ModelRouter({"mock": MockLLMProvider(response_prefix="Routed")})
+
+        completed = await RunExecutionService(router=router).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+
+    assert completed.output is not None
+    assert completed.output["text"] == "Routed: route me"
+    assert completed.output["model"] == "mock-routed"

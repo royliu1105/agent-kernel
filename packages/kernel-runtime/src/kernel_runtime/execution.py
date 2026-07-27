@@ -10,6 +10,7 @@ from kernel_core import Run
 from kernel_providers import LLMMessage, LLMProvider, LLMProviderError, LLMRequest, MessageRole
 from kernel_storage import RunRepository
 
+from kernel_runtime.router import ModelRouter
 from kernel_runtime.state_machine import RunStateMachine
 
 
@@ -27,11 +28,17 @@ class RunExecutionService:
     def __init__(
         self,
         *,
-        provider: LLMProvider,
-        default_model: str = "mock-default",
+        provider: LLMProvider | None = None,
+        router: ModelRouter | None = None,
+        default_model: str = "mock:mock-default",
         state_machine: RunStateMachine | None = None,
     ) -> None:
-        self._provider = provider
+        if router is None and provider is None:
+            raise ValueError("RunExecutionService requires a provider or router.")
+        if router is not None:
+            self._router = router
+        elif provider is not None:
+            self._router = ModelRouter({provider.name: provider})
         self._default_model = default_model
         self._state_machine = state_machine or RunStateMachine()
 
@@ -54,8 +61,10 @@ class RunExecutionService:
             raise RunNotFoundError(f"Run {run_id} was not found.")
 
         request = _request_from_run(running, default_model=self._default_model)
+        route = self._router.route(request.model)
+        routed_request = request.model_copy(update={"model": route.model})
         try:
-            response = await self._provider.complete(request)
+            response = await route.provider.complete(routed_request)
         except LLMProviderError as error:
             fail_transition = self._state_machine.fail(running)
             failed = repository.fail(
@@ -67,7 +76,7 @@ class RunExecutionService:
                     "to_status": fail_transition.to_status.value,
                     "error_type": error.error_type,
                     "error_message": str(error),
-                    "provider": self._provider.name,
+                    "provider": route.provider_name,
                 },
             )
             if failed is None:

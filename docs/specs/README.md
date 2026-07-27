@@ -6,6 +6,7 @@ Required specs:
 
 - [run-lifecycle.md](run-lifecycle.md)
 - [providers.md](providers.md)
+- [prompts.md](prompts.md)
 - [tool-calling.md](tool-calling.md)
 - [approval-resume.md](approval-resume.md)
 - [rag.md](rag.md)

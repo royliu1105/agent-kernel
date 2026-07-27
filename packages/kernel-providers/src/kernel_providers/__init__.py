@@ -10,6 +10,7 @@ from kernel_providers.base import (
     MessageRole,
 )
 from kernel_providers.mock import MockLLMProvider
+from kernel_providers.openai import OPENAI_API_KEY_ENV, OpenAIProvider, get_openai_api_key
 
 __all__ = [
     "LLMMessage",
@@ -20,4 +21,7 @@ __all__ = [
     "LLMUsage",
     "MessageRole",
     "MockLLMProvider",
+    "OPENAI_API_KEY_ENV",
+    "OpenAIProvider",
+    "get_openai_api_key",
 ]
