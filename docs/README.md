@@ -24,6 +24,7 @@ The plan is split into these documents:
 16. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
 17. [ADR 0002](adr/0002-storage.md): storage decision.
 18. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+19. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 ## Current Baseline
 
