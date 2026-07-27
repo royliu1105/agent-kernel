@@ -1,0 +1,18 @@
+[project]
+name = "agent-kernel-worker"
+version = "0.1.0"
+description = "Background worker for Agent Kernel."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "kernel-core",
+]
+
+[project.scripts]
+agent-kernel-worker = "agent_kernel_worker.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_kernel_worker"]

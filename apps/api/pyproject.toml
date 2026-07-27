@@ -1,0 +1,20 @@
+[project]
+name = "agent-kernel-api"
+version = "0.1.0"
+description = "FastAPI application for Agent Kernel."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115.0",
+  "kernel-core",
+  "uvicorn[standard]>=0.30.0",
+]
+
+[project.scripts]
+agent-kernel-api = "agent_kernel_api.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_kernel_api"]

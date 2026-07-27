@@ -36,30 +36,30 @@ Turn the repository into a serious open-source project skeleton.
 
 Checklist:
 
-- [ ] Monorepo directory structure.
-- [ ] Python project configuration.
-- [ ] API minimal startup.
-- [ ] CLI minimal startup.
-- [ ] Worker minimal startup.
-- [ ] Web minimal startup.
-- [ ] Docker Compose for Postgres/pgvector and Redis.
-- [ ] `.env.example`.
-- [ ] `.gitignore`.
-- [ ] GitHub Actions CI.
-- [ ] Basic tests.
-- [ ] README updated.
-- [ ] Initial quality commands pass where possible.
+- [x] Monorepo directory structure.
+- [x] Python project configuration.
+- [x] API minimal startup.
+- [x] CLI minimal startup.
+- [x] Worker minimal startup.
+- [x] Web minimal startup.
+- [x] Docker Compose for Postgres/pgvector and Redis.
+- [x] `.env.example`.
+- [x] `.gitignore`.
+- [x] GitHub Actions CI.
+- [x] Basic tests.
+- [x] README updated.
+- [x] Initial quality commands pass where possible.
 
 Acceptance:
 
-- [ ] `uv sync` works.
-- [ ] `agent-kernel --version` works.
-- [ ] API `/healthz` works.
-- [ ] Worker starts.
-- [ ] Web app builds or starts.
-- [ ] `uv run pytest` passes.
-- [ ] `uv run ruff check .` passes.
-- [ ] `uv run mypy .` passes.
+- [x] `uv sync` works.
+- [x] `agent-kernel --version` works.
+- [x] API `/healthz` works.
+- [x] Worker starts.
+- [x] Web app builds or starts.
+- [x] `uv run pytest` passes.
+- [x] `uv run ruff check .` passes.
+- [x] `uv run mypy .` passes.
 
 ### Phase 1: Day 2-7 - Core Runtime
 

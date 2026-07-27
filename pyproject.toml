@@ -1,0 +1,95 @@
+[project]
+name = "agent-kernel-workspace"
+version = "0.1.0"
+description = "Workspace root for Agent Kernel."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "agent-kernel-api",
+  "agent-kernel-cli",
+  "agent-kernel-worker",
+  "kernel-core",
+  "kernel-evals",
+  "kernel-memory",
+  "kernel-observability",
+  "kernel-policy",
+  "kernel-providers",
+  "kernel-rag",
+  "kernel-runtime",
+  "kernel-storage",
+  "kernel-tools",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.27.0",
+  "mypy>=1.11.0",
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.23.0",
+  "ruff>=0.6.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+  "apps/api",
+  "apps/cli",
+  "apps/worker",
+  "packages/kernel-core",
+  "packages/kernel-runtime",
+  "packages/kernel-providers",
+  "packages/kernel-tools",
+  "packages/kernel-memory",
+  "packages/kernel-rag",
+  "packages/kernel-policy",
+  "packages/kernel-evals",
+  "packages/kernel-observability",
+  "packages/kernel-storage",
+]
+
+[tool.uv.sources]
+agent-kernel-api = { workspace = true }
+agent-kernel-cli = { workspace = true }
+agent-kernel-worker = { workspace = true }
+kernel-core = { workspace = true }
+kernel-evals = { workspace = true }
+kernel-memory = { workspace = true }
+kernel-observability = { workspace = true }
+kernel-policy = { workspace = true }
+kernel-providers = { workspace = true }
+kernel-rag = { workspace = true }
+kernel-runtime = { workspace = true }
+kernel-storage = { workspace = true }
+kernel-tools = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = [
+  "agent_kernel_api",
+  "agent_kernel_cli",
+  "agent_kernel_worker",
+  "kernel_core",
+  "kernel_runtime",
+  "kernel_providers",
+  "kernel_tools",
+  "kernel_memory",
+  "kernel_rag",
+  "kernel_policy",
+  "kernel_evals",
+  "kernel_observability",
+  "kernel_storage",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

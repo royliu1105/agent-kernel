@@ -22,39 +22,39 @@ Day 1 should not implement the full agent runtime, RAG, memory, approvals, evals
 
 ## Tasks
 
-- [ ] Check current git status.
-- [ ] Read the relevant baseline docs.
-- [ ] Create monorepo directory structure.
-- [ ] Create Python project configuration.
-- [ ] Add `.python-version`.
-- [ ] Add `.gitignore`.
-- [ ] Add `.env.example`.
-- [ ] Add `.envrc` if appropriate.
-- [ ] Add FastAPI `/healthz`.
-- [ ] Add Typer CLI with `agent-kernel --version`.
-- [ ] Add worker startup entrypoint.
-- [ ] Add `kernel-core` foundation package.
-- [ ] Define initial domain models: `Agent`, `Run`, `RunStep`, `ToolCall`, `Approval`.
-- [ ] Add minimal Next.js + TypeScript Web app.
-- [ ] Add Docker Compose with Postgres/pgvector and Redis.
-- [ ] Add basic backend tests.
-- [ ] Add basic Web build/lint scripts.
-- [ ] Add GitHub Actions CI.
-- [ ] Add `Makefile` or `justfile` for common commands.
-- [ ] Update root README with quick local development instructions.
+- [x] Check current git status.
+- [x] Read the relevant baseline docs.
+- [x] Create monorepo directory structure.
+- [x] Create Python project configuration.
+- [x] Add `.python-version`.
+- [x] Add `.gitignore`.
+- [x] Add `.env.example`.
+- [x] Add `.envrc` if appropriate.
+- [x] Add FastAPI `/healthz`.
+- [x] Add Typer CLI with `agent-kernel --version`.
+- [x] Add worker startup entrypoint.
+- [x] Add `kernel-core` foundation package.
+- [x] Define initial domain models: `Agent`, `Run`, `RunStep`, `ToolCall`, `Approval`.
+- [x] Add minimal Next.js + TypeScript Web app.
+- [x] Add Docker Compose with Postgres/pgvector and Redis.
+- [x] Add basic backend tests.
+- [x] Add basic Web build/lint scripts.
+- [x] Add GitHub Actions CI.
+- [x] Add `Makefile` or `justfile` for common commands.
+- [x] Update root README with quick local development instructions.
 
 ## Acceptance
 
-- [ ] API starts.
-- [ ] `GET /healthz` returns healthy response.
-- [ ] CLI version command works.
-- [ ] Worker starts and prints a ready message.
-- [ ] Web app starts or builds.
-- [ ] Docker Compose starts Postgres/pgvector and Redis.
-- [ ] Basic tests pass.
-- [ ] Lint passes.
-- [ ] Typecheck passes, or any unavoidable initial limitation is documented.
-- [ ] CI workflow exists.
+- [x] API starts.
+- [x] `GET /healthz` returns healthy response.
+- [x] CLI version command works.
+- [x] Worker starts and prints a ready message.
+- [x] Web app starts or builds.
+- [x] Docker Compose starts Postgres/pgvector and Redis.
+- [x] Basic tests pass.
+- [x] Lint passes.
+- [x] Typecheck passes, or any unavoidable initial limitation is documented.
+- [x] CI workflow exists.
 
 ## Verification
 
@@ -77,3 +77,4 @@ If a command cannot run because dependencies are unavailable or the environment 
 - Use the baseline in `docs/development-environment.md`.
 - Keep Day 1 small and structural.
 - Do not add complex runtime behavior yet.
+- `npm audit` reports 3 high vulnerabilities through Next.js transitive dependencies (`postcss` and `sharp`). The latest stable Next.js is installed (`16.2.12`), while the apparent fixed range is only available in canary/preview builds. Keep this visible and revisit when a stable Next.js release includes the upstream fixes.
