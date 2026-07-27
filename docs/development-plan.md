@@ -210,27 +210,47 @@ Acceptance:
 - Examples work.
 - Docs explain architecture and tradeoffs.
 
-## Day 1 Start Prompt
+## Daily Start Workflow
 
-Use this prompt to begin implementation:
+Do not keep adding every daily prompt to this file. This document is the phase-level development plan.
+
+Daily execution checklists live in:
 
 ```text
-开始 Day 1：请在当前仓库创建 Agent Kernel 的项目骨架和工程基线。
+docs/daily/day-XX.md
+```
+
+At the start of each development day:
+
+1. Create or update the corresponding daily plan.
+2. Read the relevant specs and milestone section.
+3. Use the daily plan as the execution checklist.
+4. Update daily checkboxes as work completes.
+5. Update `docs/milestones.md` when phase-level progress changes.
+6. Update specs or ADRs if implementation changes behavior or decisions.
+
+Daily files should be created just-in-time. Do not pre-create all 45 days.
+
+## Generic Daily Start Prompt
+
+Use this prompt pattern to begin a development day:
+
+```text
+开始 Day N：请按照 docs/daily/day-NN.md 执行今天的计划。
 
 要求：
-- 先检查当前仓库状态，不要覆盖已有用户文件。
-- 创建 monorepo 结构。
-- 后端使用 Python 3.12、FastAPI、Pydantic v2、SQLAlchemy、Alembic、Typer、pytest、ruff、mypy。
-- 前端创建 Next.js + TypeScript 最小 app。
-- 添加 API /healthz。
-- 添加 CLI agent-kernel --version。
-- 添加 worker 启动入口。
-- 添加 kernel-core 中的基础 domain models：Agent、Run、RunStep、ToolCall、Approval。
-- 添加 docker-compose.yml，包含 Postgres + pgvector + Redis。
-- 添加 .env.example。
-- 添加 GitHub Actions CI。
-- 添加 README、CONTRIBUTING、SECURITY、ROADMAP、docs/architecture.md、docs/adr/0001-modular-monolith.md、docs/adr/0002-storage.md、docs/adr/0003-python-runtime.md。
-- 添加基础测试。
-- 完成后运行 ruff、mypy、pytest；如果 Web app 建好了，也运行 npm lint/build。
-- 最后总结文件结构、启动方式和验证结果。
+- 先检查 git 状态，不要覆盖用户已有改动。
+- 读取当天 daily plan、相关 specs 和 docs/milestones.md。
+- 只实现当天 scope 内的内容，不提前做后续阶段。
+- 如果行为或架构决策变化，更新对应 spec 或 ADR。
+- 完成后运行当天 plan 中的 verification commands。
+- 更新 docs/daily/day-NN.md 的 checklist。
+- 如 phase-level progress 变化，更新 docs/milestones.md。
+- 最后总结完成内容、验证结果、已知风险和下一步。
+```
+
+For example, Day 2 should use:
+
+```text
+开始 Day 2：请按照 docs/daily/day-02.md 执行今天的计划。
 ```

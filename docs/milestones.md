@@ -63,6 +63,12 @@ Acceptance:
 
 ### Phase 1: Day 2-7 - Core Runtime
 
+Status:
+
+```text
+[~] In progress
+```
+
 Goal:
 
 ```text

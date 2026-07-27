@@ -49,3 +49,4 @@ day-03.md
 ## Existing Daily Plans
 
 - [Day 01: Project Skeleton and Engineering Baseline](day-01.md)
+- [Day 02: Run Lifecycle and Storage Foundation](day-02.md)
