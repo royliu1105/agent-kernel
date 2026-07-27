@@ -50,3 +50,4 @@ day-03.md
 
 - [Day 01: Project Skeleton and Engineering Baseline](day-01.md)
 - [Day 02: Run Lifecycle and Storage Foundation](day-02.md)
+- [Day 03: Run State Machine and CLI Operations](day-03.md)

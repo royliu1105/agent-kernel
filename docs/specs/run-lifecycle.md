@@ -62,7 +62,37 @@ created -> queued -> running -> waiting_approval -> resuming -> running -> succe
 created -> queued -> running -> canceled
 ```
 
-Detailed transition rules will be completed during Phase 1 implementation.
+Day 3 transition table:
+
+| From | Allowed To |
+| --- | --- |
+| `created` | `queued`, `canceled` |
+| `queued` | `running`, `canceled` |
+| `running` | `waiting_approval`, `succeeded`, `failed`, `canceled` |
+| `waiting_approval` | `resuming`, `canceled` |
+| `resuming` | `running`, `canceled` |
+| `succeeded` | terminal |
+| `failed` | terminal |
+| `canceled` | terminal |
+
+Transition rules:
+
+- Runtime state transitions are validated in `kernel-runtime`.
+- Storage persists state and events but does not own transition legality.
+- Invalid transitions are rejected before persistence.
+- Every accepted transition appends a `RunEvent`.
+- Queueing is persisted as `queued` state in Postgres for v0.1; Redis-backed queueing is a later
+  worker/runtime concern.
+
+Day 3 transition events:
+
+| Target Status | Event |
+| --- | --- |
+| `queued` | `run_queued` |
+| `running` | `run_started` |
+| `succeeded` | `run_completed` |
+| `failed` | `run_failed` |
+| `canceled` | `run_canceled` |
 
 ## API / CLI
 
@@ -76,23 +106,36 @@ GET  /v1/runs/{run_id}
 GET  /v1/runs/{run_id}/events
 ```
 
+Day 3 API:
+
+```http
+POST /v1/runs/{run_id}/queue
+POST /v1/runs/{run_id}/cancel
+```
+
 Expected later API:
 
 ```http
 POST /v1/agents/{agent_id}/runs
 GET  /v1/runs/{run_id}
 GET  /v1/runs/{run_id}/events
-POST /v1/runs/{run_id}/cancel
 POST /v1/runs/{run_id}/resume
 POST /v1/runs/{run_id}/retry
 ```
 
-Expected CLI:
+Day 3 CLI:
 
 ```bash
-agent-kernel run create <agent-id> --input "..."
-agent-kernel run watch <run-id>
+agent-kernel agent create --name "..."
+agent-kernel run create <agent-id> --input '{"task":"..."}'
 agent-kernel run inspect <run-id>
+agent-kernel run events <run-id>
+```
+
+Expected later CLI:
+
+```bash
+agent-kernel run watch <run-id>
 agent-kernel run retry <run-id>
 agent-kernel run cancel <run-id>
 ```

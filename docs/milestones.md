@@ -87,11 +87,11 @@ Checklist:
 - [ ] Replay provider baseline.
 - [ ] Model router.
 - [ ] Prompt versioning.
-- [ ] Run state machine.
+- [x] Run state machine.
 - [ ] Agent loop.
 - [x] Run event stream.
 - [x] API run endpoints.
-- [ ] CLI run commands.
+- [x] CLI run commands.
 
 Acceptance:
 

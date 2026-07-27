@@ -27,6 +27,7 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "fastapi" },
     { name = "kernel-core" },
+    { name = "kernel-runtime" },
     { name = "kernel-storage" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -35,6 +36,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-runtime", editable = "packages/kernel-runtime" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
 ]
@@ -44,12 +46,14 @@ name = "agent-kernel-cli"
 version = "0.1.0"
 source = { editable = "apps/cli" }
 dependencies = [
+    { name = "httpx" },
     { name = "kernel-core" },
     { name = "typer" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "typer", specifier = ">=0.12.0" },
 ]

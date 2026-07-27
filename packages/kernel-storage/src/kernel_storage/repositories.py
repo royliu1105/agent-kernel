@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from kernel_core import Agent, AgentStatus, Run, RunEvent, RunEventType, RunStatus
-from sqlalchemy import select
+from kernel_core import Agent, AgentStatus, Run, RunEvent, RunEventType, RunStatus, utc_now
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kernel_storage.models import AgentRecord, RunEventRecord, RunRecord
@@ -66,6 +66,93 @@ class RunRepository:
             .order_by(RunEventRecord.sequence)
         )
         return [_run_event_from_record(record) for record in self._session.scalars(statement)]
+
+    def update_status(self, *, run_id: UUID, status: RunStatus) -> Run | None:
+        record = self._session.get(RunRecord, str(run_id))
+        if record is None:
+            return None
+
+        _apply_status(record, status)
+        self._session.commit()
+        return _run_from_record(record)
+
+    def append_event(
+        self,
+        *,
+        run_id: UUID,
+        event_type: RunEventType,
+        payload: dict[str, Any] | None = None,
+        trace_id: str | None = None,
+    ) -> RunEvent | None:
+        if self._session.get(RunRecord, str(run_id)) is None:
+            return None
+
+        sequence = self._next_event_sequence(run_id)
+        event = RunEvent(
+            run_id=run_id,
+            sequence=sequence,
+            type=event_type,
+            payload=payload or {},
+            trace_id=trace_id,
+        )
+        self._session.add(
+            RunEventRecord(
+                id=str(event.id),
+                run_id=str(event.run_id),
+                sequence=event.sequence,
+                type=event.type.value,
+                payload=event.payload,
+                trace_id=event.trace_id,
+                created_at=event.created_at,
+            )
+        )
+        self._session.commit()
+        return event
+
+    def apply_transition(
+        self,
+        *,
+        run_id: UUID,
+        status: RunStatus,
+        event_type: RunEventType,
+        payload: dict[str, Any],
+    ) -> Run | None:
+        record = self._session.get(RunRecord, str(run_id))
+        if record is None:
+            return None
+
+        _apply_status(record, status)
+        sequence = self._next_event_sequence(run_id)
+        self._session.add(
+            RunEventRecord(
+                id=str(RunEvent(run_id=run_id, sequence=sequence, type=event_type).id),
+                run_id=str(run_id),
+                sequence=sequence,
+                type=event_type.value,
+                payload=payload,
+                trace_id=record.trace_id,
+            )
+        )
+        self._session.commit()
+        return _run_from_record(record)
+
+    def list_queued(self, *, limit: int = 100) -> list[Run]:
+        statement = (
+            select(RunRecord)
+            .where(RunRecord.status == RunStatus.QUEUED.value)
+            .order_by(RunRecord.created_at)
+            .limit(limit)
+        )
+        return [_run_from_record(record) for record in self._session.scalars(statement)]
+
+    def _next_event_sequence(self, run_id: UUID) -> int:
+        statement = select(func.max(RunEventRecord.sequence)).where(
+            RunEventRecord.run_id == str(run_id)
+        )
+        current = self._session.scalar(statement)
+        if current is None:
+            return 1
+        return int(current) + 1
 
 
 def _agent_to_record(agent: Agent) -> AgentRecord:
@@ -142,6 +229,14 @@ def _run_from_record(record: RunRecord) -> Run:
         ended_at=record.ended_at,
         created_at=record.created_at,
     )
+
+
+def _apply_status(record: RunRecord, status: RunStatus) -> None:
+    record.status = status.value
+    if status is RunStatus.RUNNING:
+        record.started_at = record.started_at or utc_now()
+    if status in {RunStatus.SUCCEEDED, RunStatus.FAILED, RunStatus.CANCELED}:
+        record.ended_at = utc_now()
 
 
 def _run_event_from_record(record: RunEventRecord) -> RunEvent:

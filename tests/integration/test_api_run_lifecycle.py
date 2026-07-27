@@ -58,3 +58,41 @@ def test_create_run_for_missing_agent_returns_404(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Agent not found"}
+
+
+def test_queue_and_cancel_run_transitions(sqlite_session_factory: sessionmaker[Session]) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    agent = client.post("/v1/agents", json={"name": "ops-agent"}).json()
+    run = client.post(
+        f"/v1/agents/{agent['id']}/runs",
+        json={"input": {"task": "queue then cancel"}},
+    ).json()
+
+    queue_response = client.post(f"/v1/runs/{run['id']}/queue")
+    assert queue_response.status_code == 200
+    assert queue_response.json()["status"] == "queued"
+
+    cancel_response = client.post(f"/v1/runs/{run['id']}/cancel")
+    assert cancel_response.status_code == 200
+    assert cancel_response.json()["status"] == "canceled"
+
+    events_response = client.get(f"/v1/runs/{run['id']}/events")
+    assert events_response.status_code == 200
+    assert [event["type"] for event in events_response.json()] == [
+        "run_created",
+        "run_queued",
+        "run_canceled",
+    ]
+
+
+def test_invalid_api_transition_returns_409(sqlite_session_factory: sessionmaker[Session]) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    agent = client.post("/v1/agents", json={"name": "ops-agent"}).json()
+    run = client.post(f"/v1/agents/{agent['id']}/runs", json={"input": {}}).json()
+
+    cancel_response = client.post(f"/v1/runs/{run['id']}/cancel")
+    assert cancel_response.status_code == 200
+
+    queue_response = client.post(f"/v1/runs/{run['id']}/queue")
+    assert queue_response.status_code == 409
+    assert "Cannot transition run from canceled to queued" in queue_response.json()["detail"]

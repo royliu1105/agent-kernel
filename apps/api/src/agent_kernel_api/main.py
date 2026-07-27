@@ -8,6 +8,7 @@ from uuid import UUID
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, status
 from kernel_core import Agent, Run, RunEvent
+from kernel_runtime import InvalidRunTransitionError, RunStateMachine
 from kernel_storage import (
     AgentRepository,
     RunRepository,
@@ -98,6 +99,68 @@ def create_app(session_factory: sessionmaker[Session] | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         events = RunRepository(session).list_events(run_id)
         return [_run_event_response(event) for event in events]
+
+    @app.post("/v1/runs/{run_id}/queue", response_model=RunResponse, tags=["runs"])
+    def queue_run(
+        run_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> RunResponse:
+        repository = RunRepository(session)
+        run = repository.get(run_id)
+        if run is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+
+        try:
+            transition = RunStateMachine().queue(run)
+        except InvalidRunTransitionError as error:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(error),
+            ) from error
+
+        updated = repository.apply_transition(
+            run_id=run.id,
+            status=transition.to_status,
+            event_type=transition.event_type,
+            payload={
+                "from_status": transition.from_status.value,
+                "to_status": transition.to_status.value,
+            },
+        )
+        if updated is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+        return _run_response(updated)
+
+    @app.post("/v1/runs/{run_id}/cancel", response_model=RunResponse, tags=["runs"])
+    def cancel_run(
+        run_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> RunResponse:
+        repository = RunRepository(session)
+        run = repository.get(run_id)
+        if run is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+
+        try:
+            transition = RunStateMachine().cancel(run)
+        except InvalidRunTransitionError as error:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(error),
+            ) from error
+
+        updated = repository.apply_transition(
+            run_id=run.id,
+            status=transition.to_status,
+            event_type=transition.event_type,
+            payload={
+                "from_status": transition.from_status.value,
+                "to_status": transition.to_status.value,
+            },
+        )
+        if updated is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+        return _run_response(updated)
 
     return app
 

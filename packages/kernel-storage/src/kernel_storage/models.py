@@ -72,9 +72,7 @@ class RunRecord(Base):
 
 class RunStepRecord(Base):
     __tablename__ = "run_steps"
-    __table_args__ = (
-        Index("ix_run_steps_run_id_index", "run_id", "index"),
-    )
+    __table_args__ = (Index("ix_run_steps_run_id_index", "run_id", "index"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     run_id: Mapped[str] = mapped_column(
@@ -107,9 +105,7 @@ class RunStepRecord(Base):
 
 class RunEventRecord(Base):
     __tablename__ = "run_events"
-    __table_args__ = (
-        Index("ix_run_events_run_id_sequence", "run_id", "sequence", unique=True),
-    )
+    __table_args__ = (Index("ix_run_events_run_id_sequence", "run_id", "sequence", unique=True),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     run_id: Mapped[str] = mapped_column(
