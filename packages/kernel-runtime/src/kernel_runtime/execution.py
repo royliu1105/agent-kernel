@@ -60,28 +60,28 @@ class RunExecutionService:
         if running is None:
             raise RunNotFoundError(f"Run {run_id} was not found.")
 
-        request = _request_from_run(running, default_model=self._default_model)
-        route = self._router.route(request.model)
+        try:
+            request = _request_from_run(running, default_model=self._default_model)
+            route = self._router.route(request.model)
+        except (RunExecutionError, ValueError) as error:
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type=type(error).__name__,
+                error_message=str(error),
+            )
+
         routed_request = request.model_copy(update={"model": route.model})
         try:
             response = await route.provider.complete(routed_request)
         except LLMProviderError as error:
-            fail_transition = self._state_machine.fail(running)
-            failed = repository.fail(
-                run_id=running.id,
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
                 error_type=error.error_type,
                 error_message=str(error),
-                event_payload={
-                    "from_status": fail_transition.from_status.value,
-                    "to_status": fail_transition.to_status.value,
-                    "error_type": error.error_type,
-                    "error_message": str(error),
-                    "provider": route.provider_name,
-                },
+                provider=route.provider_name,
             )
-            if failed is None:
-                raise RunNotFoundError(f"Run {run_id} was not found.") from error
-            return failed
 
         succeed_transition = self._state_machine.succeed(running)
         completed = repository.complete(
@@ -105,6 +105,35 @@ class RunExecutionService:
         if completed is None:
             raise RunNotFoundError(f"Run {run_id} was not found.")
         return completed
+
+    def _fail_running_run(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+        error_type: str,
+        error_message: str,
+        provider: str | None = None,
+    ) -> Run:
+        fail_transition = self._state_machine.fail(running)
+        event_payload = {
+            "from_status": fail_transition.from_status.value,
+            "to_status": fail_transition.to_status.value,
+            "error_type": error_type,
+            "error_message": error_message,
+        }
+        if provider is not None:
+            event_payload["provider"] = provider
+
+        failed = repository.fail(
+            run_id=running.id,
+            error_type=error_type,
+            error_message=error_message,
+            event_payload=event_payload,
+        )
+        if failed is None:
+            raise RunNotFoundError(f"Run {running.id} was not found.")
+        return failed
 
 
 def _request_from_run(run: Run, *, default_model: str) -> LLMRequest:

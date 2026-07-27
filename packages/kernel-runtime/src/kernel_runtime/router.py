@@ -36,7 +36,5 @@ class ModelRouter:
 def _split_model_ref(model_ref: str) -> tuple[str, str]:
     provider_name, separator, model = model_ref.partition(":")
     if separator == "" or provider_name == "" or model == "":
-        raise UnknownModelRouteError(
-            f"Model {model_ref!r} must use '<provider>:<model>' format."
-        )
+        raise UnknownModelRouteError(f"Model {model_ref!r} must use '<provider>:<model>' format.")
     return provider_name, model

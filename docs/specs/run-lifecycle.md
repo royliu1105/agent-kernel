@@ -108,7 +108,22 @@ Day 4 execution semantics:
 - Provider success transitions `running -> succeeded` and appends `run_completed`.
 - Provider failure persists `error_type` and `error_message`.
 - Provider failure transitions `running -> failed` and appends `run_failed`.
-- Day 4 execution is API-free and worker-free; the polling worker loop is introduced later.
+- Execution setup failures, such as invalid run input messages or unknown model routes, transition
+  the run from `running -> failed` instead of leaving it stuck in `running`.
+
+Day 6 worker semantics:
+
+- The MVP worker uses persisted `runs.status = queued` rows as the durable queue.
+- A worker polling pass lists queued runs in creation order and executes up to the configured limit.
+- Each picked run is executed through `RunExecutionService` and `ModelRouter`.
+- The worker runs each picked run with its own database session so one failure does not poison the
+  rest of the batch.
+- `agent-kernel-worker --once --limit 10` performs one deterministic polling pass and exits.
+- `agent-kernel-worker --loop --limit 10 --poll-interval 5` keeps polling for local development.
+- The worker default router registers `mock` and `openai`; mock execution requires no secrets.
+- OpenAI execution remains opt-in through `openai:*` model references and `OPENAI_API_KEY`.
+- Redis is not used as the Day 6 queue. Redis-backed scheduling, leasing, heartbeats, and
+  distributed concurrency are explicitly deferred.
 
 ## API / CLI
 
@@ -148,6 +163,14 @@ agent-kernel run inspect <run-id>
 agent-kernel run events <run-id>
 ```
 
+Day 6 worker CLI:
+
+```bash
+agent-kernel-worker
+agent-kernel-worker --once --limit 10
+agent-kernel-worker --loop --limit 10 --poll-interval 5
+```
+
 Expected later CLI:
 
 ```bash
@@ -160,6 +183,7 @@ agent-kernel run cancel <run-id>
 
 - Worker crashes mid-run.
 - Model provider fails.
+- Worker encounters invalid run input or an unknown model route.
 - Tool call fails.
 - Approval is rejected.
 - Run is canceled while running.
@@ -183,6 +207,9 @@ agent-kernel run cancel <run-id>
 - Create run persists initial state.
 - Worker transitions run to running and succeeded.
 - Failed step transitions run to failed.
+- Worker only picks queued runs.
+- Worker records provider failures as failed runs.
+- Worker records expected execution setup failures as failed runs.
 - Approval request transitions run to waiting state.
 - Resume continues from persisted state.
 - Cancel stops a run safely.

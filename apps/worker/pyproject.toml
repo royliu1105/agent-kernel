@@ -5,6 +5,10 @@ description = "Background worker for Agent Kernel."
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "kernel-core",
+  "kernel-providers",
+  "kernel-runtime",
+  "kernel-storage",
+  "typer>=0.12.0",
 ]
 
 [project.scripts]

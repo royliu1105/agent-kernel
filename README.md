@@ -34,6 +34,7 @@ Run local entrypoints:
 ```bash
 uv run agent-kernel --version
 uv run agent-kernel-worker
+uv run agent-kernel-worker --once --limit 10
 uv run uvicorn agent_kernel_api.main:app --reload
 ```
 

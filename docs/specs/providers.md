@@ -74,6 +74,15 @@ Day 5 OpenAI baseline:
 - Uses `httpx` behind a small adapter so tests can mock transport.
 - Normal tests must not access the network or require an API key.
 
+Day 6 worker routing:
+
+- The worker default router registers `mock` and `openai`.
+- Local worker execution should use `mock:*` model references unless the developer explicitly wants
+  a real provider smoke test.
+- `OpenAIProvider` may be registered without an API key, but it only attempts a real call when a run
+  uses an `openai:*` model reference.
+- Unknown model routes fail the run clearly and do not leave the run stuck in `running`.
+
 ## State Transitions
 
 Provider calls do not own run state. The runtime execution service owns run transitions and uses
@@ -119,6 +128,7 @@ run record.
 - Router selects mock and OpenAI providers by prefix.
 - OpenAI adapter tests mock transport and do not use network.
 - Unknown provider route fails clearly.
+- Worker execution through the default router remains deterministic when using `mock:*`.
 
 ## Manual Smoke
 

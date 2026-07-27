@@ -171,6 +171,42 @@ docker compose logs -f
 docker compose down
 ```
 
+## Local Worker
+
+The worker can be started without processing any runs:
+
+```bash
+uv run agent-kernel-worker
+```
+
+Process queued runs once:
+
+```bash
+uv run agent-kernel-worker --once --limit 10
+```
+
+Run a local polling loop:
+
+```bash
+uv run agent-kernel-worker --loop --limit 10 --poll-interval 5
+```
+
+The worker uses the same `DATABASE_URL` resolution as the API. If `DATABASE_URL` is not set, it uses
+the local SQLite database path from `kernel-storage`.
+
+Before processing runs against a fresh database, apply migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+For normal local testing, create runs with `mock:*` model references so no API key or network access
+is required. Real OpenAI execution is explicit and requires:
+
+```bash
+OPENAI_API_KEY=...
+```
+
 Later services may include:
 
 ```text

@@ -8,6 +8,7 @@ from kernel_runtime.state_machine import (
     RunStateMachine,
     RunTransition,
 )
+from kernel_runtime.worker import QueuedRunWorker, WorkerBatchResult, WorkerRunResult
 
 __all__ = [
     "InvalidRunTransitionError",
@@ -21,4 +22,7 @@ __all__ = [
     "RunStateMachine",
     "RunTransition",
     "UnknownModelRouteError",
+    "QueuedRunWorker",
+    "WorkerBatchResult",
+    "WorkerRunResult",
 ]

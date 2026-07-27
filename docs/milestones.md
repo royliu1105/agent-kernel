@@ -88,7 +88,7 @@ Checklist:
 - [x] Model router.
 - [x] Prompt versioning.
 - [x] Run state machine.
-- [ ] Agent loop.
+- [x] Agent loop.
 - [x] Run event stream.
 - [x] API run endpoints.
 - [x] CLI run commands.
@@ -97,7 +97,7 @@ Acceptance:
 
 - [x] Create agent.
 - [x] Create run.
-- [ ] Worker executes run.
+- [x] Worker executes run.
 - [x] Final output is persisted.
 - [x] Timeline is persisted.
 - [x] Mock provider deterministic tests pass.
