@@ -105,3 +105,33 @@ def test_run_inspect_and_events_cli_use_read_endpoints(
         ("GET", f"/v1/runs/{run_id}"),
         ("GET", f"/v1/runs/{run_id}/events"),
     ]
+
+
+def test_run_queue_and_cancel_cli_use_transition_endpoints(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path))
+        return {"id": path.split("/")[3], "status": "queued"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    run_id = "00000000-0000-0000-0000-000000000003"
+
+    queue_result = runner.invoke(cli_main.app, ["run", "queue", run_id])
+    cancel_result = runner.invoke(cli_main.app, ["run", "cancel", run_id])
+
+    assert queue_result.exit_code == 0
+    assert cancel_result.exit_code == 0
+    assert calls == [
+        ("POST", f"/v1/runs/{run_id}/queue"),
+        ("POST", f"/v1/runs/{run_id}/cancel"),
+    ]

@@ -122,6 +122,42 @@ def list_run_events(
     _echo_json(response)
 
 
+@run_app.command("queue")
+def queue_run(
+    run_id: Annotated[UUID, typer.Argument(help="Run ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Queue a run for worker execution through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/runs/{run_id}/queue",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@run_app.command("cancel")
+def cancel_run(
+    run_id: Annotated[UUID, typer.Argument(help="Run ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Cancel a run through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/runs/{run_id}/cancel",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
 def _resolve_api_url(api_url: str) -> str:
     return os.getenv(API_URL_ENV, api_url).rstrip("/")
 

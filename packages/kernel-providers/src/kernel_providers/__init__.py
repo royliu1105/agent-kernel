@@ -11,6 +11,7 @@ from kernel_providers.base import (
 )
 from kernel_providers.mock import MockLLMProvider
 from kernel_providers.openai import OPENAI_API_KEY_ENV, OpenAIProvider, get_openai_api_key
+from kernel_providers.replay import ReplayLLMProvider
 
 __all__ = [
     "LLMMessage",
@@ -23,5 +24,6 @@ __all__ = [
     "MockLLMProvider",
     "OPENAI_API_KEY_ENV",
     "OpenAIProvider",
+    "ReplayLLMProvider",
     "get_openai_api_key",
 ]

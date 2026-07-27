@@ -15,16 +15,17 @@ The plan is split into these documents:
 7. [Product Shape and Capabilities](product-shape.md): what the project becomes and which product capabilities it exposes.
 8. [User Experience](user-experience.md): Agent Workbench UX, where chat is an input mode rather than the whole product.
 9. [Development Environment](development-environment.md): professional local Python, Docker, Node.js, IDE, and quality-tool setup.
-10. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
-11. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-12. [Development Plan](development-plan.md): 30-day v0.1 plan and daily working method.
-13. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
-14. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-15. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-16. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-17. [ADR 0002](adr/0002-storage.md): storage decision.
-18. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-19. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+10. [Quickstart](quickstart.md): real local runtime path for agent/run/worker execution.
+11. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
+12. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
+13. [Development Plan](development-plan.md): 30-day v0.1 plan and daily working method.
+14. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
+15. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+16. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+17. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+18. [ADR 0002](adr/0002-storage.md): storage decision.
+19. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+20. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 ## Current Baseline
 

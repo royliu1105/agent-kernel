@@ -84,7 +84,7 @@ Checklist:
 - [x] `LLMProvider` interface.
 - [x] OpenAI provider.
 - [x] Mock provider.
-- [ ] Replay provider baseline.
+- [x] Replay provider baseline.
 - [x] Model router.
 - [x] Prompt versioning.
 - [x] Run state machine.

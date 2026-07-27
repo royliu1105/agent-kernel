@@ -39,9 +39,7 @@ class WorkerBatchResult:
     @property
     def failed_count(self) -> int:
         return sum(
-            1
-            for run in self.runs
-            if run.status is RunStatus.FAILED or run.error_type is not None
+            1 for run in self.runs if run.status is RunStatus.FAILED or run.error_type is not None
         )
 
 

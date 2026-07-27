@@ -1,5 +1,5 @@
 import pytest
-from kernel_providers import MockLLMProvider, OpenAIProvider
+from kernel_providers import MockLLMProvider, OpenAIProvider, ReplayLLMProvider
 from kernel_runtime import ModelRouter, UnknownModelRouteError
 
 
@@ -18,6 +18,15 @@ def test_model_router_selects_openai_provider_by_prefix() -> None:
 
     assert route.provider_name == "openai"
     assert route.model == "gpt-4.1-mini"
+    assert route.provider is provider
+
+
+def test_model_router_selects_replay_provider_by_prefix() -> None:
+    provider = ReplayLLMProvider()
+    route = ModelRouter({"replay": provider}).route("replay:case-001")
+
+    assert route.provider_name == "replay"
+    assert route.model == "case-001"
     assert route.provider is provider
 
 

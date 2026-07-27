@@ -63,6 +63,7 @@ Day 5 routing model:
 ```text
 mock:<model>   -> MockLLMProvider
 openai:<model> -> OpenAIProvider
+replay:<case>  -> ReplayLLMProvider
 ```
 
 The prefix is routing metadata. The provider receives the model name without the prefix.
@@ -83,6 +84,17 @@ Day 6 worker routing:
   uses an `openai:*` model reference.
 - Unknown model routes fail the run clearly and do not leave the run stuck in `running`.
 
+Day 7 replay baseline:
+
+- `ReplayLLMProvider` is an in-memory deterministic provider for regression and future eval
+  fixtures.
+- Replay lookup matches routed model name, for example `replay:case-001` routes to provider model
+  `case-001`.
+- The provider returns the pre-recorded `LLMResponse` registered for that model.
+- Missing replay cases raise `LLMProviderError` with `error_type = replay_not_found`.
+- Replay does not perform network I/O and does not require secrets.
+- Prompt-aware matching and fixture file formats are deferred until the eval runner exists.
+
 ## State Transitions
 
 Provider calls do not own run state. The runtime execution service owns run transitions and uses
@@ -102,6 +114,7 @@ run input model string.
 - Runtime constructs an invalid request from run input.
 - Model string has no provider prefix.
 - Model string references an unregistered provider.
+- Replay model references a missing fixture.
 
 Day 4 handles typed provider failures by marking the run as `failed` and storing error details.
 
@@ -129,6 +142,8 @@ run record.
 - OpenAI adapter tests mock transport and do not use network.
 - Unknown provider route fails clearly.
 - Worker execution through the default router remains deterministic when using `mock:*`.
+- Replay provider returns fixture responses by model name.
+- Replay provider fails clearly for missing fixture responses.
 
 ## Manual Smoke
 

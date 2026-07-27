@@ -4,6 +4,8 @@ Agent Kernel is planned as a self-hosted, observable, evaluable, resumable produ
 
 The canonical project baseline is captured in [docs/README.md](docs/README.md).
 
+Run the current local runtime path with [docs/quickstart.md](docs/quickstart.md).
+
 ## Local Development
 
 Required tools:

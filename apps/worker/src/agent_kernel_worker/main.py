@@ -6,7 +6,7 @@ import asyncio
 from typing import Annotated
 
 import typer
-from kernel_providers import MockLLMProvider, OpenAIProvider
+from kernel_providers import MockLLMProvider, OpenAIProvider, ReplayLLMProvider
 from kernel_runtime import ModelRouter, QueuedRunWorker, RunExecutionService, WorkerBatchResult
 from kernel_storage import create_engine_for_url, create_session_factory
 
@@ -69,6 +69,7 @@ def _create_worker() -> QueuedRunWorker:
         {
             "mock": MockLLMProvider(),
             "openai": OpenAIProvider(),
+            "replay": ReplayLLMProvider(),
         }
     )
     execution_service = RunExecutionService(router=router)

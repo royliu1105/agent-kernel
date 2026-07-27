@@ -163,6 +163,13 @@ agent-kernel run inspect <run-id>
 agent-kernel run events <run-id>
 ```
 
+Day 7 CLI:
+
+```bash
+agent-kernel run queue <run-id>
+agent-kernel run cancel <run-id>
+```
+
 Day 6 worker CLI:
 
 ```bash
@@ -176,7 +183,6 @@ Expected later CLI:
 ```bash
 agent-kernel run watch <run-id>
 agent-kernel run retry <run-id>
-agent-kernel run cancel <run-id>
 ```
 
 ## Failure Modes
@@ -210,6 +216,8 @@ agent-kernel run cancel <run-id>
 - Worker only picks queued runs.
 - Worker records provider failures as failed runs.
 - Worker records expected execution setup failures as failed runs.
+- API-created queued run can be executed by a worker and inspected through the API.
+- CLI queue and cancel call the API transition endpoints.
 - Approval request transitions run to waiting state.
 - Resume continues from persisted state.
 - Cancel stops a run safely.
