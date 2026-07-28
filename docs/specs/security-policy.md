@@ -96,6 +96,15 @@ Day 11 approval audit baseline:
 - Day 11 still uses run events as the audit timeline.
 - A dedicated audit table remains deferred.
 
+Day 12 approval execution baseline:
+
+- Approval-required tools are not executed before approval.
+- Runtime resume executes the original persisted tool call arguments.
+- Resume callers cannot provide replacement tool arguments.
+- Rejected approvals fail the waiting run safely.
+- Approval wait/resume/failure transitions are auditable through run events.
+- Auth and role enforcement remain deferred, but reviewer fields stay in approval records.
+
 ## State Transitions
 
 Policy flow:
@@ -104,6 +113,9 @@ Policy flow:
 tool_call_requested -> policy_evaluated -> allowed
 tool_call_requested -> policy_evaluated -> denied
 tool_call_requested -> policy_evaluated -> approval_required
+approval_required -> approval_requested -> run_waiting_approval
+approval_approved -> run_resuming -> running
+approval_rejected -> run_failed
 ```
 
 Detailed policy precedence will be completed during Phase 2 implementation.

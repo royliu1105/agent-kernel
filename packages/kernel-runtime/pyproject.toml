@@ -5,8 +5,10 @@ description = "Agent runtime package for Agent Kernel."
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "kernel-core",
+  "kernel-policy",
   "kernel-providers",
   "kernel-storage",
+  "kernel-tools",
   "pydantic>=2.8.0",
 ]
 

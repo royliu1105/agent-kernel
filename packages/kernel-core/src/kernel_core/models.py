@@ -57,6 +57,8 @@ class RunEventType(StrEnum):
     RUN_CREATED = "run_created"
     RUN_QUEUED = "run_queued"
     RUN_STARTED = "run_started"
+    RUN_WAITING_APPROVAL = "run_waiting_approval"
+    RUN_RESUMING = "run_resuming"
     RUN_COMPLETED = "run_completed"
     RUN_FAILED = "run_failed"
     RUN_CANCELED = "run_canceled"

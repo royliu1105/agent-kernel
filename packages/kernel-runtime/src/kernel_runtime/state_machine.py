@@ -39,7 +39,9 @@ class RunStateMachine:
                 RunStatus.CANCELED,
             }
         ),
-        RunStatus.WAITING_APPROVAL: frozenset({RunStatus.RESUMING, RunStatus.CANCELED}),
+        RunStatus.WAITING_APPROVAL: frozenset(
+            {RunStatus.RESUMING, RunStatus.FAILED, RunStatus.CANCELED}
+        ),
         RunStatus.RESUMING: frozenset({RunStatus.RUNNING, RunStatus.CANCELED}),
         RunStatus.SUCCEEDED: frozenset(),
         RunStatus.FAILED: frozenset(),
@@ -48,6 +50,8 @@ class RunStateMachine:
     _event_by_status: dict[RunStatus, RunEventType] = {
         RunStatus.QUEUED: RunEventType.RUN_QUEUED,
         RunStatus.RUNNING: RunEventType.RUN_STARTED,
+        RunStatus.WAITING_APPROVAL: RunEventType.RUN_WAITING_APPROVAL,
+        RunStatus.RESUMING: RunEventType.RUN_RESUMING,
         RunStatus.SUCCEEDED: RunEventType.RUN_COMPLETED,
         RunStatus.FAILED: RunEventType.RUN_FAILED,
         RunStatus.CANCELED: RunEventType.RUN_CANCELED,
@@ -79,6 +83,16 @@ class RunStateMachine:
         """Validate that a run can complete successfully."""
 
         return self.validate(run, RunStatus.SUCCEEDED)
+
+    def wait_for_approval(self, run: Run) -> RunTransition:
+        """Validate that a run can pause for human approval."""
+
+        return self.validate(run, RunStatus.WAITING_APPROVAL)
+
+    def resume(self, run: Run) -> RunTransition:
+        """Validate that a waiting run can begin resume processing."""
+
+        return self.validate(run, RunStatus.RESUMING)
 
     def fail(self, run: Run) -> RunTransition:
         """Validate that a run can fail."""

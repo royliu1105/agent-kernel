@@ -123,18 +123,18 @@ Checklist:
 - [x] Approval model.
 - [x] Approval API.
 - [x] Approval CLI.
-- [ ] Interrupt/resume.
+- [x] Interrupt/resume.
 - [ ] Retry/fallback.
 - [~] Audit log.
 
 Acceptance:
 
 - [x] Safe tool auto-executes.
-- [ ] Risky tool pauses run.
-- [ ] Approval resumes run.
-- [ ] Rejection stops safely.
+- [x] Risky tool pauses run.
+- [x] Approval resumes run.
+- [x] Rejection stops safely.
 - [ ] Tool failure retries where safe.
-- [~] Tool calls and decisions are auditable.
+- [x] Tool calls and decisions are auditable.
 
 ### Phase 3: Day 13-18 - RAG and Memory
 

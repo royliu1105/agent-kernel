@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 from uuid import UUID
 
@@ -59,6 +60,10 @@ class RunRepository:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+
+    @property
+    def session(self) -> Session:
+        return self._session
 
     def create(self, *, agent_id: UUID, input_payload: dict[str, Any]) -> Run:
         run = Run(agent_id=agent_id, input=input_payload)
@@ -370,6 +375,15 @@ class ToolCallRepository:
         self._session.commit()
         return _tool_call_from_record(record)
 
+    def mark_running(self, *, tool_call_id: UUID) -> ToolCall | None:
+        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        if record is None:
+            return None
+
+        record.status = ToolCallStatus.RUNNING.value
+        self._session.commit()
+        return _tool_call_from_record(record)
+
     def fail(
         self,
         *,
@@ -479,6 +493,14 @@ class ApprovalRepository:
         statement = select(ApprovalRecord).order_by(ApprovalRecord.requested_at)
         if status is not None:
             statement = statement.where(ApprovalRecord.status == status.value)
+        return [_approval_from_record(record) for record in self._session.scalars(statement)]
+
+    def list_for_run(self, run_id: UUID) -> builtins.list[Approval]:
+        statement = (
+            select(ApprovalRecord)
+            .where(ApprovalRecord.run_id == str(run_id))
+            .order_by(ApprovalRecord.requested_at)
+        )
         return [_approval_from_record(record) for record in self._session.scalars(statement)]
 
     def get(self, approval_id: UUID) -> Approval | None:

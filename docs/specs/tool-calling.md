@@ -107,6 +107,19 @@ Day 10 persistence baseline:
 - Day 10 does not expose tool call API endpoints yet.
 - Day 10 does not integrate tool calls into the agent run loop yet.
 
+Day 12 runtime integration baseline:
+
+- Runtime execution recognizes explicit single-tool run input under `input.tool`.
+- Explicit tool input shape:
+  - `tool.name`
+  - `tool.arguments`
+- Safe explicit tools are policy-checked, executed, persisted, and included in run output.
+- Approval-required explicit tools are policy-checked, persisted, linked to an approval, and pause
+  the run.
+- Approved resume executes the original persisted tool call arguments.
+- Provider-native tool/function calling remains deferred.
+- Model-generated tool call parsing remains deferred.
+
 ## State Transitions
 
 Initial tool call states:
@@ -146,6 +159,7 @@ Tool calls are inspected through run detail and run events.
 - Tool requires approval.
 - Tool is denied by policy.
 - Approval-required tool is requested before approval persistence exists.
+- Approval-required tool pauses the run until approval is decided.
 - Tool call persistence fails.
 - Tool call references a missing run.
 

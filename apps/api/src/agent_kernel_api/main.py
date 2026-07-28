@@ -9,12 +9,19 @@ from uuid import UUID
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from kernel_core import Agent, Approval, ApprovalStatus, Run, RunEvent
-from kernel_runtime import InvalidRunTransitionError, RunStateMachine
+from kernel_runtime import (
+    InvalidRunTransitionError,
+    RunExecutionError,
+    RunExecutionService,
+    RunNotFoundError,
+    RunStateMachine,
+)
 from kernel_storage import (
     AgentRepository,
     ApprovalDecisionError,
     ApprovalRepository,
     RunRepository,
+    ToolCallRepository,
     create_engine_for_url,
     create_session_factory,
 )
@@ -29,12 +36,17 @@ from agent_kernel_api.schemas import (
     RunCreateRequest,
     RunEventResponse,
     RunResponse,
+    RunResumeRequest,
 )
 
 
-def create_app(session_factory: sessionmaker[Session] | None = None) -> FastAPI:
+def create_app(
+    session_factory: sessionmaker[Session] | None = None,
+    execution_service: RunExecutionService | None = None,
+) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
+    runner = execution_service or RunExecutionService()
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -167,6 +179,26 @@ def create_app(session_factory: sessionmaker[Session] | None = None) -> FastAPI:
         if updated is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         return _run_response(updated)
+
+    @app.post("/v1/runs/{run_id}/resume", response_model=RunResponse, tags=["runs"])
+    async def resume_run(
+        run_id: UUID,
+        request: RunResumeRequest | None = None,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> RunResponse:
+        try:
+            run = await runner.resume(
+                run_id=run_id,
+                repository=RunRepository(session),
+                approval_repository=ApprovalRepository(session),
+                tool_call_repository=ToolCallRepository(session),
+                approval_id=request.approval_id if request is not None else None,
+            )
+        except RunNotFoundError as error:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+        except (InvalidRunTransitionError, RunExecutionError) as error:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        return _run_response(run)
 
     @app.get("/v1/approvals", response_model=list[ApprovalResponse], tags=["approvals"])
     def list_approvals(

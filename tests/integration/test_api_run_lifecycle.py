@@ -1,5 +1,12 @@
+import asyncio
+from typing import Any
+
 from agent_kernel_api.main import create_app
 from fastapi.testclient import TestClient
+from kernel_core import RiskLevel, RunEventType, RunStatus
+from kernel_runtime import RunExecutionService
+from kernel_storage import AgentRepository, ApprovalRepository, RunRepository
+from kernel_tools import ToolMetadata, ToolRegistry, create_default_tool_registry
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -96,3 +103,105 @@ def test_invalid_api_transition_returns_409(sqlite_session_factory: sessionmaker
     queue_response = client.post(f"/v1/runs/{run['id']}/queue")
     assert queue_response.status_code == 409
     assert "Cannot transition run from canceled to queued" in queue_response.json()["detail"]
+
+
+def test_resume_waiting_run_through_api(sqlite_session_factory: sessionmaker[Session]) -> None:
+    execution_service = RunExecutionService(tool_registry=_approval_tool_registry())
+    client = TestClient(
+        create_app(
+            session_factory=sqlite_session_factory,
+            execution_service=execution_service,
+        )
+    )
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="api-resume-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"tool": {"name": "external_write", "arguments": {"value": "draft"}}},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+        waiting = asyncio.run(execution_service.execute(run_id=run.id, repository=run_repository))
+        approval = ApprovalRepository(session).list_for_run(run.id)[0]
+
+    assert waiting.status is RunStatus.WAITING_APPROVAL
+
+    approve_response = client.post(
+        f"/v1/approvals/{approval.id}/approve",
+        json={"decision_note": "Approved from API."},
+    )
+    resume_response = client.post(
+        f"/v1/runs/{run.id}/resume",
+        json={"approval_id": str(approval.id)},
+    )
+
+    assert approve_response.status_code == 200
+    assert resume_response.status_code == 200
+    resumed = resume_response.json()
+    assert resumed["status"] == "succeeded"
+    assert resumed["output"]["tool"]["result"] == {"written": "draft"}
+
+
+def test_resume_requested_approval_returns_409(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    execution_service = RunExecutionService(tool_registry=_approval_tool_registry())
+    client = TestClient(
+        create_app(
+            session_factory=sqlite_session_factory,
+            execution_service=execution_service,
+        )
+    )
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="api-resume-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"tool": {"name": "external_write", "arguments": {"value": "draft"}}},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+        asyncio.run(execution_service.execute(run_id=run.id, repository=run_repository))
+        approval = ApprovalRepository(session).list_for_run(run.id)[0]
+
+    resume_response = client.post(
+        f"/v1/runs/{run.id}/resume",
+        json={"approval_id": str(approval.id)},
+    )
+
+    assert resume_response.status_code == 409
+    assert "has not been decided yet" in resume_response.json()["detail"]
+
+
+class ExternalWriteTool:
+    @property
+    def metadata(self) -> ToolMetadata:
+        return ToolMetadata(
+            name="external_write",
+            description="Test-only external write tool.",
+            input_schema={
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+                "required": ["value"],
+                "additionalProperties": False,
+            },
+            risk_level=RiskLevel.EXTERNAL_WRITE,
+        )
+
+    async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        return {"written": arguments["value"]}
+
+
+def _approval_tool_registry() -> ToolRegistry:
+    registry = create_default_tool_registry()
+    registry.register(ExternalWriteTool())
+    return registry

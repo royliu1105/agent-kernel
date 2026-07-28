@@ -7,6 +7,7 @@ from typing import Any
 from kernel_core import RiskLevel
 
 from kernel_tools.models import ToolMetadata
+from kernel_tools.registry import ToolRegistry
 
 
 class EchoTool:
@@ -41,3 +42,11 @@ class EchoTool:
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
         message = arguments["message"]
         return {"message": message}
+
+
+def create_default_tool_registry() -> ToolRegistry:
+    """Return the default safe built-in tools for local runtime execution."""
+
+    registry = ToolRegistry()
+    registry.register(EchoTool())
+    return registry

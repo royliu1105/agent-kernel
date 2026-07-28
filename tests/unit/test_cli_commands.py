@@ -137,6 +137,35 @@ def test_run_queue_and_cancel_cli_use_transition_endpoints(
     ]
 
 
+def test_run_resume_cli_uses_resume_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": path.split("/")[3], "status": "succeeded"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    run_id = "00000000-0000-0000-0000-000000000005"
+    approval_id = "00000000-0000-0000-0000-000000000006"
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        ["run", "resume", run_id, "--approval-id", approval_id],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        ("POST", f"/v1/runs/{run_id}/resume", {"approval_id": approval_id}),
+    ]
+    assert '"status": "succeeded"' in result.output
+
+
 def test_approval_cli_uses_approval_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, str, dict[str, object] | None]] = []
 

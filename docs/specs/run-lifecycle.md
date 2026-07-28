@@ -59,6 +59,7 @@ Initial lifecycle:
 created -> queued -> running -> succeeded
 created -> queued -> running -> failed
 created -> queued -> running -> waiting_approval -> resuming -> running -> succeeded
+created -> queued -> running -> waiting_approval -> failed
 created -> queued -> running -> canceled
 ```
 
@@ -69,7 +70,7 @@ Day 3 transition table:
 | `created` | `queued`, `canceled` |
 | `queued` | `running`, `canceled` |
 | `running` | `waiting_approval`, `succeeded`, `failed`, `canceled` |
-| `waiting_approval` | `resuming`, `canceled` |
+| `waiting_approval` | `resuming`, `failed`, `canceled` |
 | `resuming` | `running`, `canceled` |
 | `succeeded` | terminal |
 | `failed` | terminal |
@@ -90,6 +91,8 @@ Day 3 transition events:
 | --- | --- |
 | `queued` | `run_queued` |
 | `running` | `run_started` |
+| `waiting_approval` | `run_waiting_approval` |
+| `resuming` | `run_resuming` |
 | `succeeded` | `run_completed` |
 | `failed` | `run_failed` |
 | `canceled` | `run_canceled` |
@@ -125,6 +128,20 @@ Day 6 worker semantics:
 - Redis is not used as the Day 6 queue. Redis-backed scheduling, leasing, heartbeats, and
   distributed concurrency are explicitly deferred.
 
+Day 12 approval interrupt/resume semantics:
+
+- `RunExecutionService` supports explicit single-tool input under `input.tool`.
+- If no `input.tool` is present, the model-call execution path remains unchanged.
+- Safe explicit tools execute during the initial queued run execution path and complete the run.
+- Approval-required tools persist a tool call and approval, then transition the run to
+  `waiting_approval`.
+- The worker still polls only `queued` runs, so waiting runs are durable interrupt points.
+- `POST /v1/runs/{run_id}/resume` resumes a waiting run after approval is approved.
+- Resume transitions `waiting_approval -> resuming -> running`, executes the persisted tool call,
+  then completes the run.
+- Rejected approval resume transitions the run to `failed` with `error_type = approval_rejected`.
+- Retry/fallback remains deferred.
+
 ## API / CLI
 
 Day 2 API:
@@ -142,6 +159,12 @@ Day 3 API:
 ```http
 POST /v1/runs/{run_id}/queue
 POST /v1/runs/{run_id}/cancel
+```
+
+Day 12 API:
+
+```http
+POST /v1/runs/{run_id}/resume
 ```
 
 Expected later API:
@@ -168,6 +191,12 @@ Day 7 CLI:
 ```bash
 agent-kernel run queue <run-id>
 agent-kernel run cancel <run-id>
+```
+
+Day 12 CLI:
+
+```bash
+agent-kernel run resume <run-id> --approval-id <approval-id>
 ```
 
 Day 6 worker CLI:

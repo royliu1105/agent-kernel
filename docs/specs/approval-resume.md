@@ -51,6 +51,22 @@ Day 11 approval persistence baseline:
 - Day 11 CLI exposes list, inspect, approve, and reject commands.
 - Day 11 does not resume runs or stop rejected runs yet.
 
+Day 12 interrupt/resume baseline:
+
+- Runtime execution supports explicit single-tool run input through `input.tool`.
+- Risky explicit tools create a persisted tool call, record the policy decision, create an approval,
+  and transition the run to `waiting_approval`.
+- Waiting runs are not picked again by the queued-run worker.
+- Approved approvals can resume the run through runtime, API, and CLI.
+- Resume transitions `waiting_approval -> resuming -> running`.
+- Resume executes the original persisted tool call arguments. Resume callers cannot supply new
+  arguments.
+- Successful resumed tool execution completes the run with output under `output.tool`.
+- Rejected approvals fail the waiting run with `error_type = approval_rejected`.
+- Requested, missing, unrelated, expired, or canceled approvals cannot resume execution.
+- Day 12 remains explicit-tool only. Provider-native function calling and model-generated tool call
+  parsing are deferred.
+
 ## State Transitions
 
 Initial flow:
@@ -71,6 +87,16 @@ approval_approved
 approval_rejected
 ```
 
+Day 12 run transition events:
+
+```text
+run_waiting_approval
+run_resuming
+run_started
+run_completed
+run_failed
+```
+
 ## API / CLI
 
 Expected API:
@@ -80,6 +106,7 @@ GET  /v1/approvals
 GET  /v1/approvals/{approval_id}
 POST /v1/approvals/{approval_id}/approve
 POST /v1/approvals/{approval_id}/reject
+POST /v1/runs/{run_id}/resume
 ```
 
 Expected CLI:
@@ -89,6 +116,7 @@ agent-kernel approval list
 agent-kernel approval inspect <approval-id>
 agent-kernel approval approve <approval-id>
 agent-kernel approval reject <approval-id> --reason "Not allowed"
+agent-kernel run resume <run-id> --approval-id <approval-id>
 ```
 
 ## Failure Modes
@@ -100,6 +128,8 @@ agent-kernel approval reject <approval-id> --reason "Not allowed"
 - Run is canceled while waiting.
 - Tool arguments change after approval request.
 - Worker crashes while run is waiting.
+- Resume is attempted before approval is decided.
+- Resume references an approval from another run.
 
 ## Security
 
@@ -126,6 +156,7 @@ agent-kernel approval reject <approval-id> --reason "Not allowed"
 - Approval resumes run.
 - Rejection stops run safely.
 - Duplicate decision is rejected.
+- Resume uses persisted tool call arguments.
 - Approval wait time is recorded.
 
 ## Acceptance Criteria

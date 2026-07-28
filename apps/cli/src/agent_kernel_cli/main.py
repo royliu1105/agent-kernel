@@ -159,6 +159,32 @@ def cancel_run(
     _echo_json(response)
 
 
+@run_app.command("resume")
+def resume_run(
+    run_id: Annotated[UUID, typer.Argument(help="Run ID.")],
+    approval_id: Annotated[
+        UUID | None,
+        typer.Option("--approval-id", help="Approval ID to resume from."),
+    ] = None,
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Resume a waiting run through the API."""
+
+    payload: dict[str, object] = {}
+    if approval_id is not None:
+        payload["approval_id"] = str(approval_id)
+    response = _request_json(
+        "POST",
+        f"/v1/runs/{run_id}/resume",
+        api_url=_resolve_api_url(api_url),
+        json_payload=payload,
+    )
+    _echo_json(response)
+
+
 @approval_app.command("list")
 def list_approvals(
     api_url: Annotated[

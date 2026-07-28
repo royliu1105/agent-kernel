@@ -36,6 +36,10 @@ class RunCreateRequest(ApiModel):
     input: dict[str, Any] = Field(default_factory=dict)
 
 
+class RunResumeRequest(ApiModel):
+    approval_id: UUID | None = None
+
+
 class RunResponse(ApiModel):
     id: UUID
     agent_id: UUID
