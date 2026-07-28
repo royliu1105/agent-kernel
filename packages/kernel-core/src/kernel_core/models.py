@@ -63,6 +63,9 @@ class RunEventType(StrEnum):
     STEP_CREATED = "step_created"
     STEP_UPDATED = "step_updated"
     TOOL_CALL_REQUESTED = "tool_call_requested"
+    POLICY_EVALUATED = "policy_evaluated"
+    TOOL_CALL_COMPLETED = "tool_call_completed"
+    TOOL_CALL_FAILED = "tool_call_failed"
     APPROVAL_REQUESTED = "approval_requested"
 
 

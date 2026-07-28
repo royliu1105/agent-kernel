@@ -87,6 +87,26 @@ Day 9 policy-aware execution:
 - Approval-required tools fail before execution until approval persistence exists.
 - Policy decisions are currently in-memory and typed; persistence and audit events are deferred.
 
+Day 10 persistence baseline:
+
+- `tool_calls` stores requested tool calls and execution outcomes.
+- `ToolCallRepository` persists:
+  - requested tool calls
+  - policy checked state
+  - denied state
+  - waiting approval state
+  - successful result
+  - failure error details
+- Tool calls can be listed by run.
+- Tool call audit timeline uses persisted `run_events`.
+- Day 10 event types:
+  - `tool_call_requested`
+  - `policy_evaluated`
+  - `tool_call_completed`
+  - `tool_call_failed`
+- Day 10 does not expose tool call API endpoints yet.
+- Day 10 does not integrate tool calls into the agent run loop yet.
+
 ## State Transitions
 
 Initial tool call states:
@@ -126,6 +146,8 @@ Tool calls are inspected through run detail and run events.
 - Tool requires approval.
 - Tool is denied by policy.
 - Approval-required tool is requested before approval persistence exists.
+- Tool call persistence fails.
+- Tool call references a missing run.
 
 ## Security
 
@@ -156,6 +178,10 @@ Tool calls are inspected through run detail and run events.
 - Risky tool pauses for approval.
 - Denied tool is not executed.
 - Approval-required tool is not executed.
+- Tool call is persisted as requested.
+- Policy decision updates tool call status.
+- Tool success and failure are persisted.
+- Tool call audit events are appended to run timeline.
 - Tool timeout is recorded.
 - Tool error is persisted.
 

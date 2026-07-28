@@ -125,7 +125,7 @@ Checklist:
 - [ ] Approval CLI.
 - [ ] Interrupt/resume.
 - [ ] Retry/fallback.
-- [ ] Audit log.
+- [~] Audit log.
 
 Acceptance:
 
@@ -134,7 +134,7 @@ Acceptance:
 - [ ] Approval resumes run.
 - [ ] Rejection stops safely.
 - [ ] Tool failure retries where safe.
-- [ ] Tool calls and decisions are auditable.
+- [~] Tool calls and decisions are auditable.
 
 ### Phase 3: Day 13-18 - RAG and Memory
 

@@ -77,6 +77,16 @@ Day 9 policy baseline:
 - Approval-required tools are not executed on Day 9.
 - Day 9 does not persist approvals, create audit events, or move runs to `waiting_approval`.
 
+Day 10 audit baseline:
+
+- Policy decisions can be recorded against persisted tool calls.
+- `policy_evaluated` run events capture decision, reason, status, and approval requirement.
+- `tool_call_requested`, `tool_call_completed`, and `tool_call_failed` events provide the first
+  tool audit timeline.
+- Day 10 audit is scoped to run events and tool call records.
+- A separate audit event table and external audit sink are deferred.
+- Approval decision audit is deferred until approval persistence exists.
+
 ## State Transitions
 
 Policy flow:
@@ -157,6 +167,8 @@ MVP requirements:
 - Write and network tools require approval by default.
 - Explicit tool-name rules override risk-level defaults.
 - Approval-required tools are not executed before approval exists.
+- Policy decisions are visible in the run timeline.
+- Tool call success and failure are visible in the run timeline.
 - User without permission cannot approve.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.

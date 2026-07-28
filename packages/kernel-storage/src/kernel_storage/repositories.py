@@ -5,11 +5,22 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from kernel_core import Agent, AgentStatus, Run, RunEvent, RunEventType, RunStatus, utc_now
+from kernel_core import (
+    Agent,
+    AgentStatus,
+    RiskLevel,
+    Run,
+    RunEvent,
+    RunEventType,
+    RunStatus,
+    ToolCall,
+    ToolCallStatus,
+    utc_now,
+)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from kernel_storage.models import AgentRecord, RunEventRecord, RunRecord
+from kernel_storage.models import AgentRecord, RunEventRecord, RunRecord, ToolCallRecord
 
 
 class AgentRepository:
@@ -227,6 +238,188 @@ class RunRepository:
         )
 
 
+class ToolCallRepository:
+    """Persistence operations for tool calls and audit timeline events."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create_requested(
+        self,
+        *,
+        run_id: UUID,
+        tool_name: str,
+        arguments: dict[str, Any],
+        risk_level: RiskLevel,
+        requires_approval: bool = False,
+        step_id: UUID | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> ToolCall | None:
+        run = self._session.get(RunRecord, str(run_id))
+        if run is None:
+            return None
+
+        tool_call = ToolCall(
+            run_id=run_id,
+            step_id=step_id,
+            tool_name=tool_name,
+            arguments=arguments,
+            risk_level=risk_level,
+            requires_approval=requires_approval,
+            trace_id=trace_id or run.trace_id,
+            span_id=span_id,
+        )
+        self._session.add(_tool_call_to_record(tool_call))
+        self._add_event_record(
+            run_id=run_id,
+            event_type=RunEventType.TOOL_CALL_REQUESTED,
+            payload={
+                "tool_call_id": str(tool_call.id),
+                "tool_name": tool_name,
+                "risk_level": risk_level.value,
+                "requires_approval": requires_approval,
+            },
+            trace_id=tool_call.trace_id,
+        )
+        self._session.commit()
+        return tool_call
+
+    def get(self, tool_call_id: UUID) -> ToolCall | None:
+        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        if record is None:
+            return None
+        return _tool_call_from_record(record)
+
+    def list_for_run(self, run_id: UUID) -> list[ToolCall]:
+        statement = (
+            select(ToolCallRecord)
+            .where(ToolCallRecord.run_id == str(run_id))
+            .order_by(ToolCallRecord.created_at)
+        )
+        return [_tool_call_from_record(record) for record in self._session.scalars(statement)]
+
+    def record_policy_decision(
+        self,
+        *,
+        tool_call_id: UUID,
+        decision: str,
+        reason: str,
+        status: ToolCallStatus,
+        requires_approval: bool = False,
+    ) -> ToolCall | None:
+        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        if record is None:
+            return None
+
+        record.status = status.value
+        record.requires_approval = requires_approval
+        self._add_event_record(
+            run_id=UUID(record.run_id),
+            event_type=RunEventType.POLICY_EVALUATED,
+            payload={
+                "tool_call_id": record.id,
+                "tool_name": record.tool_name,
+                "decision": decision,
+                "reason": reason,
+                "status": status.value,
+                "requires_approval": requires_approval,
+            },
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _tool_call_from_record(record)
+
+    def complete(
+        self,
+        *,
+        tool_call_id: UUID,
+        result: dict[str, Any],
+        latency_ms: int | None = None,
+    ) -> ToolCall | None:
+        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        if record is None:
+            return None
+
+        record.status = ToolCallStatus.SUCCEEDED.value
+        record.result = result
+        record.latency_ms = latency_ms
+        self._add_event_record(
+            run_id=UUID(record.run_id),
+            event_type=RunEventType.TOOL_CALL_COMPLETED,
+            payload={
+                "tool_call_id": record.id,
+                "tool_name": record.tool_name,
+                "status": ToolCallStatus.SUCCEEDED.value,
+                "latency_ms": latency_ms,
+            },
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _tool_call_from_record(record)
+
+    def fail(
+        self,
+        *,
+        tool_call_id: UUID,
+        error_type: str,
+        error_message: str,
+        latency_ms: int | None = None,
+    ) -> ToolCall | None:
+        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        if record is None:
+            return None
+
+        record.status = ToolCallStatus.FAILED.value
+        record.error_type = error_type
+        record.error_message = error_message
+        record.latency_ms = latency_ms
+        self._add_event_record(
+            run_id=UUID(record.run_id),
+            event_type=RunEventType.TOOL_CALL_FAILED,
+            payload={
+                "tool_call_id": record.id,
+                "tool_name": record.tool_name,
+                "status": ToolCallStatus.FAILED.value,
+                "error_type": error_type,
+                "error_message": error_message,
+                "latency_ms": latency_ms,
+            },
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _tool_call_from_record(record)
+
+    def _next_event_sequence(self, run_id: UUID) -> int:
+        statement = select(func.max(RunEventRecord.sequence)).where(
+            RunEventRecord.run_id == str(run_id)
+        )
+        current = self._session.scalar(statement)
+        if current is None:
+            return 1
+        return int(current) + 1
+
+    def _add_event_record(
+        self,
+        *,
+        run_id: UUID,
+        event_type: RunEventType,
+        payload: dict[str, Any],
+        trace_id: str | None,
+    ) -> None:
+        sequence = self._next_event_sequence(run_id)
+        self._session.add(
+            RunEventRecord(
+                id=str(RunEvent(run_id=run_id, sequence=sequence, type=event_type).id),
+                run_id=str(run_id),
+                sequence=sequence,
+                type=event_type.value,
+                payload=payload,
+                trace_id=trace_id,
+            )
+        )
+
+
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
@@ -319,5 +512,47 @@ def _run_event_from_record(record: RunEventRecord) -> RunEvent:
         type=RunEventType(record.type),
         payload=record.payload,
         trace_id=record.trace_id,
+        created_at=record.created_at,
+    )
+
+
+def _tool_call_to_record(tool_call: ToolCall) -> ToolCallRecord:
+    return ToolCallRecord(
+        id=str(tool_call.id),
+        run_id=str(tool_call.run_id),
+        step_id=str(tool_call.step_id) if tool_call.step_id is not None else None,
+        tool_name=tool_call.tool_name,
+        arguments=tool_call.arguments,
+        result=tool_call.result,
+        status=tool_call.status.value,
+        risk_level=tool_call.risk_level.value,
+        requires_approval=tool_call.requires_approval,
+        approval_id=str(tool_call.approval_id) if tool_call.approval_id is not None else None,
+        trace_id=tool_call.trace_id,
+        span_id=tool_call.span_id,
+        error_type=tool_call.error_type,
+        error_message=tool_call.error_message,
+        latency_ms=tool_call.latency_ms,
+        created_at=tool_call.created_at,
+    )
+
+
+def _tool_call_from_record(record: ToolCallRecord) -> ToolCall:
+    return ToolCall(
+        id=UUID(record.id),
+        run_id=UUID(record.run_id),
+        step_id=UUID(record.step_id) if record.step_id is not None else None,
+        tool_name=record.tool_name,
+        arguments=record.arguments,
+        result=record.result,
+        status=ToolCallStatus(record.status),
+        risk_level=RiskLevel(record.risk_level),
+        requires_approval=record.requires_approval,
+        approval_id=UUID(record.approval_id) if record.approval_id is not None else None,
+        trace_id=record.trace_id,
+        span_id=record.span_id,
+        error_type=record.error_type,
+        error_message=record.error_message,
+        latency_ms=record.latency_ms,
         created_at=record.created_at,
     )

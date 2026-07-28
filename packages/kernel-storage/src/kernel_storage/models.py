@@ -5,8 +5,17 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from kernel_core import AgentStatus, RunEventType, RunStatus, RunStepStatus, RunStepType, utc_now
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Index, Integer, String
+from kernel_core import (
+    AgentStatus,
+    RiskLevel,
+    RunEventType,
+    RunStatus,
+    RunStepStatus,
+    RunStepType,
+    ToolCallStatus,
+    utc_now,
+)
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kernel_storage.base import Base
@@ -68,6 +77,9 @@ class RunRecord(Base):
     events: Mapped[list[RunEventRecord]] = relationship(
         back_populates="run", cascade="all, delete-orphan", order_by="RunEventRecord.sequence"
     )
+    tool_calls: Mapped[list[ToolCallRecord]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
 
 
 class RunStepRecord(Base):
@@ -101,6 +113,38 @@ class RunStepRecord(Base):
     )
 
     run: Mapped[RunRecord] = relationship(back_populates="steps")
+
+
+class ToolCallRecord(Base):
+    __tablename__ = "tool_calls"
+    __table_args__ = (Index("ix_tool_calls_run_id_created_at", "run_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    step_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    tool_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    arguments: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=ToolCallStatus.REQUESTED.value
+    )
+    risk_level: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=RiskLevel.READ_ONLY.value
+    )
+    requires_approval: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    approval_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    span_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    error_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    run: Mapped[RunRecord] = relationship(back_populates="tool_calls")
 
 
 class RunEventRecord(Base):
