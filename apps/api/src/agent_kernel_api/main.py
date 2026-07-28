@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import Annotated
 from uuid import UUID
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, status
-from kernel_core import Agent, Run, RunEvent
+from fastapi import Depends, FastAPI, HTTPException, Query, status
+from kernel_core import Agent, Approval, ApprovalStatus, Run, RunEvent
 from kernel_runtime import InvalidRunTransitionError, RunStateMachine
 from kernel_storage import (
     AgentRepository,
+    ApprovalDecisionError,
+    ApprovalRepository,
     RunRepository,
     create_engine_for_url,
     create_session_factory,
@@ -20,6 +23,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from agent_kernel_api.schemas import (
     AgentCreateRequest,
     AgentResponse,
+    ApprovalApproveRequest,
+    ApprovalRejectRequest,
+    ApprovalResponse,
     RunCreateRequest,
     RunEventResponse,
     RunResponse,
@@ -162,6 +168,70 @@ def create_app(session_factory: sessionmaker[Session] | None = None) -> FastAPI:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         return _run_response(updated)
 
+    @app.get("/v1/approvals", response_model=list[ApprovalResponse], tags=["approvals"])
+    def list_approvals(
+        status_filter: Annotated[ApprovalStatus | None, Query(alias="status")] = None,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[ApprovalResponse]:
+        approvals = ApprovalRepository(session).list(status=status_filter)
+        return [_approval_response(approval) for approval in approvals]
+
+    @app.get(
+        "/v1/approvals/{approval_id}",
+        response_model=ApprovalResponse,
+        tags=["approvals"],
+    )
+    def get_approval(
+        approval_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> ApprovalResponse:
+        approval = ApprovalRepository(session).get(approval_id)
+        if approval is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
+        return _approval_response(approval)
+
+    @app.post(
+        "/v1/approvals/{approval_id}/approve",
+        response_model=ApprovalResponse,
+        tags=["approvals"],
+    )
+    def approve_approval(
+        approval_id: UUID,
+        request: ApprovalApproveRequest | None = None,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> ApprovalResponse:
+        try:
+            approval = ApprovalRepository(session).approve(
+                approval_id=approval_id,
+                decision_note=request.decision_note if request is not None else None,
+            )
+        except ApprovalDecisionError as error:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        if approval is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
+        return _approval_response(approval)
+
+    @app.post(
+        "/v1/approvals/{approval_id}/reject",
+        response_model=ApprovalResponse,
+        tags=["approvals"],
+    )
+    def reject_approval(
+        approval_id: UUID,
+        request: ApprovalRejectRequest,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> ApprovalResponse:
+        try:
+            approval = ApprovalRepository(session).reject(
+                approval_id=approval_id,
+                decision_note=request.reason,
+            )
+        except ApprovalDecisionError as error:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        if approval is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
+        return _approval_response(approval)
+
     return app
 
 
@@ -215,4 +285,20 @@ def _run_event_response(event: RunEvent) -> RunEventResponse:
         payload=event.payload,
         trace_id=event.trace_id,
         created_at=event.created_at,
+    )
+
+
+def _approval_response(approval: Approval) -> ApprovalResponse:
+    return ApprovalResponse(
+        id=approval.id,
+        run_id=approval.run_id,
+        tool_call_id=approval.tool_call_id,
+        status=approval.status,
+        reason=approval.reason,
+        requested_by=approval.requested_by,
+        reviewed_by=approval.reviewed_by,
+        decision_note=approval.decision_note,
+        trace_id=approval.trace_id,
+        requested_at=approval.requested_at,
+        resolved_at=approval.resolved_at,
     )

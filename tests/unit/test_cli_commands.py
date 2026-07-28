@@ -135,3 +135,47 @@ def test_run_queue_and_cancel_cli_use_transition_endpoints(
         ("POST", f"/v1/runs/{run_id}/queue"),
         ("POST", f"/v1/runs/{run_id}/cancel"),
     ]
+
+
+def test_approval_cli_uses_approval_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": "approval-1", "status": "requested"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    approval_id = "00000000-0000-0000-0000-000000000004"
+
+    list_result = runner.invoke(cli_main.app, ["approval", "list"])
+    inspect_result = runner.invoke(cli_main.app, ["approval", "inspect", approval_id])
+    approve_result = runner.invoke(
+        cli_main.app,
+        ["approval", "approve", approval_id, "--note", "Looks safe."],
+    )
+    reject_result = runner.invoke(
+        cli_main.app,
+        ["approval", "reject", approval_id, "--reason", "Too risky."],
+    )
+
+    assert list_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert approve_result.exit_code == 0
+    assert reject_result.exit_code == 0
+    assert calls == [
+        ("GET", "/v1/approvals", None),
+        ("GET", f"/v1/approvals/{approval_id}", None),
+        (
+            "POST",
+            f"/v1/approvals/{approval_id}/approve",
+            {"decision_note": "Looks safe."},
+        ),
+        ("POST", f"/v1/approvals/{approval_id}/reject", {"reason": "Too risky."}),
+    ]

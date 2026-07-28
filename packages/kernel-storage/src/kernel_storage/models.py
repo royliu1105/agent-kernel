@@ -7,6 +7,7 @@ from typing import Any
 
 from kernel_core import (
     AgentStatus,
+    ApprovalStatus,
     RiskLevel,
     RunEventType,
     RunStatus,
@@ -80,6 +81,9 @@ class RunRecord(Base):
     tool_calls: Mapped[list[ToolCallRecord]] = relationship(
         back_populates="run", cascade="all, delete-orphan"
     )
+    approvals: Mapped[list[ApprovalRecord]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
 
 
 class RunStepRecord(Base):
@@ -145,6 +149,33 @@ class ToolCallRecord(Base):
     )
 
     run: Mapped[RunRecord] = relationship(back_populates="tool_calls")
+
+
+class ApprovalRecord(Base):
+    __tablename__ = "approvals"
+    __table_args__ = (Index("ix_approvals_status_requested_at", "status", "requested_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tool_call_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("tool_calls.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=ApprovalStatus.REQUESTED.value
+    )
+    reason: Mapped[str] = mapped_column(String(4000), nullable=False)
+    requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    reviewed_by: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    decision_note: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    requested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    run: Mapped[RunRecord] = relationship(back_populates="approvals")
 
 
 class RunEventRecord(Base):

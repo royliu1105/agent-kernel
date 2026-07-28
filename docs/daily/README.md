@@ -58,3 +58,4 @@ day-03.md
 - [Day 08: Tool Interface and Safe Execution Foundation](day-08.md)
 - [Day 09: Policy Decisions for Tool Execution](day-09.md)
 - [Day 10: Persisted Tool Calls and Audit Timeline](day-10.md)
+- [Day 11: Approval Records, API, and CLI](day-11.md)

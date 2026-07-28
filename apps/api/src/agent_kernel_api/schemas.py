@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from kernel_core import AgentStatus, RunEventType, RunStatus
+from kernel_core import AgentStatus, ApprovalStatus, RunEventType, RunStatus
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -61,3 +61,25 @@ class RunEventResponse(ApiModel):
     payload: dict[str, Any]
     trace_id: str | None
     created_at: datetime
+
+
+class ApprovalResponse(ApiModel):
+    id: UUID
+    run_id: UUID
+    tool_call_id: UUID
+    status: ApprovalStatus
+    reason: str
+    requested_by: UUID | None
+    reviewed_by: UUID | None
+    decision_note: str | None
+    trace_id: str | None
+    requested_at: datetime
+    resolved_at: datetime | None
+
+
+class ApprovalApproveRequest(ApiModel):
+    decision_note: str | None = Field(default=None, max_length=4000)
+
+
+class ApprovalRejectRequest(ApiModel):
+    reason: str = Field(min_length=1, max_length=4000)

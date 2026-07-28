@@ -16,6 +16,7 @@ from agent_kernel_cli import __version__
 app = typer.Typer(help="Agent Kernel developer CLI.")
 agent_app = typer.Typer(help="Manage agents.")
 run_app = typer.Typer(help="Manage runs.")
+approval_app = typer.Typer(help="Manage approvals.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
@@ -158,6 +159,80 @@ def cancel_run(
     _echo_json(response)
 
 
+@approval_app.command("list")
+def list_approvals(
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List approvals through the API."""
+
+    response = _request_json("GET", "/v1/approvals", api_url=_resolve_api_url(api_url))
+    _echo_json(response)
+
+
+@approval_app.command("inspect")
+def inspect_approval(
+    approval_id: Annotated[UUID, typer.Argument(help="Approval ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Inspect one approval through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/approvals/{approval_id}",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@approval_app.command("approve")
+def approve_approval(
+    approval_id: Annotated[UUID, typer.Argument(help="Approval ID.")],
+    decision_note: Annotated[
+        str | None,
+        typer.Option("--note", help="Optional approval decision note."),
+    ] = None,
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Approve an approval through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/approvals/{approval_id}/approve",
+        api_url=_resolve_api_url(api_url),
+        json_payload={"decision_note": decision_note},
+    )
+    _echo_json(response)
+
+
+@approval_app.command("reject")
+def reject_approval(
+    approval_id: Annotated[UUID, typer.Argument(help="Approval ID.")],
+    reason: Annotated[str, typer.Option("--reason", help="Rejection reason.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Reject an approval through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/approvals/{approval_id}/reject",
+        api_url=_resolve_api_url(api_url),
+        json_payload={"reason": reason},
+    )
+    _echo_json(response)
+
+
 def _resolve_api_url(api_url: str) -> str:
     return os.getenv(API_URL_ENV, api_url).rstrip("/")
 
@@ -211,3 +286,4 @@ def _echo_json(payload: object) -> None:
 
 app.add_typer(agent_app, name="agent")
 app.add_typer(run_app, name="run")
+app.add_typer(approval_app, name="approval")

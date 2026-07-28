@@ -87,6 +87,15 @@ Day 10 audit baseline:
 - A separate audit event table and external audit sink are deferred.
 - Approval decision audit is deferred until approval persistence exists.
 
+Day 11 approval audit baseline:
+
+- Approval requests append `approval_requested`.
+- Approval decisions append `approval_approved` or `approval_rejected`.
+- Approval decisions record reviewer and decision note fields for future auth integration.
+- Duplicate approval decisions are rejected.
+- Day 11 still uses run events as the audit timeline.
+- A dedicated audit table remains deferred.
+
 ## State Transitions
 
 Policy flow:

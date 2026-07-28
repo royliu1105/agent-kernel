@@ -67,6 +67,8 @@ class RunEventType(StrEnum):
     TOOL_CALL_COMPLETED = "tool_call_completed"
     TOOL_CALL_FAILED = "tool_call_failed"
     APPROVAL_REQUESTED = "approval_requested"
+    APPROVAL_APPROVED = "approval_approved"
+    APPROVAL_REJECTED = "approval_rejected"
 
 
 class ToolCallStatus(StrEnum):

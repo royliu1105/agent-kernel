@@ -38,6 +38,19 @@ expired
 canceled
 ```
 
+Day 11 approval persistence baseline:
+
+- `approvals` stores human approval requests and decisions.
+- Approval requests are created for persisted tool calls that require approval.
+- Requested approvals can be listed and inspected.
+- Requested approvals can be approved.
+- Requested approvals can be rejected with a reason.
+- Duplicate decisions are rejected.
+- Approval request and decision events are appended to the run timeline.
+- Day 11 API exposes list, get, approve, and reject endpoints.
+- Day 11 CLI exposes list, inspect, approve, and reject commands.
+- Day 11 does not resume runs or stop rejected runs yet.
+
 ## State Transitions
 
 Initial flow:
@@ -49,6 +62,14 @@ approval_rejected -> run_failed_or_stopped
 ```
 
 Detailed resume semantics will be completed during Phase 2 implementation.
+
+Day 11 decision events:
+
+```text
+approval_requested
+approval_approved
+approval_rejected
+```
 
 ## API / CLI
 
@@ -65,6 +86,7 @@ Expected CLI:
 
 ```bash
 agent-kernel approval list
+agent-kernel approval inspect <approval-id>
 agent-kernel approval approve <approval-id>
 agent-kernel approval reject <approval-id> --reason "Not allowed"
 ```
@@ -73,6 +95,8 @@ agent-kernel approval reject <approval-id> --reason "Not allowed"
 
 - Approval is rejected.
 - Approval is decided twice.
+- Approval references a missing tool call.
+- Approval is missing.
 - Run is canceled while waiting.
 - Tool arguments change after approval request.
 - Worker crashes while run is waiting.
@@ -95,6 +119,9 @@ agent-kernel approval reject <approval-id> --reason "Not allowed"
 ## Test Plan
 
 - Risky tool creates approval.
+- Approval can be listed and inspected.
+- Approval decision is recorded once.
+- Duplicate decision is rejected.
 - Run pauses while waiting.
 - Approval resumes run.
 - Rejection stops run safely.

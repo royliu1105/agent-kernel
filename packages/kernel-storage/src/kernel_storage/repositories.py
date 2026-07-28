@@ -8,6 +8,8 @@ from uuid import UUID
 from kernel_core import (
     Agent,
     AgentStatus,
+    Approval,
+    ApprovalStatus,
     RiskLevel,
     Run,
     RunEvent,
@@ -20,7 +22,17 @@ from kernel_core import (
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from kernel_storage.models import AgentRecord, RunEventRecord, RunRecord, ToolCallRecord
+from kernel_storage.models import (
+    AgentRecord,
+    ApprovalRecord,
+    RunEventRecord,
+    RunRecord,
+    ToolCallRecord,
+)
+
+
+class ApprovalDecisionError(ValueError):
+    """Raised when an approval cannot be decided."""
 
 
 class AgentRepository:
@@ -420,6 +432,157 @@ class ToolCallRepository:
         )
 
 
+class ApprovalRepository:
+    """Persistence operations for approvals and decision audit events."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create_requested(
+        self,
+        *,
+        tool_call_id: UUID,
+        reason: str,
+        requested_by: UUID | None = None,
+    ) -> Approval | None:
+        tool_call = self._session.get(ToolCallRecord, str(tool_call_id))
+        if tool_call is None:
+            return None
+
+        approval = Approval(
+            run_id=UUID(tool_call.run_id),
+            tool_call_id=tool_call_id,
+            reason=reason,
+            requested_by=requested_by,
+            trace_id=tool_call.trace_id,
+        )
+        self._session.add(_approval_to_record(approval))
+        tool_call.requires_approval = True
+        tool_call.status = ToolCallStatus.WAITING_APPROVAL.value
+        tool_call.approval_id = str(approval.id)
+        self._add_event_record(
+            run_id=approval.run_id,
+            event_type=RunEventType.APPROVAL_REQUESTED,
+            payload={
+                "approval_id": str(approval.id),
+                "tool_call_id": str(tool_call_id),
+                "tool_name": tool_call.tool_name,
+                "reason": reason,
+                "status": approval.status.value,
+            },
+            trace_id=approval.trace_id,
+        )
+        self._session.commit()
+        return approval
+
+    def list(self, *, status: ApprovalStatus | None = None) -> list[Approval]:
+        statement = select(ApprovalRecord).order_by(ApprovalRecord.requested_at)
+        if status is not None:
+            statement = statement.where(ApprovalRecord.status == status.value)
+        return [_approval_from_record(record) for record in self._session.scalars(statement)]
+
+    def get(self, approval_id: UUID) -> Approval | None:
+        record = self._session.get(ApprovalRecord, str(approval_id))
+        if record is None:
+            return None
+        return _approval_from_record(record)
+
+    def approve(
+        self,
+        *,
+        approval_id: UUID,
+        reviewed_by: UUID | None = None,
+        decision_note: str | None = None,
+    ) -> Approval | None:
+        return self._decide(
+            approval_id=approval_id,
+            status=ApprovalStatus.APPROVED,
+            reviewed_by=reviewed_by,
+            decision_note=decision_note,
+            event_type=RunEventType.APPROVAL_APPROVED,
+        )
+
+    def reject(
+        self,
+        *,
+        approval_id: UUID,
+        decision_note: str,
+        reviewed_by: UUID | None = None,
+    ) -> Approval | None:
+        return self._decide(
+            approval_id=approval_id,
+            status=ApprovalStatus.REJECTED,
+            reviewed_by=reviewed_by,
+            decision_note=decision_note,
+            event_type=RunEventType.APPROVAL_REJECTED,
+        )
+
+    def _decide(
+        self,
+        *,
+        approval_id: UUID,
+        status: ApprovalStatus,
+        reviewed_by: UUID | None,
+        decision_note: str | None,
+        event_type: RunEventType,
+    ) -> Approval | None:
+        record = self._session.get(ApprovalRecord, str(approval_id))
+        if record is None:
+            return None
+        if ApprovalStatus(record.status) is not ApprovalStatus.REQUESTED:
+            raise ApprovalDecisionError(
+                f"Approval {approval_id} has already been decided as {record.status}."
+            )
+
+        record.status = status.value
+        record.reviewed_by = str(reviewed_by) if reviewed_by is not None else None
+        record.decision_note = decision_note
+        record.resolved_at = utc_now()
+        self._add_event_record(
+            run_id=UUID(record.run_id),
+            event_type=event_type,
+            payload={
+                "approval_id": record.id,
+                "tool_call_id": record.tool_call_id,
+                "status": status.value,
+                "decision_note": decision_note,
+                "reviewed_by": str(reviewed_by) if reviewed_by is not None else None,
+            },
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _approval_from_record(record)
+
+    def _next_event_sequence(self, run_id: UUID) -> int:
+        statement = select(func.max(RunEventRecord.sequence)).where(
+            RunEventRecord.run_id == str(run_id)
+        )
+        current = self._session.scalar(statement)
+        if current is None:
+            return 1
+        return int(current) + 1
+
+    def _add_event_record(
+        self,
+        *,
+        run_id: UUID,
+        event_type: RunEventType,
+        payload: dict[str, Any],
+        trace_id: str | None,
+    ) -> None:
+        sequence = self._next_event_sequence(run_id)
+        self._session.add(
+            RunEventRecord(
+                id=str(RunEvent(run_id=run_id, sequence=sequence, type=event_type).id),
+                run_id=str(run_id),
+                sequence=sequence,
+                type=event_type.value,
+                payload=payload,
+                trace_id=trace_id,
+            )
+        )
+
+
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
@@ -555,4 +718,36 @@ def _tool_call_from_record(record: ToolCallRecord) -> ToolCall:
         error_message=record.error_message,
         latency_ms=record.latency_ms,
         created_at=record.created_at,
+    )
+
+
+def _approval_to_record(approval: Approval) -> ApprovalRecord:
+    return ApprovalRecord(
+        id=str(approval.id),
+        run_id=str(approval.run_id),
+        tool_call_id=str(approval.tool_call_id),
+        status=approval.status.value,
+        reason=approval.reason,
+        requested_by=str(approval.requested_by) if approval.requested_by is not None else None,
+        reviewed_by=str(approval.reviewed_by) if approval.reviewed_by is not None else None,
+        decision_note=approval.decision_note,
+        trace_id=approval.trace_id,
+        requested_at=approval.requested_at,
+        resolved_at=approval.resolved_at,
+    )
+
+
+def _approval_from_record(record: ApprovalRecord) -> Approval:
+    return Approval(
+        id=UUID(record.id),
+        run_id=UUID(record.run_id),
+        tool_call_id=UUID(record.tool_call_id),
+        status=ApprovalStatus(record.status),
+        reason=record.reason,
+        requested_by=UUID(record.requested_by) if record.requested_by is not None else None,
+        reviewed_by=UUID(record.reviewed_by) if record.reviewed_by is not None else None,
+        decision_note=record.decision_note,
+        trace_id=record.trace_id,
+        requested_at=record.requested_at,
+        resolved_at=record.resolved_at,
     )

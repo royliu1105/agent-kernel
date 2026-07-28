@@ -120,9 +120,9 @@ Checklist:
 - [x] Built-in safe tools.
 - [x] Risk levels.
 - [x] Policy engine.
-- [ ] Approval model.
-- [ ] Approval API.
-- [ ] Approval CLI.
+- [x] Approval model.
+- [x] Approval API.
+- [x] Approval CLI.
 - [ ] Interrupt/resume.
 - [ ] Retry/fallback.
 - [~] Audit log.
