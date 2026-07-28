@@ -119,7 +119,7 @@ Checklist:
 - [x] Tool executor.
 - [x] Built-in safe tools.
 - [x] Risk levels.
-- [ ] Policy engine.
+- [x] Policy engine.
 - [ ] Approval model.
 - [ ] Approval API.
 - [ ] Approval CLI.
@@ -129,7 +129,7 @@ Checklist:
 
 Acceptance:
 
-- [ ] Safe tool auto-executes.
+- [x] Safe tool auto-executes.
 - [ ] Risky tool pauses run.
 - [ ] Approval resumes run.
 - [ ] Rejection stops safely.

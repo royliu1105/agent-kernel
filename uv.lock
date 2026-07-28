@@ -424,10 +424,16 @@ version = "0.1.0"
 source = { editable = "packages/kernel-policy" }
 dependencies = [
     { name = "kernel-core" },
+    { name = "kernel-tools" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "kernel-core", editable = "packages/kernel-core" }]
+requires-dist = [
+    { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-tools", editable = "packages/kernel-tools" },
+    { name = "pydantic", specifier = ">=2.8.0" },
+]
 
 [[package]]
 name = "kernel-providers"

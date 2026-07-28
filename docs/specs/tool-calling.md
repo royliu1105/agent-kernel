@@ -79,6 +79,14 @@ Deferred from Day 8:
 - Retry/fallback.
 - Network, shell, filesystem write, or other side-effecting tools.
 
+Day 9 policy-aware execution:
+
+- `PolicyAwareToolExecutor` evaluates policy before `ToolExecutor`.
+- Allowed tools continue to schema validation and execution.
+- Denied tools fail before execution.
+- Approval-required tools fail before execution until approval persistence exists.
+- Policy decisions are currently in-memory and typed; persistence and audit events are deferred.
+
 ## State Transitions
 
 Initial tool call states:
@@ -117,6 +125,7 @@ Tool calls are inspected through run detail and run events.
 - Tool output is not a JSON object.
 - Tool requires approval.
 - Tool is denied by policy.
+- Approval-required tool is requested before approval persistence exists.
 
 ## Security
 
@@ -145,6 +154,8 @@ Tool calls are inspected through run detail and run events.
 - Tool timeout is recorded as a typed execution error.
 - Tool result size limit is enforced.
 - Risky tool pauses for approval.
+- Denied tool is not executed.
+- Approval-required tool is not executed.
 - Tool timeout is recorded.
 - Tool error is persisted.
 

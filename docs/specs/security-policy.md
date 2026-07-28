@@ -59,6 +59,24 @@ deny
 require_approval
 ```
 
+Day 9 policy baseline:
+
+- `PolicyDecisionType` defines `allow`, `deny`, and `require_approval`.
+- `PolicyDecision` records decision, reason, risk level, and tool name.
+- `ToolPolicy` contains explicit tool-name decisions and risk-level decisions.
+- `ToolPolicyEvaluator` evaluates `ToolMetadata`.
+- Explicit tool-name decisions override risk-level defaults.
+- Default risk policy:
+  - `read_only` -> `allow`
+  - `external_write` -> `require_approval`
+  - `filesystem_write` -> `require_approval`
+  - `network` -> `require_approval`
+  - `dangerous` -> `deny`
+- `PolicyAwareToolExecutor` evaluates policy before delegating to `ToolExecutor`.
+- Denied tools are not executed.
+- Approval-required tools are not executed on Day 9.
+- Day 9 does not persist approvals, create audit events, or move runs to `waiting_approval`.
+
 ## State Transitions
 
 Policy flow:
@@ -70,6 +88,14 @@ tool_call_requested -> policy_evaluated -> approval_required
 ```
 
 Detailed policy precedence will be completed during Phase 2 implementation.
+
+Day 9 precedence:
+
+```text
+explicit tool-name policy
+-> risk-level policy
+-> require_approval fallback
+```
 
 ## API / CLI
 
@@ -127,6 +153,10 @@ MVP requirements:
 - Safe tool is allowed.
 - Dangerous tool requires approval.
 - Denied tool is not executed.
+- Dangerous tool is denied by default.
+- Write and network tools require approval by default.
+- Explicit tool-name rules override risk-level defaults.
+- Approval-required tools are not executed before approval exists.
 - User without permission cannot approve.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.
