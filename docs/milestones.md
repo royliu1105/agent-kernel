@@ -113,12 +113,12 @@ Let agents call tools safely with policy checks and human approval.
 
 Checklist:
 
-- [ ] Tool interface.
-- [ ] Tool registry.
-- [ ] JSON schema validation.
-- [ ] Tool executor.
-- [ ] Built-in safe tools.
-- [ ] Risk levels.
+- [x] Tool interface.
+- [x] Tool registry.
+- [x] JSON schema validation.
+- [x] Tool executor.
+- [x] Built-in safe tools.
+- [x] Risk levels.
 - [ ] Policy engine.
 - [ ] Approval model.
 - [ ] Approval API.

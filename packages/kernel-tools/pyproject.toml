@@ -3,7 +3,11 @@ name = "kernel-tools"
 version = "0.1.0"
 description = "Tool registry and execution package for Agent Kernel."
 requires-python = ">=3.12,<3.13"
-dependencies = ["kernel-core"]
+dependencies = [
+  "jsonschema>=4.23.0",
+  "kernel-core",
+  "pydantic>=2.8.0",
+]
 
 [build-system]
 requires = ["hatchling"]

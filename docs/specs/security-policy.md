@@ -42,6 +42,15 @@ network
 dangerous
 ```
 
+Day 8 risk-level baseline:
+
+- Tools expose a `risk_level` in `ToolMetadata`.
+- The first built-in tool is `read_only`.
+- Day 8 does not make allow/deny/approval decisions.
+- Policy evaluation begins after the tool contract and executor are stable.
+- Default Day 8 tools must not perform network access, filesystem writes, shell execution, or other
+  side effects.
+
 Policy decisions:
 
 ```text
@@ -93,6 +102,7 @@ MVP requirements:
 - API key auth.
 - User/admin/service roles.
 - Tool risk levels.
+- Safe read-only tool baseline.
 - Allow/deny/require-approval decisions.
 - Tool input/output validation.
 - Tool timeout.

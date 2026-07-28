@@ -40,6 +40,45 @@ timeout_ms
 enabled
 ```
 
+Day 8 tool package baseline:
+
+- `ToolMetadata`
+- `ToolRequest`
+- `ToolResult`
+- `Tool`
+- `ToolRegistry`
+- `ToolExecutor`
+- `ToolError`
+- `EchoTool`
+
+Day 8 execution contract:
+
+- Tools implement an async `execute(arguments)` method.
+- Tool metadata carries JSON input schema, optional output schema, risk level, timeout, and enabled
+  state.
+- `ToolRegistry` owns in-memory registration and lookup.
+- Duplicate registration fails with `duplicate_tool`.
+- Unknown lookup or execution fails with `unknown_tool`.
+- `ToolExecutor` validates arguments with JSON Schema before calling the tool.
+- Invalid arguments fail with `invalid_tool_arguments` and the tool is not executed.
+- Tool exceptions are converted to `tool_execution_failed`.
+- Tool timeout is converted to `tool_timeout`.
+- Tool output must be a JSON object.
+- Tool output must be JSON serializable.
+- Tool output has a serialized size limit.
+- The first built-in tool is `EchoTool`, a deterministic `read_only` tool.
+
+Deferred from Day 8:
+
+- Provider-native tool/function calling.
+- Agent run loop integration.
+- Persisted `ToolCall` records.
+- Timeline events for tool calls.
+- Policy engine decisions.
+- Human approval.
+- Retry/fallback.
+- Network, shell, filesystem write, or other side-effecting tools.
+
 ## State Transitions
 
 Initial tool call states:
@@ -74,6 +113,8 @@ Tool calls are inspected through run detail and run events.
 - Tool times out.
 - Tool raises an error.
 - Tool output is too large.
+- Tool output is not JSON serializable.
+- Tool output is not a JSON object.
 - Tool requires approval.
 - Tool is denied by policy.
 
@@ -99,6 +140,10 @@ Tool calls are inspected through run detail and run events.
 - Valid tool call succeeds.
 - Invalid args fail before execution.
 - Unknown tool fails safely.
+- Duplicate tool registration fails safely.
+- Tool errors are converted to typed execution errors.
+- Tool timeout is recorded as a typed execution error.
+- Tool result size limit is enforced.
 - Risky tool pauses for approval.
 - Tool timeout is recorded.
 - Tool error is persisted.

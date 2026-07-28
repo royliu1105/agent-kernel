@@ -55,3 +55,4 @@ day-03.md
 - [Day 05: Model Router and OpenAI Provider Baseline](day-05.md)
 - [Day 06: Worker Execution Loop](day-06.md)
 - [Day 07: Phase 1 Runtime Closure](day-07.md)
+- [Day 08: Tool Interface and Safe Execution Foundation](day-08.md)
