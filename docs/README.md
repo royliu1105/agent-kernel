@@ -17,16 +17,17 @@ The plan is split into these documents:
 9. [Development Environment](development-environment.md): professional local Python, Docker, Node.js, IDE, and quality-tool setup.
 10. [Quickstart](quickstart.md): real local runtime path for agent/run/worker execution.
 11. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
-12. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
-13. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-14. [Development Plan](development-plan.md): 30-day v0.1 plan and daily working method.
-15. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
-16. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-17. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-18. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-19. [ADR 0002](adr/0002-storage.md): storage decision.
-20. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-21. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+12. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
+13. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
+14. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
+15. [Development Plan](development-plan.md): 30-day v0.1 plan and daily working method.
+16. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
+17. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+18. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+19. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+20. [ADR 0002](adr/0002-storage.md): storage decision.
+21. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+22. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 ## Current Baseline
 
