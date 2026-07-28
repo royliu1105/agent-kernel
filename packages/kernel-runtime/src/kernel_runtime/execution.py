@@ -7,9 +7,25 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from kernel_core import Approval, ApprovalStatus, Run, RunStatus, ToolCall, ToolCallStatus
+from kernel_core import (
+    Approval,
+    ApprovalStatus,
+    RiskLevel,
+    Run,
+    RunEventType,
+    RunStatus,
+    ToolCall,
+    ToolCallStatus,
+)
 from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
-from kernel_providers import LLMMessage, LLMProvider, LLMProviderError, LLMRequest, MessageRole
+from kernel_providers import (
+    LLMMessage,
+    LLMProvider,
+    LLMProviderError,
+    LLMRequest,
+    LLMResponse,
+    MessageRole,
+)
 from kernel_storage import ApprovalRepository, RunRepository, ToolCallRepository
 from kernel_tools import (
     ToolError,
@@ -39,6 +55,25 @@ class ExplicitToolRequest:
     arguments: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class RetryPolicy:
+    """Conservative in-process retry/fallback policy."""
+
+    provider_max_attempts: int = 2
+    tool_max_attempts: int = 2
+    retryable_provider_error_types: tuple[str, ...] = (
+        "provider_timeout",
+        "provider_unavailable",
+        "rate_limit",
+        "mock_transient",
+    )
+    retryable_tool_error_types: tuple[str, ...] = (
+        "tool_execution_failed",
+        "tool_timeout",
+    )
+    retryable_tool_risk_levels: tuple[RiskLevel, ...] = (RiskLevel.READ_ONLY,)
+
+
 class RunExecutionService:
     """Execute one queued or resumable run."""
 
@@ -50,6 +85,7 @@ class RunExecutionService:
         tool_registry: ToolRegistry | None = None,
         tool_executor: ToolExecutor | None = None,
         policy_evaluator: ToolPolicyEvaluator | None = None,
+        retry_policy: RetryPolicy | None = None,
         default_model: str = "mock:mock-default",
         state_machine: RunStateMachine | None = None,
     ) -> None:
@@ -63,6 +99,7 @@ class RunExecutionService:
         self._tool_registry = tool_registry or create_default_tool_registry()
         self._tool_executor = tool_executor or ToolExecutor(registry=self._tool_registry)
         self._policy_evaluator = policy_evaluator or ToolPolicyEvaluator()
+        self._retry_policy = retry_policy or RetryPolicy()
         self._default_model = default_model
         self._state_machine = state_machine or RunStateMachine()
 
@@ -199,7 +236,7 @@ class RunExecutionService:
             request = _request_from_run(running, default_model=self._default_model)
             if self._router is None:
                 raise RunExecutionError("Model execution requires a provider or router.")
-            route = self._router.route(request.model)
+            model_refs = _model_refs_from_run(running, default_model=self._default_model)
         except (RunExecutionError, ValueError) as error:
             return self._fail_running_run(
                 running=running,
@@ -208,18 +245,100 @@ class RunExecutionService:
                 error_message=str(error),
             )
 
-        routed_request = request.model_copy(update={"model": route.model})
-        try:
-            response = await route.provider.complete(routed_request)
-        except LLMProviderError as error:
+        last_error: LLMProviderError | None = None
+        last_provider: str | None = None
+        attempt_count = 0
+        for model_index, model_ref in enumerate(model_refs):
+            try:
+                route = self._router.route(model_ref)
+            except ValueError as error:
+                return self._fail_running_run(
+                    running=running,
+                    repository=repository,
+                    error_type=type(error).__name__,
+                    error_message=str(error),
+                )
+
+            routed_request = request.model_copy(update={"model": route.model})
+            for attempt in range(1, self._retry_policy.provider_max_attempts + 1):
+                attempt_count += 1
+                try:
+                    response = await route.provider.complete(routed_request)
+                except LLMProviderError as error:
+                    last_error = error
+                    last_provider = route.provider_name
+                    if self._should_retry_provider(error) and (
+                        attempt < self._retry_policy.provider_max_attempts
+                    ):
+                        repository.append_event(
+                            run_id=running.id,
+                            event_type=RunEventType.MODEL_CALL_RETRYING,
+                            payload={
+                                "provider": route.provider_name,
+                                "model": route.model,
+                                "model_ref": model_ref,
+                                "attempt": attempt + 1,
+                                "max_attempts": self._retry_policy.provider_max_attempts,
+                                "error_type": error.error_type,
+                                "error_message": str(error),
+                            },
+                            trace_id=running.trace_id,
+                        )
+                        continue
+                    break
+                return self._complete_model_run(
+                    running=running,
+                    repository=repository,
+                    response=response,
+                    provider=route.provider_name,
+                    model_ref=model_ref,
+                    attempt_count=attempt_count,
+                    fallback_used=model_index > 0,
+                )
+
+            if last_error is not None and not self._should_retry_provider(last_error):
+                break
+
+            next_model_ref = _next_model_ref(model_refs=model_refs, current_index=model_index)
+            if next_model_ref is not None and last_error is not None:
+                repository.append_event(
+                    run_id=running.id,
+                    event_type=RunEventType.MODEL_FALLBACK_SELECTED,
+                    payload={
+                        "from_model": model_ref,
+                        "to_model": next_model_ref,
+                        "error_type": last_error.error_type,
+                        "error_message": str(last_error),
+                    },
+                    trace_id=running.trace_id,
+                )
+
+        if last_error is None:
             return self._fail_running_run(
                 running=running,
                 repository=repository,
-                error_type=error.error_type,
-                error_message=str(error),
-                provider=route.provider_name,
+                error_type="model_execution_failed",
+                error_message="Model execution failed without a provider error.",
             )
+        return self._fail_running_run(
+            running=running,
+            repository=repository,
+            error_type=last_error.error_type,
+            error_message=str(last_error),
+            provider=last_provider,
+        )
 
+    def _complete_model_run(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+        response: LLMResponse,
+        provider: str,
+        model_ref: str,
+        attempt_count: int,
+        fallback_used: bool,
+    ) -> Run:
         succeed_transition = self._state_machine.succeed(running)
         completed = repository.complete(
             run_id=running.id,
@@ -237,6 +356,9 @@ class RunExecutionService:
                 "to_status": succeed_transition.to_status.value,
                 "provider": response.provider,
                 "model": response.model,
+                "model_ref": model_ref,
+                "attempt_count": attempt_count,
+                "fallback_used": fallback_used,
             },
         )
         if completed is None:
@@ -352,11 +474,10 @@ class RunExecutionService:
             raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
 
         try:
-            result = await self._tool_executor.execute(
-                ToolRequest(
-                    tool_name=running_tool_call.tool_name,
-                    arguments=running_tool_call.arguments,
-                )
+            result = await self._execute_tool_with_retry(
+                running=running,
+                repository=repository,
+                tool_call=running_tool_call,
             )
         except ToolError as error:
             tool_call_repository.fail(
@@ -402,6 +523,49 @@ class RunExecutionService:
         if completed is None:
             raise RunNotFoundError(f"Run {running.id} was not found.")
         return completed
+
+    async def _execute_tool_with_retry(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+        tool_call: ToolCall,
+    ) -> Any:
+        request = ToolRequest(tool_name=tool_call.tool_name, arguments=tool_call.arguments)
+        for attempt in range(1, self._retry_policy.tool_max_attempts + 1):
+            try:
+                return await self._tool_executor.execute(request)
+            except ToolError as error:
+                if self._should_retry_tool(error, tool_call) and (
+                    attempt < self._retry_policy.tool_max_attempts
+                ):
+                    repository.append_event(
+                        run_id=running.id,
+                        event_type=RunEventType.TOOL_CALL_RETRYING,
+                        payload={
+                            "tool_call_id": str(tool_call.id),
+                            "tool_name": tool_call.tool_name,
+                            "attempt": attempt + 1,
+                            "max_attempts": self._retry_policy.tool_max_attempts,
+                            "error_type": error.error_type,
+                            "error_message": str(error),
+                        },
+                        trace_id=tool_call.trace_id,
+                    )
+                    continue
+                raise
+
+        raise RunExecutionError("Tool retry loop exited without a result or error.")
+
+    def _should_retry_provider(self, error: LLMProviderError) -> bool:
+        return error.error_type in self._retry_policy.retryable_provider_error_types
+
+    def _should_retry_tool(self, error: ToolError, tool_call: ToolCall) -> bool:
+        return (
+            error.error_type in self._retry_policy.retryable_tool_error_types
+            and tool_call.risk_level in self._retry_policy.retryable_tool_risk_levels
+            and not tool_call.requires_approval
+        )
 
     def _fail_running_run(
         self,
@@ -465,6 +629,31 @@ def _request_from_run(run: Run, *, default_model: str) -> LLMRequest:
         messages=_messages_from_input(run.input),
         metadata={"run_id": str(run.id), "agent_id": str(run.agent_id)},
     )
+
+
+def _model_refs_from_run(run: Run, *, default_model: str) -> tuple[str, ...]:
+    primary_model = _string_from_input(run.input, "model", default_model)
+    raw_fallback_models = run.input.get("fallback_models", [])
+    if not isinstance(raw_fallback_models, list):
+        raise RunExecutionError("Run input field 'fallback_models' must be a list of strings.")
+
+    fallback_models: list[str] = []
+    for index, value in enumerate(raw_fallback_models):
+        if not isinstance(value, str) or value == "":
+            raise RunExecutionError(
+                f"Run input field 'fallback_models[{index}]' must be a non-empty string."
+            )
+        if value != primary_model and value not in fallback_models:
+            fallback_models.append(value)
+
+    return (primary_model, *fallback_models)
+
+
+def _next_model_ref(*, model_refs: tuple[str, ...], current_index: int) -> str | None:
+    next_index = current_index + 1
+    if next_index >= len(model_refs):
+        return None
+    return model_refs[next_index]
 
 
 def _explicit_tool_request_from_run(run: Run) -> ExplicitToolRequest | None:

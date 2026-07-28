@@ -105,6 +105,17 @@ Day 12 approval execution baseline:
 - Approval wait/resume/failure transitions are auditable through run events.
 - Auth and role enforcement remain deferred, but reviewer fields stay in approval records.
 
+Day 13 retry/fallback security baseline:
+
+- Automatic tool retry is limited to safe/read-only tools.
+- Side-effecting risk levels are not automatically retried.
+- Approval-required tools pause instead of retrying.
+- Rejected approvals fail instead of retrying.
+- Invalid tool arguments are not retried.
+- Provider retry/fallback is allowed for explicitly retryable provider errors.
+- Fallback models must be explicitly configured in run input.
+- Retry and fallback attempts are auditable through run events.
+
 ## State Transitions
 
 Policy flow:
@@ -116,6 +127,8 @@ tool_call_requested -> policy_evaluated -> approval_required
 approval_required -> approval_requested -> run_waiting_approval
 approval_approved -> run_resuming -> running
 approval_rejected -> run_failed
+retryable_safe_failure -> retry_event -> retry_attempt
+retryable_provider_failure -> retry_or_fallback_event -> retry_or_fallback_attempt
 ```
 
 Detailed policy precedence will be completed during Phase 2 implementation.

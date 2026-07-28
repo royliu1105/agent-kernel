@@ -68,9 +68,12 @@ class RunEventType(StrEnum):
     POLICY_EVALUATED = "policy_evaluated"
     TOOL_CALL_COMPLETED = "tool_call_completed"
     TOOL_CALL_FAILED = "tool_call_failed"
+    TOOL_CALL_RETRYING = "tool_call_retrying"
     APPROVAL_REQUESTED = "approval_requested"
     APPROVAL_APPROVED = "approval_approved"
     APPROVAL_REJECTED = "approval_rejected"
+    MODEL_CALL_RETRYING = "model_call_retrying"
+    MODEL_FALLBACK_SELECTED = "model_fallback_selected"
 
 
 class ToolCallStatus(StrEnum):

@@ -103,7 +103,7 @@ Acceptance:
 - [x] Mock provider deterministic tests pass.
 - [x] OpenAI smoke path is documented.
 
-### Phase 2: Day 8-12 - Tools, Policy, and Approval
+### Phase 2: Day 8-13 - Tools, Policy, Approval, Retry, and Fallback
 
 Goal:
 
@@ -124,8 +124,8 @@ Checklist:
 - [x] Approval API.
 - [x] Approval CLI.
 - [x] Interrupt/resume.
-- [ ] Retry/fallback.
-- [~] Audit log.
+- [x] Retry/fallback.
+- [x] Audit log.
 
 Acceptance:
 
@@ -133,10 +133,10 @@ Acceptance:
 - [x] Risky tool pauses run.
 - [x] Approval resumes run.
 - [x] Rejection stops safely.
-- [ ] Tool failure retries where safe.
+- [x] Tool failure retries where safe.
 - [x] Tool calls and decisions are auditable.
 
-### Phase 3: Day 13-18 - RAG and Memory
+### Phase 3: Day 14-18 - RAG and Memory
 
 Goal:
 

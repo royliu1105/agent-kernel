@@ -140,7 +140,30 @@ Day 12 approval interrupt/resume semantics:
 - Resume transitions `waiting_approval -> resuming -> running`, executes the persisted tool call,
   then completes the run.
 - Rejected approval resume transitions the run to `failed` with `error_type = approval_rejected`.
-- Retry/fallback remains deferred.
+
+Day 13 retry/fallback semantics:
+
+- Retry/fallback is an in-process runtime policy for v0.1.
+- Retry attempts do not create new run statuses; the run remains `running` until final success,
+  failure, waiting approval, or cancellation.
+- Retryable provider errors can be retried on the same model.
+- Explicit `fallback_models` in run input can select a fallback model after retryable provider
+  errors.
+- Non-retryable provider errors still fail the run safely.
+- Retryable safe/read-only tool errors can be retried once by default.
+- Invalid tool arguments are not retried.
+- Denied tools, approval-required tools, and rejected approvals are not automatically retried.
+- Retry/fallback attempts are auditable through run events.
+- Delayed retries, exponential backoff, external durable retry queues, and a public retry API remain
+  deferred.
+
+Day 13 retry/fallback events:
+
+```text
+model_call_retrying
+model_fallback_selected
+tool_call_retrying
+```
 
 ## API / CLI
 
@@ -176,6 +199,9 @@ GET  /v1/runs/{run_id}/events
 POST /v1/runs/{run_id}/resume
 POST /v1/runs/{run_id}/retry
 ```
+
+Day 13 keeps `POST /v1/runs/{run_id}/retry` deferred because automatic retry/fallback happens
+inside execution policy.
 
 Day 3 CLI:
 
@@ -223,6 +249,8 @@ agent-kernel run retry <run-id>
 - Approval is rejected.
 - Run is canceled while running.
 - Retry would repeat a non-idempotent side effect.
+- Fallback model is misconfigured.
+- Retryable error keeps failing after all attempts.
 
 ## Security
 
@@ -250,6 +278,10 @@ agent-kernel run retry <run-id>
 - Approval request transitions run to waiting state.
 - Resume continues from persisted state.
 - Cancel stops a run safely.
+- Retryable provider failure retries.
+- Retryable provider failure can use explicit fallback model.
+- Retryable safe tool failure retries.
+- Non-retryable failures are not retried.
 
 ## Acceptance Criteria
 

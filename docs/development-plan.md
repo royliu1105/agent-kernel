@@ -83,7 +83,7 @@ Acceptance:
 - OpenAI smoke path is documented.
 - Run timeline is persisted.
 
-## Phase 2: Day 8-12 Tools, Policy, and Approval
+## Phase 2: Day 8-13 Tools, Policy, Approval, Retry, and Fallback
 
 Deliverables:
 
@@ -108,7 +108,7 @@ Acceptance:
 - Tool failure retries.
 - Audit log is complete.
 
-## Phase 3: Day 13-18 RAG and Memory
+## Phase 3: Day 14-18 RAG and Memory
 
 Deliverables:
 

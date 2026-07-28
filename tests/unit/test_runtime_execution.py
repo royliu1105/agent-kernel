@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 from kernel_core import ApprovalStatus, RiskLevel, RunEventType, RunStatus
-from kernel_providers import LLMProviderError, MockLLMProvider
+from kernel_providers import LLMProviderError, LLMRequest, LLMResponse, LLMUsage, MockLLMProvider
 from kernel_runtime import ModelRouter, RunExecutionError, RunExecutionService
 from kernel_storage import AgentRepository, ApprovalRepository, RunRepository, ToolCallRepository
 from kernel_tools import ToolMetadata, ToolRegistry, create_default_tool_registry
@@ -138,6 +138,94 @@ async def test_execution_service_can_execute_through_model_router(
 
 
 @pytest.mark.asyncio
+async def test_execution_service_retries_retryable_provider_error(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="retry-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"task": "retry me", "model": "flaky:mock-retry"},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+        provider = FlakyProvider(
+            name="flaky",
+            failures=[
+                LLMProviderError("temporary outage", error_type="mock_transient"),
+            ],
+        )
+
+        completed = await RunExecutionService(router=ModelRouter({"flaky": provider})).execute(
+            run_id=run.id, repository=run_repository
+        )
+        events = run_repository.list_events(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert completed.output is not None
+    assert completed.output["text"] == "flaky success: retry me"
+    assert provider.call_count == 2
+    assert [event.type for event in events] == [
+        RunEventType.RUN_CREATED,
+        RunEventType.RUN_QUEUED,
+        RunEventType.RUN_STARTED,
+        RunEventType.MODEL_CALL_RETRYING,
+        RunEventType.RUN_COMPLETED,
+    ]
+    assert events[-1].payload["attempt_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_execution_service_falls_back_after_retryable_provider_error(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="fallback-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={
+                "task": "fallback me",
+                "model": "primary:mock-primary",
+                "fallback_models": ["backup:mock-backup"],
+            },
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+        primary = FlakyProvider(
+            name="primary",
+            failures=[
+                LLMProviderError("temporary outage", error_type="mock_transient"),
+                LLMProviderError("still down", error_type="mock_transient"),
+            ],
+        )
+        backup = FlakyProvider(name="backup")
+
+        completed = await RunExecutionService(
+            router=ModelRouter({"primary": primary, "backup": backup})
+        ).execute(run_id=run.id, repository=run_repository)
+        events = run_repository.list_events(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert completed.output is not None
+    assert completed.output["provider"] == "backup"
+    assert completed.output["model"] == "mock-backup"
+    assert primary.call_count == 2
+    assert backup.call_count == 1
+    assert RunEventType.MODEL_FALLBACK_SELECTED in [event.type for event in events]
+    assert events[-1].payload["fallback_used"] is True
+
+
+@pytest.mark.asyncio
 async def test_execution_service_completes_safe_explicit_tool_run(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
@@ -178,6 +266,68 @@ async def test_execution_service_completes_safe_explicit_tool_run(
         RunEventType.TOOL_CALL_COMPLETED,
         RunEventType.RUN_COMPLETED,
     ]
+
+
+@pytest.mark.asyncio
+async def test_execution_service_retries_safe_tool_failure(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    registry = create_default_tool_registry()
+    flaky_tool = FlakyReadOnlyTool()
+    registry.register(flaky_tool)
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="tool-retry-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"tool": {"name": "flaky_read", "arguments": {"value": "stable"}}},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        completed = await RunExecutionService(tool_registry=registry).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+        events = run_repository.list_events(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert completed.output is not None
+    assert completed.output["tool"]["result"] == {"value": "stable", "attempts": 2}
+    assert flaky_tool.call_count == 2
+    assert RunEventType.TOOL_CALL_RETRYING in [event.type for event in events]
+    assert events[-1].type is RunEventType.RUN_COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_execution_service_does_not_retry_invalid_tool_arguments(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="tool-validation-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"tool": {"name": "echo", "arguments": {}}},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        failed = await RunExecutionService().execute(run_id=run.id, repository=run_repository)
+        events = run_repository.list_events(run.id)
+
+    assert failed.status is RunStatus.FAILED
+    assert failed.error_type == "invalid_tool_arguments"
+    assert RunEventType.TOOL_CALL_RETRYING not in [event.type for event in events]
+    assert events[-1].type is RunEventType.RUN_FAILED
 
 
 @pytest.mark.asyncio
@@ -354,6 +504,60 @@ class ExternalWriteTool:
 
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
         return {"written": arguments["value"]}
+
+
+class FlakyReadOnlyTool:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    @property
+    def metadata(self) -> ToolMetadata:
+        return ToolMetadata(
+            name="flaky_read",
+            description="Test-only flaky read tool.",
+            input_schema={
+                "type": "object",
+                "properties": {"value": {"type": "string"}},
+                "required": ["value"],
+                "additionalProperties": False,
+            },
+            risk_level=RiskLevel.READ_ONLY,
+        )
+
+    async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        self.call_count += 1
+        if self.call_count == 1:
+            raise RuntimeError("temporary tool failure")
+        return {"value": arguments["value"], "attempts": self.call_count}
+
+
+class FlakyProvider:
+    def __init__(
+        self,
+        *,
+        name: str,
+        failures: list[LLMProviderError] | None = None,
+    ) -> None:
+        self._name = name
+        self._failures = failures or []
+        self.call_count = 0
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    async def complete(self, request: LLMRequest) -> LLMResponse:
+        self.call_count += 1
+        if self._failures:
+            raise self._failures.pop(0)
+
+        prompt = request.messages[-1].content
+        return LLMResponse(
+            provider=self.name,
+            model=request.model,
+            text=f"{self.name} success: {prompt}",
+            usage=LLMUsage(input_tokens=1, output_tokens=1, estimated_cost=0.0),
+        )
 
 
 def _approval_tool_registry() -> ToolRegistry:

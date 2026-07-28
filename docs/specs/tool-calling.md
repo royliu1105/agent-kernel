@@ -120,6 +120,22 @@ Day 12 runtime integration baseline:
 - Provider-native tool/function calling remains deferred.
 - Model-generated tool call parsing remains deferred.
 
+Day 13 retry baseline:
+
+- Safe/read-only explicit tools can be retried for retryable execution errors.
+- Default retryable tool errors:
+  - `tool_execution_failed`
+  - `tool_timeout`
+- Default non-retryable tool errors include:
+  - `invalid_tool_arguments`
+  - `unknown_tool`
+  - `tool_disabled`
+  - `tool_result_too_large`
+- Approval-required, denied, external write, filesystem write, network, and dangerous tools are not
+  automatically retried.
+- Tool retry attempts append `tool_call_retrying` run events.
+- The final tool outcome is still persisted as `tool_call_completed` or `tool_call_failed`.
+
 ## State Transitions
 
 Initial tool call states:
@@ -160,6 +176,8 @@ Tool calls are inspected through run detail and run events.
 - Tool is denied by policy.
 - Approval-required tool is requested before approval persistence exists.
 - Approval-required tool pauses the run until approval is decided.
+- Safe tool retry keeps failing.
+- Non-idempotent tool must not be retried automatically.
 - Tool call persistence fails.
 - Tool call references a missing run.
 
@@ -198,6 +216,8 @@ Tool calls are inspected through run detail and run events.
 - Tool call audit events are appended to run timeline.
 - Tool timeout is recorded.
 - Tool error is persisted.
+- Retryable safe tool failure is retried and audited.
+- Invalid arguments are not retried.
 
 ## Acceptance Criteria
 
