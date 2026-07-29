@@ -143,6 +143,12 @@ Acceptance:
 
 ### Phase 3B: Day 19-21 RAG Retrieval and Agent Integration
 
+Status:
+
+```text
+Complete
+```
+
 Deliverables:
 
 - Retriever.
@@ -162,6 +168,12 @@ Acceptance:
 
 ### Phase 3C: Day 22-23 Memory Foundation
 
+Status:
+
+```text
+Complete
+```
+
 Deliverables:
 
 - Short-term memory.
@@ -179,6 +191,12 @@ Acceptance:
 - Agent can use retrieved memory context.
 
 ### Phase 3 Closure: Day 24
+
+Status:
+
+```text
+Complete
+```
 
 Deliverables:
 

@@ -188,12 +188,37 @@ agent-kernel memory delete <memory-id>
 
 - Short-term context is available during a run.
 - User preference can be written and retrieved.
-- Long-term memory can be retrieved by semantic query.
+- Long-term memory can be written, listed, inspected, and deleted.
+- Scoped memory can be injected into model context when explicitly requested.
 - Memory can be deleted.
-- Sensitive data redaction is applied where required.
+- Invalid memory config fails clearly.
 
 ## Acceptance Criteria
 
 - MVP supports short-term context, task context, user preferences, and long-term memory items.
 - Memory is inspectable and scoped.
 - Memory use is visible in the run timeline.
+
+## Phase 3 Baseline
+
+Phase 3 establishes a tested memory baseline:
+
+- Explicit memory CRUD.
+- Required memory scope.
+- Structured memory content.
+- Exact scope and type filtering.
+- Explicit runtime memory opt-in through `run.input.memory`.
+- Deterministic memory prompt rendering.
+- `memory_retrieved` run event visibility.
+- Model run output metadata for memory item IDs.
+
+Phase 3 intentionally does not implement:
+
+- Automatic memory writes.
+- Semantic/vector memory retrieval.
+- Memory consolidation.
+- Graph memory.
+- LLM-based memory selection.
+- Conflict resolution between current instructions and stored memory.
+- Sensitive data redaction pipeline.
+- Memory observability spans and metrics.

@@ -274,10 +274,53 @@ agent-kernel kb search <knowledge-base-id> --query "What is our deployment polic
 - Store embeddings.
 - Retrieve relevant chunks.
 - Agent calls `kb_search`.
-- Final answer includes citations.
+- Retrieval and `kb_search` tool results include citations.
 
 ## Acceptance Criteria
 
 - A document can be uploaded, ingested, and retrieved.
 - Retrieval can be used as a tool call.
 - Retrieved chunks and citations are visible in the run timeline.
+
+## Phase 3 Baseline
+
+Phase 3 establishes a tested RAG baseline:
+
+- Manual document upload, ingestion, chunking, indexing, and retrieval.
+- Deterministic mock embeddings.
+- SQLite-compatible JSON vector storage.
+- Citation metadata for retrieved chunks.
+- `kb_search` as a read-only tool.
+- Explicit tool-request runtime integration.
+- Deterministic RAG behavior evals and regression cases.
+
+Phase 3 intentionally does not implement:
+
+- OpenAI embeddings.
+- pgvector-native vector columns or indexes.
+- Async ingestion/indexing worker.
+- BM25, hybrid search, RRF, query rewriting, or reranking.
+- Provider-native function calling.
+- Automatic agent planning for when to call `kb_search`.
+- Final answer synthesis that automatically includes citations.
+
+## Deferred: Provider-Native Function Calling And Answer Synthesis
+
+These capabilities are part of the long-term production target, but they are not
+part of the Phase 3 baseline.
+
+Provider-native function calling should be implemented only after Agent Kernel
+has provider-specific tool-call adapters, a durable model/tool/model run loop,
+tool-result-to-model message handling, tool-call persistence, approval/retry/
+fallback/resume semantics, prompt and tool schema versioning, and behavior evals
+that can verify automatic tool choice.
+
+Final answer synthesis with citations should be implemented only after the RAG
+path can prove that final claims are grounded in retrieved chunks. The required
+baseline includes citation-grounded answer evals, insufficient-evidence refusal
+behavior, multi-chunk citation handling, document prompt-injection guardrails,
+and clear observability for retrieved evidence versus generated claims.
+
+The current Phase 3 implementation deliberately exposes `kb_search` through an
+explicit tool request. That gives the project a testable retrieval and citation
+foundation before adding provider-native planning and generated cited answers.

@@ -200,11 +200,11 @@ Checklist:
 
 #### Phase 3 Closure
 
-- [ ] Phase 3 summary.
-- [ ] RAG spec updated.
-- [ ] Memory spec updated.
-- [ ] Known limitations documented.
-- [ ] Full verification.
+- [x] Phase 3 summary.
+- [x] RAG spec updated.
+- [x] Memory spec updated.
+- [x] Known limitations documented.
+- [x] Full verification.
 
 Acceptance:
 

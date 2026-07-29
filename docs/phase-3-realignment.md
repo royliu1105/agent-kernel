@@ -72,21 +72,21 @@ create KB
 -> indexed document
 ```
 
-## Remaining: Phase 3B
+## Completed: Phase 3B
 
-Phase 3B focuses on retrieval and agent integration:
+Phase 3B completed retrieval and agent integration:
 
 ```text
 Day 19-21: RAG Retrieval + Agent Integration
 ```
 
-Planned days:
+Completed days:
 
 - Day 19: Retriever + Citation Builder + Retrieval API/CLI.
 - Day 20: `kb_search` Tool + Agent Runtime Integration.
 - Day 21: RAG Behavior Evals + Regression Cases.
 
-Required acceptance:
+Completed acceptance:
 
 - Query embedding can retrieve relevant chunks.
 - Retrieval response includes citation metadata.
@@ -94,20 +94,20 @@ Required acceptance:
 - Retrieved chunks and citations are visible in run output or run timeline.
 - Regression tests cover core RAG behavior.
 
-## Remaining: Phase 3C
+## Completed: Phase 3C
 
-Phase 3C focuses on memory:
+Phase 3C completed memory foundation:
 
 ```text
 Day 22-23: Memory Foundation
 ```
 
-Planned days:
+Completed days:
 
 - Day 22: Memory Domain + Storage + API/CLI.
 - Day 23: Memory Retrieval + Agent Context Integration.
 
-Required acceptance:
+Completed acceptance:
 
 - Memory items can be written, listed, inspected, and deleted.
 - Memory records are scoped.
@@ -115,15 +115,15 @@ Required acceptance:
 - Memory retrieval can provide context to an agent run.
 - Memory behavior is inspectable and tested.
 
-## Phase 3 Closure
+## Completed: Phase 3 Closure
 
-Phase 3 closure is scheduled for:
+Phase 3 closure completed:
 
 ```text
 Day 24: Phase 3 Closure + Summary Docs + Full Verification
 ```
 
-Closure means:
+Closure includes:
 
 - Confirm Phase 3 functionality forms a coherent baseline.
 - Update phase summary docs.
