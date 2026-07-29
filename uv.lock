@@ -511,6 +511,7 @@ source = { editable = "packages/kernel-storage" }
 dependencies = [
     { name = "alembic" },
     { name = "kernel-core" },
+    { name = "kernel-observability" },
     { name = "psycopg", extra = ["binary"] },
     { name = "sqlalchemy" },
 ]
@@ -519,6 +520,7 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.14.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
     { name = "sqlalchemy", specifier = ">=2.0.0" },
 ]

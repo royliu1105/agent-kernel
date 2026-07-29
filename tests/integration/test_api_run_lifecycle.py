@@ -4,6 +4,7 @@ from typing import Any
 from agent_kernel_api.main import create_app
 from fastapi.testclient import TestClient
 from kernel_core import RiskLevel, RunEventType, RunStatus
+from kernel_observability import TRACE_ID_PATTERN
 from kernel_runtime import RunExecutionService
 from kernel_storage import AgentRepository, ApprovalRepository, RunRepository
 from kernel_tools import ToolMetadata, ToolRegistry, create_default_tool_registry
@@ -32,10 +33,13 @@ def test_create_agent_run_and_inspect_timeline(
     assert run["agent_id"] == agent["id"]
     assert run["status"] == "created"
     assert run["input"] == {"task": "summarize latest notes"}
+    assert TRACE_ID_PATTERN.fullmatch(run["trace_id"])
 
     get_run_response = client.get(f"/v1/runs/{run['id']}")
     assert get_run_response.status_code == 200
-    assert get_run_response.json()["id"] == run["id"]
+    loaded_run = get_run_response.json()
+    assert loaded_run["id"] == run["id"]
+    assert loaded_run["trace_id"] == run["trace_id"]
 
     events_response = client.get(f"/v1/runs/{run['id']}/events")
     assert events_response.status_code == 200
@@ -47,7 +51,7 @@ def test_create_agent_run_and_inspect_timeline(
             "sequence": 1,
             "type": "run_created",
             "payload": {"status": "created"},
-            "trace_id": None,
+            "trace_id": run["trace_id"],
             "created_at": events[0]["created_at"],
         }
     ]
@@ -85,11 +89,13 @@ def test_queue_and_cancel_run_transitions(sqlite_session_factory: sessionmaker[S
 
     events_response = client.get(f"/v1/runs/{run['id']}/events")
     assert events_response.status_code == 200
-    assert [event["type"] for event in events_response.json()] == [
+    events = events_response.json()
+    assert [event["type"] for event in events] == [
         "run_created",
         "run_queued",
         "run_canceled",
     ]
+    assert {event["trace_id"] for event in events} == {run["trace_id"]}
 
 
 def test_invalid_api_transition_returns_409(sqlite_session_factory: sessionmaker[Session]) -> None:

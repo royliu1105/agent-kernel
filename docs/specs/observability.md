@@ -103,6 +103,25 @@ Approval:
 
 Every run has one root trace.
 
+## Day 25 Trace and Correlation Foundation
+
+Day 25 implements the first observability foundation:
+
+- Generate a 32-character lowercase hex `trace_id` for every new run.
+- Generate a 16-character lowercase hex `span_id` helper for future spans.
+- Add a reusable `ObservabilityContext` for run, agent, step, tool call,
+  approval, and eval correlation fields.
+- Add a structured log field helper that only accepts safe scalar fields.
+- Persist the run `trace_id` at creation time.
+- Persist the initial `run_created` event with the same `trace_id`.
+- Propagate the run `trace_id` through existing transition events.
+- Propagate the run `trace_id` through existing tool call and approval paths.
+- Expose trace IDs through the existing run, event, and approval API responses.
+
+Day 25 intentionally does not implement full OpenTelemetry exporter setup,
+structlog application wiring, Prometheus metrics, cost pricing tables, eval
+datasets, persisted eval runs, or Web UI timeline changes.
+
 Recommended span hierarchy:
 
 ```text

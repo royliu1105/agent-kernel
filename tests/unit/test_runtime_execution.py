@@ -373,6 +373,8 @@ async def test_execution_service_completes_safe_explicit_tool_run(
         }
     }
     assert tool_calls[0].result == {"message": "hello"}
+    assert tool_calls[0].trace_id == run.trace_id
+    assert {event.trace_id for event in events} == {run.trace_id}
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -431,6 +433,8 @@ async def test_execution_service_completes_explicit_kb_search_tool_run(
     assert tool_calls[0].tool_name == "kb_search"
     assert tool_calls[0].risk_level is RiskLevel.READ_ONLY
     assert tool_calls[0].result == tool_output["result"]
+    assert tool_calls[0].trace_id == run.trace_id
+    assert {event.trace_id for event in events} == {run.trace_id}
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -527,11 +531,15 @@ async def test_execution_service_pauses_risky_explicit_tool_for_approval(
             repository=run_repository,
         )
         approvals = ApprovalRepository(session).list_for_run(run.id)
+        tool_calls = ToolCallRepository(session).list_for_run(run.id)
         events = run_repository.list_events(run.id)
 
     assert waiting.status is RunStatus.WAITING_APPROVAL
     assert len(approvals) == 1
     assert approvals[0].status is ApprovalStatus.REQUESTED
+    assert approvals[0].trace_id == run.trace_id
+    assert tool_calls[0].trace_id == run.trace_id
+    assert {event.trace_id for event in events} == {run.trace_id}
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -585,6 +593,8 @@ async def test_execution_service_resumes_approved_tool_with_persisted_arguments(
     assert resumed.output["tool"]["result"] == {"written": "original"}
     assert tool_calls[0].arguments == {"value": "original"}
     assert tool_calls[0].result == {"written": "original"}
+    assert tool_calls[0].trace_id == run.trace_id
+    assert {event.trace_id for event in events} == {run.trace_id}
     assert RunEventType.RUN_RESUMING in [event.type for event in events]
     assert events[-1].type is RunEventType.RUN_COMPLETED
 

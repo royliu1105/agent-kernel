@@ -31,6 +31,7 @@ from kernel_core import (
     ToolCallStatus,
     utc_now,
 )
+from kernel_observability import ensure_trace_id
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -98,8 +99,14 @@ class RunRepository:
     def session(self) -> Session:
         return self._session
 
-    def create(self, *, agent_id: UUID, input_payload: dict[str, Any]) -> Run:
-        run = Run(agent_id=agent_id, input=input_payload)
+    def create(
+        self,
+        *,
+        agent_id: UUID,
+        input_payload: dict[str, Any],
+        trace_id: str | None = None,
+    ) -> Run:
+        run = Run(agent_id=agent_id, input=input_payload, trace_id=ensure_trace_id(trace_id))
         self._session.add(_run_to_record(run))
         self._session.add(
             RunEventRecord(
@@ -145,7 +152,8 @@ class RunRepository:
         payload: dict[str, Any] | None = None,
         trace_id: str | None = None,
     ) -> RunEvent | None:
-        if self._session.get(RunRecord, str(run_id)) is None:
+        record = self._session.get(RunRecord, str(run_id))
+        if record is None:
             return None
 
         sequence = self._next_event_sequence(run_id)
@@ -154,7 +162,7 @@ class RunRepository:
             sequence=sequence,
             type=event_type,
             payload=payload or {},
-            trace_id=trace_id,
+            trace_id=trace_id or record.trace_id,
         )
         self._session.add(
             RunEventRecord(

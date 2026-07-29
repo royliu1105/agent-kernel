@@ -72,3 +72,4 @@ day-03.md
 - [Day 22: Memory Domain, Storage, API, and CLI](day-22.md)
 - [Day 23: Memory Retrieval and Agent Context Integration](day-23.md)
 - [Day 24: Phase 3 Closure and Full Verification](day-24.md)
+- [Day 25: Trace and Correlation Foundation](day-25.md)

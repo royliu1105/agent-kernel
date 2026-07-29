@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from kernel_core import DocumentStatus, KnowledgeBaseStatus, RunEventType, RunStatus
+from kernel_observability import TRACE_ID_PATTERN
 from kernel_storage import (
     AgentRepository,
     DocumentRepository,
@@ -43,10 +44,29 @@ def test_run_repository_creates_run_and_initial_event(
     assert loaded is not None
     assert loaded.status is RunStatus.CREATED
     assert loaded.input == {"task": "check status"}
+    assert loaded.trace_id is not None
+    assert TRACE_ID_PATTERN.fullmatch(loaded.trace_id)
     assert len(events) == 1
     assert events[0].sequence == 1
     assert events[0].type is RunEventType.RUN_CREATED
     assert events[0].payload == {"status": "created"}
+    assert events[0].trace_id == loaded.trace_id
+
+
+def test_run_repository_accepts_explicit_trace_id(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="ops-agent")
+        run = RunRepository(session).create(
+            agent_id=agent.id,
+            input_payload={"task": "check status"},
+            trace_id="a" * 32,
+        )
+        events = RunRepository(session).list_events(run.id)
+
+    assert run.trace_id == "a" * 32
+    assert events[0].trace_id == "a" * 32
 
 
 def test_run_repository_updates_status_and_appends_monotonic_events(
@@ -68,8 +88,10 @@ def test_run_repository_updates_status_and_appends_monotonic_events(
     assert updated.status is RunStatus.QUEUED
     assert event is not None
     assert event.sequence == 2
+    assert event.trace_id == run.trace_id
     assert [timeline_event.sequence for timeline_event in events] == [1, 2]
     assert events[1].type is RunEventType.RUN_QUEUED
+    assert events[1].trace_id == run.trace_id
 
 
 def test_run_repository_lists_queued_runs(sqlite_session_factory: sessionmaker[Session]) -> None:
@@ -114,6 +136,7 @@ def test_run_repository_completes_run_with_output_and_usage(
     assert completed.input_tokens_total == 3
     assert completed.output_tokens_total == 2
     assert events[-1].type is RunEventType.RUN_COMPLETED
+    assert events[-1].trace_id == run.trace_id
 
 
 def test_run_repository_fails_run_with_error_details(
@@ -136,6 +159,7 @@ def test_run_repository_fails_run_with_error_details(
     assert failed.error_type == "provider_error"
     assert failed.error_message == "provider unavailable"
     assert events[-1].type is RunEventType.RUN_FAILED
+    assert events[-1].trace_id == run.trace_id
 
 
 def test_knowledge_base_repository_creates_loads_and_lists(
