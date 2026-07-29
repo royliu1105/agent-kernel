@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "kernel-core",
   "kernel-memory",
+  "kernel-observability",
   "kernel-policy",
   "kernel-providers",
   "kernel-storage",

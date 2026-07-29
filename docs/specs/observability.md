@@ -164,6 +164,28 @@ Sensitive inputs, secrets, and large payloads must not be emitted as span attrib
 
 Use `structlog` for structured logs.
 
+## Day 26 Structured Runtime Logs
+
+Day 26 implements the first structured logging baseline:
+
+- Add a structured log record builder.
+- Add sensitive field redaction for common credential names.
+- Preserve token usage fields such as `input_tokens`, `output_tokens`, and
+  `total_tokens` as non-sensitive metrics.
+- Add a JSON log formatter for one-object-per-line structured logs.
+- Emit runtime logs for run start, model call success, provider retry, model
+  fallback selection, tool call request, tool retry, tool call success, approval
+  request, and run failure.
+- Include trace/run/agent correlation fields whenever a run is available.
+- Include tool call and approval IDs for tool and approval logs.
+- Include provider, model, token, and estimated cost fields for model success
+  logs.
+
+Day 26 intentionally does not implement global application logging
+configuration, full structlog application wiring, OpenTelemetry exporters,
+Prometheus metrics, log aggregation, latency persistence, eval platform work, or
+Web UI timeline changes.
+
 Every runtime log line should include available correlation fields:
 
 ```text

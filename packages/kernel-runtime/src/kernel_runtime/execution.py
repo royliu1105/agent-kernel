@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -19,6 +20,7 @@ from kernel_core import (
     ToolCallStatus,
 )
 from kernel_memory import MemoryContext, MemoryRetrievalService
+from kernel_observability import ObservabilityContext, log_event
 from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
 from kernel_providers import (
     LLMMessage,
@@ -39,6 +41,8 @@ from kernel_tools import (
 
 from kernel_runtime.router import ModelRouter
 from kernel_runtime.state_machine import RunStateMachine
+
+LOGGER = logging.getLogger(__name__)
 
 
 class RunExecutionError(RuntimeError):
@@ -133,6 +137,13 @@ class RunExecutionService:
         )
         if running is None:
             raise RunNotFoundError(f"Run {run_id} was not found.")
+        log_event(
+            LOGGER,
+            level=logging.INFO,
+            event="agent.run.started",
+            context=_context_from_run(running),
+            status=running.status.value,
+        )
 
         try:
             tool_request = _explicit_tool_request_from_run(running)
@@ -291,6 +302,20 @@ class RunExecutionService:
                     if self._should_retry_provider(error) and (
                         attempt < self._retry_policy.provider_max_attempts
                     ):
+                        log_event(
+                            LOGGER,
+                            level=logging.WARNING,
+                            event="llm.model_call.retrying",
+                            context=_context_from_run(running),
+                            status=running.status.value,
+                            provider=route.provider_name,
+                            model=route.model,
+                            error_type=error.error_type,
+                            extra={
+                                "attempt": attempt + 1,
+                                "max_attempts": self._retry_policy.provider_max_attempts,
+                            },
+                        )
                         repository.append_event(
                             run_id=running.id,
                             event_type=RunEventType.MODEL_CALL_RETRYING,
@@ -323,6 +348,18 @@ class RunExecutionService:
 
             next_model_ref = _next_model_ref(model_refs=model_refs, current_index=model_index)
             if next_model_ref is not None and last_error is not None:
+                log_event(
+                    LOGGER,
+                    level=logging.WARNING,
+                    event="llm.model_fallback.selected",
+                    context=_context_from_run(running),
+                    status=running.status.value,
+                    error_type=last_error.error_type,
+                    extra={
+                        "from_model": model_ref,
+                        "to_model": next_model_ref,
+                    },
+                )
                 repository.append_event(
                     run_id=running.id,
                     event_type=RunEventType.MODEL_FALLBACK_SELECTED,
@@ -372,6 +409,23 @@ class RunExecutionService:
         if memory_context is not None:
             output_payload["memory"] = memory_context.to_output_payload()
 
+        log_event(
+            LOGGER,
+            level=logging.INFO,
+            event="llm.model_call.completed",
+            context=_context_from_run(running),
+            status=RunStatus.SUCCEEDED.value,
+            provider=response.provider,
+            model=response.model,
+            extra={
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+                "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+                "estimated_cost": response.usage.estimated_cost,
+                "attempt_count": attempt_count,
+                "fallback_used": fallback_used,
+            },
+        )
         completed = repository.complete(
             run_id=running.id,
             output_payload=output_payload,
@@ -453,6 +507,18 @@ class RunExecutionService:
         )
         if tool_call is None:
             raise RunNotFoundError(f"Run {running.id} was not found.")
+        log_event(
+            LOGGER,
+            level=logging.INFO,
+            event="tool.call.requested",
+            context=_context_from_run(running, tool_call_id=tool_call.id),
+            status=tool_call.status.value,
+            tool_name=tool_call.tool_name,
+            extra={
+                "risk_level": tool_call.risk_level.value,
+                "requires_approval": tool_call.requires_approval,
+            },
+        )
 
         decision = self._policy_evaluator.evaluate(tool.metadata)
         if decision.decision is PolicyDecisionType.DENY:
@@ -485,6 +551,22 @@ class RunExecutionService:
             )
             if approval is None:
                 raise RunExecutionError(f"Approval could not be created for {tool_call.id}.")
+            log_event(
+                LOGGER,
+                level=logging.INFO,
+                event="approval.requested",
+                context=_context_from_run(
+                    running,
+                    tool_call_id=waiting_tool_call.id,
+                    approval_id=approval.id,
+                ),
+                status=approval.status.value,
+                tool_name=waiting_tool_call.tool_name,
+                extra={
+                    "risk_level": waiting_tool_call.risk_level.value,
+                    "requires_approval": waiting_tool_call.requires_approval,
+                },
+            )
 
             wait_transition = self._state_machine.wait_for_approval(running)
             waiting = repository.apply_transition(
@@ -558,6 +640,22 @@ class RunExecutionService:
         )
         if completed_tool_call is None:
             raise RunExecutionError(f"Tool call {running_tool_call.id} was not found.")
+        log_event(
+            LOGGER,
+            level=logging.INFO,
+            event="tool.call.completed",
+            context=_context_from_run(
+                running,
+                tool_call_id=completed_tool_call.id,
+                approval_id=approval.id if approval is not None else None,
+            ),
+            status=completed_tool_call.status.value,
+            tool_name=completed_tool_call.tool_name,
+            extra={
+                "risk_level": completed_tool_call.risk_level.value,
+                "requires_approval": completed_tool_call.requires_approval,
+            },
+        )
 
         succeed_transition = self._state_machine.succeed(running)
         completed = repository.complete(
@@ -599,6 +697,20 @@ class RunExecutionService:
                 if self._should_retry_tool(error, tool_call) and (
                     attempt < self._retry_policy.tool_max_attempts
                 ):
+                    log_event(
+                        LOGGER,
+                        level=logging.WARNING,
+                        event="tool.call.retrying",
+                        context=_context_from_run(running, tool_call_id=tool_call.id),
+                        status=tool_call.status.value,
+                        tool_name=tool_call.tool_name,
+                        error_type=error.error_type,
+                        extra={
+                            "attempt": attempt + 1,
+                            "max_attempts": self._retry_policy.tool_max_attempts,
+                            "risk_level": tool_call.risk_level.value,
+                        },
+                    )
                     repository.append_event(
                         run_id=running.id,
                         event_type=RunEventType.TOOL_CALL_RETRYING,
@@ -646,6 +758,15 @@ class RunExecutionService:
         if provider is not None:
             event_payload["provider"] = provider
 
+        log_event(
+            LOGGER,
+            level=logging.ERROR,
+            event="agent.run.failed",
+            context=_context_from_run(running),
+            status=RunStatus.FAILED.value,
+            provider=provider,
+            error_type=error_type,
+        )
         failed = repository.fail(
             run_id=running.id,
             error_type=error_type,
@@ -664,6 +785,18 @@ class RunExecutionService:
         approval: Approval,
     ) -> Run:
         fail_transition = self._state_machine.fail(waiting)
+        log_event(
+            LOGGER,
+            level=logging.ERROR,
+            event="agent.run.failed",
+            context=_context_from_run(
+                waiting,
+                tool_call_id=approval.tool_call_id,
+                approval_id=approval.id,
+            ),
+            status=RunStatus.FAILED.value,
+            error_type="approval_rejected",
+        )
         failed = repository.fail(
             run_id=waiting.id,
             error_type="approval_rejected",
@@ -680,6 +813,21 @@ class RunExecutionService:
         if failed is None:
             raise RunNotFoundError(f"Run {waiting.id} was not found.")
         return failed
+
+
+def _context_from_run(
+    run: Run,
+    *,
+    tool_call_id: UUID | None = None,
+    approval_id: UUID | None = None,
+) -> ObservabilityContext:
+    return ObservabilityContext.create(
+        trace_id=run.trace_id,
+        run_id=run.id,
+        agent_id=run.agent_id,
+        tool_call_id=tool_call_id,
+        approval_id=approval_id,
+    )
 
 
 def _request_from_run(

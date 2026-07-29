@@ -486,6 +486,7 @@ source = { editable = "packages/kernel-runtime" }
 dependencies = [
     { name = "kernel-core" },
     { name = "kernel-memory" },
+    { name = "kernel-observability" },
     { name = "kernel-policy" },
     { name = "kernel-providers" },
     { name = "kernel-storage" },
@@ -497,6 +498,7 @@ dependencies = [
 requires-dist = [
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-memory", editable = "packages/kernel-memory" },
+    { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "kernel-policy", editable = "packages/kernel-policy" },
     { name = "kernel-providers", editable = "packages/kernel-providers" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },

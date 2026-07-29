@@ -73,3 +73,4 @@ day-03.md
 - [Day 23: Memory Retrieval and Agent Context Integration](day-23.md)
 - [Day 24: Phase 3 Closure and Full Verification](day-24.md)
 - [Day 25: Trace and Correlation Foundation](day-25.md)
+- [Day 26: Structured Runtime Logs](day-26.md)

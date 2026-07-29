@@ -227,7 +227,7 @@ Make the runtime inspectable, measurable, cost-aware, and regression-testable.
 
 Checklist:
 
-- [ ] Structured logs.
+- [x] Structured logs.
 - [ ] OpenTelemetry spans.
 - [x] Trace IDs.
 - [ ] Model call metrics.

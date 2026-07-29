@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -32,6 +33,7 @@ from sqlalchemy.orm import Session, sessionmaker
 @pytest.mark.asyncio
 async def test_execution_service_completes_queued_run(
     sqlite_session_factory: sessionmaker[Session],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="research-agent")
@@ -48,10 +50,11 @@ async def test_execution_service_completes_queued_run(
         )
         assert queued is not None
 
-        completed = await RunExecutionService(provider=MockLLMProvider()).execute(
-            run_id=run.id,
-            repository=run_repository,
-        )
+        with caplog.at_level(logging.INFO, logger="kernel_runtime.execution"):
+            completed = await RunExecutionService(provider=MockLLMProvider()).execute(
+                run_id=run.id,
+                repository=run_repository,
+            )
         events = run_repository.list_events(run.id)
 
     assert completed.status is RunStatus.SUCCEEDED
@@ -68,6 +71,19 @@ async def test_execution_service_completes_queued_run(
     assert completed.input_tokens_total == 2
     assert completed.output_tokens_total == 4
     assert completed.estimated_cost_total == 0.0
+    structured_logs = _structured_logs(caplog)
+    assert {
+        log["event"] for log in structured_logs
+    } >= {"agent.run.started", "llm.model_call.completed"}
+    model_log = _single_log(structured_logs, "llm.model_call.completed")
+    assert model_log["trace_id"] == completed.trace_id
+    assert model_log["run_id"] == str(completed.id)
+    assert model_log["agent_id"] == str(completed.agent_id)
+    assert model_log["provider"] == "mock"
+    assert model_log["model"] == "mock-small"
+    assert model_log["input_tokens"] == 2
+    assert model_log["output_tokens"] == 4
+    assert model_log["estimated_cost"] == 0.0
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -344,6 +360,7 @@ async def test_execution_service_falls_back_after_retryable_provider_error(
 @pytest.mark.asyncio
 async def test_execution_service_completes_safe_explicit_tool_run(
     sqlite_session_factory: sessionmaker[Session],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
@@ -359,7 +376,11 @@ async def test_execution_service_completes_safe_explicit_tool_run(
             payload={"from_status": "created", "to_status": "queued"},
         )
 
-        completed = await RunExecutionService().execute(run_id=run.id, repository=run_repository)
+        with caplog.at_level(logging.INFO, logger="kernel_runtime.execution"):
+            completed = await RunExecutionService().execute(
+                run_id=run.id,
+                repository=run_repository,
+            )
         events = run_repository.list_events(run.id)
         tool_calls = ToolCallRepository(session).list_for_run(run.id)
 
@@ -375,6 +396,16 @@ async def test_execution_service_completes_safe_explicit_tool_run(
     assert tool_calls[0].result == {"message": "hello"}
     assert tool_calls[0].trace_id == run.trace_id
     assert {event.trace_id for event in events} == {run.trace_id}
+    structured_logs = _structured_logs(caplog)
+    requested_log = _single_log(structured_logs, "tool.call.requested")
+    completed_log = _single_log(structured_logs, "tool.call.completed")
+    assert requested_log["trace_id"] == completed.trace_id
+    assert requested_log["run_id"] == str(completed.id)
+    assert requested_log["tool_call_id"] == str(tool_calls[0].id)
+    assert requested_log["tool_name"] == "echo"
+    assert requested_log["risk_level"] == "read_only"
+    assert completed_log["tool_call_id"] == str(tool_calls[0].id)
+    assert completed_log["status"] == "succeeded"
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -511,6 +542,7 @@ async def test_execution_service_does_not_retry_invalid_tool_arguments(
 @pytest.mark.asyncio
 async def test_execution_service_pauses_risky_explicit_tool_for_approval(
     sqlite_session_factory: sessionmaker[Session],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="approval-tool-agent")
@@ -526,10 +558,11 @@ async def test_execution_service_pauses_risky_explicit_tool_for_approval(
             payload={"from_status": "created", "to_status": "queued"},
         )
 
-        waiting = await RunExecutionService(tool_registry=_approval_tool_registry()).execute(
-            run_id=run.id,
-            repository=run_repository,
-        )
+        with caplog.at_level(logging.INFO, logger="kernel_runtime.execution"):
+            waiting = await RunExecutionService(tool_registry=_approval_tool_registry()).execute(
+                run_id=run.id,
+                repository=run_repository,
+            )
         approvals = ApprovalRepository(session).list_for_run(run.id)
         tool_calls = ToolCallRepository(session).list_for_run(run.id)
         events = run_repository.list_events(run.id)
@@ -540,6 +573,13 @@ async def test_execution_service_pauses_risky_explicit_tool_for_approval(
     assert approvals[0].trace_id == run.trace_id
     assert tool_calls[0].trace_id == run.trace_id
     assert {event.trace_id for event in events} == {run.trace_id}
+    approval_log = _single_log(_structured_logs(caplog), "approval.requested")
+    assert approval_log["trace_id"] == waiting.trace_id
+    assert approval_log["run_id"] == str(waiting.id)
+    assert approval_log["tool_call_id"] == str(tool_calls[0].id)
+    assert approval_log["approval_id"] == str(approvals[0].id)
+    assert approval_log["tool_name"] == "external_write"
+    assert approval_log["requires_approval"] is True
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -669,6 +709,21 @@ async def test_execution_service_rejects_resume_before_approval_decision(
                 tool_call_repository=tool_call_repository,
                 approval_id=approval.id,
             )
+
+
+def _structured_logs(caplog: pytest.LogCaptureFixture) -> list[dict[str, Any]]:
+    logs: list[dict[str, Any]] = []
+    for record in caplog.records:
+        structured = getattr(record, "structured", None)
+        if isinstance(structured, dict):
+            logs.append(structured)
+    return logs
+
+
+def _single_log(logs: list[dict[str, Any]], event: str) -> dict[str, Any]:
+    matches = [log for log in logs if log.get("event") == event]
+    assert len(matches) == 1
+    return matches[0]
 
 
 class ExternalWriteTool:
