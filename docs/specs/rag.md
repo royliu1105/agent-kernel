@@ -22,6 +22,7 @@ Provide a knowledge base pipeline for document upload, ingestion, chunking, embe
 
 Initial entities:
 
+- `KnowledgeBase`
 - `Document`
 - `DocumentChunk`
 - `IngestionJob`
@@ -42,18 +43,34 @@ Embeddings -> pgvector
 Document ingestion states:
 
 ```text
-uploaded -> parsing -> chunking -> embedding -> indexed -> failed
+registered -> uploaded -> parsing -> chunking -> embedding -> indexed
+                           \-> failed
 ```
 
 Detailed ingestion semantics will be completed during Phase 3 implementation.
+
+## Day 14 Metadata Foundation
+
+Day 14 implements the RAG control-plane foundation:
+
+- Create/list/inspect knowledge bases.
+- Register document metadata under a knowledge base.
+- List documents for a knowledge base.
+- Inspect one document.
+- Persist document lifecycle status, source URI, MIME type, checksum, size, and metadata.
+
+Day 14 intentionally does not store document bytes, parse files, chunk text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
 
 ## API / CLI
 
 Expected API:
 
 ```http
-POST /v1/documents
-GET  /v1/documents
+POST /v1/knowledge-bases
+GET  /v1/knowledge-bases
+GET  /v1/knowledge-bases/{knowledge_base_id}
+POST /v1/knowledge-bases/{knowledge_base_id}/documents
+GET  /v1/knowledge-bases/{knowledge_base_id}/documents
 GET  /v1/documents/{document_id}
 POST /v1/documents/{document_id}/ingest
 POST /v1/retrieval/query
@@ -62,8 +79,14 @@ POST /v1/retrieval/query
 Expected CLI:
 
 ```bash
-agent-kernel doc upload ./docs/*.md
-agent-kernel doc ingest <document-id>
+agent-kernel kb create --name "Engineering Handbook"
+agent-kernel kb list
+agent-kernel kb inspect <knowledge-base-id>
+agent-kernel document register <knowledge-base-id> --title "Deploy" --source-uri object://local/docs/deploy.md
+agent-kernel document list <knowledge-base-id>
+agent-kernel document inspect <document-id>
+agent-kernel document upload <knowledge-base-id> ./docs/*.md
+agent-kernel document ingest <document-id>
 agent-kernel kb query "What is our deployment policy?"
 ```
 

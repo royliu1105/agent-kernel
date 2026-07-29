@@ -146,7 +146,11 @@ Let agents use documents, retrieval, citations, and scoped memory.
 
 Checklist:
 
-- [ ] Document model.
+- [x] Knowledge base model.
+- [x] Document model.
+- [x] Knowledge base and document metadata storage.
+- [x] Knowledge base and document metadata API.
+- [x] Knowledge base and document metadata CLI.
 - [ ] Document upload.
 - [ ] Local object store.
 - [ ] Ingestion worker.

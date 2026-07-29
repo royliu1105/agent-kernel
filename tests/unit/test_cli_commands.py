@@ -208,3 +208,116 @@ def test_approval_cli_uses_approval_endpoints(monkeypatch: pytest.MonkeyPatch) -
         ),
         ("POST", f"/v1/approvals/{approval_id}/reject", {"reason": "Too risky."}),
     ]
+
+
+def test_knowledge_base_cli_uses_kb_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": "kb-1", "name": "engineering-handbook"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    kb_id = "00000000-0000-0000-0000-000000000007"
+
+    create_result = runner.invoke(
+        cli_main.app,
+        [
+            "kb",
+            "create",
+            "--name",
+            "engineering-handbook",
+            "--description",
+            "Engineering docs",
+            "--metadata",
+            '{"owner":"platform"}',
+        ],
+    )
+    list_result = runner.invoke(cli_main.app, ["kb", "list"])
+    inspect_result = runner.invoke(cli_main.app, ["kb", "inspect", kb_id])
+
+    assert create_result.exit_code == 0
+    assert list_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            "/v1/knowledge-bases",
+            {
+                "name": "engineering-handbook",
+                "description": "Engineering docs",
+                "metadata": {"owner": "platform"},
+            },
+        ),
+        ("GET", "/v1/knowledge-bases", None),
+        ("GET", f"/v1/knowledge-bases/{kb_id}", None),
+    ]
+
+
+def test_document_cli_uses_document_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": "doc-1", "status": "registered"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    kb_id = "00000000-0000-0000-0000-000000000008"
+    document_id = "00000000-0000-0000-0000-000000000009"
+
+    register_result = runner.invoke(
+        cli_main.app,
+        [
+            "document",
+            "register",
+            kb_id,
+            "--title",
+            "Deployment Guide",
+            "--source-uri",
+            "object://local/docs/deployment.md",
+            "--mime-type",
+            "text/markdown",
+            "--checksum",
+            "sha256:abc",
+            "--size-bytes",
+            "1234",
+            "--metadata",
+            '{"source":"manual"}',
+        ],
+    )
+    list_result = runner.invoke(cli_main.app, ["document", "list", kb_id])
+    inspect_result = runner.invoke(cli_main.app, ["document", "inspect", document_id])
+
+    assert register_result.exit_code == 0
+    assert list_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            f"/v1/knowledge-bases/{kb_id}/documents",
+            {
+                "title": "Deployment Guide",
+                "source_uri": "object://local/docs/deployment.md",
+                "mime_type": "text/markdown",
+                "checksum": "sha256:abc",
+                "size_bytes": 1234,
+                "metadata": {"source": "manual"},
+            },
+        ),
+        ("GET", f"/v1/knowledge-bases/{kb_id}/documents", None),
+        ("GET", f"/v1/documents/{document_id}", None),
+    ]

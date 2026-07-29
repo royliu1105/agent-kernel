@@ -6,7 +6,14 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from kernel_core import AgentStatus, ApprovalStatus, RunEventType, RunStatus
+from kernel_core import (
+    AgentStatus,
+    ApprovalStatus,
+    DocumentStatus,
+    KnowledgeBaseStatus,
+    RunEventType,
+    RunStatus,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -87,3 +94,43 @@ class ApprovalApproveRequest(ApiModel):
 
 class ApprovalRejectRequest(ApiModel):
     reason: str = Field(min_length=1, max_length=4000)
+
+
+class KnowledgeBaseCreateRequest(ApiModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str = Field(default="", max_length=2000)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class KnowledgeBaseResponse(ApiModel):
+    id: UUID
+    name: str
+    description: str
+    status: KnowledgeBaseStatus
+    metadata: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+class DocumentCreateRequest(ApiModel):
+    title: str = Field(min_length=1, max_length=500)
+    source_uri: str = Field(min_length=1, max_length=2000)
+    mime_type: str | None = Field(default=None, max_length=255)
+    checksum: str | None = Field(default=None, max_length=255)
+    size_bytes: int | None = Field(default=None, ge=0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class DocumentResponse(ApiModel):
+    id: UUID
+    knowledge_base_id: UUID
+    title: str
+    source_uri: str
+    mime_type: str | None
+    checksum: str | None
+    size_bytes: int | None
+    status: DocumentStatus
+    error_message: str | None
+    metadata: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime

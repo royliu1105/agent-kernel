@@ -17,6 +17,8 @@ app = typer.Typer(help="Agent Kernel developer CLI.")
 agent_app = typer.Typer(help="Manage agents.")
 run_app = typer.Typer(help="Manage runs.")
 approval_app = typer.Typer(help="Manage approvals.")
+kb_app = typer.Typer(help="Manage knowledge bases.")
+document_app = typer.Typer(help="Manage document metadata.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
@@ -259,6 +261,148 @@ def reject_approval(
     _echo_json(response)
 
 
+@kb_app.command("create")
+def create_knowledge_base(
+    name: Annotated[str, typer.Option("--name", help="Knowledge base name.")],
+    description: Annotated[
+        str,
+        typer.Option("--description", help="Knowledge base description."),
+    ] = "",
+    metadata: Annotated[
+        str,
+        typer.Option("--metadata", help="Knowledge base metadata JSON object."),
+    ] = "{}",
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Create a knowledge base through the API."""
+
+    response = _request_json(
+        "POST",
+        "/v1/knowledge-bases",
+        api_url=_resolve_api_url(api_url),
+        json_payload={
+            "name": name,
+            "description": description,
+            "metadata": _parse_json_object(metadata),
+        },
+    )
+    _echo_json(response)
+
+
+@kb_app.command("list")
+def list_knowledge_bases(
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List knowledge bases through the API."""
+
+    response = _request_json("GET", "/v1/knowledge-bases", api_url=_resolve_api_url(api_url))
+    _echo_json(response)
+
+
+@kb_app.command("inspect")
+def inspect_knowledge_base(
+    knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Inspect one knowledge base through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/knowledge-bases/{knowledge_base_id}",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@document_app.command("register")
+def register_document(
+    knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],
+    title: Annotated[str, typer.Option("--title", help="Document title.")],
+    source_uri: Annotated[str, typer.Option("--source-uri", help="Document source URI.")],
+    mime_type: Annotated[
+        str | None,
+        typer.Option("--mime-type", help="Document MIME type."),
+    ] = None,
+    checksum: Annotated[
+        str | None,
+        typer.Option("--checksum", help="Document checksum."),
+    ] = None,
+    size_bytes: Annotated[
+        int | None,
+        typer.Option("--size-bytes", help="Document size in bytes."),
+    ] = None,
+    metadata: Annotated[
+        str,
+        typer.Option("--metadata", help="Document metadata JSON object."),
+    ] = "{}",
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Register document metadata under a knowledge base through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/knowledge-bases/{knowledge_base_id}/documents",
+        api_url=_resolve_api_url(api_url),
+        json_payload={
+            "title": title,
+            "source_uri": source_uri,
+            "mime_type": mime_type,
+            "checksum": checksum,
+            "size_bytes": size_bytes,
+            "metadata": _parse_json_object(metadata),
+        },
+    )
+    _echo_json(response)
+
+
+@document_app.command("list")
+def list_documents(
+    knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List document metadata for a knowledge base through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/knowledge-bases/{knowledge_base_id}/documents",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@document_app.command("inspect")
+def inspect_document(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Inspect document metadata through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/documents/{document_id}",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
 def _resolve_api_url(api_url: str) -> str:
     return os.getenv(API_URL_ENV, api_url).rstrip("/")
 
@@ -313,3 +457,5 @@ def _echo_json(payload: object) -> None:
 app.add_typer(agent_app, name="agent")
 app.add_typer(run_app, name="run")
 app.add_typer(approval_app, name="approval")
+app.add_typer(kb_app, name="kb")
+app.add_typer(document_app, name="document")

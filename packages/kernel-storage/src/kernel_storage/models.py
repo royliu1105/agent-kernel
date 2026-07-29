@@ -8,6 +8,8 @@ from typing import Any
 from kernel_core import (
     AgentStatus,
     ApprovalStatus,
+    DocumentStatus,
+    KnowledgeBaseStatus,
     RiskLevel,
     RunEventType,
     RunStatus,
@@ -197,3 +199,63 @@ class RunEventRecord(Base):
     )
 
     run: Mapped[RunRecord] = relationship(back_populates="events")
+
+
+class KnowledgeBaseRecord(Base):
+    __tablename__ = "knowledge_bases"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    description: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=KnowledgeBaseStatus.ACTIVE.value, index=True
+    )
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    documents: Mapped[list[DocumentRecord]] = relationship(
+        back_populates="knowledge_base", cascade="all, delete-orphan"
+    )
+
+
+class DocumentRecord(Base):
+    __tablename__ = "documents"
+    __table_args__ = (
+        Index("ix_documents_knowledge_base_id_created_at", "knowledge_base_id", "created_at"),
+        Index("ix_documents_knowledge_base_id_status", "knowledge_base_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    knowledge_base_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("knowledge_bases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_uri: Mapped[str] = mapped_column(String(2000), nullable=False)
+    mime_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    checksum: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=DocumentStatus.REGISTERED.value, index=True
+    )
+    error_message: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    knowledge_base: Mapped[KnowledgeBaseRecord] = relationship(back_populates="documents")

@@ -1,5 +1,12 @@
-from kernel_core import RunEventType, RunStatus
-from kernel_storage import AgentRepository, RunRepository
+from uuid import UUID
+
+from kernel_core import DocumentStatus, KnowledgeBaseStatus, RunEventType, RunStatus
+from kernel_storage import (
+    AgentRepository,
+    DocumentRepository,
+    KnowledgeBaseRepository,
+    RunRepository,
+)
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -129,3 +136,78 @@ def test_run_repository_fails_run_with_error_details(
     assert failed.error_type == "provider_error"
     assert failed.error_message == "provider unavailable"
     assert events[-1].type is RunEventType.RUN_FAILED
+
+
+def test_knowledge_base_repository_creates_loads_and_lists(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        repository = KnowledgeBaseRepository(session)
+        created = repository.create(
+            name="engineering-handbook",
+            description="Internal engineering knowledge.",
+            metadata={"owner": "platform"},
+        )
+
+        loaded = repository.get(created.id)
+        knowledge_bases = repository.list()
+
+    assert loaded is not None
+    assert loaded.id == created.id
+    assert loaded.name == "engineering-handbook"
+    assert loaded.status is KnowledgeBaseStatus.ACTIVE
+    assert loaded.metadata == {"owner": "platform"}
+    assert [knowledge_base.id for knowledge_base in knowledge_bases] == [created.id]
+
+
+def test_document_repository_registers_and_lists_documents(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        knowledge_base = KnowledgeBaseRepository(session).create(name="engineering-handbook")
+
+        document = DocumentRepository(session).create(
+            knowledge_base_id=knowledge_base.id,
+            title="Deployment Guide",
+            source_uri="object://local/docs/deployment.md",
+            mime_type="text/markdown",
+            checksum="sha256:abc",
+            size_bytes=1234,
+            metadata={"source": "manual"},
+        )
+        assert document is not None
+
+        loaded = DocumentRepository(session).get(document.id)
+        documents = DocumentRepository(session).list_for_knowledge_base(knowledge_base.id)
+
+    assert loaded is not None
+    assert loaded.id == document.id
+    assert loaded.knowledge_base_id == knowledge_base.id
+    assert loaded.title == "Deployment Guide"
+    assert loaded.status is DocumentStatus.REGISTERED
+    assert loaded.source_uri == "object://local/docs/deployment.md"
+    assert loaded.mime_type == "text/markdown"
+    assert loaded.checksum == "sha256:abc"
+    assert loaded.size_bytes == 1234
+    assert loaded.metadata == {"source": "manual"}
+    assert documents is not None
+    assert [item.id for item in documents] == [document.id]
+
+
+def test_document_repository_returns_none_for_missing_knowledge_base(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    missing_knowledge_base_id = UUID("00000000-0000-0000-0000-000000000010")
+
+    with sqlite_session_factory() as session:
+        document = DocumentRepository(session).create(
+            knowledge_base_id=missing_knowledge_base_id,
+            title="Missing KB",
+            source_uri="object://local/missing.md",
+        )
+        documents = DocumentRepository(session).list_for_knowledge_base(
+            missing_knowledge_base_id
+        )
+
+    assert document is None
+    assert documents is None

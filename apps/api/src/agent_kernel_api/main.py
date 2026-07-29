@@ -8,7 +8,7 @@ from uuid import UUID
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query, status
-from kernel_core import Agent, Approval, ApprovalStatus, Run, RunEvent
+from kernel_core import Agent, Approval, ApprovalStatus, Document, KnowledgeBase, Run, RunEvent
 from kernel_runtime import (
     InvalidRunTransitionError,
     RunExecutionError,
@@ -20,6 +20,8 @@ from kernel_storage import (
     AgentRepository,
     ApprovalDecisionError,
     ApprovalRepository,
+    DocumentRepository,
+    KnowledgeBaseRepository,
     RunRepository,
     ToolCallRepository,
     create_engine_for_url,
@@ -33,6 +35,10 @@ from agent_kernel_api.schemas import (
     ApprovalApproveRequest,
     ApprovalRejectRequest,
     ApprovalResponse,
+    DocumentCreateRequest,
+    DocumentResponse,
+    KnowledgeBaseCreateRequest,
+    KnowledgeBaseResponse,
     RunCreateRequest,
     RunEventResponse,
     RunResponse,
@@ -264,6 +270,109 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
         return _approval_response(approval)
 
+    @app.post(
+        "/v1/knowledge-bases",
+        response_model=KnowledgeBaseResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["knowledge-bases"],
+    )
+    def create_knowledge_base(
+        request: KnowledgeBaseCreateRequest,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> KnowledgeBaseResponse:
+        knowledge_base = KnowledgeBaseRepository(session).create(
+            name=request.name,
+            description=request.description,
+            metadata=request.metadata,
+        )
+        return _knowledge_base_response(knowledge_base)
+
+    @app.get(
+        "/v1/knowledge-bases",
+        response_model=list[KnowledgeBaseResponse],
+        tags=["knowledge-bases"],
+    )
+    def list_knowledge_bases(
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[KnowledgeBaseResponse]:
+        knowledge_bases = KnowledgeBaseRepository(session).list()
+        return [_knowledge_base_response(knowledge_base) for knowledge_base in knowledge_bases]
+
+    @app.get(
+        "/v1/knowledge-bases/{knowledge_base_id}",
+        response_model=KnowledgeBaseResponse,
+        tags=["knowledge-bases"],
+    )
+    def get_knowledge_base(
+        knowledge_base_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> KnowledgeBaseResponse:
+        knowledge_base = KnowledgeBaseRepository(session).get(knowledge_base_id)
+        if knowledge_base is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Knowledge base not found",
+            )
+        return _knowledge_base_response(knowledge_base)
+
+    @app.post(
+        "/v1/knowledge-bases/{knowledge_base_id}/documents",
+        response_model=DocumentResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["documents"],
+    )
+    def create_document(
+        knowledge_base_id: UUID,
+        request: DocumentCreateRequest,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> DocumentResponse:
+        document = DocumentRepository(session).create(
+            knowledge_base_id=knowledge_base_id,
+            title=request.title,
+            source_uri=request.source_uri,
+            mime_type=request.mime_type,
+            checksum=request.checksum,
+            size_bytes=request.size_bytes,
+            metadata=request.metadata,
+        )
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Knowledge base not found",
+            )
+        return _document_response(document)
+
+    @app.get(
+        "/v1/knowledge-bases/{knowledge_base_id}/documents",
+        response_model=list[DocumentResponse],
+        tags=["documents"],
+    )
+    def list_documents(
+        knowledge_base_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[DocumentResponse]:
+        documents = DocumentRepository(session).list_for_knowledge_base(knowledge_base_id)
+        if documents is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Knowledge base not found",
+            )
+        return [_document_response(document) for document in documents]
+
+    @app.get(
+        "/v1/documents/{document_id}",
+        response_model=DocumentResponse,
+        tags=["documents"],
+    )
+    def get_document(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> DocumentResponse:
+        document = DocumentRepository(session).get(document_id)
+        if document is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        return _document_response(document)
+
     return app
 
 
@@ -333,4 +442,33 @@ def _approval_response(approval: Approval) -> ApprovalResponse:
         trace_id=approval.trace_id,
         requested_at=approval.requested_at,
         resolved_at=approval.resolved_at,
+    )
+
+
+def _knowledge_base_response(knowledge_base: KnowledgeBase) -> KnowledgeBaseResponse:
+    return KnowledgeBaseResponse(
+        id=knowledge_base.id,
+        name=knowledge_base.name,
+        description=knowledge_base.description,
+        status=knowledge_base.status,
+        metadata=knowledge_base.metadata,
+        created_at=knowledge_base.created_at,
+        updated_at=knowledge_base.updated_at,
+    )
+
+
+def _document_response(document: Document) -> DocumentResponse:
+    return DocumentResponse(
+        id=document.id,
+        knowledge_base_id=document.knowledge_base_id,
+        title=document.title,
+        source_uri=document.source_uri,
+        mime_type=document.mime_type,
+        checksum=document.checksum,
+        size_bytes=document.size_bytes,
+        status=document.status,
+        error_message=document.error_message,
+        metadata=document.metadata,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
     )

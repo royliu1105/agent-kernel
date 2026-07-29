@@ -95,6 +95,21 @@ class ApprovalStatus(StrEnum):
     CANCELED = "canceled"
 
 
+class KnowledgeBaseStatus(StrEnum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+class DocumentStatus(StrEnum):
+    REGISTERED = "registered"
+    UPLOADED = "uploaded"
+    PARSING = "parsing"
+    CHUNKING = "chunking"
+    EMBEDDING = "embedding"
+    INDEXED = "indexed"
+    FAILED = "failed"
+
+
 class RiskLevel(StrEnum):
     READ_ONLY = "read_only"
     EXTERNAL_WRITE = "external_write"
@@ -198,3 +213,28 @@ class Approval(KernelModel):
     trace_id: str | None = None
     requested_at: datetime = Field(default_factory=utc_now)
     resolved_at: datetime | None = None
+
+
+class KnowledgeBase(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    name: str
+    description: str = ""
+    status: KnowledgeBaseStatus = KnowledgeBaseStatus.ACTIVE
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class Document(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    knowledge_base_id: UUID
+    title: str
+    source_uri: str
+    mime_type: str | None = None
+    checksum: str | None = None
+    size_bytes: int | None = None
+    status: DocumentStatus = DocumentStatus.REGISTERED
+    error_message: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)

@@ -11,6 +11,10 @@ from kernel_core import (
     AgentStatus,
     Approval,
     ApprovalStatus,
+    Document,
+    DocumentStatus,
+    KnowledgeBase,
+    KnowledgeBaseStatus,
     RiskLevel,
     Run,
     RunEvent,
@@ -26,6 +30,8 @@ from sqlalchemy.orm import Session
 from kernel_storage.models import (
     AgentRecord,
     ApprovalRecord,
+    DocumentRecord,
+    KnowledgeBaseRecord,
     RunEventRecord,
     RunRecord,
     ToolCallRecord,
@@ -34,6 +40,10 @@ from kernel_storage.models import (
 
 class ApprovalDecisionError(ValueError):
     """Raised when an approval cannot be decided."""
+
+
+class KnowledgeBaseNotFoundError(ValueError):
+    """Raised when a knowledge base does not exist."""
 
 
 class AgentRepository:
@@ -605,6 +615,90 @@ class ApprovalRepository:
         )
 
 
+class KnowledgeBaseRepository:
+    """Persistence operations for knowledge bases."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        name: str,
+        description: str = "",
+        metadata: dict[str, Any] | None = None,
+    ) -> KnowledgeBase:
+        knowledge_base = KnowledgeBase(
+            name=name,
+            description=description,
+            metadata=metadata or {},
+        )
+        self._session.add(_knowledge_base_to_record(knowledge_base))
+        self._session.commit()
+        return knowledge_base
+
+    def get(self, knowledge_base_id: UUID) -> KnowledgeBase | None:
+        record = self._session.get(KnowledgeBaseRecord, str(knowledge_base_id))
+        if record is None:
+            return None
+        return _knowledge_base_from_record(record)
+
+    def list(self) -> list[KnowledgeBase]:
+        statement = select(KnowledgeBaseRecord).order_by(KnowledgeBaseRecord.created_at)
+        return [_knowledge_base_from_record(record) for record in self._session.scalars(statement)]
+
+
+class DocumentRepository:
+    """Persistence operations for document metadata."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        title: str,
+        source_uri: str,
+        mime_type: str | None = None,
+        checksum: str | None = None,
+        size_bytes: int | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> Document | None:
+        if self._session.get(KnowledgeBaseRecord, str(knowledge_base_id)) is None:
+            return None
+
+        document = Document(
+            knowledge_base_id=knowledge_base_id,
+            title=title,
+            source_uri=source_uri,
+            mime_type=mime_type,
+            checksum=checksum,
+            size_bytes=size_bytes,
+            metadata=metadata or {},
+        )
+        self._session.add(_document_to_record(document))
+        self._session.commit()
+        return document
+
+    def get(self, document_id: UUID) -> Document | None:
+        record = self._session.get(DocumentRecord, str(document_id))
+        if record is None:
+            return None
+        return _document_from_record(record)
+
+    def list_for_knowledge_base(self, knowledge_base_id: UUID) -> list[Document] | None:
+        if self._session.get(KnowledgeBaseRecord, str(knowledge_base_id)) is None:
+            return None
+
+        statement = (
+            select(DocumentRecord)
+            .where(DocumentRecord.knowledge_base_id == str(knowledge_base_id))
+            .order_by(DocumentRecord.created_at)
+        )
+        return [_document_from_record(record) for record in self._session.scalars(statement)]
+
+
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
@@ -772,4 +866,62 @@ def _approval_from_record(record: ApprovalRecord) -> Approval:
         trace_id=record.trace_id,
         requested_at=record.requested_at,
         resolved_at=record.resolved_at,
+    )
+
+
+def _knowledge_base_to_record(knowledge_base: KnowledgeBase) -> KnowledgeBaseRecord:
+    return KnowledgeBaseRecord(
+        id=str(knowledge_base.id),
+        name=knowledge_base.name,
+        description=knowledge_base.description,
+        status=knowledge_base.status.value,
+        extra_metadata=knowledge_base.metadata,
+        created_at=knowledge_base.created_at,
+        updated_at=knowledge_base.updated_at,
+    )
+
+
+def _knowledge_base_from_record(record: KnowledgeBaseRecord) -> KnowledgeBase:
+    return KnowledgeBase(
+        id=UUID(record.id),
+        name=record.name,
+        description=record.description,
+        status=KnowledgeBaseStatus(record.status),
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
+        updated_at=record.updated_at,
+    )
+
+
+def _document_to_record(document: Document) -> DocumentRecord:
+    return DocumentRecord(
+        id=str(document.id),
+        knowledge_base_id=str(document.knowledge_base_id),
+        title=document.title,
+        source_uri=document.source_uri,
+        mime_type=document.mime_type,
+        checksum=document.checksum,
+        size_bytes=document.size_bytes,
+        status=document.status.value,
+        error_message=document.error_message,
+        extra_metadata=document.metadata,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
+    )
+
+
+def _document_from_record(record: DocumentRecord) -> Document:
+    return Document(
+        id=UUID(record.id),
+        knowledge_base_id=UUID(record.knowledge_base_id),
+        title=record.title,
+        source_uri=record.source_uri,
+        mime_type=record.mime_type,
+        checksum=record.checksum,
+        size_bytes=record.size_bytes,
+        status=DocumentStatus(record.status),
+        error_message=record.error_message,
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
+        updated_at=record.updated_at,
     )
