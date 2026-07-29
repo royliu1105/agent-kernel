@@ -74,3 +74,4 @@ day-03.md
 - [Day 24: Phase 3 Closure and Full Verification](day-24.md)
 - [Day 25: Trace and Correlation Foundation](day-25.md)
 - [Day 26: Structured Runtime Logs](day-26.md)
+- [Day 27: Latency and Metrics Foundation](day-27.md)

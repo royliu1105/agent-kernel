@@ -230,8 +230,8 @@ Checklist:
 - [x] Structured logs.
 - [ ] OpenTelemetry spans.
 - [x] Trace IDs.
-- [ ] Model call metrics.
-- [ ] Tool call metrics.
+- [x] Model call metrics.
+- [x] Tool call metrics.
 - [ ] Retrieval metrics.
 - [ ] Cost tracking.
 - [ ] Eval dataset format.
@@ -245,7 +245,7 @@ Acceptance:
 
 - [x] Every run has a trace ID.
 - [ ] Every step has latency data.
-- [ ] Model calls record token and cost data.
+- [x] Model calls record token and cost data.
 - [ ] Eval run works through CLI.
 - [ ] Failed eval cases produce clear reports.
 - [ ] CI runs minimum deterministic evals.

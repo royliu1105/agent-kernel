@@ -11,7 +11,9 @@ from kernel_core import (
     RiskLevel,
     RunEventType,
     RunStatus,
+    ToolCallStatus,
 )
+from kernel_observability import InMemoryMetricsRecorder
 from kernel_providers import LLMProviderError, LLMRequest, LLMResponse, LLMUsage, MockLLMProvider
 from kernel_rag import DocumentIndexingService, create_rag_tool_registry
 from kernel_runtime import ModelRouter, RunExecutionError, RunExecutionService
@@ -35,6 +37,7 @@ async def test_execution_service_completes_queued_run(
     sqlite_session_factory: sessionmaker[Session],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    metrics_recorder = InMemoryMetricsRecorder()
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="research-agent")
         run_repository = RunRepository(session)
@@ -51,7 +54,10 @@ async def test_execution_service_completes_queued_run(
         assert queued is not None
 
         with caplog.at_level(logging.INFO, logger="kernel_runtime.execution"):
-            completed = await RunExecutionService(provider=MockLLMProvider()).execute(
+            completed = await RunExecutionService(
+                provider=MockLLMProvider(),
+                metrics_recorder=metrics_recorder,
+            ).execute(
                 run_id=run.id,
                 repository=run_repository,
             )
@@ -84,6 +90,18 @@ async def test_execution_service_completes_queued_run(
     assert model_log["input_tokens"] == 2
     assert model_log["output_tokens"] == 4
     assert model_log["estimated_cost"] == 0.0
+    assert isinstance(model_log["latency_ms"], int)
+    assert model_log["latency_ms"] >= 0
+    metric_labels = {"provider": "mock", "model": "mock-small", "status": "succeeded"}
+    token_labels = {"provider": "mock", "model": "mock-small"}
+    assert metrics_recorder.counter_value("llm_model_calls_total", labels=metric_labels) == 1
+    assert metrics_recorder.counter_value("llm_tokens_input_total", labels=token_labels) == 2
+    assert metrics_recorder.counter_value("llm_tokens_output_total", labels=token_labels) == 4
+    assert metrics_recorder.counter_value("llm_tokens_total", labels=token_labels) == 6
+    assert metrics_recorder.counter_value("llm_estimated_cost_total", labels=token_labels) == 0.0
+    assert len(
+        metrics_recorder.observations("llm_model_call_latency_ms", labels=metric_labels)
+    ) == 1
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -362,6 +380,7 @@ async def test_execution_service_completes_safe_explicit_tool_run(
     sqlite_session_factory: sessionmaker[Session],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    metrics_recorder = InMemoryMetricsRecorder()
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run_repository = RunRepository(session)
@@ -377,7 +396,7 @@ async def test_execution_service_completes_safe_explicit_tool_run(
         )
 
         with caplog.at_level(logging.INFO, logger="kernel_runtime.execution"):
-            completed = await RunExecutionService().execute(
+            completed = await RunExecutionService(metrics_recorder=metrics_recorder).execute(
                 run_id=run.id,
                 repository=run_repository,
             )
@@ -406,6 +425,13 @@ async def test_execution_service_completes_safe_explicit_tool_run(
     assert requested_log["risk_level"] == "read_only"
     assert completed_log["tool_call_id"] == str(tool_calls[0].id)
     assert completed_log["status"] == "succeeded"
+    assert isinstance(completed_log["latency_ms"], int)
+    assert completed_log["latency_ms"] >= 0
+    assert tool_calls[0].latency_ms is not None
+    assert tool_calls[0].latency_ms >= 0
+    tool_labels = {"tool_name": "echo", "status": "succeeded"}
+    assert metrics_recorder.counter_value("tool_calls_total", labels=tool_labels) == 1
+    assert len(metrics_recorder.observations("tool_call_latency_ms", labels=tool_labels)) == 1
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -516,6 +542,7 @@ async def test_execution_service_retries_safe_tool_failure(
 async def test_execution_service_does_not_retry_invalid_tool_arguments(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
+    metrics_recorder = InMemoryMetricsRecorder()
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-validation-agent")
         run_repository = RunRepository(session)
@@ -530,11 +557,26 @@ async def test_execution_service_does_not_retry_invalid_tool_arguments(
             payload={"from_status": "created", "to_status": "queued"},
         )
 
-        failed = await RunExecutionService().execute(run_id=run.id, repository=run_repository)
+        failed = await RunExecutionService(metrics_recorder=metrics_recorder).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
         events = run_repository.list_events(run.id)
+        tool_calls = ToolCallRepository(session).list_for_run(run.id)
 
     assert failed.status is RunStatus.FAILED
     assert failed.error_type == "invalid_tool_arguments"
+    assert tool_calls[0].status is ToolCallStatus.FAILED
+    assert tool_calls[0].latency_ms is not None
+    assert tool_calls[0].latency_ms >= 0
+    labels = {
+        "tool_name": "echo",
+        "status": "failed",
+        "error_type": "invalid_tool_arguments",
+    }
+    assert metrics_recorder.counter_value("tool_calls_total", labels=labels) == 1
+    assert metrics_recorder.counter_value("tool_call_failure_total", labels=labels) == 1
+    assert len(metrics_recorder.observations("tool_call_latency_ms", labels=labels)) == 1
     assert RunEventType.TOOL_CALL_RETRYING not in [event.type for event in events]
     assert events[-1].type is RunEventType.RUN_FAILED
 

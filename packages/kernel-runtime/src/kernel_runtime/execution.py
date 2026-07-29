@@ -20,7 +20,13 @@ from kernel_core import (
     ToolCallStatus,
 )
 from kernel_memory import MemoryContext, MemoryRetrievalService
-from kernel_observability import ObservabilityContext, log_event
+from kernel_observability import (
+    LatencyTimer,
+    MetricsRecorder,
+    NoOpMetricsRecorder,
+    ObservabilityContext,
+    log_event,
+)
 from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
 from kernel_providers import (
     LLMMessage,
@@ -101,6 +107,7 @@ class RunExecutionService:
         tool_executor: ToolExecutor | None = None,
         policy_evaluator: ToolPolicyEvaluator | None = None,
         memory_retrieval_service: MemoryRetrievalService | None = None,
+        metrics_recorder: MetricsRecorder | None = None,
         retry_policy: RetryPolicy | None = None,
         default_model: str = "mock:mock-default",
         state_machine: RunStateMachine | None = None,
@@ -116,6 +123,7 @@ class RunExecutionService:
         self._tool_executor = tool_executor or ToolExecutor(registry=self._tool_registry)
         self._policy_evaluator = policy_evaluator or ToolPolicyEvaluator()
         self._memory_retrieval_service = memory_retrieval_service or MemoryRetrievalService()
+        self._metrics_recorder = metrics_recorder or NoOpMetricsRecorder()
         self._retry_policy = retry_policy or RetryPolicy()
         self._default_model = default_model
         self._state_machine = state_machine or RunStateMachine()
@@ -294,11 +302,20 @@ class RunExecutionService:
             routed_request = request.model_copy(update={"model": route.model})
             for attempt in range(1, self._retry_policy.provider_max_attempts + 1):
                 attempt_count += 1
+                model_timer = LatencyTimer.start()
                 try:
                     response = await route.provider.complete(routed_request)
+                    latency_ms = model_timer.elapsed_ms()
                 except LLMProviderError as error:
+                    latency_ms = model_timer.elapsed_ms()
                     last_error = error
                     last_provider = route.provider_name
+                    self._record_model_failure_metrics(
+                        provider=route.provider_name,
+                        model=route.model,
+                        error_type=error.error_type,
+                        latency_ms=latency_ms,
+                    )
                     if self._should_retry_provider(error) and (
                         attempt < self._retry_policy.provider_max_attempts
                     ):
@@ -312,6 +329,7 @@ class RunExecutionService:
                             model=route.model,
                             error_type=error.error_type,
                             extra={
+                                "latency_ms": latency_ms,
                                 "attempt": attempt + 1,
                                 "max_attempts": self._retry_policy.provider_max_attempts,
                             },
@@ -341,6 +359,7 @@ class RunExecutionService:
                     attempt_count=attempt_count,
                     fallback_used=model_index > 0,
                     memory_context=memory_context,
+                    latency_ms=latency_ms,
                 )
 
             if last_error is not None and not self._should_retry_provider(last_error):
@@ -398,6 +417,7 @@ class RunExecutionService:
         attempt_count: int,
         fallback_used: bool,
         memory_context: MemoryContext | None,
+        latency_ms: int,
     ) -> Run:
         succeed_transition = self._state_machine.succeed(running)
         output_payload: dict[str, Any] = {
@@ -418,6 +438,7 @@ class RunExecutionService:
             provider=response.provider,
             model=response.model,
             extra={
+                "latency_ms": latency_ms,
                 "input_tokens": response.usage.input_tokens,
                 "output_tokens": response.usage.output_tokens,
                 "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
@@ -425,6 +446,14 @@ class RunExecutionService:
                 "attempt_count": attempt_count,
                 "fallback_used": fallback_used,
             },
+        )
+        self._record_model_success_metrics(
+            provider=response.provider,
+            model=response.model,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            estimated_cost=response.usage.estimated_cost,
+            latency_ms=latency_ms,
         )
         completed = repository.complete(
             run_id=running.id,
@@ -615,6 +644,7 @@ class RunExecutionService:
         if running_tool_call is None:
             raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
 
+        tool_timer = LatencyTimer.start()
         try:
             result = await self._execute_tool_with_retry(
                 running=running,
@@ -622,10 +652,17 @@ class RunExecutionService:
                 tool_call=running_tool_call,
             )
         except ToolError as error:
+            latency_ms = tool_timer.elapsed_ms()
             tool_call_repository.fail(
                 tool_call_id=running_tool_call.id,
                 error_type=error.error_type,
                 error_message=str(error),
+                latency_ms=latency_ms,
+            )
+            self._record_tool_failure_metrics(
+                tool_name=running_tool_call.tool_name,
+                error_type=error.error_type,
+                latency_ms=latency_ms,
             )
             return self._fail_running_run(
                 running=running,
@@ -634,9 +671,11 @@ class RunExecutionService:
                 error_message=str(error),
             )
 
+        latency_ms = tool_timer.elapsed_ms()
         completed_tool_call = tool_call_repository.complete(
             tool_call_id=running_tool_call.id,
             result=result.output,
+            latency_ms=latency_ms,
         )
         if completed_tool_call is None:
             raise RunExecutionError(f"Tool call {running_tool_call.id} was not found.")
@@ -652,9 +691,14 @@ class RunExecutionService:
             status=completed_tool_call.status.value,
             tool_name=completed_tool_call.tool_name,
             extra={
+                "latency_ms": latency_ms,
                 "risk_level": completed_tool_call.risk_level.value,
                 "requires_approval": completed_tool_call.requires_approval,
             },
+        )
+        self._record_tool_success_metrics(
+            tool_name=completed_tool_call.tool_name,
+            latency_ms=latency_ms,
         )
 
         succeed_transition = self._state_machine.succeed(running)
@@ -691,9 +735,11 @@ class RunExecutionService:
     ) -> Any:
         request = ToolRequest(tool_name=tool_call.tool_name, arguments=tool_call.arguments)
         for attempt in range(1, self._retry_policy.tool_max_attempts + 1):
+            attempt_timer = LatencyTimer.start()
             try:
                 return await self._tool_executor.execute(request)
             except ToolError as error:
+                attempt_latency_ms = attempt_timer.elapsed_ms()
                 if self._should_retry_tool(error, tool_call) and (
                     attempt < self._retry_policy.tool_max_attempts
                 ):
@@ -706,6 +752,7 @@ class RunExecutionService:
                         tool_name=tool_call.tool_name,
                         error_type=error.error_type,
                         extra={
+                            "latency_ms": attempt_latency_ms,
                             "attempt": attempt + 1,
                             "max_attempts": self._retry_policy.tool_max_attempts,
                             "risk_level": tool_call.risk_level.value,
@@ -738,6 +785,78 @@ class RunExecutionService:
             and tool_call.risk_level in self._retry_policy.retryable_tool_risk_levels
             and not tool_call.requires_approval
         )
+
+    def _record_model_success_metrics(
+        self,
+        *,
+        provider: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        estimated_cost: float,
+        latency_ms: int,
+    ) -> None:
+        labels = {"provider": provider, "model": model, "status": RunStatus.SUCCEEDED.value}
+        self._metrics_recorder.increment("llm_model_calls_total", labels=labels)
+        self._metrics_recorder.observe("llm_model_call_latency_ms", latency_ms, labels=labels)
+        self._metrics_recorder.increment(
+            "llm_tokens_input_total",
+            value=float(input_tokens),
+            labels={"provider": provider, "model": model},
+        )
+        self._metrics_recorder.increment(
+            "llm_tokens_output_total",
+            value=float(output_tokens),
+            labels={"provider": provider, "model": model},
+        )
+        self._metrics_recorder.increment(
+            "llm_tokens_total",
+            value=float(input_tokens + output_tokens),
+            labels={"provider": provider, "model": model},
+        )
+        self._metrics_recorder.increment(
+            "llm_estimated_cost_total",
+            value=estimated_cost,
+            labels={"provider": provider, "model": model},
+        )
+
+    def _record_model_failure_metrics(
+        self,
+        *,
+        provider: str,
+        model: str,
+        error_type: str,
+        latency_ms: int,
+    ) -> None:
+        labels = {
+            "provider": provider,
+            "model": model,
+            "status": RunStatus.FAILED.value,
+            "error_type": error_type,
+        }
+        self._metrics_recorder.increment("llm_model_calls_total", labels=labels)
+        self._metrics_recorder.observe("llm_model_call_latency_ms", latency_ms, labels=labels)
+
+    def _record_tool_success_metrics(self, *, tool_name: str, latency_ms: int) -> None:
+        labels = {"tool_name": tool_name, "status": ToolCallStatus.SUCCEEDED.value}
+        self._metrics_recorder.increment("tool_calls_total", labels=labels)
+        self._metrics_recorder.observe("tool_call_latency_ms", latency_ms, labels=labels)
+
+    def _record_tool_failure_metrics(
+        self,
+        *,
+        tool_name: str,
+        error_type: str,
+        latency_ms: int,
+    ) -> None:
+        labels = {
+            "tool_name": tool_name,
+            "status": ToolCallStatus.FAILED.value,
+            "error_type": error_type,
+        }
+        self._metrics_recorder.increment("tool_calls_total", labels=labels)
+        self._metrics_recorder.increment("tool_call_failure_total", labels=labels)
+        self._metrics_recorder.observe("tool_call_latency_ms", latency_ms, labels=labels)
 
     def _fail_running_run(
         self,

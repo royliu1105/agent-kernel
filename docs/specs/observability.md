@@ -225,6 +225,26 @@ Secrets and credentials must be redacted before logging.
 
 ## Metrics
 
+## Day 27 Latency and Metrics Foundation
+
+Day 27 implements the first runtime metrics foundation:
+
+- Add a monotonic latency timer.
+- Add a metrics recorder protocol for counters and observations.
+- Add a no-op metrics recorder for default runtime behavior.
+- Add an in-memory metrics recorder for tests and local inspection.
+- Record model call count and latency metrics.
+- Record model input token, output token, total token, and estimated cost metrics.
+- Record tool call count and latency metrics.
+- Record tool call failure count and latency metrics.
+- Persist successful and failed tool call `latency_ms`.
+- Include `latency_ms` in structured model, provider retry, tool retry, and tool
+  completion logs.
+
+Day 27 intentionally does not implement Prometheus endpoints, OpenTelemetry
+metrics exporters, persisted metric tables, full `RunStep` persistence,
+retrieval metrics, eval platform work, or Web UI metric views.
+
 MVP metrics:
 
 ```text

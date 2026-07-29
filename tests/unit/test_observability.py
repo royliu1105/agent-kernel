@@ -7,7 +7,9 @@ import pytest
 from kernel_observability import (
     SPAN_ID_PATTERN,
     TRACE_ID_PATTERN,
+    InMemoryMetricsRecorder,
     JsonLogFormatter,
+    LatencyTimer,
     ObservabilityContext,
     build_log_fields,
     build_log_record,
@@ -16,6 +18,7 @@ from kernel_observability import (
     ensure_span_id,
     ensure_trace_id,
     log_event,
+    normalize_labels,
     redact_log_fields,
 )
 
@@ -177,3 +180,35 @@ def test_log_event_emits_structured_extra(caplog: pytest.LogCaptureFixture) -> N
         "trace_id": "c" * 32,
         "status": "running",
     }
+
+
+def test_latency_timer_reports_non_negative_milliseconds() -> None:
+    timer = LatencyTimer.start()
+
+    assert timer.elapsed_ms() >= 0
+
+
+def test_in_memory_metrics_recorder_tracks_counters_and_observations() -> None:
+    recorder = InMemoryMetricsRecorder()
+
+    recorder.increment("tool_calls_total", labels={"tool_name": "echo", "status": "succeeded"})
+    recorder.increment(
+        "tool_calls_total",
+        value=2,
+        labels={"status": "succeeded", "tool_name": "echo"},
+    )
+    recorder.observe(
+        "tool_call_latency_ms",
+        12,
+        labels={"tool_name": "echo", "status": "succeeded"},
+    )
+
+    labels = {"tool_name": "echo", "status": "succeeded"}
+    assert recorder.counter_value("tool_calls_total", labels=labels) == 3
+    assert recorder.observations("tool_call_latency_ms", labels=labels) == (12,)
+    assert recorder.counter_points()[0].value == 3
+    assert recorder.observation_points()[0].value == 12
+
+
+def test_normalize_labels_returns_stable_sorted_label_key() -> None:
+    assert normalize_labels({"b": "2", "a": "1"}) == (("a", "1"), ("b", "2"))
