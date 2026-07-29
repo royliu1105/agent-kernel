@@ -163,6 +163,18 @@ Parsed text produced during ingestion is also stored as an object-store artifact
 - Parsed text character count.
 - Error metadata.
 
+Chunk content is stored in Postgres for v0.1 so retrieval debugging and future citation inspection are straightforward. Chunk records store:
+
+- Document ID.
+- Stable chunk index.
+- Chunk content.
+- Source character offsets.
+- Checksum.
+- Token estimate.
+- Chunk metadata.
+
+Embedding vectors are intentionally separate from chunk records and will be added behind vector-store storage in a later phase.
+
 Full document content should not be stored in run events, logs, or metadata.
 
 Later implementation:

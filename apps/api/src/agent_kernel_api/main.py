@@ -14,6 +14,7 @@ from kernel_core import (
     Approval,
     ApprovalStatus,
     Document,
+    DocumentChunk,
     DocumentStatus,
     IngestionJob,
     KnowledgeBase,
@@ -21,7 +22,9 @@ from kernel_core import (
     RunEvent,
 )
 from kernel_rag import (
+    DocumentChunkingService,
     DocumentIngestionService,
+    DocumentNotChunkableError,
     DocumentNotFoundError,
     DocumentNotReadyError,
     LocalObjectStore,
@@ -38,6 +41,7 @@ from kernel_storage import (
     AgentRepository,
     ApprovalDecisionError,
     ApprovalRepository,
+    DocumentChunkRepository,
     DocumentRepository,
     IngestionJobRepository,
     KnowledgeBaseRepository,
@@ -54,6 +58,7 @@ from agent_kernel_api.schemas import (
     ApprovalApproveRequest,
     ApprovalRejectRequest,
     ApprovalResponse,
+    DocumentChunkResponse,
     DocumentCreateRequest,
     DocumentResponse,
     IngestionJobResponse,
@@ -71,12 +76,14 @@ def create_app(
     execution_service: RunExecutionService | None = None,
     object_store: LocalObjectStore | None = None,
     ingestion_service: DocumentIngestionService | None = None,
+    chunking_service: DocumentChunkingService | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
     runner = execution_service or RunExecutionService()
     store = object_store or LocalObjectStore()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
+    chunker = chunking_service or DocumentChunkingService(object_store=store)
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -454,6 +461,63 @@ def create_app(
         return _document_response(document)
 
     @app.post(
+        "/v1/documents/{document_id}/chunk",
+        response_model=list[DocumentChunkResponse],
+        status_code=status.HTTP_201_CREATED,
+        tags=["chunks"],
+    )
+    def chunk_document(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[DocumentChunkResponse]:
+        try:
+            chunks = chunker.chunk_document(
+                document_id=document_id,
+                document_repository=DocumentRepository(session),
+                ingestion_job_repository=IngestionJobRepository(session),
+                chunk_repository=DocumentChunkRepository(session),
+            )
+        except DocumentNotChunkableError as error:
+            if "was not found" in str(error):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=str(error),
+                ) from error
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        return [_document_chunk_response(chunk) for chunk in chunks]
+
+    @app.get(
+        "/v1/documents/{document_id}/chunks",
+        response_model=list[DocumentChunkResponse],
+        tags=["chunks"],
+    )
+    def list_document_chunks(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[DocumentChunkResponse]:
+        chunks = DocumentChunkRepository(session).list_for_document(document_id)
+        if chunks is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        return [_document_chunk_response(chunk) for chunk in chunks]
+
+    @app.get(
+        "/v1/document-chunks/{chunk_id}",
+        response_model=DocumentChunkResponse,
+        tags=["chunks"],
+    )
+    def get_document_chunk(
+        chunk_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> DocumentChunkResponse:
+        chunk = DocumentChunkRepository(session).get(chunk_id)
+        if chunk is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document chunk not found",
+            )
+        return _document_chunk_response(chunk)
+
+    @app.post(
         "/v1/documents/{document_id}/ingest",
         response_model=IngestionJobResponse,
         status_code=status.HTTP_201_CREATED,
@@ -620,6 +684,21 @@ def _document_response(document: Document) -> DocumentResponse:
         metadata=document.metadata,
         created_at=document.created_at,
         updated_at=document.updated_at,
+    )
+
+
+def _document_chunk_response(chunk: DocumentChunk) -> DocumentChunkResponse:
+    return DocumentChunkResponse(
+        id=chunk.id,
+        document_id=chunk.document_id,
+        index=chunk.index,
+        content=chunk.content,
+        start_char=chunk.start_char,
+        end_char=chunk.end_char,
+        token_count_estimate=chunk.token_count_estimate,
+        checksum=chunk.checksum,
+        metadata=chunk.metadata,
+        created_at=chunk.created_at,
     )
 
 

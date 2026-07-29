@@ -43,7 +43,7 @@ Embeddings -> pgvector
 Document ingestion states:
 
 ```text
-registered -> uploaded -> parsing -> parsed -> chunking -> embedding -> indexed
+registered -> uploaded -> parsing -> parsed -> chunking -> chunked -> embedding -> indexed
                            \-> failed
 ```
 
@@ -87,6 +87,19 @@ Day 16 implements the first manual ingestion path:
 
 Day 16 intentionally does not run an async ingestion worker, chunk parsed text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
 
+## Day 17 Chunking Foundation
+
+Day 17 implements deterministic parsed-text chunking:
+
+- Read parsed text artifacts from `LocalObjectStore`.
+- Split text into stable chunks with character overlap.
+- Persist `DocumentChunk` records in Postgres.
+- Store chunk content, index, source offsets, checksum, token estimate, and metadata.
+- Move document status from `parsed` to `chunking` to `chunked`.
+- Replace existing chunks when a document is re-chunked.
+
+Day 17 intentionally does not generate embeddings, write vectors, retrieve chunks, build citations, or expose `kb_search`.
+
 ## API / CLI
 
 Expected API:
@@ -102,6 +115,9 @@ GET  /v1/documents/{document_id}
 POST /v1/documents/{document_id}/ingest
 GET  /v1/documents/{document_id}/ingestion-jobs
 GET  /v1/ingestion-jobs/{job_id}
+POST /v1/documents/{document_id}/chunk
+GET  /v1/documents/{document_id}/chunks
+GET  /v1/document-chunks/{chunk_id}
 POST /v1/retrieval/query
 ```
 
@@ -118,6 +134,9 @@ agent-kernel document inspect <document-id>
 agent-kernel document ingest <document-id>
 agent-kernel ingestion list <document-id>
 agent-kernel ingestion inspect <job-id>
+agent-kernel document chunk <document-id>
+agent-kernel chunk list <document-id>
+agent-kernel chunk inspect <chunk-id>
 agent-kernel kb query "What is our deployment policy?"
 ```
 

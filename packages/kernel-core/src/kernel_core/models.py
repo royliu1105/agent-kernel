@@ -106,6 +106,7 @@ class DocumentStatus(StrEnum):
     PARSING = "parsing"
     PARSED = "parsed"
     CHUNKING = "chunking"
+    CHUNKED = "chunked"
     EMBEDDING = "embedding"
     INDEXED = "indexed"
     FAILED = "failed"
@@ -246,6 +247,19 @@ class Document(KernelModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class DocumentChunk(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    document_id: UUID
+    index: int
+    content: str
+    start_char: int
+    end_char: int
+    token_count_estimate: int
+    checksum: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
 
 
 class IngestionJob(KernelModel):

@@ -64,3 +64,4 @@ day-03.md
 - [Day 14: Knowledge Base and Document Storage Foundation](day-14.md)
 - [Day 15: Document Upload and Local Object Store Foundation](day-15.md)
 - [Day 16: Ingestion Job and Text Parser Foundation](day-16.md)
+- [Day 17: Chunker and DocumentChunk Storage Foundation](day-17.md)

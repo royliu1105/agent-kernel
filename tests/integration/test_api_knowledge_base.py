@@ -242,3 +242,83 @@ def test_ingestion_job_api_returns_404_for_missing_records(
     assert ingest_response.status_code == 404
     assert list_response.status_code == 404
     assert inspect_response.status_code == 404
+
+
+def test_document_chunk_api_chunks_parsed_document(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={
+            "file": (
+                "deploy.md",
+                b"alpha beta gamma delta epsilon zeta eta theta iota kappa",
+                "text/markdown",
+            )
+        },
+    ).json()
+    ingest_response = client.post(f"/v1/documents/{document['id']}/ingest")
+    assert ingest_response.status_code == 201
+
+    chunk_response = client.post(f"/v1/documents/{document['id']}/chunk")
+
+    assert chunk_response.status_code == 201
+    chunks = chunk_response.json()
+    assert len(chunks) == 1
+    assert chunks[0]["index"] == 0
+    assert chunks[0]["document_id"] == document["id"]
+    assert chunks[0]["content"].startswith("alpha beta")
+    assert chunks[0]["checksum"].startswith("sha256:")
+    assert chunks[0]["token_count_estimate"] >= 1
+
+    document_response = client.get(f"/v1/documents/{document['id']}")
+    assert document_response.status_code == 200
+    assert document_response.json()["status"] == "chunked"
+
+    list_response = client.get(f"/v1/documents/{document['id']}/chunks")
+    assert list_response.status_code == 200
+    assert [chunk["id"] for chunk in list_response.json()] == [chunks[0]["id"]]
+
+    inspect_response = client.get(f"/v1/document-chunks/{chunks[0]['id']}")
+    assert inspect_response.status_code == 200
+    assert inspect_response.json()["id"] == chunks[0]["id"]
+
+
+def test_document_chunk_api_rejects_unparsed_document(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={"file": ("deploy.md", b"# Deploy\n", "text/markdown")},
+    ).json()
+
+    chunk_response = client.post(f"/v1/documents/{document['id']}/chunk")
+
+    assert chunk_response.status_code == 409
+
+
+def test_document_chunk_api_returns_404_for_missing_records(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    chunk_response = client.post(f"/v1/documents/{missing_id}/chunk")
+    list_response = client.get(f"/v1/documents/{missing_id}/chunks")
+    inspect_response = client.get(f"/v1/document-chunks/{missing_id}")
+
+    assert chunk_response.status_code == 404
+    assert list_response.status_code == 404
+    assert inspect_response.status_code == 404

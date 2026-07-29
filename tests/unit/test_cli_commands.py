@@ -425,3 +425,55 @@ def test_ingestion_cli_uses_ingestion_endpoints(monkeypatch: pytest.MonkeyPatch)
         ("GET", f"/v1/documents/{document_id}/ingestion-jobs", None),
         ("GET", f"/v1/ingestion-jobs/{job_id}", None),
     ]
+
+
+def test_document_chunk_cli_uses_chunk_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return [{"id": "chunk-1", "index": 0}]
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    document_id = "00000000-0000-0000-0000-000000000016"
+
+    result = CliRunner().invoke(cli_main.app, ["document", "chunk", document_id])
+
+    assert result.exit_code == 0
+    assert calls == [("POST", f"/v1/documents/{document_id}/chunk", None)]
+    assert '"index": 0' in result.output
+
+
+def test_chunk_cli_uses_chunk_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return [{"id": "chunk-1", "index": 0}]
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    document_id = "00000000-0000-0000-0000-000000000017"
+    chunk_id = "00000000-0000-0000-0000-000000000018"
+
+    list_result = runner.invoke(cli_main.app, ["chunk", "list", document_id])
+    inspect_result = runner.invoke(cli_main.app, ["chunk", "inspect", chunk_id])
+
+    assert list_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert calls == [
+        ("GET", f"/v1/documents/{document_id}/chunks", None),
+        ("GET", f"/v1/document-chunks/{chunk_id}", None),
+    ]

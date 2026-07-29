@@ -12,6 +12,7 @@ from kernel_core import (
     Approval,
     ApprovalStatus,
     Document,
+    DocumentChunk,
     DocumentStatus,
     IngestionJob,
     IngestionJobStatus,
@@ -32,6 +33,7 @@ from sqlalchemy.orm import Session
 from kernel_storage.models import (
     AgentRecord,
     ApprovalRecord,
+    DocumentChunkRecord,
     DocumentRecord,
     IngestionJobRecord,
     KnowledgeBaseRecord,
@@ -51,6 +53,10 @@ class KnowledgeBaseNotFoundError(ValueError):
 
 class IngestionJobStateError(ValueError):
     """Raised when an ingestion job cannot transition as requested."""
+
+
+class DocumentChunkingError(ValueError):
+    """Raised when document chunks cannot be persisted."""
 
 
 class AgentRepository:
@@ -837,6 +843,58 @@ class IngestionJobRepository:
         return _ingestion_job_from_record(record)
 
 
+class DocumentChunkRepository:
+    """Persistence operations for parsed document chunks."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def replace_for_document(
+        self,
+        *,
+        document_id: UUID,
+        chunks: list[DocumentChunk],
+    ) -> list[DocumentChunk] | None:
+        document = self._session.get(DocumentRecord, str(document_id))
+        if document is None:
+            return None
+        if any(chunk.document_id != document_id for chunk in chunks):
+            raise DocumentChunkingError("All chunks must belong to the target document.")
+
+        self._session.query(DocumentChunkRecord).filter(
+            DocumentChunkRecord.document_id == str(document_id)
+        ).delete(synchronize_session=False)
+        document.status = DocumentStatus.CHUNKING.value
+        document.error_message = None
+        document.updated_at = utc_now()
+        self._session.flush()
+
+        for chunk in chunks:
+            self._session.add(_document_chunk_to_record(chunk))
+
+        document.status = DocumentStatus.CHUNKED.value
+        document.updated_at = utc_now()
+        self._session.commit()
+        return self.list_for_document(document_id) or []
+
+    def get(self, chunk_id: UUID) -> DocumentChunk | None:
+        record = self._session.get(DocumentChunkRecord, str(chunk_id))
+        if record is None:
+            return None
+        return _document_chunk_from_record(record)
+
+    def list_for_document(self, document_id: UUID) -> list[DocumentChunk] | None:
+        if self._session.get(DocumentRecord, str(document_id)) is None:
+            return None
+
+        statement = (
+            select(DocumentChunkRecord)
+            .where(DocumentChunkRecord.document_id == str(document_id))
+            .order_by(DocumentChunkRecord.index)
+        )
+        return [_document_chunk_from_record(record) for record in self._session.scalars(statement)]
+
+
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
@@ -1062,6 +1120,36 @@ def _document_from_record(record: DocumentRecord) -> Document:
         metadata=record.extra_metadata,
         created_at=record.created_at,
         updated_at=record.updated_at,
+    )
+
+
+def _document_chunk_to_record(chunk: DocumentChunk) -> DocumentChunkRecord:
+    return DocumentChunkRecord(
+        id=str(chunk.id),
+        document_id=str(chunk.document_id),
+        index=chunk.index,
+        content=chunk.content,
+        start_char=chunk.start_char,
+        end_char=chunk.end_char,
+        token_count_estimate=chunk.token_count_estimate,
+        checksum=chunk.checksum,
+        extra_metadata=chunk.metadata,
+        created_at=chunk.created_at,
+    )
+
+
+def _document_chunk_from_record(record: DocumentChunkRecord) -> DocumentChunk:
+    return DocumentChunk(
+        id=UUID(record.id),
+        document_id=UUID(record.document_id),
+        index=record.index,
+        content=record.content,
+        start_char=record.start_char,
+        end_char=record.end_char,
+        token_count_estimate=record.token_count_estimate,
+        checksum=record.checksum,
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
     )
 
 

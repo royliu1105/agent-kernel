@@ -137,6 +137,19 @@ class DocumentResponse(ApiModel):
     updated_at: datetime
 
 
+class DocumentChunkResponse(ApiModel):
+    id: UUID
+    document_id: UUID
+    index: int
+    content: str
+    start_char: int
+    end_char: int
+    token_count_estimate: int
+    checksum: str
+    metadata: dict[str, Any]
+    created_at: datetime
+
+
 class IngestionJobResponse(ApiModel):
     id: UUID
     document_id: UUID

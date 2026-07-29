@@ -22,6 +22,7 @@ approval_app = typer.Typer(help="Manage approvals.")
 kb_app = typer.Typer(help="Manage knowledge bases.")
 document_app = typer.Typer(help="Manage document metadata.")
 ingestion_app = typer.Typer(help="Manage ingestion jobs.")
+chunk_app = typer.Typer(help="Manage document chunks.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
@@ -457,6 +458,60 @@ def ingest_document(
     _echo_json(response)
 
 
+@document_app.command("chunk")
+def chunk_document(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Chunk a parsed document through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/documents/{document_id}/chunk",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@chunk_app.command("list")
+def list_document_chunks(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List chunks for a document through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/documents/{document_id}/chunks",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@chunk_app.command("inspect")
+def inspect_document_chunk(
+    chunk_id: Annotated[UUID, typer.Argument(help="Document chunk ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Inspect one document chunk through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/document-chunks/{chunk_id}",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
 @ingestion_app.command("inspect")
 def inspect_ingestion_job(
     job_id: Annotated[UUID, typer.Argument(help="Ingestion job ID.")],
@@ -582,3 +637,4 @@ app.add_typer(approval_app, name="approval")
 app.add_typer(kb_app, name="kb")
 app.add_typer(document_app, name="document")
 app.add_typer(ingestion_app, name="ingestion")
+app.add_typer(chunk_app, name="chunk")

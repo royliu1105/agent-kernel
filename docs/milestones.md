@@ -157,7 +157,8 @@ Checklist:
 - [x] Manual ingestion API and CLI.
 - [ ] Ingestion worker.
 - [x] Text/Markdown parser.
-- [ ] Chunker.
+- [x] Chunker.
+- [x] Document chunk storage.
 - [ ] Embedding interface.
 - [ ] OpenAI embeddings.
 - [ ] Mock embeddings.

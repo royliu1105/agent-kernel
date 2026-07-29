@@ -263,6 +263,9 @@ class DocumentRecord(Base):
     ingestion_jobs: Mapped[list[IngestionJobRecord]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
+    chunks: Mapped[list[DocumentChunkRecord]] = relationship(
+        back_populates="document", cascade="all, delete-orphan"
+    )
 
 
 class IngestionJobRecord(Base):
@@ -299,3 +302,32 @@ class IngestionJobRecord(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     document: Mapped[DocumentRecord] = relationship(back_populates="ingestion_jobs")
+
+
+class DocumentChunkRecord(Base):
+    __tablename__ = "document_chunks"
+    __table_args__ = (
+        Index("ix_document_chunks_document_id_index", "document_id", "index", unique=True),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    index: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str] = mapped_column(String(12000), nullable=False)
+    start_char: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_char: Mapped[int] = mapped_column(Integer, nullable=False)
+    token_count_estimate: Mapped[int] = mapped_column(Integer, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    document: Mapped[DocumentRecord] = relationship(back_populates="chunks")
