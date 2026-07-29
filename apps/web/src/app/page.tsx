@@ -10,6 +10,15 @@ import type {
   RunSummary,
 } from "../lib/api";
 
+type WorkbenchView =
+  | "dashboard"
+  | "agents"
+  | "runs"
+  | "approvals"
+  | "knowledge"
+  | "evals"
+  | "settings";
+
 type ApprovalDecision = "approved" | "rejected";
 
 type ToolCallDetail = {
@@ -29,14 +38,133 @@ type ApprovalState = ApprovalSummary & {
   decidedAt: string | null;
 };
 
-const navItems = [
-  { label: "Dashboard", active: true },
-  { label: "Agents", active: false },
-  { label: "Runs", active: false },
-  { label: "Approvals", active: false },
-  { label: "Knowledge", active: false },
-  { label: "Evals", active: false },
-  { label: "Settings", active: false },
+type AgentSummary = {
+  id: string;
+  name: string;
+  status: "online" | "idle" | "degraded";
+  model: string;
+  provider: string;
+  activeRuns: number;
+  queueDepth: number;
+  tools: string[];
+  memoryProfile: string;
+  lastRun: string;
+};
+
+type DocumentIngestionSummary = {
+  id: string;
+  knowledgeBaseId: string;
+  fileName: string;
+  status: "indexed" | "chunking" | "embedding" | "failed";
+  chunks: number;
+  updatedAt: string;
+  progress: number;
+};
+
+type EvalCaseSummary = {
+  id: string;
+  reportName: string;
+  status: "passed" | "failed";
+  scenario: string;
+  expected: string;
+  actual: string;
+  latencyMs: number;
+};
+
+type SettingGroup = {
+  title: string;
+  items: {
+    label: string;
+    value: string;
+    detail: string;
+  }[];
+};
+
+const navItems: { id: WorkbenchView; label: string }[] = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "agents", label: "Agents" },
+  { id: "runs", label: "Runs" },
+  { id: "approvals", label: "Approvals" },
+  { id: "knowledge", label: "Knowledge" },
+  { id: "evals", label: "Evals" },
+  { id: "settings", label: "Settings" },
+];
+
+const viewCopy: Record<WorkbenchView, { eyebrow: string; title: string; status: string }> = {
+  dashboard: {
+    eyebrow: "Production runtime",
+    title: "Agent Workbench",
+    status: "Local UI state",
+  },
+  agents: {
+    eyebrow: "Agent registry",
+    title: "Agents",
+    status: "Fixture-backed",
+  },
+  runs: {
+    eyebrow: "Execution trace",
+    title: "Runs",
+    status: "Inspectable",
+  },
+  approvals: {
+    eyebrow: "Human review",
+    title: "Approvals",
+    status: "Local decisions",
+  },
+  knowledge: {
+    eyebrow: "RAG operations",
+    title: "Knowledge",
+    status: "Ingestion view",
+  },
+  evals: {
+    eyebrow: "Quality gates",
+    title: "Evals",
+    status: "Report view",
+  },
+  settings: {
+    eyebrow: "Runtime config",
+    title: "Settings",
+    status: "Read-only",
+  },
+};
+
+const agents: AgentSummary[] = [
+  {
+    id: "research-agent",
+    name: "Research Agent",
+    status: "online",
+    model: "mock:mock-small",
+    provider: "mock",
+    activeRuns: 1,
+    queueDepth: 2,
+    tools: ["kb_search", "memory_search", "external_write"],
+    memoryProfile: "task + user preference",
+    lastRun: "2 min ago",
+  },
+  {
+    id: "ops-agent",
+    name: "Ops Agent",
+    status: "idle",
+    model: "mock:mock-small",
+    provider: "mock",
+    activeRuns: 0,
+    queueDepth: 0,
+    tools: ["kb_search", "approval_request"],
+    memoryProfile: "task scoped",
+    lastRun: "11 min ago",
+  },
+  {
+    id: "eval-agent",
+    name: "Eval Agent",
+    status: "degraded",
+    model: "replay:baseline",
+    provider: "replay",
+    activeRuns: 0,
+    queueDepth: 1,
+    tools: ["rag_eval", "replay_lookup"],
+    memoryProfile: "disabled",
+    lastRun: "24 min ago",
+  },
 ];
 
 const runs: RunSummary[] = [
@@ -247,6 +375,45 @@ const knowledgeBases: KnowledgeBaseSummary[] = [
   },
 ];
 
+const documentIngestions: DocumentIngestionSummary[] = [
+  {
+    id: "doc_118",
+    knowledgeBaseId: "kb_platform",
+    fileName: "rollback-playbook.md",
+    status: "indexed",
+    chunks: 42,
+    updatedAt: "6 min ago",
+    progress: 100,
+  },
+  {
+    id: "doc_119",
+    knowledgeBaseId: "kb_platform",
+    fileName: "incident-handoff.md",
+    status: "indexed",
+    chunks: 37,
+    updatedAt: "12 min ago",
+    progress: 100,
+  },
+  {
+    id: "doc_221",
+    knowledgeBaseId: "kb_release",
+    fileName: "2026-07-release-notes.md",
+    status: "embedding",
+    chunks: 19,
+    updatedAt: "1 min ago",
+    progress: 72,
+  },
+  {
+    id: "doc_222",
+    knowledgeBaseId: "kb_release",
+    fileName: "migration-checklist.md",
+    status: "chunking",
+    chunks: 0,
+    updatedAt: "now",
+    progress: 31,
+  },
+];
+
 const evalReports: EvalReportSummary[] = [
   {
     name: "rag-smoke",
@@ -264,16 +431,105 @@ const evalReports: EvalReportSummary[] = [
   },
 ];
 
-const metrics = [
-  { label: "Active runs", value: "3", detail: "1 waiting approval" },
-  { label: "Pending approvals", value: "2", detail: "local decisions only" },
-  { label: "Indexed chunks", value: "402", detail: "2 knowledge bases" },
-  { label: "Eval pass rate", value: "91%", detail: "10 of 11 cases" },
+const evalCases: EvalCaseSummary[] = [
+  {
+    id: "case_rag_001",
+    reportName: "rag-smoke",
+    status: "passed",
+    scenario: "Return cited rollback guidance",
+    expected: "At least one citation from Engineering Handbook",
+    actual: "5 citations returned",
+    latencyMs: 142,
+  },
+  {
+    id: "case_rag_002",
+    reportName: "rag-smoke",
+    status: "passed",
+    scenario: "Rank release note chunk first",
+    expected: "Top result from Release Notes",
+    actual: "Release Notes chunk ranked #1",
+    latencyMs: 96,
+  },
+  {
+    id: "case_tool_007",
+    reportName: "tool-regression",
+    status: "failed",
+    scenario: "Replay lookup uses registered model",
+    expected: "Replay response available",
+    actual: "Replay fixture missing",
+    latencyMs: 12,
+  },
+];
+
+const settingGroups: SettingGroup[] = [
+  {
+    title: "Runtime",
+    items: [
+      {
+        label: "API endpoint",
+        value: "http://127.0.0.1:8000",
+        detail: "NEXT_PUBLIC_AGENT_KERNEL_API_URL fallback",
+      },
+      {
+        label: "Provider router",
+        value: "mock + replay",
+        detail: "Deterministic local providers for Web smoke work",
+      },
+      {
+        label: "Metrics recorder",
+        value: "in-memory",
+        detail: "Local runtime metrics surface",
+      },
+    ],
+  },
+  {
+    title: "Safety",
+    items: [
+      {
+        label: "Approval mode",
+        value: "local UI",
+        detail: "No live approval mutation from the Web app yet",
+      },
+      {
+        label: "Dangerous tools",
+        value: "blocked",
+        detail: "Policy engine remains server-side",
+      },
+      {
+        label: "Network actions",
+        value: "approval required",
+        detail: "Human review before execution",
+      },
+    ],
+  },
+  {
+    title: "Observability",
+    items: [
+      {
+        label: "Trace IDs",
+        value: "enabled",
+        detail: "Run timeline uses deterministic trace identifiers",
+      },
+      {
+        label: "Cost tracking",
+        value: "enabled",
+        detail: "Provider usage reports zero-cost local fixtures",
+      },
+      {
+        label: "Eval reports",
+        value: "visible",
+        detail: "Regression result summaries are shown in Workbench",
+      },
+    ],
+  },
 ];
 
 export default function Home() {
+  const [activeView, setActiveView] = useState<WorkbenchView>("dashboard");
   const [selectedRunId, setSelectedRunId] = useState(runs[0].id);
   const [selectedToolId, setSelectedToolId] = useState(toolCallsByRun[runs[0].id][0].id);
+  const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState(knowledgeBases[0].id);
+  const [selectedEvalName, setSelectedEvalName] = useState(evalReports[0].name);
   const [approvals, setApprovals] = useState(initialApprovals);
 
   const selectedRun = runs.find((run) => run.id === selectedRunId) ?? runs[0];
@@ -283,11 +539,35 @@ export default function Home() {
     selectedToolCalls.find((toolCall) => toolCall.id === selectedToolId) ??
     selectedToolCalls[0] ??
     null;
+  const selectedKnowledgeBase =
+    knowledgeBases.find((knowledgeBase) => knowledgeBase.id === selectedKnowledgeBaseId) ??
+    knowledgeBases[0];
+  const selectedDocuments = documentIngestions.filter(
+    (document) => document.knowledgeBaseId === selectedKnowledgeBase.id,
+  );
+  const selectedEval =
+    evalReports.find((report) => report.name === selectedEvalName) ?? evalReports[0];
+  const selectedEvalCases = evalCases.filter((evalCase) => evalCase.reportName === selectedEval.name);
 
+  const pendingApprovals = approvals.filter((approval) => approval.decision === null);
   const approvalHistory = useMemo(
     () => approvals.filter((approval) => approval.decision !== null),
     [approvals],
   );
+  const metrics = [
+    { label: "Active runs", value: `${runs.length}`, detail: "1 waiting approval" },
+    {
+      label: "Pending approvals",
+      value: `${pendingApprovals.length}`,
+      detail: "local decisions only",
+    },
+    {
+      label: "Indexed chunks",
+      value: `${knowledgeBases.reduce((total, kb) => total + kb.indexedChunks, 0)}`,
+      detail: `${knowledgeBases.length} knowledge bases`,
+    },
+    { label: "Eval pass rate", value: "91%", detail: "10 of 11 cases" },
+  ];
 
   function selectRun(runId: string) {
     setSelectedRunId(runId);
@@ -320,7 +600,12 @@ export default function Home() {
         </div>
         <nav className="nav" aria-label="Primary navigation">
           {navItems.map((item) => (
-            <button className={item.active ? "nav-item active" : "nav-item"} key={item.label}>
+            <button
+              className={item.id === activeView ? "nav-item active" : "nav-item"}
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              type="button"
+            >
               {item.label}
             </button>
           ))}
@@ -330,12 +615,12 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Production runtime</p>
-            <h1>Agent Workbench</h1>
+            <p className="eyebrow">{viewCopy[activeView].eyebrow}</p>
+            <h1>{viewCopy[activeView].title}</h1>
           </div>
           <div className="runtime-status" aria-label="Runtime status">
             <span className="status-dot" />
-            Local UI state
+            {viewCopy[activeView].status}
           </div>
         </header>
 
@@ -349,213 +634,164 @@ export default function Home() {
           ))}
         </section>
 
-        <section className="main-grid">
-          <section className="panel runs-panel" aria-labelledby="runs-heading">
+        <section className="workspace-view">{renderActiveView()}</section>
+      </section>
+    </main>
+  );
+
+  function renderActiveView() {
+    if (activeView === "agents") {
+      return (
+        <section className="agent-grid">
+          {agents.map((agent) => (
+            <article className="agent-card" key={agent.id}>
+              <div className="agent-card-header">
+                <div>
+                  <p className="eyebrow">{agent.id}</p>
+                  <h2>{agent.name}</h2>
+                </div>
+                <HealthBadge status={agent.status} />
+              </div>
+              <dl className="agent-meta-grid">
+                <div>
+                  <dt>Provider</dt>
+                  <dd>{agent.provider}</dd>
+                </div>
+                <div>
+                  <dt>Model</dt>
+                  <dd>{agent.model}</dd>
+                </div>
+                <div>
+                  <dt>Active runs</dt>
+                  <dd>{agent.activeRuns}</dd>
+                </div>
+                <div>
+                  <dt>Queue</dt>
+                  <dd>{agent.queueDepth}</dd>
+                </div>
+                <div>
+                  <dt>Memory</dt>
+                  <dd>{agent.memoryProfile}</dd>
+                </div>
+                <div>
+                  <dt>Last run</dt>
+                  <dd>{agent.lastRun}</dd>
+                </div>
+              </dl>
+              <div className="capability-list" aria-label={`${agent.name} tools`}>
+                {agent.tools.map((tool) => (
+                  <code key={tool}>{tool}</code>
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+      );
+    }
+
+    if (activeView === "runs") {
+      return (
+        <>
+          <section className="main-grid">{renderRunList()}{renderTimeline()}</section>
+          <section className="single-grid">{renderToolDetail()}</section>
+        </>
+      );
+    }
+
+    if (activeView === "approvals") {
+      return (
+        <section className="detail-grid">
+          {renderApprovalInbox()}
+          {renderDecisionHistory()}
+        </section>
+      );
+    }
+
+    if (activeView === "knowledge") {
+      return (
+        <section className="split-grid">
+          <section className="panel" aria-labelledby="knowledge-list-heading">
             <div className="section-header">
               <div>
-                <p className="eyebrow">Runs</p>
-                <h2 id="runs-heading">Execution queue</h2>
+                <p className="eyebrow">Knowledge bases</p>
+                <h2 id="knowledge-list-heading">Indexes</h2>
               </div>
-              <button className="secondary-action">Refresh</button>
+              <span className="count-pill">{knowledgeBases.length}</span>
             </div>
-            <div className="run-list">
-              {runs.map((run) => (
+            <div className="knowledge-list">
+              {knowledgeBases.map((knowledgeBase) => (
                 <button
-                  className={run.id === selectedRun.id ? "run-row selected" : "run-row"}
-                  key={run.id}
-                  onClick={() => selectRun(run.id)}
+                  className={
+                    knowledgeBase.id === selectedKnowledgeBase.id ? "kb-row selected" : "kb-row"
+                  }
+                  key={knowledgeBase.id}
+                  onClick={() => setSelectedKnowledgeBaseId(knowledgeBase.id)}
                   type="button"
                 >
                   <div>
-                    <div className="row-title">{run.task}</div>
-                    <div className="row-meta">
-                      {run.id} · {run.agentId} · {run.model}
-                    </div>
+                    <strong>{knowledgeBase.name}</strong>
+                    <p>
+                      {knowledgeBase.documents} docs · {knowledgeBase.indexedChunks} chunks
+                    </p>
                   </div>
-                  <div className="row-side">
-                    <StatusBadge status={run.status} />
-                    <span>{run.updatedAt}</span>
-                  </div>
+                  <span className={`kb-status ${knowledgeBase.status}`}>
+                    {knowledgeBase.status}
+                  </span>
                 </button>
               ))}
             </div>
           </section>
 
-          <section className="panel timeline-panel" aria-labelledby="timeline-heading">
+          <section className="panel" aria-labelledby="document-ingestion-heading">
             <div className="section-header">
               <div>
-                <p className="eyebrow">Trace</p>
-                <h2 id="timeline-heading">{selectedRun.id}</h2>
+                <p className="eyebrow">{selectedKnowledgeBase.id}</p>
+                <h2 id="document-ingestion-heading">Document ingestion</h2>
               </div>
-              <code>{selectedRun.traceId.slice(0, 12)}</code>
+              <span className="count-pill">{selectedDocuments.length}</span>
             </div>
-            <ol className="timeline">
-              {selectedTimeline.map((event) => (
-                <li className={`timeline-item ${event.status}`} key={event.sequence}>
-                  <span className="timeline-index">{event.sequence}</span>
+            <div className="document-list">
+              {selectedDocuments.map((document) => (
+                <article className="document-item" key={document.id}>
                   <div>
-                    <strong>{event.label}</strong>
-                    <p>{event.detail}</p>
-                    <code>{event.type}</code>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </section>
-
-        <section className="detail-grid">
-          <section className="panel" aria-labelledby="tool-heading">
-            <div className="section-header compact">
-              <h2 id="tool-heading">Tool call detail</h2>
-              <span className="count-pill">{selectedToolCalls.length}</span>
-            </div>
-            <div className="tool-layout">
-              <div className="tool-list">
-                {selectedToolCalls.map((toolCall) => (
-                  <button
-                    className={
-                      selectedTool?.id === toolCall.id ? "tool-row selected" : "tool-row"
-                    }
-                    key={toolCall.id}
-                    onClick={() => setSelectedToolId(toolCall.id)}
-                    type="button"
-                  >
-                    <span>{toolCall.name}</span>
-                    <StatusBadge status={toolCall.status} />
-                  </button>
-                ))}
-              </div>
-              {selectedTool ? (
-                <dl className="tool-detail">
-                  <div>
-                    <dt>Tool call ID</dt>
-                    <dd>{selectedTool.id}</dd>
-                  </div>
-                  <div>
-                    <dt>Risk</dt>
-                    <dd>
-                      <RiskBadge risk={selectedTool.riskLevel} />
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Latency</dt>
-                    <dd>
-                      {selectedTool.latencyMs === null ? "pending" : `${selectedTool.latencyMs}ms`}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Input schema</dt>
-                    <dd>{selectedTool.inputSchema}</dd>
-                  </div>
-                  <div>
-                    <dt>Result</dt>
-                    <dd>{selectedTool.resultPreview}</dd>
-                  </div>
-                </dl>
-              ) : (
-                <p className="empty-state">No tool calls recorded for this run.</p>
-              )}
-            </div>
-          </section>
-
-          <section className="panel" aria-labelledby="approvals-heading">
-            <div className="section-header compact">
-              <h2 id="approvals-heading">Approval inbox</h2>
-              <span className="count-pill">
-                {approvals.filter((approval) => !approval.decision).length}
-              </span>
-            </div>
-            <p className="local-note">Decisions here are local UI state for Day 31.</p>
-            <div className="stack">
-              {approvals.map((approval) => (
-                <article className="approval-item" key={approval.id}>
-                  <div>
-                    <strong>{approval.toolName}</strong>
-                    <p>{approval.reason}</p>
-                    <span>
-                      {approval.runId} · {approval.requestedAt}
-                    </span>
-                  </div>
-                  <div className="approval-actions">
-                    <RiskBadge risk={approval.riskLevel} />
-                    {approval.decision ? (
-                      <span className={`decision-pill ${approval.decision}`}>
-                        {approval.decision} · {approval.decidedAt}
-                      </span>
-                    ) : (
-                      <div className="button-pair">
-                        <button
-                          onClick={() => decideApproval(approval.id, "approved")}
-                          type="button"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => decideApproval(approval.id, "rejected")}
-                          type="button"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        </section>
-
-        <section className="lower-grid">
-          <section className="panel" aria-labelledby="history-heading">
-            <div className="section-header compact">
-              <h2 id="history-heading">Decision history</h2>
-              <span className="count-pill">{approvalHistory.length}</span>
-            </div>
-            {approvalHistory.length > 0 ? (
-              <div className="stack">
-                {approvalHistory.map((approval) => (
-                  <article className="history-item" key={approval.id}>
-                    <strong>{approval.id}</strong>
-                    <span className={`decision-pill ${approval.decision ?? ""}`}>
-                      {approval.decision}
-                    </span>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="empty-state">No local approval decisions yet.</p>
-            )}
-          </section>
-
-          <section className="panel" aria-labelledby="knowledge-heading">
-            <div className="section-header compact">
-              <h2 id="knowledge-heading">Knowledge bases</h2>
-              <span className="count-pill">{knowledgeBases.length}</span>
-            </div>
-            <div className="stack">
-              {knowledgeBases.map((kb) => (
-                <article className="kb-item" key={kb.id}>
-                  <div>
-                    <strong>{kb.name}</strong>
+                    <strong>{document.fileName}</strong>
                     <p>
-                      {kb.documents} docs · {kb.indexedChunks} chunks
+                      {document.id} · {document.chunks} chunks · {document.updatedAt}
                     </p>
                   </div>
-                  <span className={`kb-status ${kb.status}`}>{kb.status}</span>
+                  <div className="doc-progress">
+                    <IngestionBadge status={document.status} />
+                    <div className="progress-bar" aria-label={`${document.fileName} progress`}>
+                      <span style={{ width: `${document.progress}%` }} />
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
           </section>
+        </section>
+      );
+    }
 
-          <section className="panel" aria-labelledby="evals-heading">
-            <div className="section-header compact">
-              <h2 id="evals-heading">Eval reports</h2>
+    if (activeView === "evals") {
+      return (
+        <section className="split-grid">
+          <section className="panel" aria-labelledby="eval-report-heading">
+            <div className="section-header">
+              <div>
+                <p className="eyebrow">Reports</p>
+                <h2 id="eval-report-heading">Regression runs</h2>
+              </div>
               <span className="count-pill">{evalReports.length}</span>
             </div>
-            <div className="stack">
+            <div className="eval-report-grid">
               {evalReports.map((report) => (
-                <article className="eval-item" key={report.name}>
+                <button
+                  className={report.name === selectedEval.name ? "eval-report-card selected" : "eval-report-card"}
+                  key={report.name}
+                  onClick={() => setSelectedEvalName(report.name)}
+                  type="button"
+                >
                   <div>
                     <strong>{report.name}</strong>
                     <p>
@@ -565,34 +801,338 @@ export default function Home() {
                   <span className={report.passed ? "eval-pass" : "eval-fail"}>
                     {report.passed ? "passed" : `${report.failedCount} failed`}
                   </span>
-                </article>
+                </button>
               ))}
             </div>
           </section>
 
-          <section className="panel" aria-labelledby="settings-heading">
-            <div className="section-header compact">
-              <h2 id="settings-heading">Runtime settings</h2>
+          <section className="panel" aria-labelledby="eval-case-heading">
+            <div className="section-header">
+              <div>
+                <p className="eyebrow">{selectedEval.name}</p>
+                <h2 id="eval-case-heading">Behavior cases</h2>
+              </div>
+              <span className={selectedEval.passed ? "eval-pass" : "eval-fail"}>
+                {selectedEval.passed ? "passed" : `${selectedEval.failedCount} failed`}
+              </span>
             </div>
-            <dl className="settings-list">
-              <div>
-                <dt>Provider router</dt>
-                <dd>mock + replay</dd>
-              </div>
-              <div>
-                <dt>Metrics recorder</dt>
-                <dd>in-memory</dd>
-              </div>
-              <div>
-                <dt>Approval mode</dt>
-                <dd>local UI</dd>
-              </div>
-            </dl>
+            <div className="case-list">
+              {selectedEvalCases.map((evalCase) => (
+                <article className="case-item" key={evalCase.id}>
+                  <div>
+                    <strong>{evalCase.scenario}</strong>
+                    <p>Expected: {evalCase.expected}</p>
+                    <p>Actual: {evalCase.actual}</p>
+                  </div>
+                  <div className="case-side">
+                    <CaseBadge status={evalCase.status} />
+                    <span>{evalCase.latencyMs}ms</span>
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         </section>
+      );
+    }
+
+    if (activeView === "settings") {
+      return (
+        <section className="settings-grid">
+          {settingGroups.map((group) => (
+            <section className="panel setting-panel" aria-labelledby={`${group.title}-heading`} key={group.title}>
+              <div className="section-header compact">
+                <h2 id={`${group.title}-heading`}>{group.title}</h2>
+                <span className="signal-badge">read only</span>
+              </div>
+              <dl className="settings-list expanded">
+                {group.items.map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>
+                      <strong>{item.value}</strong>
+                      <span>{item.detail}</span>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ))}
+        </section>
+      );
+    }
+
+    return (
+      <>
+        <section className="main-grid">{renderRunList()}{renderTimeline()}</section>
+        <section className="detail-grid">{renderToolDetail()}{renderApprovalInbox()}</section>
+        <section className="lower-grid">
+          {renderDecisionHistory()}
+          {renderKnowledgeSummary()}
+          {renderEvalSummary()}
+          {renderSettingsSummary()}
+        </section>
+      </>
+    );
+  }
+
+  function renderRunList() {
+    return (
+      <section className="panel runs-panel" aria-labelledby="runs-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Runs</p>
+            <h2 id="runs-heading">Execution queue</h2>
+          </div>
+          <button className="secondary-action" type="button">
+            Refresh
+          </button>
+        </div>
+        <div className="run-list">
+          {runs.map((run) => (
+            <button
+              className={run.id === selectedRun.id ? "run-row selected" : "run-row"}
+              key={run.id}
+              onClick={() => selectRun(run.id)}
+              type="button"
+            >
+              <div>
+                <div className="row-title">{run.task}</div>
+                <div className="row-meta">
+                  {run.id} · {run.agentId} · {run.model}
+                </div>
+              </div>
+              <div className="row-side">
+                <StatusBadge status={run.status} />
+                <span>{run.updatedAt}</span>
+              </div>
+            </button>
+          ))}
+        </div>
       </section>
-    </main>
-  );
+    );
+  }
+
+  function renderTimeline() {
+    return (
+      <section className="panel timeline-panel" aria-labelledby="timeline-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Trace</p>
+            <h2 id="timeline-heading">{selectedRun.id}</h2>
+          </div>
+          <code>{selectedRun.traceId.slice(0, 12)}</code>
+        </div>
+        <ol className="timeline">
+          {selectedTimeline.map((event) => (
+            <li className={`timeline-item ${event.status}`} key={event.sequence}>
+              <span className="timeline-index">{event.sequence}</span>
+              <div>
+                <strong>{event.label}</strong>
+                <p>{event.detail}</p>
+                <code>{event.type}</code>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    );
+  }
+
+  function renderToolDetail() {
+    return (
+      <section className="panel" aria-labelledby="tool-heading">
+        <div className="section-header compact">
+          <h2 id="tool-heading">Tool call detail</h2>
+          <span className="count-pill">{selectedToolCalls.length}</span>
+        </div>
+        <div className="tool-layout">
+          <div className="tool-list">
+            {selectedToolCalls.map((toolCall) => (
+              <button
+                className={selectedTool?.id === toolCall.id ? "tool-row selected" : "tool-row"}
+                key={toolCall.id}
+                onClick={() => setSelectedToolId(toolCall.id)}
+                type="button"
+              >
+                <span>{toolCall.name}</span>
+                <StatusBadge status={toolCall.status} />
+              </button>
+            ))}
+          </div>
+          {selectedTool ? (
+            <dl className="tool-detail">
+              <div>
+                <dt>Tool call ID</dt>
+                <dd>{selectedTool.id}</dd>
+              </div>
+              <div>
+                <dt>Risk</dt>
+                <dd>
+                  <RiskBadge risk={selectedTool.riskLevel} />
+                </dd>
+              </div>
+              <div>
+                <dt>Latency</dt>
+                <dd>{selectedTool.latencyMs === null ? "pending" : `${selectedTool.latencyMs}ms`}</dd>
+              </div>
+              <div>
+                <dt>Input schema</dt>
+                <dd>{selectedTool.inputSchema}</dd>
+              </div>
+              <div>
+                <dt>Result</dt>
+                <dd>{selectedTool.resultPreview}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="empty-state">No tool calls recorded for this run.</p>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  function renderApprovalInbox() {
+    return (
+      <section className="panel" aria-labelledby="approvals-heading">
+        <div className="section-header compact">
+          <h2 id="approvals-heading">Approval inbox</h2>
+          <span className="count-pill">{pendingApprovals.length}</span>
+        </div>
+        <p className="local-note">Decisions here are local UI state for Day 32.</p>
+        <div className="stack">
+          {approvals.map((approval) => (
+            <article className="approval-item" key={approval.id}>
+              <div>
+                <strong>{approval.toolName}</strong>
+                <p>{approval.reason}</p>
+                <span>
+                  {approval.runId} · {approval.requestedAt}
+                </span>
+              </div>
+              <div className="approval-actions">
+                <RiskBadge risk={approval.riskLevel} />
+                {approval.decision ? (
+                  <span className={`decision-pill ${approval.decision}`}>
+                    {approval.decision} · {approval.decidedAt}
+                  </span>
+                ) : (
+                  <div className="button-pair">
+                    <button onClick={() => decideApproval(approval.id, "approved")} type="button">
+                      Approve
+                    </button>
+                    <button onClick={() => decideApproval(approval.id, "rejected")} type="button">
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderDecisionHistory() {
+    return (
+      <section className="panel" aria-labelledby="history-heading">
+        <div className="section-header compact">
+          <h2 id="history-heading">Decision history</h2>
+          <span className="count-pill">{approvalHistory.length}</span>
+        </div>
+        {approvalHistory.length > 0 ? (
+          <div className="stack">
+            {approvalHistory.map((approval) => (
+              <article className="history-item" key={approval.id}>
+                <strong>{approval.id}</strong>
+                <span className={`decision-pill ${approval.decision ?? ""}`}>
+                  {approval.decision}
+                </span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No local approval decisions yet.</p>
+        )}
+      </section>
+    );
+  }
+
+  function renderKnowledgeSummary() {
+    return (
+      <section className="panel" aria-labelledby="knowledge-heading">
+        <div className="section-header compact">
+          <h2 id="knowledge-heading">Knowledge bases</h2>
+          <span className="count-pill">{knowledgeBases.length}</span>
+        </div>
+        <div className="stack">
+          {knowledgeBases.map((kb) => (
+            <article className="kb-item" key={kb.id}>
+              <div>
+                <strong>{kb.name}</strong>
+                <p>
+                  {kb.documents} docs · {kb.indexedChunks} chunks
+                </p>
+              </div>
+              <span className={`kb-status ${kb.status}`}>{kb.status}</span>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderEvalSummary() {
+    return (
+      <section className="panel" aria-labelledby="evals-heading">
+        <div className="section-header compact">
+          <h2 id="evals-heading">Eval reports</h2>
+          <span className="count-pill">{evalReports.length}</span>
+        </div>
+        <div className="stack">
+          {evalReports.map((report) => (
+            <article className="eval-item" key={report.name}>
+              <div>
+                <strong>{report.name}</strong>
+                <p>
+                  {report.passedCount}/{report.caseCount} passed
+                </p>
+              </div>
+              <span className={report.passed ? "eval-pass" : "eval-fail"}>
+                {report.passed ? "passed" : `${report.failedCount} failed`}
+              </span>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderSettingsSummary() {
+    return (
+      <section className="panel" aria-labelledby="settings-heading">
+        <div className="section-header compact">
+          <h2 id="settings-heading">Runtime settings</h2>
+        </div>
+        <dl className="settings-list">
+          <div>
+            <dt>Provider router</dt>
+            <dd>mock + replay</dd>
+          </div>
+          <div>
+            <dt>Metrics recorder</dt>
+            <dd>in-memory</dd>
+          </div>
+          <div>
+            <dt>Approval mode</dt>
+            <dd>local UI</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
 }
 
 function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail["status"] }) {
@@ -601,4 +1141,16 @@ function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail
 
 function RiskBadge({ risk }: { risk: ApprovalSummary["riskLevel"] }) {
   return <span className={`risk-badge ${risk}`}>{risk.replace("_", " ")}</span>;
+}
+
+function HealthBadge({ status }: { status: AgentSummary["status"] }) {
+  return <span className={`health-badge ${status}`}>{status}</span>;
+}
+
+function IngestionBadge({ status }: { status: DocumentIngestionSummary["status"] }) {
+  return <span className={`ingestion-badge ${status}`}>{status}</span>;
+}
+
+function CaseBadge({ status }: { status: EvalCaseSummary["status"] }) {
+  return <span className={`case-badge ${status}`}>{status}</span>;
 }

@@ -261,13 +261,13 @@ Create the Agent Workbench UI.
 Checklist:
 
 - [x] Dashboard.
-- [ ] Agents page.
+- [x] Agents page.
 - [x] Run timeline.
 - [x] Tool call detail.
 - [x] Approval inbox.
-- [ ] Knowledge base page.
-- [ ] Eval report page.
-- [ ] Settings page.
+- [x] Knowledge base page.
+- [x] Eval report page.
+- [x] Settings page.
 - [x] API client.
 - [ ] Playwright smoke tests.
 
@@ -275,8 +275,8 @@ Acceptance:
 
 - [x] User can inspect run timeline.
 - [x] User can approve or reject tool calls.
-- [ ] User can inspect document ingestion status.
-- [ ] User can view eval reports.
+- [x] User can inspect document ingestion status.
+- [x] User can view eval reports.
 - [x] Web build passes.
 
 ### Phase 6: Day 34-36 - Deployment, Docs, and v0.1 Release
