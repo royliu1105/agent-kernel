@@ -178,10 +178,10 @@ Checklist:
 
 #### Phase 3B: RAG Retrieval + Agent Integration
 
-- [ ] Retriever.
-- [ ] Citation builder.
-- [ ] Retrieval API.
-- [ ] Retrieval CLI.
+- [x] Retriever.
+- [x] Citation builder.
+- [x] Retrieval API.
+- [x] Retrieval CLI.
 - [ ] `kb_search` tool.
 - [ ] Agent runtime RAG integration.
 - [ ] RAG behavior evals.
@@ -212,7 +212,7 @@ Acceptance:
 - [x] Ingest document.
 - [x] Chunk document.
 - [x] Index document with mock embeddings.
-- [ ] Retrieve relevant chunks.
+- [x] Retrieve relevant chunks.
 - [ ] Agent calls `kb_search`.
 - [ ] Final answer includes citations.
 - [ ] Memory can be written, read, scoped, and deleted.

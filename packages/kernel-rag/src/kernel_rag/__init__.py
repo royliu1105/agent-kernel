@@ -42,6 +42,15 @@ from kernel_rag.parsers import (
     TextMarkdownParser,
     UnsupportedDocumentError,
 )
+from kernel_rag.retrieval import (
+    Citation,
+    CitationBuilder,
+    KnowledgeBaseNotFoundError,
+    RetrievalError,
+    RetrievalResponse,
+    RetrievalResult,
+    Retriever,
+)
 
 __all__ = [
     "DEFAULT_MAX_OBJECT_BYTES",
@@ -51,6 +60,8 @@ __all__ = [
     "LOCAL_OBJECT_URI_PREFIX",
     "OBJECT_STORE_ROOT_ENV",
     "ChunkingError",
+    "Citation",
+    "CitationBuilder",
     "DocumentIngestionError",
     "DocumentIngestionService",
     "DocumentIndexingError",
@@ -62,6 +73,7 @@ __all__ = [
     "DocumentNotReadyError",
     "EmbeddingIndexResult",
     "EmbeddingProvider",
+    "KnowledgeBaseNotFoundError",
     "LocalObjectStore",
     "MOCK_EMBEDDING_DIMENSIONS",
     "MOCK_EMBEDDING_MODEL",
@@ -70,6 +82,10 @@ __all__ = [
     "ObjectTooLargeError",
     "ParsedDocument",
     "ParserError",
+    "RetrievalError",
+    "RetrievalResponse",
+    "RetrievalResult",
+    "Retriever",
     "StoredObject",
     "TextChunk",
     "TextChunker",

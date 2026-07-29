@@ -363,6 +363,85 @@ def test_document_index_api_embeds_chunked_document(
     assert embeddings[0]["checksum"].startswith("sha256:")
 
 
+def test_knowledge_base_retrieve_api_returns_cited_results(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        data={"title": "Deploy Guide"},
+        files={
+            "file": (
+                "deploy.md",
+                b"alpha deployment rollback checklist",
+                "text/markdown",
+            )
+        },
+    ).json()
+    assert client.post(f"/v1/documents/{document['id']}/ingest").status_code == 201
+    chunks = client.post(f"/v1/documents/{document['id']}/chunk").json()
+    assert client.post(f"/v1/documents/{document['id']}/index").status_code == 201
+
+    retrieve_response = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/retrieve",
+        json={"query": "alpha deployment rollback checklist", "top_k": 1},
+    )
+
+    assert retrieve_response.status_code == 200
+    payload = retrieve_response.json()
+    assert payload["knowledge_base_id"] == knowledge_base["id"]
+    assert payload["query"] == "alpha deployment rollback checklist"
+    assert payload["model"] == "mock-embedding-v1"
+    assert len(payload["results"]) == 1
+    result = payload["results"][0]
+    assert result["content"] == "alpha deployment rollback checklist"
+    assert result["score"] >= 0.99
+    assert result["metadata"]["embedding_model"] == "mock-embedding-v1"
+    citation = result["citation"]
+    assert citation["knowledge_base_id"] == knowledge_base["id"]
+    assert citation["document_id"] == document["id"]
+    assert citation["document_title"] == "Deploy Guide"
+    assert citation["document_source_uri"].startswith("object://local/knowledge-bases/")
+    assert citation["chunk_id"] == chunks[0]["id"]
+    assert citation["chunk_index"] == 0
+    assert citation["start_char"] == 0
+    assert citation["end_char"] == len("alpha deployment rollback checklist")
+
+
+def test_knowledge_base_retrieve_api_returns_empty_results(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "empty"}).json()
+
+    retrieve_response = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/retrieve",
+        json={"query": "anything"},
+    )
+
+    assert retrieve_response.status_code == 200
+    assert retrieve_response.json()["results"] == []
+
+
+def test_knowledge_base_retrieve_api_returns_404_for_missing_knowledge_base(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    retrieve_response = client.post(
+        f"/v1/knowledge-bases/{missing_id}/retrieve",
+        json={"query": "anything"},
+    )
+
+    assert retrieve_response.status_code == 404
+
+
 def test_document_index_api_rejects_unchunked_document(
     sqlite_session_factory: sessionmaker[Session],
     tmp_path: Path,

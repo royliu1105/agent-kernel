@@ -262,6 +262,51 @@ def test_knowledge_base_cli_uses_kb_endpoints(monkeypatch: pytest.MonkeyPatch) -
     ]
 
 
+def test_knowledge_base_search_cli_uses_retrieval_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        assert api_url == "http://testserver"
+        return {"results": [{"content": "alpha"}]}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    kb_id = "00000000-0000-0000-0000-000000000010"
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "kb",
+            "search",
+            kb_id,
+            "--query",
+            "alpha",
+            "--top-k",
+            "3",
+            "--api-url",
+            "http://testserver",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            f"/v1/knowledge-bases/{kb_id}/retrieve",
+            {"query": "alpha", "top_k": 3},
+        )
+    ]
+    assert '"content": "alpha"' in result.output
+
+
 def test_document_cli_uses_document_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, str, dict[str, object] | None]] = []
 

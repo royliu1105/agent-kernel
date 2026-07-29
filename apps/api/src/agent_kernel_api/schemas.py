@@ -169,6 +169,36 @@ class DocumentIndexResponse(ApiModel):
     embedding_count: int
 
 
+class RetrievalRequest(ApiModel):
+    query: str = Field(min_length=1, max_length=4000)
+    top_k: int = Field(default=5, ge=1, le=50)
+
+
+class CitationResponse(ApiModel):
+    knowledge_base_id: UUID
+    document_id: UUID
+    document_title: str
+    document_source_uri: str
+    chunk_id: UUID
+    chunk_index: int
+    start_char: int
+    end_char: int
+
+
+class RetrievalResultResponse(ApiModel):
+    content: str
+    score: float
+    citation: CitationResponse
+    metadata: dict[str, Any]
+
+
+class RetrievalResponseModel(ApiModel):
+    knowledge_base_id: UUID
+    query: str
+    model: str
+    results: list[RetrievalResultResponse]
+
+
 class IngestionJobResponse(ApiModel):
     id: UUID
     document_id: UUID

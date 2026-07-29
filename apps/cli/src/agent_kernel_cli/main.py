@@ -328,6 +328,27 @@ def inspect_knowledge_base(
     _echo_json(response)
 
 
+@kb_app.command("search")
+def search_knowledge_base(
+    knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],
+    query: Annotated[str, typer.Option("--query", help="Search query.")],
+    top_k: Annotated[int, typer.Option("--top-k", help="Maximum number of results.")] = 5,
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Search an indexed knowledge base through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/knowledge-bases/{knowledge_base_id}/retrieve",
+        api_url=_resolve_api_url(api_url),
+        json_payload={"query": query, "top_k": top_k},
+    )
+    _echo_json(response)
+
+
 @document_app.command("register")
 def register_document(
     knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],

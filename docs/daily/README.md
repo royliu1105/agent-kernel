@@ -66,3 +66,4 @@ day-03.md
 - [Day 16: Ingestion Job and Text Parser Foundation](day-16.md)
 - [Day 17: Chunker and DocumentChunk Storage Foundation](day-17.md)
 - [Day 18: Embedding Interface and Vector Store Foundation](day-18.md)
+- [Day 19: Retriever, Citation Builder, Retrieval API, and CLI](day-19.md)

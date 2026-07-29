@@ -132,7 +132,8 @@ Day 19 should implement:
 - Vector similarity retrieval over persisted chunk embeddings.
 - Top-k retrieval results.
 - Citation objects linked to knowledge base, document, chunk, and character offsets.
-- Retrieval API and CLI.
+- Retrieval API: `POST /v1/knowledge-bases/{knowledge_base_id}/retrieve`.
+- Retrieval CLI: `agent-kernel kb search <knowledge-base-id> --query "..."`.
 
 Day 19 should not implement `kb_search` tool integration, agent runtime integration, memory, RRF, BM25, hybrid search, or reranking.
 
@@ -190,7 +191,7 @@ GET  /v1/documents/{document_id}/chunks
 GET  /v1/document-chunks/{chunk_id}
 POST /v1/documents/{document_id}/index
 GET  /v1/documents/{document_id}/embeddings
-POST /v1/retrieval/query
+POST /v1/knowledge-bases/{knowledge_base_id}/retrieve
 ```
 
 Expected CLI:
@@ -211,7 +212,7 @@ agent-kernel chunk list <document-id>
 agent-kernel chunk inspect <chunk-id>
 agent-kernel document index <document-id>
 agent-kernel embedding list <document-id>
-agent-kernel kb query "What is our deployment policy?"
+agent-kernel kb search <knowledge-base-id> --query "What is our deployment policy?"
 ```
 
 ## Failure Modes

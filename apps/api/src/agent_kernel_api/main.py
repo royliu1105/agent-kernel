@@ -32,6 +32,13 @@ from kernel_rag import (
     DocumentNotReadyError,
     LocalObjectStore,
     ObjectTooLargeError,
+    Retriever,
+)
+from kernel_rag import (
+    KnowledgeBaseNotFoundError as RetrievalKnowledgeBaseNotFoundError,
+)
+from kernel_rag import (
+    RetrievalResponse as RagRetrievalResponse,
 )
 from kernel_runtime import (
     InvalidRunTransitionError,
@@ -63,6 +70,7 @@ from agent_kernel_api.schemas import (
     ApprovalRejectRequest,
     ApprovalResponse,
     ChunkEmbeddingResponse,
+    CitationResponse,
     DocumentChunkResponse,
     DocumentCreateRequest,
     DocumentIndexResponse,
@@ -70,6 +78,9 @@ from agent_kernel_api.schemas import (
     IngestionJobResponse,
     KnowledgeBaseCreateRequest,
     KnowledgeBaseResponse,
+    RetrievalRequest,
+    RetrievalResponseModel,
+    RetrievalResultResponse,
     RunCreateRequest,
     RunEventResponse,
     RunResponse,
@@ -84,6 +95,7 @@ def create_app(
     ingestion_service: DocumentIngestionService | None = None,
     chunking_service: DocumentChunkingService | None = None,
     indexing_service: DocumentIndexingService | None = None,
+    retriever: Retriever | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
@@ -92,6 +104,7 @@ def create_app(
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)
     indexer = indexing_service or DocumentIndexingService()
+    retrieval_service = retriever or Retriever()
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -353,6 +366,30 @@ def create_app(
                 detail="Knowledge base not found",
             )
         return _knowledge_base_response(knowledge_base)
+
+    @app.post(
+        "/v1/knowledge-bases/{knowledge_base_id}/retrieve",
+        response_model=RetrievalResponseModel,
+        tags=["retrieval"],
+    )
+    def retrieve_from_knowledge_base(
+        knowledge_base_id: UUID,
+        request: RetrievalRequest,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> RetrievalResponseModel:
+        try:
+            response = retrieval_service.retrieve(
+                knowledge_base_id=knowledge_base_id,
+                query=request.query,
+                top_k=request.top_k,
+                knowledge_base_repository=KnowledgeBaseRepository(session),
+                document_repository=DocumentRepository(session),
+                chunk_repository=DocumentChunkRepository(session),
+                embedding_repository=ChunkEmbeddingRepository(session),
+            )
+        except RetrievalKnowledgeBaseNotFoundError as error:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+        return _retrieval_response(response)
 
     @app.post(
         "/v1/knowledge-bases/{knowledge_base_id}/documents",
@@ -720,6 +757,32 @@ def _knowledge_base_response(knowledge_base: KnowledgeBase) -> KnowledgeBaseResp
         metadata=knowledge_base.metadata,
         created_at=knowledge_base.created_at,
         updated_at=knowledge_base.updated_at,
+    )
+
+
+def _retrieval_response(response: RagRetrievalResponse) -> RetrievalResponseModel:
+    return RetrievalResponseModel(
+        knowledge_base_id=response.knowledge_base_id,
+        query=response.query,
+        model=response.model,
+        results=[
+            RetrievalResultResponse(
+                content=result.content,
+                score=result.score,
+                citation=CitationResponse(
+                    knowledge_base_id=result.citation.knowledge_base_id,
+                    document_id=result.citation.document_id,
+                    document_title=result.citation.document_title,
+                    document_source_uri=result.citation.document_source_uri,
+                    chunk_id=result.citation.chunk_id,
+                    chunk_index=result.citation.chunk_index,
+                    start_char=result.citation.start_char,
+                    end_char=result.citation.end_char,
+                ),
+                metadata=result.metadata,
+            )
+            for result in response.results
+        ],
     )
 
 
