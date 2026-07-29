@@ -262,9 +262,9 @@ Checklist:
 
 - [x] Dashboard.
 - [ ] Agents page.
-- [ ] Run timeline.
-- [ ] Tool call detail.
-- [ ] Approval inbox.
+- [x] Run timeline.
+- [x] Tool call detail.
+- [x] Approval inbox.
 - [ ] Knowledge base page.
 - [ ] Eval report page.
 - [ ] Settings page.
@@ -273,8 +273,8 @@ Checklist:
 
 Acceptance:
 
-- [ ] User can inspect run timeline.
-- [ ] User can approve or reject tool calls.
+- [x] User can inspect run timeline.
+- [x] User can approve or reject tool calls.
 - [ ] User can inspect document ingestion status.
 - [ ] User can view eval reports.
 - [x] Web build passes.
