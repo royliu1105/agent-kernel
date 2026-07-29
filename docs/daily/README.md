@@ -75,3 +75,4 @@ day-03.md
 - [Day 25: Trace and Correlation Foundation](day-25.md)
 - [Day 26: Structured Runtime Logs](day-26.md)
 - [Day 27: Latency and Metrics Foundation](day-27.md)
+- [Day 28: Retrieval Metrics and RAG Eval Dataset Runner](day-28.md)

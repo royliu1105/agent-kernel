@@ -245,6 +245,20 @@ Day 27 intentionally does not implement Prometheus endpoints, OpenTelemetry
 metrics exporters, persisted metric tables, full `RunStep` persistence,
 retrieval metrics, eval platform work, or Web UI metric views.
 
+## Day 28 Retrieval Metrics
+
+Day 28 adds RAG retrieval metrics:
+
+- Record retrieval count and latency metrics.
+- Record retrieval result count observations.
+- Record retrieval failure count and latency metrics.
+- Allow optional metrics recorder injection into `Retriever`.
+- Preserve default no-op behavior when no metrics backend is configured.
+
+Day 28 intentionally does not implement Prometheus endpoints, OpenTelemetry
+metrics exporters, persisted metric tables, retrieval traces, eval dashboards, or
+Web UI metric views.
+
 MVP metrics:
 
 ```text

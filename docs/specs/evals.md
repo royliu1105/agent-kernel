@@ -67,6 +67,37 @@ Implemented Day 21 RAG assertions:
 
 Day 21 deliberately does not implement full eval API, full eval CLI, persisted eval runs, LLM-as-judge, cost/latency dashboards, or public benchmark datasets.
 
+## Day 28 RAG Eval Dataset Foundation
+
+Day 28 adds the first file-backed eval dataset path:
+
+- JSON RAG eval dataset format.
+- Dataset-level `name`.
+- Non-empty `cases` array.
+- Case fields mapped to `RagEvalCase`.
+- Readable validation errors through `EvalDatasetError`.
+- File-backed loader: `load_rag_eval_dataset(path)`.
+- Dataset runner helper: `RagEvalDataset.run(retrieve)`.
+
+Supported Day 28 case fields:
+
+```json
+{
+  "name": "deployment",
+  "query": "alpha deployment rollback checklist",
+  "top_k": 1,
+  "min_results": 1,
+  "top_result_must_contain": ["deployment", "rollback"],
+  "all_results_require_citations": true,
+  "expect_empty": false,
+  "expected_error_type": null
+}
+```
+
+Day 28 intentionally does not implement YAML loading, full eval API, full eval
+CLI, persisted eval runs, LLM-as-judge, agent behavior evals beyond deterministic
+RAG retrieval, public benchmark datasets, or Web UI eval reports.
+
 ## API / CLI
 
 Expected API:

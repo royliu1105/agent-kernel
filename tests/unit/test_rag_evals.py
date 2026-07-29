@@ -1,8 +1,11 @@
+import json
 from collections.abc import Callable
+from pathlib import Path
 from uuid import UUID
 
+import pytest
 from kernel_core import DocumentChunk, DocumentStatus
-from kernel_evals import RagEvalCase, RagEvalRunner
+from kernel_evals import EvalDatasetError, RagEvalCase, RagEvalRunner, load_rag_eval_dataset
 from kernel_rag import DocumentIndexingService, RetrievalResponse, Retriever
 from kernel_storage import (
     ChunkEmbeddingRepository,
@@ -129,6 +132,91 @@ def test_rag_eval_runner_passes_expected_missing_knowledge_base_error(
     assert report.passed is True
     assert report.case_results[0].error_type == "KnowledgeBaseNotFoundError"
     assert report.case_results[0].assertions[0].message.startswith("Received expected error")
+
+
+def test_load_rag_eval_dataset_from_json_file(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rag-eval.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "name": "rag-smoke",
+                "cases": [
+                    {
+                        "name": "deployment",
+                        "query": "deployment rollback",
+                        "top_k": 3,
+                        "min_results": 1,
+                        "top_result_must_contain": ["deployment", "rollback"],
+                        "all_results_require_citations": True,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    dataset = load_rag_eval_dataset(dataset_path)
+
+    assert dataset.name == "rag-smoke"
+    assert dataset.cases == (
+        RagEvalCase(
+            name="deployment",
+            query="deployment rollback",
+            top_k=3,
+            min_results=1,
+            top_result_must_contain=("deployment", "rollback"),
+            all_results_require_citations=True,
+        ),
+    )
+
+
+def test_load_rag_eval_dataset_reports_readable_validation_errors(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "invalid-rag-eval.json"
+    dataset_path.write_text(
+        json.dumps({"name": "bad", "cases": [{"name": "", "query": "anything"}]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(EvalDatasetError, match=r"cases\[0\].name"):
+        load_rag_eval_dataset(dataset_path)
+
+
+def test_loaded_rag_eval_dataset_runs_with_retrieval_callable(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    knowledge_base_id = _create_indexed_document(
+        sqlite_session_factory,
+        content="alpha deployment rollback checklist",
+    )
+    dataset_path = tmp_path / "rag-eval.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "name": "rag-smoke",
+                "cases": [
+                    {
+                        "name": "deployment",
+                        "query": "alpha deployment rollback checklist",
+                        "top_k": 1,
+                        "top_result_must_contain": ["deployment", "rollback"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = load_rag_eval_dataset(dataset_path).run(
+        _retrieval_callable(
+            sqlite_session_factory=sqlite_session_factory,
+            knowledge_base_id=knowledge_base_id,
+        )
+    )
+
+    assert report.name == "rag-smoke"
+    assert report.passed is True
+    assert report.passed_count == 1
 
 
 def _retrieval_callable(

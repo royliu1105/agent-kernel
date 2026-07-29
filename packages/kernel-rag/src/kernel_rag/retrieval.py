@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from kernel_core import ChunkEmbedding, Document, DocumentChunk, KnowledgeBase
+from kernel_observability import LatencyTimer, MetricsRecorder, NoOpMetricsRecorder
 from kernel_storage import (
     ChunkEmbeddingRepository,
     DocumentChunkRepository,
@@ -78,9 +79,11 @@ class Retriever:
         *,
         embedding_provider: EmbeddingProvider | None = None,
         citation_builder: CitationBuilder | None = None,
+        metrics_recorder: MetricsRecorder | None = None,
     ) -> None:
         self._embedding_provider = embedding_provider or MockEmbeddingProvider()
         self._citation_builder = citation_builder or CitationBuilder()
+        self._metrics_recorder = metrics_recorder or NoOpMetricsRecorder()
 
     @property
     def embedding_provider(self) -> EmbeddingProvider:
@@ -96,6 +99,43 @@ class Retriever:
         chunk_repository: DocumentChunkRepository,
         embedding_repository: ChunkEmbeddingRepository,
         top_k: int = 5,
+    ) -> RetrievalResponse:
+        timer = LatencyTimer.start()
+        try:
+            response = self._retrieve(
+                knowledge_base_id=knowledge_base_id,
+                query=query,
+                knowledge_base_repository=knowledge_base_repository,
+                document_repository=document_repository,
+                chunk_repository=chunk_repository,
+                embedding_repository=embedding_repository,
+                top_k=top_k,
+            )
+        except RetrievalError as error:
+            latency_ms = timer.elapsed_ms()
+            self._record_retrieval_failure_metrics(
+                error_type=type(error).__name__,
+                latency_ms=latency_ms,
+            )
+            raise
+
+        latency_ms = timer.elapsed_ms()
+        self._record_retrieval_success_metrics(
+            result_count=len(response.results),
+            latency_ms=latency_ms,
+        )
+        return response
+
+    def _retrieve(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        query: str,
+        knowledge_base_repository: KnowledgeBaseRepository,
+        document_repository: DocumentRepository,
+        chunk_repository: DocumentChunkRepository,
+        embedding_repository: ChunkEmbeddingRepository,
+        top_k: int,
     ) -> RetrievalResponse:
         knowledge_base = knowledge_base_repository.get(knowledge_base_id)
         if knowledge_base is None:
@@ -167,3 +207,19 @@ class Retriever:
                 "embedding_model": embedding.model,
             },
         )
+
+    def _record_retrieval_success_metrics(self, *, result_count: int, latency_ms: int) -> None:
+        labels = {"model": self._embedding_provider.model, "status": "succeeded"}
+        self._metrics_recorder.increment("rag_retrievals_total", labels=labels)
+        self._metrics_recorder.observe("rag_retrieval_latency_ms", latency_ms, labels=labels)
+        self._metrics_recorder.observe("rag_retrieval_result_count", result_count, labels=labels)
+
+    def _record_retrieval_failure_metrics(self, *, error_type: str, latency_ms: int) -> None:
+        labels = {
+            "model": self._embedding_provider.model,
+            "status": "failed",
+            "error_type": error_type,
+        }
+        self._metrics_recorder.increment("rag_retrievals_total", labels=labels)
+        self._metrics_recorder.increment("rag_retrieval_failure_total", labels=labels)
+        self._metrics_recorder.observe("rag_retrieval_latency_ms", latency_ms, labels=labels)

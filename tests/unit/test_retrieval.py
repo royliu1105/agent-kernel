@@ -2,6 +2,7 @@ from uuid import UUID
 
 import pytest
 from kernel_core import DocumentChunk, DocumentStatus
+from kernel_observability import InMemoryMetricsRecorder
 from kernel_rag import (
     DocumentIndexingService,
     KnowledgeBaseNotFoundError,
@@ -20,6 +21,7 @@ from sqlalchemy.orm import Session, sessionmaker
 def test_retriever_returns_ranked_chunks_with_citations(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
+    metrics_recorder = InMemoryMetricsRecorder()
     with sqlite_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
@@ -62,7 +64,7 @@ def test_retriever_returns_ranked_chunks_with_citations(
             embedding_repository=ChunkEmbeddingRepository(session),
         )
 
-        response = Retriever().retrieve(
+        response = Retriever(metrics_recorder=metrics_recorder).retrieve(
             knowledge_base_id=knowledge_base.id,
             query="alpha deployment rollback checklist",
             top_k=1,
@@ -89,6 +91,12 @@ def test_retriever_returns_ranked_chunks_with_citations(
     assert result.citation.end_char == 35
     assert result.metadata["document_metadata"] == {"source": "manual"}
     assert result.metadata["chunk_metadata"] == {"heading": "Rollback"}
+    metric_labels = {"model": MockEmbeddingProvider.model, "status": "succeeded"}
+    assert metrics_recorder.counter_value("rag_retrievals_total", labels=metric_labels) == 1
+    assert len(metrics_recorder.observations("rag_retrieval_latency_ms", labels=metric_labels)) == 1
+    assert metrics_recorder.observations("rag_retrieval_result_count", labels=metric_labels) == (
+        1,
+    )
 
 
 def test_retriever_returns_empty_results_for_empty_knowledge_base(
@@ -112,8 +120,9 @@ def test_retriever_returns_empty_results_for_empty_knowledge_base(
 def test_retriever_raises_for_missing_knowledge_base(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
+    metrics_recorder = InMemoryMetricsRecorder()
     with sqlite_session_factory() as session, pytest.raises(KnowledgeBaseNotFoundError):
-        Retriever().retrieve(
+        Retriever(metrics_recorder=metrics_recorder).retrieve(
             knowledge_base_id=UUID("00000000-0000-0000-0000-000000000000"),
             query="anything",
             knowledge_base_repository=KnowledgeBaseRepository(session),
@@ -121,3 +130,12 @@ def test_retriever_raises_for_missing_knowledge_base(
             chunk_repository=DocumentChunkRepository(session),
             embedding_repository=ChunkEmbeddingRepository(session),
         )
+
+    metric_labels = {
+        "model": MockEmbeddingProvider.model,
+        "status": "failed",
+        "error_type": "KnowledgeBaseNotFoundError",
+    }
+    assert metrics_recorder.counter_value("rag_retrievals_total", labels=metric_labels) == 1
+    assert metrics_recorder.counter_value("rag_retrieval_failure_total", labels=metric_labels) == 1
+    assert len(metrics_recorder.observations("rag_retrieval_latency_ms", labels=metric_labels)) == 1

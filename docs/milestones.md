@@ -232,10 +232,10 @@ Checklist:
 - [x] Trace IDs.
 - [x] Model call metrics.
 - [x] Tool call metrics.
-- [ ] Retrieval metrics.
+- [x] Retrieval metrics.
 - [ ] Cost tracking.
-- [ ] Eval dataset format.
-- [ ] Eval runner.
+- [x] Eval dataset format.
+- [x] Eval runner.
 - [ ] Assertions.
 - [ ] Mock replay provider.
 - [ ] Regression report.

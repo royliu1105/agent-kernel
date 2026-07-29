@@ -468,6 +468,7 @@ version = "0.1.0"
 source = { editable = "packages/kernel-rag" }
 dependencies = [
     { name = "kernel-core" },
+    { name = "kernel-observability" },
     { name = "kernel-storage" },
     { name = "kernel-tools" },
 ]
@@ -475,6 +476,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
     { name = "kernel-tools", editable = "packages/kernel-tools" },
 ]
