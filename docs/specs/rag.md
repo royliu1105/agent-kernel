@@ -43,7 +43,7 @@ Embeddings -> pgvector
 Document ingestion states:
 
 ```text
-registered -> uploaded -> parsing -> chunking -> embedding -> indexed
+registered -> uploaded -> parsing -> parsed -> chunking -> embedding -> indexed
                            \-> failed
 ```
 
@@ -74,6 +74,19 @@ Day 15 implements the first RAG data-plane path:
 
 Day 15 intentionally does not parse uploaded files, chunk text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
 
+## Day 16 Ingestion and Parser Foundation
+
+Day 16 implements the first manual ingestion path:
+
+- Create durable `IngestionJob` records.
+- Parse uploaded text/Markdown documents.
+- Move document status from `uploaded` to `parsing` to `parsed`.
+- Store parsed text as an object-store artifact.
+- Persist parsed text URI, checksum, byte size, and character count on the ingestion job.
+- Record unsupported documents as failed ingestion jobs.
+
+Day 16 intentionally does not run an async ingestion worker, chunk parsed text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
+
 ## API / CLI
 
 Expected API:
@@ -87,6 +100,8 @@ POST /v1/knowledge-bases/{knowledge_base_id}/documents/upload
 GET  /v1/knowledge-bases/{knowledge_base_id}/documents
 GET  /v1/documents/{document_id}
 POST /v1/documents/{document_id}/ingest
+GET  /v1/documents/{document_id}/ingestion-jobs
+GET  /v1/ingestion-jobs/{job_id}
 POST /v1/retrieval/query
 ```
 
@@ -101,6 +116,8 @@ agent-kernel document upload <knowledge-base-id> ./docs/deploy.md
 agent-kernel document list <knowledge-base-id>
 agent-kernel document inspect <document-id>
 agent-kernel document ingest <document-id>
+agent-kernel ingestion list <document-id>
+agent-kernel ingestion inspect <job-id>
 agent-kernel kb query "What is our deployment policy?"
 ```
 
@@ -109,6 +126,7 @@ agent-kernel kb query "What is our deployment policy?"
 - Unsupported file type.
 - Upload exceeds size limit.
 - Object store write failure.
+- Invalid object URI.
 - Parser failure.
 - Chunking failure.
 - Embedding provider failure.

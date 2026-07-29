@@ -21,6 +21,7 @@ run_app = typer.Typer(help="Manage runs.")
 approval_app = typer.Typer(help="Manage approvals.")
 kb_app = typer.Typer(help="Manage knowledge bases.")
 document_app = typer.Typer(help="Manage document metadata.")
+ingestion_app = typer.Typer(help="Manage ingestion jobs.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
@@ -438,6 +439,60 @@ def inspect_document(
     _echo_json(response)
 
 
+@document_app.command("ingest")
+def ingest_document(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Ingest an uploaded document through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/documents/{document_id}/ingest",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@ingestion_app.command("inspect")
+def inspect_ingestion_job(
+    job_id: Annotated[UUID, typer.Argument(help="Ingestion job ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Inspect one ingestion job through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/ingestion-jobs/{job_id}",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@ingestion_app.command("list")
+def list_document_ingestion_jobs(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List ingestion jobs for a document through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/documents/{document_id}/ingestion-jobs",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
 def _resolve_api_url(api_url: str) -> str:
     return os.getenv(API_URL_ENV, api_url).rstrip("/")
 
@@ -526,3 +581,4 @@ app.add_typer(run_app, name="run")
 app.add_typer(approval_app, name="approval")
 app.add_typer(kb_app, name="kb")
 app.add_typer(document_app, name="document")
+app.add_typer(ingestion_app, name="ingestion")

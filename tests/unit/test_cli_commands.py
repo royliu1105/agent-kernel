@@ -373,3 +373,55 @@ def test_document_upload_cli_uses_upload_endpoint(
         )
     ]
     assert '"status": "uploaded"' in result.output
+
+
+def test_document_ingest_cli_uses_ingest_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": "job-1", "status": "parsed"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    document_id = "00000000-0000-0000-0000-000000000013"
+
+    result = CliRunner().invoke(cli_main.app, ["document", "ingest", document_id])
+
+    assert result.exit_code == 0
+    assert calls == [("POST", f"/v1/documents/{document_id}/ingest", None)]
+    assert '"status": "parsed"' in result.output
+
+
+def test_ingestion_cli_uses_ingestion_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": "job-1", "status": "parsed"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    document_id = "00000000-0000-0000-0000-000000000014"
+    job_id = "00000000-0000-0000-0000-000000000015"
+
+    list_result = runner.invoke(cli_main.app, ["ingestion", "list", document_id])
+    inspect_result = runner.invoke(cli_main.app, ["ingestion", "inspect", job_id])
+
+    assert list_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert calls == [
+        ("GET", f"/v1/documents/{document_id}/ingestion-jobs", None),
+        ("GET", f"/v1/ingestion-jobs/{job_id}", None),
+    ]

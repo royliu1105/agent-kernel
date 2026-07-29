@@ -31,6 +31,9 @@ class StoredObject:
     content_type: str | None
 
 
+LOCAL_OBJECT_URI_PREFIX = "object://local/"
+
+
 class LocalObjectStore:
     """Local filesystem object store."""
 
@@ -80,7 +83,32 @@ class LocalObjectStore:
 
         return StoredObject(
             key=key,
-            uri=f"object://local/{key}",
+            uri=f"{LOCAL_OBJECT_URI_PREFIX}{key}",
+            checksum=checksum,
+            size_bytes=size_bytes,
+            content_type=content_type,
+        )
+
+    def write_artifact(
+        self,
+        *,
+        key: str,
+        content: bytes,
+        content_type: str | None = None,
+    ) -> StoredObject:
+        size_bytes = len(content)
+        if size_bytes > self._max_object_bytes:
+            raise ObjectTooLargeError(
+                f"Object is {size_bytes} bytes, exceeding limit {self._max_object_bytes}."
+            )
+
+        object_path = self._path_for_key(key)
+        object_path.parent.mkdir(parents=True, exist_ok=True)
+        object_path.write_bytes(content)
+        checksum = f"sha256:{hashlib.sha256(content).hexdigest()}"
+        return StoredObject(
+            key=key,
+            uri=f"{LOCAL_OBJECT_URI_PREFIX}{key}",
             checksum=checksum,
             size_bytes=size_bytes,
             content_type=content_type,
@@ -88,6 +116,9 @@ class LocalObjectStore:
 
     def read_bytes(self, key: str) -> bytes:
         return self._path_for_key(key).read_bytes()
+
+    def read_uri_bytes(self, uri: str) -> bytes:
+        return self.read_bytes(key_from_local_uri(uri))
 
     def _path_for_key(self, key: str) -> Path:
         if key.startswith("/") or ".." in Path(key).parts:
@@ -106,3 +137,12 @@ def _safe_filename(filename: str) -> str:
         return "document"
     sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", name)
     return sanitized.strip("._") or "document"
+
+
+def key_from_local_uri(uri: str) -> str:
+    if not uri.startswith(LOCAL_OBJECT_URI_PREFIX):
+        raise ObjectStoreError("Only object://local URIs are supported by LocalObjectStore.")
+    key = uri.removeprefix(LOCAL_OBJECT_URI_PREFIX)
+    if not key:
+        raise ObjectStoreError("Object URI is missing a key.")
+    return key

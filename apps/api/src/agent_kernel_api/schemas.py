@@ -10,6 +10,7 @@ from kernel_core import (
     AgentStatus,
     ApprovalStatus,
     DocumentStatus,
+    IngestionJobStatus,
     KnowledgeBaseStatus,
     RunEventType,
     RunStatus,
@@ -134,3 +135,20 @@ class DocumentResponse(ApiModel):
     metadata: dict[str, Any]
     created_at: datetime
     updated_at: datetime
+
+
+class IngestionJobResponse(ApiModel):
+    id: UUID
+    document_id: UUID
+    status: IngestionJobStatus
+    parser_name: str | None
+    parsed_text_uri: str | None
+    parsed_text_checksum: str | None
+    parsed_text_size_bytes: int | None
+    content_char_count: int | None
+    error_type: str | None
+    error_message: str | None
+    metadata: dict[str, Any]
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None

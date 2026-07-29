@@ -9,6 +9,7 @@ from kernel_core import (
     AgentStatus,
     ApprovalStatus,
     DocumentStatus,
+    IngestionJobStatus,
     KnowledgeBaseStatus,
     RiskLevel,
     RunEventType,
@@ -259,3 +260,42 @@ class DocumentRecord(Base):
     )
 
     knowledge_base: Mapped[KnowledgeBaseRecord] = relationship(back_populates="documents")
+    ingestion_jobs: Mapped[list[IngestionJobRecord]] = relationship(
+        back_populates="document", cascade="all, delete-orphan"
+    )
+
+
+class IngestionJobRecord(Base):
+    __tablename__ = "ingestion_jobs"
+    __table_args__ = (
+        Index("ix_ingestion_jobs_document_id_created_at", "document_id", "created_at"),
+        Index("ix_ingestion_jobs_status_created_at", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=IngestionJobStatus.CREATED.value, index=True
+    )
+    parser_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    parsed_text_uri: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    parsed_text_checksum: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    parsed_text_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    document: Mapped[DocumentRecord] = relationship(back_populates="ingestion_jobs")

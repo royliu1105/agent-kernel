@@ -153,8 +153,10 @@ Checklist:
 - [x] Knowledge base and document metadata CLI.
 - [x] Document upload.
 - [x] Local object store.
+- [x] Ingestion job model and storage.
+- [x] Manual ingestion API and CLI.
 - [ ] Ingestion worker.
-- [ ] Text/Markdown parser.
+- [x] Text/Markdown parser.
 - [ ] Chunker.
 - [ ] Embedding interface.
 - [ ] OpenAI embeddings.

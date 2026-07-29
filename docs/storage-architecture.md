@@ -119,6 +119,7 @@ Memory types:
 Object storage stores large files and artifacts:
 
 - Uploaded PDFs, Markdown, HTML, and docx files.
+- Parsed text artifacts.
 - Generated reports.
 - Large tool outputs.
 - Eval reports.
@@ -151,6 +152,16 @@ The application stores document bytes in object storage and stores only metadata
 - Size in bytes.
 - Checksum.
 - Lifecycle status.
+
+Parsed text produced during ingestion is also stored as an object-store artifact. Postgres stores only:
+
+- Ingestion job status.
+- Parser name.
+- Parsed text URI.
+- Parsed text checksum.
+- Parsed text size.
+- Parsed text character count.
+- Error metadata.
 
 Full document content should not be stored in run events, logs, or metadata.
 

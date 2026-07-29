@@ -104,9 +104,17 @@ class DocumentStatus(StrEnum):
     REGISTERED = "registered"
     UPLOADED = "uploaded"
     PARSING = "parsing"
+    PARSED = "parsed"
     CHUNKING = "chunking"
     EMBEDDING = "embedding"
     INDEXED = "indexed"
+    FAILED = "failed"
+
+
+class IngestionJobStatus(StrEnum):
+    CREATED = "created"
+    PARSING = "parsing"
+    PARSED = "parsed"
     FAILED = "failed"
 
 
@@ -238,3 +246,20 @@ class Document(KernelModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class IngestionJob(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    document_id: UUID
+    status: IngestionJobStatus = IngestionJobStatus.CREATED
+    parser_name: str | None = None
+    parsed_text_uri: str | None = None
+    parsed_text_checksum: str | None = None
+    parsed_text_size_bytes: int | None = None
+    content_char_count: int | None = None
+    error_type: str | None = None
+    error_message: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None

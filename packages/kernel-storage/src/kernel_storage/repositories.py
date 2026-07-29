@@ -13,6 +13,8 @@ from kernel_core import (
     ApprovalStatus,
     Document,
     DocumentStatus,
+    IngestionJob,
+    IngestionJobStatus,
     KnowledgeBase,
     KnowledgeBaseStatus,
     RiskLevel,
@@ -31,6 +33,7 @@ from kernel_storage.models import (
     AgentRecord,
     ApprovalRecord,
     DocumentRecord,
+    IngestionJobRecord,
     KnowledgeBaseRecord,
     RunEventRecord,
     RunRecord,
@@ -44,6 +47,10 @@ class ApprovalDecisionError(ValueError):
 
 class KnowledgeBaseNotFoundError(ValueError):
     """Raised when a knowledge base does not exist."""
+
+
+class IngestionJobStateError(ValueError):
+    """Raised when an ingestion job cannot transition as requested."""
 
 
 class AgentRepository:
@@ -700,6 +707,135 @@ class DocumentRepository:
         )
         return [_document_from_record(record) for record in self._session.scalars(statement)]
 
+    def update_status(
+        self,
+        *,
+        document_id: UUID,
+        status: DocumentStatus,
+        error_message: str | None = None,
+    ) -> Document | None:
+        record = self._session.get(DocumentRecord, str(document_id))
+        if record is None:
+            return None
+
+        record.status = status.value
+        record.error_message = error_message
+        record.updated_at = utc_now()
+        self._session.commit()
+        return _document_from_record(record)
+
+
+class IngestionJobRepository:
+    """Persistence operations for document ingestion jobs."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        document_id: UUID,
+        metadata: dict[str, Any] | None = None,
+    ) -> IngestionJob | None:
+        if self._session.get(DocumentRecord, str(document_id)) is None:
+            return None
+
+        job = IngestionJob(document_id=document_id, metadata=metadata or {})
+        self._session.add(_ingestion_job_to_record(job))
+        self._session.commit()
+        return job
+
+    def get(self, job_id: UUID) -> IngestionJob | None:
+        record = self._session.get(IngestionJobRecord, str(job_id))
+        if record is None:
+            return None
+        return _ingestion_job_from_record(record)
+
+    def list_for_document(self, document_id: UUID) -> list[IngestionJob] | None:
+        if self._session.get(DocumentRecord, str(document_id)) is None:
+            return None
+
+        statement = (
+            select(IngestionJobRecord)
+            .where(IngestionJobRecord.document_id == str(document_id))
+            .order_by(IngestionJobRecord.created_at)
+        )
+        return [_ingestion_job_from_record(record) for record in self._session.scalars(statement)]
+
+    def mark_parsing(self, *, job_id: UUID, parser_name: str) -> IngestionJob | None:
+        record = self._session.get(IngestionJobRecord, str(job_id))
+        if record is None:
+            return None
+        if IngestionJobStatus(record.status) is not IngestionJobStatus.CREATED:
+            raise IngestionJobStateError(
+                f"Ingestion job {job_id} cannot start from status {record.status}."
+            )
+
+        record.status = IngestionJobStatus.PARSING.value
+        record.parser_name = parser_name
+        record.started_at = utc_now()
+        document = self._session.get(DocumentRecord, record.document_id)
+        if document is not None:
+            document.status = DocumentStatus.PARSING.value
+            document.error_message = None
+            document.updated_at = utc_now()
+        self._session.commit()
+        return _ingestion_job_from_record(record)
+
+    def complete_parsed(
+        self,
+        *,
+        job_id: UUID,
+        parsed_text_uri: str,
+        parsed_text_checksum: str,
+        parsed_text_size_bytes: int,
+        content_char_count: int,
+    ) -> IngestionJob | None:
+        record = self._session.get(IngestionJobRecord, str(job_id))
+        if record is None:
+            return None
+        if IngestionJobStatus(record.status) is not IngestionJobStatus.PARSING:
+            raise IngestionJobStateError(
+                f"Ingestion job {job_id} cannot complete from status {record.status}."
+            )
+
+        record.status = IngestionJobStatus.PARSED.value
+        record.parsed_text_uri = parsed_text_uri
+        record.parsed_text_checksum = parsed_text_checksum
+        record.parsed_text_size_bytes = parsed_text_size_bytes
+        record.content_char_count = content_char_count
+        record.completed_at = utc_now()
+        document = self._session.get(DocumentRecord, record.document_id)
+        if document is not None:
+            document.status = DocumentStatus.PARSED.value
+            document.error_message = None
+            document.updated_at = utc_now()
+        self._session.commit()
+        return _ingestion_job_from_record(record)
+
+    def fail(
+        self,
+        *,
+        job_id: UUID,
+        error_type: str,
+        error_message: str,
+    ) -> IngestionJob | None:
+        record = self._session.get(IngestionJobRecord, str(job_id))
+        if record is None:
+            return None
+
+        record.status = IngestionJobStatus.FAILED.value
+        record.error_type = error_type
+        record.error_message = error_message
+        record.completed_at = utc_now()
+        document = self._session.get(DocumentRecord, record.document_id)
+        if document is not None:
+            document.status = DocumentStatus.FAILED.value
+            document.error_message = error_message
+            document.updated_at = utc_now()
+        self._session.commit()
+        return _ingestion_job_from_record(record)
+
 
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
@@ -926,4 +1062,42 @@ def _document_from_record(record: DocumentRecord) -> Document:
         metadata=record.extra_metadata,
         created_at=record.created_at,
         updated_at=record.updated_at,
+    )
+
+
+def _ingestion_job_to_record(job: IngestionJob) -> IngestionJobRecord:
+    return IngestionJobRecord(
+        id=str(job.id),
+        document_id=str(job.document_id),
+        status=job.status.value,
+        parser_name=job.parser_name,
+        parsed_text_uri=job.parsed_text_uri,
+        parsed_text_checksum=job.parsed_text_checksum,
+        parsed_text_size_bytes=job.parsed_text_size_bytes,
+        content_char_count=job.content_char_count,
+        error_type=job.error_type,
+        error_message=job.error_message,
+        extra_metadata=job.metadata,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
+    )
+
+
+def _ingestion_job_from_record(record: IngestionJobRecord) -> IngestionJob:
+    return IngestionJob(
+        id=UUID(record.id),
+        document_id=UUID(record.document_id),
+        status=IngestionJobStatus(record.status),
+        parser_name=record.parser_name,
+        parsed_text_uri=record.parsed_text_uri,
+        parsed_text_checksum=record.parsed_text_checksum,
+        parsed_text_size_bytes=record.parsed_text_size_bytes,
+        content_char_count=record.content_char_count,
+        error_type=record.error_type,
+        error_message=record.error_message,
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
+        started_at=record.started_at,
+        completed_at=record.completed_at,
     )

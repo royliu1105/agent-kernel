@@ -15,11 +15,18 @@ from kernel_core import (
     ApprovalStatus,
     Document,
     DocumentStatus,
+    IngestionJob,
     KnowledgeBase,
     Run,
     RunEvent,
 )
-from kernel_rag import LocalObjectStore, ObjectTooLargeError
+from kernel_rag import (
+    DocumentIngestionService,
+    DocumentNotFoundError,
+    DocumentNotReadyError,
+    LocalObjectStore,
+    ObjectTooLargeError,
+)
 from kernel_runtime import (
     InvalidRunTransitionError,
     RunExecutionError,
@@ -32,6 +39,7 @@ from kernel_storage import (
     ApprovalDecisionError,
     ApprovalRepository,
     DocumentRepository,
+    IngestionJobRepository,
     KnowledgeBaseRepository,
     RunRepository,
     ToolCallRepository,
@@ -48,6 +56,7 @@ from agent_kernel_api.schemas import (
     ApprovalResponse,
     DocumentCreateRequest,
     DocumentResponse,
+    IngestionJobResponse,
     KnowledgeBaseCreateRequest,
     KnowledgeBaseResponse,
     RunCreateRequest,
@@ -61,11 +70,13 @@ def create_app(
     session_factory: sessionmaker[Session] | None = None,
     execution_service: RunExecutionService | None = None,
     object_store: LocalObjectStore | None = None,
+    ingestion_service: DocumentIngestionService | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
     runner = execution_service or RunExecutionService()
     store = object_store or LocalObjectStore()
+    ingester = ingestion_service or DocumentIngestionService(object_store=store)
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -442,6 +453,59 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return _document_response(document)
 
+    @app.post(
+        "/v1/documents/{document_id}/ingest",
+        response_model=IngestionJobResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["ingestion"],
+    )
+    def ingest_document(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> IngestionJobResponse:
+        try:
+            job = ingester.ingest(
+                document_id=document_id,
+                document_repository=DocumentRepository(session),
+                ingestion_job_repository=IngestionJobRepository(session),
+            )
+        except DocumentNotFoundError as error:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+        except DocumentNotReadyError as error:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        return _ingestion_job_response(job)
+
+    @app.get(
+        "/v1/documents/{document_id}/ingestion-jobs",
+        response_model=list[IngestionJobResponse],
+        tags=["ingestion"],
+    )
+    def list_document_ingestion_jobs(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[IngestionJobResponse]:
+        jobs = IngestionJobRepository(session).list_for_document(document_id)
+        if jobs is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        return [_ingestion_job_response(job) for job in jobs]
+
+    @app.get(
+        "/v1/ingestion-jobs/{job_id}",
+        response_model=IngestionJobResponse,
+        tags=["ingestion"],
+    )
+    def get_ingestion_job(
+        job_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> IngestionJobResponse:
+        job = IngestionJobRepository(session).get(job_id)
+        if job is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ingestion job not found",
+            )
+        return _ingestion_job_response(job)
+
     return app
 
 
@@ -556,4 +620,23 @@ def _document_response(document: Document) -> DocumentResponse:
         metadata=document.metadata,
         created_at=document.created_at,
         updated_at=document.updated_at,
+    )
+
+
+def _ingestion_job_response(job: IngestionJob) -> IngestionJobResponse:
+    return IngestionJobResponse(
+        id=job.id,
+        document_id=job.document_id,
+        status=job.status,
+        parser_name=job.parser_name,
+        parsed_text_uri=job.parsed_text_uri,
+        parsed_text_checksum=job.parsed_text_checksum,
+        parsed_text_size_bytes=job.parsed_text_size_bytes,
+        content_char_count=job.content_char_count,
+        error_type=job.error_type,
+        error_message=job.error_message,
+        metadata=job.metadata,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
     )

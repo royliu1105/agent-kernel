@@ -462,10 +462,14 @@ version = "0.1.0"
 source = { editable = "packages/kernel-rag" }
 dependencies = [
     { name = "kernel-core" },
+    { name = "kernel-storage" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "kernel-core", editable = "packages/kernel-core" }]
+requires-dist = [
+    { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-storage", editable = "packages/kernel-storage" },
+]
 
 [[package]]
 name = "kernel-runtime"

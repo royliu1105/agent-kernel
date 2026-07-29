@@ -144,3 +144,101 @@ def test_document_upload_api_returns_404_for_missing_knowledge_base(
 
     assert upload_response.status_code == 404
     assert not any(tmp_path.iterdir())
+
+
+def test_document_ingest_api_parses_uploaded_text_document(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={"file": ("deploy.md", b"# Deploy\r\nShip carefully.\n", "text/markdown")},
+    ).json()
+
+    ingest_response = client.post(f"/v1/documents/{document['id']}/ingest")
+
+    assert ingest_response.status_code == 201
+    job = ingest_response.json()
+    assert job["document_id"] == document["id"]
+    assert job["status"] == "parsed"
+    assert job["parser_name"] == "text-markdown"
+    assert job["parsed_text_uri"].startswith("object://local/documents/")
+    assert job["parsed_text_checksum"].startswith("sha256:")
+    assert job["parsed_text_size_bytes"] == len(b"# Deploy\nShip carefully.\n")
+    assert job["content_char_count"] == len("# Deploy\nShip carefully.\n")
+    parsed_key = job["parsed_text_uri"].removeprefix("object://local/")
+    assert object_store.read_bytes(parsed_key) == b"# Deploy\nShip carefully.\n"
+
+    document_response = client.get(f"/v1/documents/{document['id']}")
+    assert document_response.status_code == 200
+    assert document_response.json()["status"] == "parsed"
+
+    list_jobs_response = client.get(f"/v1/documents/{document['id']}/ingestion-jobs")
+    assert list_jobs_response.status_code == 200
+    assert [item["id"] for item in list_jobs_response.json()] == [job["id"]]
+
+    get_job_response = client.get(f"/v1/ingestion-jobs/{job['id']}")
+    assert get_job_response.status_code == 200
+    assert get_job_response.json()["id"] == job["id"]
+
+
+def test_document_ingest_api_records_failed_job_for_unsupported_document(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={"file": ("paper.pdf", b"%PDF", "application/pdf")},
+    ).json()
+
+    ingest_response = client.post(f"/v1/documents/{document['id']}/ingest")
+
+    assert ingest_response.status_code == 201
+    job = ingest_response.json()
+    assert job["status"] == "failed"
+    assert job["error_type"] == "unsupported_document"
+    assert "Only text/plain and text/markdown" in job["error_message"]
+
+    document_response = client.get(f"/v1/documents/{document['id']}")
+    assert document_response.status_code == 200
+    assert document_response.json()["status"] == "failed"
+
+
+def test_document_ingest_api_rejects_document_that_is_not_uploaded(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents",
+        json={"title": "Registered", "source_uri": "object://local/source.md"},
+    ).json()
+
+    ingest_response = client.post(f"/v1/documents/{document['id']}/ingest")
+
+    assert ingest_response.status_code == 409
+
+
+def test_ingestion_job_api_returns_404_for_missing_records(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    ingest_response = client.post(f"/v1/documents/{missing_id}/ingest")
+    list_response = client.get(f"/v1/documents/{missing_id}/ingestion-jobs")
+    inspect_response = client.get(f"/v1/ingestion-jobs/{missing_id}")
+
+    assert ingest_response.status_code == 404
+    assert list_response.status_code == 404
+    assert inspect_response.status_code == 404
