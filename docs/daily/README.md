@@ -68,3 +68,4 @@ day-03.md
 - [Day 18: Embedding Interface and Vector Store Foundation](day-18.md)
 - [Day 19: Retriever, Citation Builder, Retrieval API, and CLI](day-19.md)
 - [Day 20: kb_search Tool and Agent Runtime Integration](day-20.md)
+- [Day 21: RAG Behavior Evals and Regression Cases](day-21.md)

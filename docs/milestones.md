@@ -184,8 +184,8 @@ Checklist:
 - [x] Retrieval CLI.
 - [x] `kb_search` tool.
 - [x] Agent runtime RAG integration.
-- [ ] RAG behavior evals.
-- [ ] RAG regression cases.
+- [x] RAG behavior evals.
+- [x] RAG regression cases.
 
 #### Phase 3C: Memory Foundation
 

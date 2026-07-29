@@ -47,6 +47,26 @@ created -> running -> canceled
 
 Detailed assertion semantics will be completed during Phase 4 implementation.
 
+## Phase 3B RAG Behavior Eval Foundation
+
+Day 21 introduces a small deterministic eval foundation before the full Phase 4 eval platform:
+
+- `EvalAssertionResult`: one assertion outcome with a readable message.
+- `EvalCaseResult`: one case outcome with assertion results and optional error details.
+- `EvalReport`: aggregate report with pass/fail counts.
+- `RagEvalCase`: retrieval-specific deterministic eval case.
+- `RagEvalRunner`: executes cases against a retrieval callable.
+
+Implemented Day 21 RAG assertions:
+
+- Minimum retrieved result count.
+- Top result contains required terms.
+- Retrieved results include valid citations.
+- Empty knowledge base returns no results.
+- Expected retrieval errors are reported deterministically.
+
+Day 21 deliberately does not implement full eval API, full eval CLI, persisted eval runs, LLM-as-judge, cost/latency dashboards, or public benchmark datasets.
+
 ## API / CLI
 
 Expected API:

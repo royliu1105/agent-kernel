@@ -173,7 +173,14 @@ Day 21 should implement:
 - Regression cases for citation presence.
 - Failure cases for empty or missing knowledge bases.
 
-Day 21 should not implement large benchmark suites, rerankers, or production analytics.
+Implemented Day 21 eval foundation:
+
+- `RagEvalCase` for deterministic retrieval expectations.
+- `RagEvalRunner` for evaluating retrieval callables.
+- Assertion-level failure messages for missing relevance terms, missing citations, empty results, and expected errors.
+- Regression coverage for real `Retriever` behavior.
+
+Day 21 should not implement large benchmark suites, rerankers, production analytics, LLM-as-judge, full eval API/CLI, or persisted eval runs.
 
 ## Deferred Retrieval Enhancements
 
