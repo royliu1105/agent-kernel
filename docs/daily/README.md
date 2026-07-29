@@ -77,3 +77,4 @@ day-03.md
 - [Day 27: Latency and Metrics Foundation](day-27.md)
 - [Day 28: Retrieval Metrics and RAG Eval Dataset Runner](day-28.md)
 - [Day 29: Phase 4 Closure and Cheap Eval CI](day-29.md)
+- [Day 30: Agent Workbench Shell and Dashboard](day-30.md)
