@@ -98,6 +98,21 @@ Day 28 intentionally does not implement YAML loading, full eval API, full eval
 CLI, persisted eval runs, LLM-as-judge, agent behavior evals beyond deterministic
 RAG retrieval, public benchmark datasets, or Web UI eval reports.
 
+## Day 29 Eval Report and Cheap CI Eval
+
+Day 29 adds the first CI-runnable eval report path:
+
+- Stable JSON-compatible eval report serialization.
+- Local CLI command: `agent-kernel eval report <dataset.json>`.
+- Default non-zero exit code for failing reports.
+- Cheap deterministic RAG eval fixture at `evals/rag-smoke.json`.
+- Makefile target: `make cheap-eval`.
+- GitHub Actions cheap eval step.
+
+Day 29 intentionally does not implement full eval API, persisted eval runs,
+LLM-as-judge, real-model CI evals, full agent behavior evals, or Web UI eval
+reports.
+
 ## API / CLI
 
 Expected API:
@@ -112,8 +127,7 @@ GET  /v1/evals/runs/{eval_run_id}
 Expected CLI:
 
 ```bash
-agent-kernel eval run ./evals/research.yaml --agent <agent-id>
-agent-kernel eval report <eval-run-id>
+agent-kernel eval report evals/rag-smoke.json
 ```
 
 ## Failure Modes

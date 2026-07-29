@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any
 
@@ -165,6 +166,63 @@ def test_run_resume_cli_uses_resume_endpoint(monkeypatch: pytest.MonkeyPatch) ->
         ("POST", f"/v1/runs/{run_id}/resume", {"approval_id": approval_id}),
     ]
     assert '"status": "succeeded"' in result.output
+
+
+def test_eval_report_cli_runs_local_json_dataset(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rag-eval.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "name": "rag-smoke",
+                "cases": [
+                    {
+                        "name": "deployment",
+                        "query": "alpha deployment rollback checklist",
+                        "top_k": 1,
+                        "top_result_must_contain": ["deployment", "rollback"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli_main.app, ["eval", "report", str(dataset_path)])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["name"] == "rag-smoke"
+    assert payload["passed"] is True
+    assert payload["passed_count"] == 1
+    assert payload["cases"][0]["name"] == "deployment"
+
+
+def test_eval_report_cli_exits_nonzero_for_failing_dataset(tmp_path: Path) -> None:
+    dataset_path = tmp_path / "rag-eval.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "name": "rag-failing",
+                "cases": [
+                    {
+                        "name": "deployment",
+                        "query": "alpha deployment rollback checklist",
+                        "top_k": 1,
+                        "min_results": 2,
+                        "top_result_must_contain": ["deployment"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli_main.app, ["eval", "report", str(dataset_path)])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["passed"] is False
+    assert payload["failed_count"] == 1
 
 
 def test_approval_cli_uses_approval_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:

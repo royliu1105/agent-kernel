@@ -1,0 +1,25 @@
+{
+  "name": "rag-smoke",
+  "cases": [
+    {
+      "name": "deployment-rollback-citation",
+      "query": "alpha deployment rollback checklist",
+      "top_k": 1,
+      "min_results": 1,
+      "top_result_must_contain": ["deployment", "rollback"],
+      "all_results_require_citations": true
+    },
+    {
+      "name": "empty-knowledge-base",
+      "query": "empty knowledge base",
+      "top_k": 1,
+      "min_results": 0,
+      "expect_empty": true
+    },
+    {
+      "name": "expected-missing-kb",
+      "query": "missing knowledge base",
+      "expected_error_type": "KnowledgeBaseNotFoundError"
+    }
+  ]
+}

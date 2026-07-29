@@ -1,4 +1,4 @@
-.PHONY: setup test lint format typecheck verify web-lint web-build docker-config
+.PHONY: setup test lint format typecheck cheap-eval verify web-lint web-build docker-config
 
 setup:
 	uv sync
@@ -16,6 +16,9 @@ format:
 typecheck:
 	uv run mypy .
 
+cheap-eval:
+	uv run agent-kernel eval report evals/rag-smoke.json
+
 web-lint:
 	npm run lint
 
@@ -25,4 +28,4 @@ web-build:
 docker-config:
 	docker compose config
 
-verify: lint typecheck test web-lint web-build docker-config
+verify: lint typecheck test cheap-eval web-lint web-build docker-config

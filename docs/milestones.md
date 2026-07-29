@@ -236,19 +236,19 @@ Checklist:
 - [ ] Cost tracking.
 - [x] Eval dataset format.
 - [x] Eval runner.
-- [ ] Assertions.
+- [x] Assertions.
 - [ ] Mock replay provider.
-- [ ] Regression report.
-- [ ] CI cheap eval.
+- [x] Regression report.
+- [x] CI cheap eval.
 
 Acceptance:
 
 - [x] Every run has a trace ID.
 - [ ] Every step has latency data.
 - [x] Model calls record token and cost data.
-- [ ] Eval run works through CLI.
-- [ ] Failed eval cases produce clear reports.
-- [ ] CI runs minimum deterministic evals.
+- [x] Eval run works through CLI.
+- [x] Failed eval cases produce clear reports.
+- [x] CI runs minimum deterministic evals.
 
 ### Phase 5: Day 30-33 - Web UI
 

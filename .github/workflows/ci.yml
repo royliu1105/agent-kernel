@@ -21,6 +21,8 @@ jobs:
         run: uv run mypy .
       - name: Test
         run: uv run pytest
+      - name: Cheap Eval
+        run: uv run agent-kernel eval report evals/rag-smoke.json
 
   web:
     runs-on: ubuntu-latest

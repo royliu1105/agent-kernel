@@ -52,6 +52,7 @@ source = { editable = "apps/cli" }
 dependencies = [
     { name = "httpx" },
     { name = "kernel-core" },
+    { name = "kernel-evals" },
     { name = "typer" },
 ]
 
@@ -59,6 +60,7 @@ dependencies = [
 requires-dist = [
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-evals", editable = "packages/kernel-evals" },
     { name = "typer", specifier = ">=0.12.0" },
 ]
 

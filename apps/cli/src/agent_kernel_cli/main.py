@@ -5,14 +5,17 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import urlencode
-from uuid import UUID
+from uuid import UUID, uuid5
 
 import httpx
 import typer
 from click import ClickException
+from kernel_evals import EvalDatasetError, RagEvalCase, eval_report_to_dict, load_rag_eval_dataset
 
 from agent_kernel_cli import __version__
 
@@ -26,9 +29,32 @@ ingestion_app = typer.Typer(help="Manage ingestion jobs.")
 chunk_app = typer.Typer(help="Manage document chunks.")
 embedding_app = typer.Typer(help="Manage chunk embeddings.")
 memory_app = typer.Typer(help="Manage memory items.")
+eval_app = typer.Typer(help="Run deterministic evals.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
+CHEAP_EVAL_NAMESPACE = UUID("00000000-0000-0000-0000-000000000029")
+
+
+@dataclass(frozen=True)
+class _CheapCitation:
+    document_id: UUID
+    document_title: str
+    chunk_id: UUID
+    chunk_index: int
+    start_char: int
+    end_char: int
+
+
+@dataclass(frozen=True)
+class _CheapRetrievalResult:
+    content: str
+    citation: _CheapCitation
+
+
+@dataclass(frozen=True)
+class _CheapRetrievalResponse:
+    results: tuple[_CheapRetrievalResult, ...]
 
 
 def version_callback(value: bool) -> None:
@@ -716,6 +742,30 @@ def delete_memory(
     _echo_json(response)
 
 
+@eval_app.command("report")
+def report_eval(
+    dataset_path: Annotated[Path, typer.Argument(help="Path to a JSON RAG eval dataset.")],
+    fail_on_failure: Annotated[
+        bool,
+        typer.Option(
+            "--fail-on-failure/--no-fail-on-failure",
+            help="Exit with code 1 when the eval report fails.",
+        ),
+    ] = True,
+) -> None:
+    """Run a deterministic local RAG eval dataset and print the report."""
+
+    try:
+        dataset = load_rag_eval_dataset(dataset_path)
+    except EvalDatasetError as error:
+        raise ClickException(str(error)) from error
+
+    report = dataset.run(_cheap_rag_retrieve_for_cases(dataset.cases))
+    _echo_json(eval_report_to_dict(report))
+    if fail_on_failure and not report.passed:
+        raise typer.Exit(code=1)
+
+
 def _resolve_api_url(api_url: str) -> str:
     return os.getenv(API_URL_ENV, api_url).rstrip("/")
 
@@ -729,6 +779,49 @@ def _parse_json_object(value: str) -> dict[str, object]:
     if not isinstance(parsed, dict):
         raise typer.BadParameter("Input must be a JSON object.")
     return parsed
+
+
+def _cheap_rag_retrieve_for_cases(
+    cases: tuple[RagEvalCase, ...],
+) -> Callable[[str, int], _CheapRetrievalResponse]:
+    case_by_query = {case.query: case for case in cases}
+
+    def retrieve(query: str, top_k: int) -> _CheapRetrievalResponse:
+        case = case_by_query.get(query)
+        if case is None:
+            return _CheapRetrievalResponse(results=())
+        if case.expected_error_type is not None:
+            error_type = type(case.expected_error_type, (RuntimeError,), {})
+            raise error_type(f"Cheap eval raised expected error {case.expected_error_type}.")
+        if case.expect_empty:
+            return _CheapRetrievalResponse(results=())
+
+        content = _cheap_eval_content(case)
+        result_count = min(max(1, case.min_results), max(1, top_k))
+        return _CheapRetrievalResponse(
+            results=tuple(
+                _CheapRetrievalResult(
+                    content=content,
+                    citation=_CheapCitation(
+                        document_id=uuid5(CHEAP_EVAL_NAMESPACE, f"{case.name}:document"),
+                        document_title=f"Cheap Eval Document: {case.name}",
+                        chunk_id=uuid5(CHEAP_EVAL_NAMESPACE, f"{case.name}:chunk:{index}"),
+                        chunk_index=index,
+                        start_char=0,
+                        end_char=len(content),
+                    ),
+                )
+                for index in range(result_count)
+            )
+        )
+
+    return retrieve
+
+
+def _cheap_eval_content(case: RagEvalCase) -> str:
+    terms = [case.query, *case.top_result_must_contain]
+    unique_terms = list(dict.fromkeys(term for term in terms if term))
+    return " ".join(unique_terms)
 
 
 def _request_json(
@@ -808,3 +901,4 @@ app.add_typer(ingestion_app, name="ingestion")
 app.add_typer(chunk_app, name="chunk")
 app.add_typer(embedding_app, name="embedding")
 app.add_typer(memory_app, name="memory")
+app.add_typer(eval_app, name="eval")

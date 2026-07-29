@@ -5,7 +5,13 @@ from uuid import UUID
 
 import pytest
 from kernel_core import DocumentChunk, DocumentStatus
-from kernel_evals import EvalDatasetError, RagEvalCase, RagEvalRunner, load_rag_eval_dataset
+from kernel_evals import (
+    EvalDatasetError,
+    RagEvalCase,
+    RagEvalRunner,
+    eval_report_to_dict,
+    load_rag_eval_dataset,
+)
 from kernel_rag import DocumentIndexingService, RetrievalResponse, Retriever
 from kernel_storage import (
     ChunkEmbeddingRepository,
@@ -217,6 +223,39 @@ def test_loaded_rag_eval_dataset_runs_with_retrieval_callable(
     assert report.name == "rag-smoke"
     assert report.passed is True
     assert report.passed_count == 1
+
+
+def test_eval_report_serializes_to_stable_dict(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    knowledge_base_id = _create_indexed_document(
+        sqlite_session_factory,
+        content="alpha deployment rollback checklist",
+    )
+    report = RagEvalRunner(name="rag-report").run(
+        cases=(
+            RagEvalCase(
+                name="deployment",
+                query="alpha deployment rollback checklist",
+                top_k=1,
+                top_result_must_contain=("deployment", "rollback"),
+            ),
+        ),
+        retrieve=_retrieval_callable(
+            sqlite_session_factory=sqlite_session_factory,
+            knowledge_base_id=knowledge_base_id,
+        ),
+    )
+
+    payload = eval_report_to_dict(report)
+
+    assert payload["name"] == "rag-report"
+    assert payload["passed"] is True
+    assert payload["passed_count"] == 1
+    assert payload["failed_count"] == 0
+    assert payload["case_count"] == 1
+    assert payload["cases"][0]["name"] == "deployment"
+    assert payload["cases"][0]["assertions"][0]["name"] == "empty_result"
 
 
 def _retrieval_callable(

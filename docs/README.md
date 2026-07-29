@@ -19,17 +19,18 @@ The plan is split into these documents:
 11. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
 12. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
 13. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
-14. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
-15. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-16. [Development Plan](development-plan.md): v0.1 plan and daily working method.
-17. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
-18. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-19. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-20. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
-21. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-22. [ADR 0002](adr/0002-storage.md): storage decision.
-23. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-24. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+14. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
+15. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
+16. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
+17. [Development Plan](development-plan.md): v0.1 plan and daily working method.
+18. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
+19. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+20. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+21. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
+22. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+23. [ADR 0002](adr/0002-storage.md): storage decision.
+24. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+25. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 ## Current Baseline
 
