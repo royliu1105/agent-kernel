@@ -33,6 +33,7 @@ from kernel_rag import (
     LocalObjectStore,
     ObjectTooLargeError,
     Retriever,
+    create_rag_tool_registry,
 )
 from kernel_rag import (
     KnowledgeBaseNotFoundError as RetrievalKnowledgeBaseNotFoundError,
@@ -99,7 +100,9 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
-    runner = execution_service or RunExecutionService()
+    runner = execution_service or RunExecutionService(
+        tool_registry=create_rag_tool_registry(session_factory=factory)
+    )
     store = object_store or LocalObjectStore()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)

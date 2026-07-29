@@ -69,6 +69,7 @@ source = { editable = "apps/worker" }
 dependencies = [
     { name = "kernel-core" },
     { name = "kernel-providers" },
+    { name = "kernel-rag" },
     { name = "kernel-runtime" },
     { name = "kernel-storage" },
     { name = "typer" },
@@ -78,6 +79,7 @@ dependencies = [
 requires-dist = [
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-providers", editable = "packages/kernel-providers" },
+    { name = "kernel-rag", editable = "packages/kernel-rag" },
     { name = "kernel-runtime", editable = "packages/kernel-runtime" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
     { name = "typer", specifier = ">=0.12.0" },
@@ -463,12 +465,14 @@ source = { editable = "packages/kernel-rag" }
 dependencies = [
     { name = "kernel-core" },
     { name = "kernel-storage" },
+    { name = "kernel-tools" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
+    { name = "kernel-tools", editable = "packages/kernel-tools" },
 ]
 
 [[package]]

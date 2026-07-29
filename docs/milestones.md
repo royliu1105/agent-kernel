@@ -182,8 +182,8 @@ Checklist:
 - [x] Citation builder.
 - [x] Retrieval API.
 - [x] Retrieval CLI.
-- [ ] `kb_search` tool.
-- [ ] Agent runtime RAG integration.
+- [x] `kb_search` tool.
+- [x] Agent runtime RAG integration.
 - [ ] RAG behavior evals.
 - [ ] RAG regression cases.
 
@@ -213,7 +213,7 @@ Acceptance:
 - [x] Chunk document.
 - [x] Index document with mock embeddings.
 - [x] Retrieve relevant chunks.
-- [ ] Agent calls `kb_search`.
+- [x] Agent calls `kb_search`.
 - [ ] Final answer includes citations.
 - [ ] Memory can be written, read, scoped, and deleted.
 

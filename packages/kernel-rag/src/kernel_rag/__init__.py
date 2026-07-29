@@ -51,6 +51,7 @@ from kernel_rag.retrieval import (
     RetrievalResult,
     Retriever,
 )
+from kernel_rag.tools import KnowledgeBaseSearchTool, create_rag_tool_registry
 
 __all__ = [
     "DEFAULT_MAX_OBJECT_BYTES",
@@ -74,6 +75,7 @@ __all__ = [
     "EmbeddingIndexResult",
     "EmbeddingProvider",
     "KnowledgeBaseNotFoundError",
+    "KnowledgeBaseSearchTool",
     "LocalObjectStore",
     "MOCK_EMBEDDING_DIMENSIONS",
     "MOCK_EMBEDDING_MODEL",
@@ -91,5 +93,6 @@ __all__ = [
     "TextChunker",
     "TextMarkdownParser",
     "UnsupportedDocumentError",
+    "create_rag_tool_registry",
     "key_from_local_uri",
 ]

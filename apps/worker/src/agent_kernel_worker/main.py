@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 from kernel_providers import MockLLMProvider, OpenAIProvider, ReplayLLMProvider
+from kernel_rag import create_rag_tool_registry
 from kernel_runtime import ModelRouter, QueuedRunWorker, RunExecutionService, WorkerBatchResult
 from kernel_storage import create_engine_for_url, create_session_factory
 
@@ -72,7 +73,10 @@ def _create_worker() -> QueuedRunWorker:
             "replay": ReplayLLMProvider(),
         }
     )
-    execution_service = RunExecutionService(router=router)
+    execution_service = RunExecutionService(
+        router=router,
+        tool_registry=create_rag_tool_registry(session_factory=session_factory),
+    )
     return QueuedRunWorker(session_factory=session_factory, execution_service=execution_service)
 
 

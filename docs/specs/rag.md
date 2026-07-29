@@ -144,9 +144,25 @@ Day 20 should implement:
 - `kb_search` as a safe/read-only built-in tool.
 - Runtime support for agents to invoke `kb_search`.
 - Run output or timeline visibility for retrieved chunks and citations.
-- API/CLI examples for an agent run using RAG.
+- API and worker runtime composition with a RAG-aware tool registry.
+- Explicit tool-request support for agent runs that call `kb_search`.
 
-Day 20 should not implement memory or advanced retrieval ranking.
+Implemented Day 20 API/runtime shape:
+
+```json
+{
+  "tool": {
+    "name": "kb_search",
+    "arguments": {
+      "knowledge_base_id": "00000000-0000-0000-0000-000000000000",
+      "query": "What is our deployment policy?",
+      "top_k": 5
+    }
+  }
+}
+```
+
+Day 20 should not implement provider-native function calling, automatic model planning, memory, or advanced retrieval ranking.
 
 ### Day 21 RAG Behavior Evals
 
