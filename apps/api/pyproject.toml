@@ -6,8 +6,10 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "fastapi>=0.115.0",
   "kernel-core",
+  "kernel-rag",
   "kernel-runtime",
   "kernel-storage",
+  "python-multipart>=0.0.20",
   "uvicorn[standard]>=0.30.0",
 ]
 

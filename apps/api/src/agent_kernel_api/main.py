@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from typing import Annotated
 from uuid import UUID
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Query, status
-from kernel_core import Agent, Approval, ApprovalStatus, Document, KnowledgeBase, Run, RunEvent
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, status
+from kernel_core import (
+    Agent,
+    Approval,
+    ApprovalStatus,
+    Document,
+    DocumentStatus,
+    KnowledgeBase,
+    Run,
+    RunEvent,
+)
+from kernel_rag import LocalObjectStore, ObjectTooLargeError
 from kernel_runtime import (
     InvalidRunTransitionError,
     RunExecutionError,
@@ -49,10 +60,12 @@ from agent_kernel_api.schemas import (
 def create_app(
     session_factory: sessionmaker[Session] | None = None,
     execution_service: RunExecutionService | None = None,
+    object_store: LocalObjectStore | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
     runner = execution_service or RunExecutionService()
+    store = object_store or LocalObjectStore()
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -342,6 +355,62 @@ def create_app(
             )
         return _document_response(document)
 
+    @app.post(
+        "/v1/knowledge-bases/{knowledge_base_id}/documents/upload",
+        response_model=DocumentResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["documents"],
+    )
+    async def upload_document(
+        knowledge_base_id: UUID,
+        file: Annotated[UploadFile, File(description="Document file to upload.")],
+        title: Annotated[str | None, Form(max_length=500)] = None,
+        metadata: Annotated[str, Form()] = "{}",
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> DocumentResponse:
+        if KnowledgeBaseRepository(session).get(knowledge_base_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Knowledge base not found",
+            )
+
+        metadata_payload = _parse_metadata_json(metadata)
+        filename = file.filename or "document"
+        content = await file.read(store.max_object_bytes + 1)
+        try:
+            stored = store.write_document(
+                knowledge_base_id=knowledge_base_id,
+                filename=filename,
+                content=content,
+                content_type=file.content_type,
+            )
+        except ObjectTooLargeError as error:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=str(error),
+            ) from error
+
+        document = DocumentRepository(session).create(
+            knowledge_base_id=knowledge_base_id,
+            title=title or filename,
+            source_uri=stored.uri,
+            mime_type=stored.content_type,
+            checksum=stored.checksum,
+            size_bytes=stored.size_bytes,
+            status=DocumentStatus.UPLOADED,
+            metadata={
+                **metadata_payload,
+                "object_key": stored.key,
+                "original_filename": filename,
+            },
+        )
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Knowledge base not found",
+            )
+        return _document_response(document)
+
     @app.get(
         "/v1/knowledge-bases/{knowledge_base_id}/documents",
         response_model=list[DocumentResponse],
@@ -443,6 +512,22 @@ def _approval_response(approval: Approval) -> ApprovalResponse:
         requested_at=approval.requested_at,
         resolved_at=approval.resolved_at,
     )
+
+
+def _parse_metadata_json(value: str) -> dict[str, object]:
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid metadata JSON: {error.msg}",
+        ) from error
+    if not isinstance(parsed, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Metadata must be a JSON object",
+        )
+    return parsed
 
 
 def _knowledge_base_response(knowledge_base: KnowledgeBase) -> KnowledgeBaseResponse:

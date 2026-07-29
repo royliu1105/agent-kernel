@@ -61,6 +61,19 @@ Day 14 implements the RAG control-plane foundation:
 
 Day 14 intentionally does not store document bytes, parse files, chunk text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
 
+## Day 15 Upload Foundation
+
+Day 15 implements the first RAG data-plane path:
+
+- Upload a local file through API multipart upload.
+- Write document bytes to `LocalObjectStore`.
+- Create `Document` metadata with `uploaded` status.
+- Persist `source_uri` as `object://local/<object-key>`.
+- Persist checksum, size, MIME type, original filename, and object key.
+- Enforce a conservative upload size limit.
+
+Day 15 intentionally does not parse uploaded files, chunk text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
+
 ## API / CLI
 
 Expected API:
@@ -70,6 +83,7 @@ POST /v1/knowledge-bases
 GET  /v1/knowledge-bases
 GET  /v1/knowledge-bases/{knowledge_base_id}
 POST /v1/knowledge-bases/{knowledge_base_id}/documents
+POST /v1/knowledge-bases/{knowledge_base_id}/documents/upload
 GET  /v1/knowledge-bases/{knowledge_base_id}/documents
 GET  /v1/documents/{document_id}
 POST /v1/documents/{document_id}/ingest
@@ -83,9 +97,9 @@ agent-kernel kb create --name "Engineering Handbook"
 agent-kernel kb list
 agent-kernel kb inspect <knowledge-base-id>
 agent-kernel document register <knowledge-base-id> --title "Deploy" --source-uri object://local/docs/deploy.md
+agent-kernel document upload <knowledge-base-id> ./docs/deploy.md
 agent-kernel document list <knowledge-base-id>
 agent-kernel document inspect <document-id>
-agent-kernel document upload <knowledge-base-id> ./docs/*.md
 agent-kernel document ingest <document-id>
 agent-kernel kb query "What is our deployment policy?"
 ```
@@ -93,6 +107,8 @@ agent-kernel kb query "What is our deployment policy?"
 ## Failure Modes
 
 - Unsupported file type.
+- Upload exceeds size limit.
+- Object store write failure.
 - Parser failure.
 - Chunking failure.
 - Embedding provider failure.

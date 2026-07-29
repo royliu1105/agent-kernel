@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import os
+from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
@@ -367,6 +369,39 @@ def register_document(
     _echo_json(response)
 
 
+@document_app.command("upload")
+def upload_document(
+    knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],
+    file_path: Annotated[Path, typer.Argument(help="Path to the file to upload.")],
+    title: Annotated[
+        str | None,
+        typer.Option("--title", help="Document title. Defaults to the file name."),
+    ] = None,
+    metadata: Annotated[
+        str,
+        typer.Option("--metadata", help="Document metadata JSON object."),
+    ] = "{}",
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Upload a local file into a knowledge base through the API."""
+
+    _parse_json_object(metadata)
+    response = _request_file_json(
+        "POST",
+        f"/v1/knowledge-bases/{knowledge_base_id}/documents/upload",
+        api_url=_resolve_api_url(api_url),
+        file_path=file_path,
+        data={
+            "metadata": metadata,
+            **({"title": title} if title is not None else {}),
+        },
+    )
+    _echo_json(response)
+
+
 @document_app.command("list")
 def list_documents(
     knowledge_base_id: Annotated[UUID, typer.Argument(help="Knowledge base ID.")],
@@ -429,6 +464,38 @@ def _request_json(
     try:
         with httpx.Client(timeout=10.0) as client:
             response = client.request(method, url, json=json_payload)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPStatusError as error:
+        detail = _extract_error_detail(error.response)
+        message = f"API returned {error.response.status_code}: {detail}"
+        raise ClickException(message) from error
+    except httpx.RequestError as error:
+        raise ClickException(f"Could not reach Agent Kernel API: {error}") from error
+
+
+def _request_file_json(
+    method: str,
+    path: str,
+    *,
+    api_url: str,
+    file_path: Path,
+    data: dict[str, str],
+) -> object:
+    if not file_path.is_file():
+        raise ClickException(f"File does not exist: {file_path}")
+
+    url = f"{api_url}{path}"
+    content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            with file_path.open("rb") as file:
+                response = client.request(
+                    method,
+                    url,
+                    data=data,
+                    files={"file": (file_path.name, file, content_type)},
+                )
             response.raise_for_status()
             return response.json()
     except httpx.HTTPStatusError as error:

@@ -151,8 +151,8 @@ Checklist:
 - [x] Knowledge base and document metadata storage.
 - [x] Knowledge base and document metadata API.
 - [x] Knowledge base and document metadata CLI.
-- [ ] Document upload.
-- [ ] Local object store.
+- [x] Document upload.
+- [x] Local object store.
 - [ ] Ingestion worker.
 - [ ] Text/Markdown parser.
 - [ ] Chunker.

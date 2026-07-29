@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from agent_kernel_api.main import create_app
 from fastapi.testclient import TestClient
+from kernel_rag import LocalObjectStore
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -72,3 +75,72 @@ def test_knowledge_base_document_api_returns_404_for_missing_records(
     assert create_doc_response.status_code == 404
     assert list_docs_response.status_code == 404
     assert get_doc_response.status_code == 404
+
+
+def test_document_upload_api_stores_file_and_metadata(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post(
+        "/v1/knowledge-bases",
+        json={"name": "engineering-handbook"},
+    ).json()
+
+    upload_response = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        data={"title": "Deploy Guide", "metadata": '{"source":"manual"}'},
+        files={"file": ("deploy.md", b"# Deploy\n", "text/markdown")},
+    )
+
+    assert upload_response.status_code == 201
+    document = upload_response.json()
+    assert document["title"] == "Deploy Guide"
+    assert document["status"] == "uploaded"
+    assert document["mime_type"] == "text/markdown"
+    assert document["checksum"].startswith("sha256:")
+    assert document["size_bytes"] == 9
+    assert document["source_uri"].startswith("object://local/knowledge-bases/")
+    assert document["metadata"]["original_filename"] == "deploy.md"
+    assert document["metadata"]["source"] == "manual"
+    assert object_store.read_bytes(document["metadata"]["object_key"]) == b"# Deploy\n"
+
+
+def test_document_upload_api_rejects_oversized_file(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path, max_object_bytes=3)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+
+    upload_response = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={"file": ("too-large.txt", b"1234", "text/plain")},
+    )
+
+    assert upload_response.status_code == 413
+
+
+def test_document_upload_api_returns_404_for_missing_knowledge_base(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    upload_response = client.post(
+        f"/v1/knowledge-bases/{missing_id}/documents/upload",
+        files={"file": ("missing.md", b"# Missing\n", "text/markdown")},
+    )
+
+    assert upload_response.status_code == 404
+    assert not any(tmp_path.iterdir())

@@ -663,6 +663,7 @@ class DocumentRepository:
         mime_type: str | None = None,
         checksum: str | None = None,
         size_bytes: int | None = None,
+        status: DocumentStatus = DocumentStatus.REGISTERED,
         metadata: dict[str, Any] | None = None,
     ) -> Document | None:
         if self._session.get(KnowledgeBaseRecord, str(knowledge_base_id)) is None:
@@ -675,6 +676,7 @@ class DocumentRepository:
             mime_type=mime_type,
             checksum=checksum,
             size_bytes=size_bytes,
+            status=status,
             metadata=metadata or {},
         )
         self._session.add(_document_to_record(document))

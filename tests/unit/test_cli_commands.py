@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -321,3 +322,54 @@ def test_document_cli_uses_document_endpoints(monkeypatch: pytest.MonkeyPatch) -
         ("GET", f"/v1/knowledge-bases/{kb_id}/documents", None),
         ("GET", f"/v1/documents/{document_id}", None),
     ]
+
+
+def test_document_upload_cli_uses_upload_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[str, str, Path, dict[str, str]]] = []
+
+    def fake_request_file_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        file_path: Path,
+        data: dict[str, str],
+    ) -> object:
+        calls.append((method, path, file_path, data))
+        assert api_url == "http://testserver"
+        return {"id": "doc-1", "status": "uploaded"}
+
+    monkeypatch.setattr(cli_main, "_request_file_json", fake_request_file_json)
+    kb_id = "00000000-0000-0000-0000-000000000011"
+    document_path = tmp_path / "deploy.md"
+    document_path.write_text("# Deploy\n")
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "document",
+            "upload",
+            kb_id,
+            str(document_path),
+            "--title",
+            "Deploy Guide",
+            "--metadata",
+            '{"source":"manual"}',
+            "--api-url",
+            "http://testserver",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            f"/v1/knowledge-bases/{kb_id}/documents/upload",
+            document_path,
+            {"metadata": '{"source":"manual"}', "title": "Deploy Guide"},
+        )
+    ]
+    assert '"status": "uploaded"' in result.output
