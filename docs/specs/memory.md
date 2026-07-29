@@ -83,7 +83,28 @@ Day 22 should implement:
 - API operations to create, list, inspect, and delete memory.
 - CLI operations to create, list, inspect, and delete memory.
 
-Day 22 should not implement agent context injection, semantic memory retrieval, or automatic memory writes.
+Implemented Day 22 storage shape:
+
+```text
+memory_items
+- id
+- type
+- scope
+- content
+- source_run_id
+- confidence
+- metadata
+- created_at
+```
+
+Implemented Day 22 API/CLI behavior:
+
+- Create scoped structured memory items.
+- List memory items by optional scope and type filters.
+- Inspect one memory item by ID.
+- Delete one memory item by ID.
+
+Day 22 should not implement agent context injection, semantic memory retrieval, vector memory search, automatic memory writes, memory consolidation, graph memory, conflict resolution, or memory observability spans.
 
 ## Day 23 Memory Retrieval and Agent Context Integration
 

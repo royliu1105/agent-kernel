@@ -568,3 +568,88 @@ def test_embedding_cli_uses_embedding_endpoints(monkeypatch: pytest.MonkeyPatch)
     assert result.exit_code == 0
     assert calls == [("GET", f"/v1/documents/{document_id}/embeddings", None)]
     assert '"model": "mock-embedding-v1"' in result.output
+
+
+def test_memory_cli_uses_memory_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        assert api_url == "http://testserver"
+        return {"id": "memory-1", "type": "user_preference"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    runner = CliRunner()
+    memory_id = "00000000-0000-0000-0000-000000000021"
+
+    create_result = runner.invoke(
+        cli_main.app,
+        [
+            "memory",
+            "create",
+            "--type",
+            "user_preference",
+            "--scope",
+            "user:roy",
+            "--content",
+            '{"language":"zh"}',
+            "--confidence",
+            "0.9",
+            "--metadata",
+            '{"source":"manual"}',
+            "--api-url",
+            "http://testserver",
+        ],
+    )
+    list_result = runner.invoke(
+        cli_main.app,
+        [
+            "memory",
+            "list",
+            "--scope",
+            "user:roy",
+            "--type",
+            "user_preference",
+            "--limit",
+            "10",
+            "--api-url",
+            "http://testserver",
+        ],
+    )
+    inspect_result = runner.invoke(
+        cli_main.app,
+        ["memory", "inspect", memory_id, "--api-url", "http://testserver"],
+    )
+    delete_result = runner.invoke(
+        cli_main.app,
+        ["memory", "delete", memory_id, "--api-url", "http://testserver"],
+    )
+
+    assert create_result.exit_code == 0
+    assert list_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert delete_result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            "/v1/memory",
+            {
+                "type": "user_preference",
+                "scope": "user:roy",
+                "content": {"language": "zh"},
+                "source_run_id": None,
+                "confidence": 0.9,
+                "metadata": {"source": "manual"},
+            },
+        ),
+        ("GET", "/v1/memory?scope=user%3Aroy&type=user_preference&limit=10", None),
+        ("GET", f"/v1/memory/{memory_id}", None),
+        ("DELETE", f"/v1/memory/{memory_id}", None),
+    ]
+    assert '"type": "user_preference"' in create_result.output

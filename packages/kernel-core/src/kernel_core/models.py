@@ -119,6 +119,13 @@ class IngestionJobStatus(StrEnum):
     FAILED = "failed"
 
 
+class MemoryType(StrEnum):
+    SHORT_TERM = "short_term"
+    TASK_CONTEXT = "task_context"
+    USER_PREFERENCE = "user_preference"
+    LONG_TERM = "long_term"
+
+
 class RiskLevel(StrEnum):
     READ_ONLY = "read_only"
     EXTERNAL_WRITE = "external_write"
@@ -289,3 +296,14 @@ class IngestionJob(KernelModel):
     created_at: datetime = Field(default_factory=utc_now)
     started_at: datetime | None = None
     completed_at: datetime | None = None
+
+
+class MemoryItem(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    type: MemoryType
+    scope: str = Field(min_length=1, max_length=255)
+    content: dict[str, Any]
+    source_run_id: UUID | None = None
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)

@@ -1,6 +1,8 @@
 from kernel_core import (
     Agent,
     Approval,
+    MemoryItem,
+    MemoryType,
     Run,
     RunEvent,
     RunEventType,
@@ -24,3 +26,18 @@ def test_agent_run_models_have_expected_defaults() -> None:
     assert step.run_id == run.id
     assert tool_call.requires_approval is False
     assert approval.tool_call_id == tool_call.id
+
+
+def test_memory_item_model_has_expected_defaults() -> None:
+    memory = MemoryItem(
+        type=MemoryType.USER_PREFERENCE,
+        scope="user:roy",
+        content={"language": "zh"},
+    )
+
+    assert memory.type is MemoryType.USER_PREFERENCE
+    assert memory.scope == "user:roy"
+    assert memory.content == {"language": "zh"}
+    assert memory.source_run_id is None
+    assert memory.confidence == 1.0
+    assert memory.metadata == {}

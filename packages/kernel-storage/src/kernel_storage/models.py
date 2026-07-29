@@ -11,6 +11,7 @@ from kernel_core import (
     DocumentStatus,
     IngestionJobStatus,
     KnowledgeBaseStatus,
+    MemoryType,
     RiskLevel,
     RunEventType,
     RunStatus,
@@ -373,3 +374,26 @@ class ChunkEmbeddingRecord(Base):
     )
 
     chunk: Mapped[DocumentChunkRecord] = relationship(back_populates="embeddings")
+
+
+class MemoryItemRecord(Base):
+    __tablename__ = "memory_items"
+    __table_args__ = (
+        Index("ix_memory_items_scope_type_created_at", "scope", "type", "created_at"),
+        Index("ix_memory_items_scope_created_at", "scope", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    type: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=MemoryType.LONG_TERM.value, index=True
+    )
+    scope: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    content: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    source_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )

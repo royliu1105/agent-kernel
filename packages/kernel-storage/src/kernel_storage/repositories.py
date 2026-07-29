@@ -20,6 +20,8 @@ from kernel_core import (
     IngestionJobStatus,
     KnowledgeBase,
     KnowledgeBaseStatus,
+    MemoryItem,
+    MemoryType,
     RiskLevel,
     Run,
     RunEvent,
@@ -40,6 +42,7 @@ from kernel_storage.models import (
     DocumentRecord,
     IngestionJobRecord,
     KnowledgeBaseRecord,
+    MemoryItemRecord,
     RunEventRecord,
     RunRecord,
     ToolCallRecord,
@@ -60,6 +63,10 @@ class IngestionJobStateError(ValueError):
 
 class DocumentChunkingError(ValueError):
     """Raised when document chunks cannot be persisted."""
+
+
+class MemoryNotFoundError(ValueError):
+    """Raised when a memory item does not exist."""
 
 
 class AgentRepository:
@@ -970,6 +977,68 @@ class ChunkEmbeddingRepository:
         return sorted(scored, key=lambda item: item[1], reverse=True)[:limit]
 
 
+class MemoryRepository:
+    """Persistence operations for scoped memory items."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        type: MemoryType,
+        scope: str,
+        content: dict[str, Any],
+        source_run_id: UUID | None = None,
+        confidence: float = 1.0,
+        metadata: dict[str, Any] | None = None,
+    ) -> MemoryItem:
+        memory = MemoryItem(
+            type=type,
+            scope=scope,
+            content=content,
+            source_run_id=source_run_id,
+            confidence=confidence,
+            metadata=metadata or {},
+        )
+        self._session.add(_memory_item_to_record(memory))
+        self._session.commit()
+        return memory
+
+    def get(self, memory_id: UUID) -> MemoryItem | None:
+        record = self._session.get(MemoryItemRecord, str(memory_id))
+        if record is None:
+            return None
+        return _memory_item_from_record(record)
+
+    def list(
+        self,
+        *,
+        scope: str | None = None,
+        type: MemoryType | None = None,
+        limit: int = 100,
+    ) -> list[MemoryItem]:
+        if limit < 1:
+            raise ValueError("limit must be at least 1.")
+
+        statement = select(MemoryItemRecord)
+        if scope is not None:
+            statement = statement.where(MemoryItemRecord.scope == scope)
+        if type is not None:
+            statement = statement.where(MemoryItemRecord.type == type.value)
+        statement = statement.order_by(MemoryItemRecord.created_at).limit(limit)
+        return [_memory_item_from_record(record) for record in self._session.scalars(statement)]
+
+    def delete(self, memory_id: UUID) -> bool:
+        record = self._session.get(MemoryItemRecord, str(memory_id))
+        if record is None:
+            return False
+
+        self._session.delete(record)
+        self._session.commit()
+        return True
+
+
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
@@ -1251,6 +1320,32 @@ def _chunk_embedding_from_record(record: ChunkEmbeddingRecord) -> ChunkEmbedding
         dimensions=record.dimensions,
         vector=record.vector,
         checksum=record.checksum,
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
+    )
+
+
+def _memory_item_to_record(memory: MemoryItem) -> MemoryItemRecord:
+    return MemoryItemRecord(
+        id=str(memory.id),
+        type=memory.type.value,
+        scope=memory.scope,
+        content=memory.content,
+        source_run_id=str(memory.source_run_id) if memory.source_run_id is not None else None,
+        confidence=memory.confidence,
+        extra_metadata=memory.metadata,
+        created_at=memory.created_at,
+    )
+
+
+def _memory_item_from_record(record: MemoryItemRecord) -> MemoryItem:
+    return MemoryItem(
+        id=UUID(record.id),
+        type=MemoryType(record.type),
+        scope=record.scope,
+        content=record.content,
+        source_run_id=UUID(record.source_run_id) if record.source_run_id is not None else None,
+        confidence=record.confidence,
         metadata=record.extra_metadata,
         created_at=record.created_at,
     )

@@ -12,6 +12,7 @@ from kernel_core import (
     DocumentStatus,
     IngestionJobStatus,
     KnowledgeBaseStatus,
+    MemoryType,
     RunEventType,
     RunStatus,
 )
@@ -197,6 +198,31 @@ class RetrievalResponseModel(ApiModel):
     query: str
     model: str
     results: list[RetrievalResultResponse]
+
+
+class MemoryCreateRequest(ApiModel):
+    type: MemoryType
+    scope: str = Field(min_length=1, max_length=255)
+    content: dict[str, Any]
+    source_run_id: UUID | None = None
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class MemoryResponse(ApiModel):
+    id: UUID
+    type: MemoryType
+    scope: str
+    content: dict[str, Any]
+    source_run_id: UUID | None
+    confidence: float
+    metadata: dict[str, Any]
+    created_at: datetime
+
+
+class MemoryDeleteResponse(ApiModel):
+    id: UUID
+    deleted: bool
 
 
 class IngestionJobResponse(ApiModel):

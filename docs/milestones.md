@@ -189,13 +189,13 @@ Checklist:
 
 #### Phase 3C: Memory Foundation
 
-- [ ] Short-term memory.
-- [ ] Task context.
-- [ ] User preferences.
-- [ ] Long-term memory.
+- [x] Short-term memory.
+- [x] Task context.
+- [x] User preferences.
+- [x] Long-term memory.
 - [ ] Memory retrieval.
-- [ ] Memory API.
-- [ ] Memory CLI.
+- [x] Memory API.
+- [x] Memory CLI.
 - [ ] Agent memory context integration.
 
 #### Phase 3 Closure
@@ -215,7 +215,7 @@ Acceptance:
 - [x] Retrieve relevant chunks.
 - [x] Agent calls `kb_search`.
 - [ ] Final answer includes citations.
-- [ ] Memory can be written, read, scoped, and deleted.
+- [x] Memory can be written, read, scoped, and deleted.
 
 ### Phase 4: Day 25-29 - Observability and Evals
 

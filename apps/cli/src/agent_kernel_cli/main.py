@@ -7,6 +7,7 @@ import mimetypes
 import os
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlencode
 from uuid import UUID
 
 import httpx
@@ -24,6 +25,7 @@ document_app = typer.Typer(help="Manage document metadata.")
 ingestion_app = typer.Typer(help="Manage ingestion jobs.")
 chunk_app = typer.Typer(help="Manage document chunks.")
 embedding_app = typer.Typer(help="Manage chunk embeddings.")
+memory_app = typer.Typer(help="Manage memory items.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
@@ -606,6 +608,114 @@ def list_document_ingestion_jobs(
     _echo_json(response)
 
 
+@memory_app.command("create")
+def create_memory(
+    type: Annotated[str, typer.Option("--type", help="Memory type.")],
+    scope: Annotated[str, typer.Option("--scope", help="Memory scope.")],
+    content: Annotated[str, typer.Option("--content", help="Memory content JSON object.")],
+    source_run_id: Annotated[
+        UUID | None,
+        typer.Option("--source-run-id", help="Optional source run ID."),
+    ] = None,
+    confidence: Annotated[
+        float,
+        typer.Option("--confidence", help="Memory confidence score from 0.0 to 1.0."),
+    ] = 1.0,
+    metadata: Annotated[
+        str,
+        typer.Option("--metadata", help="Memory metadata JSON object."),
+    ] = "{}",
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Create a scoped memory item through the API."""
+
+    payload: dict[str, object] = {
+        "type": type,
+        "scope": scope,
+        "content": _parse_json_object(content),
+        "source_run_id": str(source_run_id) if source_run_id is not None else None,
+        "confidence": confidence,
+        "metadata": _parse_json_object(metadata),
+    }
+    response = _request_json(
+        "POST",
+        "/v1/memory",
+        api_url=_resolve_api_url(api_url),
+        json_payload=payload,
+    )
+    _echo_json(response)
+
+
+@memory_app.command("list")
+def list_memory(
+    scope: Annotated[
+        str | None,
+        typer.Option("--scope", help="Filter by memory scope."),
+    ] = None,
+    type: Annotated[
+        str | None,
+        typer.Option("--type", help="Filter by memory type."),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", help="Maximum number of memory items."),
+    ] = 100,
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List memory items through the API."""
+
+    query_params: dict[str, object] = {}
+    if scope is not None:
+        query_params["scope"] = scope
+    if type is not None:
+        query_params["type"] = type
+    query_params["limit"] = limit
+    path = "/v1/memory"
+    if query_params:
+        path = f"{path}?{urlencode(query_params)}"
+
+    response = _request_json("GET", path, api_url=_resolve_api_url(api_url))
+    _echo_json(response)
+
+
+@memory_app.command("inspect")
+def inspect_memory(
+    memory_id: Annotated[UUID, typer.Argument(help="Memory item ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Inspect one memory item through the API."""
+
+    response = _request_json("GET", f"/v1/memory/{memory_id}", api_url=_resolve_api_url(api_url))
+    _echo_json(response)
+
+
+@memory_app.command("delete")
+def delete_memory(
+    memory_id: Annotated[UUID, typer.Argument(help="Memory item ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Delete one memory item through the API."""
+
+    response = _request_json(
+        "DELETE",
+        f"/v1/memory/{memory_id}",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
 def _resolve_api_url(api_url: str) -> str:
     return os.getenv(API_URL_ENV, api_url).rstrip("/")
 
@@ -697,3 +807,4 @@ app.add_typer(document_app, name="document")
 app.add_typer(ingestion_app, name="ingestion")
 app.add_typer(chunk_app, name="chunk")
 app.add_typer(embedding_app, name="embedding")
+app.add_typer(memory_app, name="memory")

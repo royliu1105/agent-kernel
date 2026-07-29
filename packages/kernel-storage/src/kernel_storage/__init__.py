@@ -14,6 +14,8 @@ from kernel_storage.repositories import (
     IngestionJobStateError,
     KnowledgeBaseNotFoundError,
     KnowledgeBaseRepository,
+    MemoryNotFoundError,
+    MemoryRepository,
     RunRepository,
     ToolCallRepository,
 )
@@ -33,6 +35,8 @@ __all__ = [
     "IngestionJobStateError",
     "KnowledgeBaseNotFoundError",
     "KnowledgeBaseRepository",
+    "MemoryNotFoundError",
+    "MemoryRepository",
     "RunRepository",
     "ToolCallRepository",
     "create_engine_for_url",

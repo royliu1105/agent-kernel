@@ -19,6 +19,8 @@ from kernel_core import (
     DocumentStatus,
     IngestionJob,
     KnowledgeBase,
+    MemoryItem,
+    MemoryType,
     Run,
     RunEvent,
 )
@@ -57,6 +59,7 @@ from kernel_storage import (
     DocumentRepository,
     IngestionJobRepository,
     KnowledgeBaseRepository,
+    MemoryRepository,
     RunRepository,
     ToolCallRepository,
     create_engine_for_url,
@@ -79,6 +82,9 @@ from agent_kernel_api.schemas import (
     IngestionJobResponse,
     KnowledgeBaseCreateRequest,
     KnowledgeBaseResponse,
+    MemoryCreateRequest,
+    MemoryDeleteResponse,
+    MemoryResponse,
     RetrievalRequest,
     RetrievalResponseModel,
     RetrievalResultResponse,
@@ -303,6 +309,60 @@ def create_app(
         if approval is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
         return _approval_response(approval)
+
+    @app.post(
+        "/v1/memory",
+        response_model=MemoryResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["memory"],
+    )
+    def create_memory(
+        request: MemoryCreateRequest,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> MemoryResponse:
+        memory = MemoryRepository(session).create(
+            type=request.type,
+            scope=request.scope,
+            content=request.content,
+            source_run_id=request.source_run_id,
+            confidence=request.confidence,
+            metadata=request.metadata,
+        )
+        return _memory_response(memory)
+
+    @app.get("/v1/memory", response_model=list[MemoryResponse], tags=["memory"])
+    def list_memory(
+        scope: str | None = None,
+        type_filter: Annotated[MemoryType | None, Query(alias="type")] = None,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[MemoryResponse]:
+        memories = MemoryRepository(session).list(
+            scope=scope,
+            type=type_filter,
+            limit=limit,
+        )
+        return [_memory_response(memory) for memory in memories]
+
+    @app.get("/v1/memory/{memory_id}", response_model=MemoryResponse, tags=["memory"])
+    def get_memory(
+        memory_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> MemoryResponse:
+        memory = MemoryRepository(session).get(memory_id)
+        if memory is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+        return _memory_response(memory)
+
+    @app.delete("/v1/memory/{memory_id}", response_model=MemoryDeleteResponse, tags=["memory"])
+    def delete_memory(
+        memory_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> MemoryDeleteResponse:
+        deleted = MemoryRepository(session).delete(memory_id)
+        if not deleted:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+        return MemoryDeleteResponse(id=memory_id, deleted=True)
 
     @app.post(
         "/v1/approvals/{approval_id}/reject",
@@ -732,6 +792,19 @@ def _approval_response(approval: Approval) -> ApprovalResponse:
         trace_id=approval.trace_id,
         requested_at=approval.requested_at,
         resolved_at=approval.resolved_at,
+    )
+
+
+def _memory_response(memory: MemoryItem) -> MemoryResponse:
+    return MemoryResponse(
+        id=memory.id,
+        type=memory.type,
+        scope=memory.scope,
+        content=memory.content,
+        source_run_id=memory.source_run_id,
+        confidence=memory.confidence,
+        metadata=memory.metadata,
+        created_at=memory.created_at,
     )
 
 
