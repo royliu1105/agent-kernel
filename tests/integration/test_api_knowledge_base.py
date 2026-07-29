@@ -322,3 +322,74 @@ def test_document_chunk_api_returns_404_for_missing_records(
     assert chunk_response.status_code == 404
     assert list_response.status_code == 404
     assert inspect_response.status_code == 404
+
+
+def test_document_index_api_embeds_chunked_document(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={"file": ("deploy.md", b"alpha beta gamma delta", "text/markdown")},
+    ).json()
+    assert client.post(f"/v1/documents/{document['id']}/ingest").status_code == 201
+    assert client.post(f"/v1/documents/{document['id']}/chunk").status_code == 201
+
+    index_response = client.post(f"/v1/documents/{document['id']}/index")
+
+    assert index_response.status_code == 201
+    result = index_response.json()
+    assert result["document_id"] == document["id"]
+    assert result["model"] == "mock-embedding-v1"
+    assert result["dimensions"] == 8
+    assert result["embedding_count"] == 1
+
+    document_response = client.get(f"/v1/documents/{document['id']}")
+    assert document_response.status_code == 200
+    assert document_response.json()["status"] == "indexed"
+
+    embeddings_response = client.get(f"/v1/documents/{document['id']}/embeddings")
+    assert embeddings_response.status_code == 200
+    embeddings = embeddings_response.json()
+    assert len(embeddings) == 1
+    assert embeddings[0]["model"] == "mock-embedding-v1"
+    assert embeddings[0]["dimensions"] == 8
+    assert len(embeddings[0]["vector"]) == 8
+    assert embeddings[0]["checksum"].startswith("sha256:")
+
+
+def test_document_index_api_rejects_unchunked_document(
+    sqlite_session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    object_store = LocalObjectStore(root_path=tmp_path)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+    )
+    knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
+    document = client.post(
+        f"/v1/knowledge-bases/{knowledge_base['id']}/documents/upload",
+        files={"file": ("deploy.md", b"alpha beta", "text/markdown")},
+    ).json()
+
+    index_response = client.post(f"/v1/documents/{document['id']}/index")
+
+    assert index_response.status_code == 409
+
+
+def test_document_index_api_returns_404_for_missing_records(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    missing_id = "00000000-0000-0000-0000-000000000000"
+
+    index_response = client.post(f"/v1/documents/{missing_id}/index")
+    embeddings_response = client.get(f"/v1/documents/{missing_id}/embeddings")
+
+    assert index_response.status_code == 404
+    assert embeddings_response.status_code == 404

@@ -262,6 +262,18 @@ class DocumentChunk(KernelModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class ChunkEmbedding(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    document_id: UUID
+    chunk_id: UUID
+    model: str
+    dimensions: int
+    vector: list[float]
+    checksum: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+
+
 class IngestionJob(KernelModel):
     id: UUID = Field(default_factory=uuid4)
     document_id: UUID

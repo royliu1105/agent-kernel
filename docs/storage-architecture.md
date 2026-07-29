@@ -175,6 +175,18 @@ Chunk content is stored in Postgres for v0.1 so retrieval debugging and future c
 
 Embedding vectors are intentionally separate from chunk records and will be added behind vector-store storage in a later phase.
 
+Day 18 vector storage foundation uses a SQLite-compatible JSON vector representation:
+
+- Chunk ID.
+- Document ID.
+- Embedding model.
+- Dimension count.
+- Vector values.
+- Vector checksum.
+- Embedding metadata.
+
+This is not the final production vector index. The repository boundary is intentionally shaped so a later pgvector-native implementation can replace JSON vectors without changing API behavior.
+
 Full document content should not be stored in run events, logs, or metadata.
 
 Later implementation:

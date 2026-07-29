@@ -331,3 +331,45 @@ class DocumentChunkRecord(Base):
     )
 
     document: Mapped[DocumentRecord] = relationship(back_populates="chunks")
+    embeddings: Mapped[list[ChunkEmbeddingRecord]] = relationship(
+        back_populates="chunk", cascade="all, delete-orphan"
+    )
+
+
+class ChunkEmbeddingRecord(Base):
+    __tablename__ = "chunk_embeddings"
+    __table_args__ = (
+        Index(
+            "ix_chunk_embeddings_chunk_id_model",
+            "chunk_id",
+            "model",
+            unique=True,
+        ),
+        Index("ix_chunk_embeddings_document_id_model", "document_id", "model"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    chunk_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("document_chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    model: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    vector: Mapped[list[float]] = mapped_column(JSON, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    chunk: Mapped[DocumentChunkRecord] = relationship(back_populates="embeddings")

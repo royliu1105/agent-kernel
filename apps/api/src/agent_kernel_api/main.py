@@ -13,6 +13,7 @@ from kernel_core import (
     Agent,
     Approval,
     ApprovalStatus,
+    ChunkEmbedding,
     Document,
     DocumentChunk,
     DocumentStatus,
@@ -23,9 +24,11 @@ from kernel_core import (
 )
 from kernel_rag import (
     DocumentChunkingService,
+    DocumentIndexingService,
     DocumentIngestionService,
     DocumentNotChunkableError,
     DocumentNotFoundError,
+    DocumentNotIndexableError,
     DocumentNotReadyError,
     LocalObjectStore,
     ObjectTooLargeError,
@@ -41,6 +44,7 @@ from kernel_storage import (
     AgentRepository,
     ApprovalDecisionError,
     ApprovalRepository,
+    ChunkEmbeddingRepository,
     DocumentChunkRepository,
     DocumentRepository,
     IngestionJobRepository,
@@ -58,8 +62,10 @@ from agent_kernel_api.schemas import (
     ApprovalApproveRequest,
     ApprovalRejectRequest,
     ApprovalResponse,
+    ChunkEmbeddingResponse,
     DocumentChunkResponse,
     DocumentCreateRequest,
+    DocumentIndexResponse,
     DocumentResponse,
     IngestionJobResponse,
     KnowledgeBaseCreateRequest,
@@ -77,6 +83,7 @@ def create_app(
     object_store: LocalObjectStore | None = None,
     ingestion_service: DocumentIngestionService | None = None,
     chunking_service: DocumentChunkingService | None = None,
+    indexing_service: DocumentIndexingService | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
@@ -84,6 +91,7 @@ def create_app(
     store = object_store or LocalObjectStore()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)
+    indexer = indexing_service or DocumentIndexingService()
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -518,6 +526,51 @@ def create_app(
         return _document_chunk_response(chunk)
 
     @app.post(
+        "/v1/documents/{document_id}/index",
+        response_model=DocumentIndexResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["embeddings"],
+    )
+    def index_document(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> DocumentIndexResponse:
+        try:
+            result = indexer.index_document(
+                document_id=document_id,
+                document_repository=DocumentRepository(session),
+                chunk_repository=DocumentChunkRepository(session),
+                embedding_repository=ChunkEmbeddingRepository(session),
+            )
+        except DocumentNotIndexableError as error:
+            if "was not found" in str(error):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=str(error),
+                ) from error
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        return DocumentIndexResponse(
+            document_id=result.document_id,
+            model=result.model,
+            dimensions=result.dimensions,
+            embedding_count=result.embedding_count,
+        )
+
+    @app.get(
+        "/v1/documents/{document_id}/embeddings",
+        response_model=list[ChunkEmbeddingResponse],
+        tags=["embeddings"],
+    )
+    def list_document_embeddings(
+        document_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[ChunkEmbeddingResponse]:
+        embeddings = ChunkEmbeddingRepository(session).list_for_document(document_id=document_id)
+        if embeddings is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        return [_chunk_embedding_response(embedding) for embedding in embeddings]
+
+    @app.post(
         "/v1/documents/{document_id}/ingest",
         response_model=IngestionJobResponse,
         status_code=status.HTTP_201_CREATED,
@@ -699,6 +752,20 @@ def _document_chunk_response(chunk: DocumentChunk) -> DocumentChunkResponse:
         checksum=chunk.checksum,
         metadata=chunk.metadata,
         created_at=chunk.created_at,
+    )
+
+
+def _chunk_embedding_response(embedding: ChunkEmbedding) -> ChunkEmbeddingResponse:
+    return ChunkEmbeddingResponse(
+        id=embedding.id,
+        document_id=embedding.document_id,
+        chunk_id=embedding.chunk_id,
+        model=embedding.model,
+        dimensions=embedding.dimensions,
+        vector=embedding.vector,
+        checksum=embedding.checksum,
+        metadata=embedding.metadata,
+        created_at=embedding.created_at,
     )
 
 

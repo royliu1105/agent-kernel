@@ -150,6 +150,25 @@ class DocumentChunkResponse(ApiModel):
     created_at: datetime
 
 
+class ChunkEmbeddingResponse(ApiModel):
+    id: UUID
+    document_id: UUID
+    chunk_id: UUID
+    model: str
+    dimensions: int
+    vector: list[float]
+    checksum: str
+    metadata: dict[str, Any]
+    created_at: datetime
+
+
+class DocumentIndexResponse(ApiModel):
+    document_id: UUID
+    model: str
+    dimensions: int
+    embedding_count: int
+
+
 class IngestionJobResponse(ApiModel):
     id: UUID
     document_id: UUID

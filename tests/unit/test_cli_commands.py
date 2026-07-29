@@ -477,3 +477,49 @@ def test_chunk_cli_uses_chunk_endpoints(monkeypatch: pytest.MonkeyPatch) -> None
         ("GET", f"/v1/documents/{document_id}/chunks", None),
         ("GET", f"/v1/document-chunks/{chunk_id}", None),
     ]
+
+
+def test_document_index_cli_uses_index_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"document_id": path.split("/")[3], "embedding_count": 2}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    document_id = "00000000-0000-0000-0000-000000000019"
+
+    result = CliRunner().invoke(cli_main.app, ["document", "index", document_id])
+
+    assert result.exit_code == 0
+    assert calls == [("POST", f"/v1/documents/{document_id}/index", None)]
+    assert '"embedding_count": 2' in result.output
+
+
+def test_embedding_cli_uses_embedding_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return [{"id": "embedding-1", "model": "mock-embedding-v1"}]
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+    document_id = "00000000-0000-0000-0000-000000000020"
+
+    result = CliRunner().invoke(cli_main.app, ["embedding", "list", document_id])
+
+    assert result.exit_code == 0
+    assert calls == [("GET", f"/v1/documents/{document_id}/embeddings", None)]
+    assert '"model": "mock-embedding-v1"' in result.output

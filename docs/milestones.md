@@ -159,10 +159,11 @@ Checklist:
 - [x] Text/Markdown parser.
 - [x] Chunker.
 - [x] Document chunk storage.
-- [ ] Embedding interface.
+- [x] Embedding interface.
 - [ ] OpenAI embeddings.
-- [ ] Mock embeddings.
-- [ ] pgvector store.
+- [x] Mock embeddings.
+- [x] Vector store foundation.
+- [ ] pgvector-native store.
 - [ ] Retriever.
 - [ ] Citation builder.
 - [ ] `kb_search` tool.

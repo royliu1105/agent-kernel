@@ -100,6 +100,20 @@ Day 17 implements deterministic parsed-text chunking:
 
 Day 17 intentionally does not generate embeddings, write vectors, retrieve chunks, build citations, or expose `kb_search`.
 
+## Day 18 Embedding and Vector Store Foundation
+
+Day 18 implements deterministic chunk embedding/indexing:
+
+- Define an embedding provider interface.
+- Add deterministic mock embeddings for tests and local development.
+- Persist chunk embeddings in `chunk_embeddings`.
+- Store chunk ID, document ID, model, dimensions, vector, checksum, and metadata.
+- Move document status from `chunked` to `embedding` to `indexed`.
+- Replace existing embeddings when a document/model is re-indexed.
+- Add repository-level cosine similarity scoring for future retriever work.
+
+Day 18 intentionally does not call OpenAI embeddings, use pgvector-native columns/indexes, expose retrieval, build citations, or expose `kb_search`.
+
 ## API / CLI
 
 Expected API:
@@ -118,6 +132,8 @@ GET  /v1/ingestion-jobs/{job_id}
 POST /v1/documents/{document_id}/chunk
 GET  /v1/documents/{document_id}/chunks
 GET  /v1/document-chunks/{chunk_id}
+POST /v1/documents/{document_id}/index
+GET  /v1/documents/{document_id}/embeddings
 POST /v1/retrieval/query
 ```
 
@@ -137,6 +153,8 @@ agent-kernel ingestion inspect <job-id>
 agent-kernel document chunk <document-id>
 agent-kernel chunk list <document-id>
 agent-kernel chunk inspect <chunk-id>
+agent-kernel document index <document-id>
+agent-kernel embedding list <document-id>
 agent-kernel kb query "What is our deployment policy?"
 ```
 

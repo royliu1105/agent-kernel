@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import math
 from typing import Any
 from uuid import UUID
 
@@ -11,6 +12,7 @@ from kernel_core import (
     AgentStatus,
     Approval,
     ApprovalStatus,
+    ChunkEmbedding,
     Document,
     DocumentChunk,
     DocumentStatus,
@@ -33,6 +35,7 @@ from sqlalchemy.orm import Session
 from kernel_storage.models import (
     AgentRecord,
     ApprovalRecord,
+    ChunkEmbeddingRecord,
     DocumentChunkRecord,
     DocumentRecord,
     IngestionJobRecord,
@@ -895,6 +898,78 @@ class DocumentChunkRepository:
         return [_document_chunk_from_record(record) for record in self._session.scalars(statement)]
 
 
+class ChunkEmbeddingRepository:
+    """Persistence operations for chunk embeddings."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def replace_for_document(
+        self,
+        *,
+        document_id: UUID,
+        model: str,
+        embeddings: list[ChunkEmbedding],
+    ) -> list[ChunkEmbedding] | None:
+        document = self._session.get(DocumentRecord, str(document_id))
+        if document is None:
+            return None
+        if any(embedding.document_id != document_id for embedding in embeddings):
+            raise DocumentChunkingError("All embeddings must belong to the target document.")
+        if any(embedding.model != model for embedding in embeddings):
+            raise DocumentChunkingError("All embeddings must use the selected model.")
+
+        self._session.query(ChunkEmbeddingRecord).filter(
+            ChunkEmbeddingRecord.document_id == str(document_id),
+            ChunkEmbeddingRecord.model == model,
+        ).delete(synchronize_session=False)
+        for embedding in embeddings:
+            self._session.add(_chunk_embedding_to_record(embedding))
+
+        document.status = DocumentStatus.INDEXED.value
+        document.error_message = None
+        document.updated_at = utc_now()
+        self._session.commit()
+        return self.list_for_document(document_id=document_id, model=model) or []
+
+    def list_for_document(
+        self,
+        *,
+        document_id: UUID,
+        model: str | None = None,
+    ) -> list[ChunkEmbedding] | None:
+        if self._session.get(DocumentRecord, str(document_id)) is None:
+            return None
+
+        statement = select(ChunkEmbeddingRecord).where(
+            ChunkEmbeddingRecord.document_id == str(document_id)
+        )
+        if model is not None:
+            statement = statement.where(ChunkEmbeddingRecord.model == model)
+        statement = statement.order_by(ChunkEmbeddingRecord.created_at)
+        return [_chunk_embedding_from_record(record) for record in self._session.scalars(statement)]
+
+    def similarity_search(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        query_vector: list[float],
+        model: str,
+        limit: int = 5,
+    ) -> list[tuple[ChunkEmbedding, float]]:
+        statement = (
+            select(ChunkEmbeddingRecord)
+            .join(DocumentRecord, ChunkEmbeddingRecord.document_id == DocumentRecord.id)
+            .where(DocumentRecord.knowledge_base_id == str(knowledge_base_id))
+            .where(ChunkEmbeddingRecord.model == model)
+        )
+        scored = [
+            (_chunk_embedding_from_record(record), _cosine_similarity(query_vector, record.vector))
+            for record in self._session.scalars(statement)
+        ]
+        return sorted(scored, key=lambda item: item[1], reverse=True)[:limit]
+
+
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
@@ -1151,6 +1226,45 @@ def _document_chunk_from_record(record: DocumentChunkRecord) -> DocumentChunk:
         metadata=record.extra_metadata,
         created_at=record.created_at,
     )
+
+
+def _chunk_embedding_to_record(embedding: ChunkEmbedding) -> ChunkEmbeddingRecord:
+    return ChunkEmbeddingRecord(
+        id=str(embedding.id),
+        document_id=str(embedding.document_id),
+        chunk_id=str(embedding.chunk_id),
+        model=embedding.model,
+        dimensions=embedding.dimensions,
+        vector=embedding.vector,
+        checksum=embedding.checksum,
+        extra_metadata=embedding.metadata,
+        created_at=embedding.created_at,
+    )
+
+
+def _chunk_embedding_from_record(record: ChunkEmbeddingRecord) -> ChunkEmbedding:
+    return ChunkEmbedding(
+        id=UUID(record.id),
+        document_id=UUID(record.document_id),
+        chunk_id=UUID(record.chunk_id),
+        model=record.model,
+        dimensions=record.dimensions,
+        vector=record.vector,
+        checksum=record.checksum,
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
+    )
+
+
+def _cosine_similarity(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right) or not left:
+        return 0.0
+    dot = sum(a * b for a, b in zip(left, right, strict=True))
+    left_norm = math.sqrt(sum(value * value for value in left))
+    right_norm = math.sqrt(sum(value * value for value in right))
+    if left_norm == 0.0 or right_norm == 0.0:
+        return 0.0
+    return dot / (left_norm * right_norm)
 
 
 def _ingestion_job_to_record(job: IngestionJob) -> IngestionJobRecord:

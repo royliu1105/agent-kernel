@@ -23,6 +23,7 @@ kb_app = typer.Typer(help="Manage knowledge bases.")
 document_app = typer.Typer(help="Manage document metadata.")
 ingestion_app = typer.Typer(help="Manage ingestion jobs.")
 chunk_app = typer.Typer(help="Manage document chunks.")
+embedding_app = typer.Typer(help="Manage chunk embeddings.")
 
 DEFAULT_API_URL = "http://127.0.0.1:8000"
 API_URL_ENV = "AGENT_KERNEL_API_URL"
@@ -476,6 +477,42 @@ def chunk_document(
     _echo_json(response)
 
 
+@document_app.command("index")
+def index_document(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """Index a chunked document through the API."""
+
+    response = _request_json(
+        "POST",
+        f"/v1/documents/{document_id}/index",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
+@embedding_app.command("list")
+def list_document_embeddings(
+    document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
+) -> None:
+    """List chunk embeddings for a document through the API."""
+
+    response = _request_json(
+        "GET",
+        f"/v1/documents/{document_id}/embeddings",
+        api_url=_resolve_api_url(api_url),
+    )
+    _echo_json(response)
+
+
 @chunk_app.command("list")
 def list_document_chunks(
     document_id: Annotated[UUID, typer.Argument(help="Document ID.")],
@@ -638,3 +675,4 @@ app.add_typer(kb_app, name="kb")
 app.add_typer(document_app, name="document")
 app.add_typer(ingestion_app, name="ingestion")
 app.add_typer(chunk_app, name="chunk")
+app.add_typer(embedding_app, name="embedding")
