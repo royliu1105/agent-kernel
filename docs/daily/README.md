@@ -80,3 +80,4 @@ day-03.md
 - [Day 30: Agent Workbench Shell and Dashboard](day-30.md)
 - [Day 31: Run Timeline and Approval Inbox Interactions](day-31.md)
 - [Day 32: Workbench Navigation and Operational Views](day-32.md)
+- [Day 33: Playwright Smoke Tests and Phase 5 Verification](day-33.md)

@@ -269,7 +269,7 @@ Checklist:
 - [x] Eval report page.
 - [x] Settings page.
 - [x] API client.
-- [ ] Playwright smoke tests.
+- [x] Playwright smoke tests.
 
 Acceptance:
 

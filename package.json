@@ -9,8 +9,10 @@
     "web:dev": "npm --workspace apps/web run dev",
     "web:lint": "npm --workspace apps/web run lint",
     "web:build": "npm --workspace apps/web run build",
+    "web:test:e2e": "npm --workspace apps/web run test:e2e",
     "lint": "npm run web:lint",
-    "build": "npm run web:build"
+    "build": "npm run web:build",
+    "test:e2e": "npm run web:test:e2e"
   },
   "engines": {
     "node": ">=22"

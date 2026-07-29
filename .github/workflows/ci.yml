@@ -38,6 +38,10 @@ jobs:
         run: npm run lint
       - name: Build Web
         run: npm run build
+      - name: Install Playwright
+        run: npm --workspace apps/web exec playwright install --with-deps chromium
+      - name: Smoke Test Web
+        run: npm run test:e2e
 
   compose:
     runs-on: ubuntu-latest
