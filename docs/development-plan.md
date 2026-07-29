@@ -5,8 +5,8 @@
 The target is not reduced. The timeline is compressed through daily execution:
 
 ```text
-30 days to v0.1
-45 days to Public Alpha
+36 days to v0.1
+51 days to Public Alpha
 ```
 
 The v0.1 version should be deployable, testable, recoverable, observable, evaluable, and documented.
@@ -108,38 +108,95 @@ Acceptance:
 - Tool failure retries.
 - Audit log is complete.
 
-## Phase 3: Day 14-18 RAG and Memory
+## Phase 3: Day 14-24 RAG Retrieval, Agent Integration, and Memory
 
-Deliverables:
+Phase 3 is realigned in [Phase 3 Realignment](phase-3-realignment.md).
+
+### Phase 3A: Day 14-18 RAG Ingestion and Indexing Foundation
+
+Status:
+
+```text
+Complete
+```
+
+Deliverables completed:
 
 - Document model.
 - Document upload.
 - Local object store.
-- Ingestion worker.
+- Ingestion job model.
+- Manual ingestion API and CLI.
 - Text/Markdown parser.
 - Chunker.
 - Embedding interface.
-- OpenAI embeddings.
 - Mock embeddings.
-- pgvector store.
+- Vector store foundation.
+
+Acceptance:
+
+- Upload document.
+- Ingest and parse document.
+- Chunk parsed document.
+- Index chunks with deterministic mock embeddings.
+- Persist chunk embeddings.
+
+### Phase 3B: Day 19-21 RAG Retrieval and Agent Integration
+
+Deliverables:
+
 - Retriever.
 - Citation builder.
-- RAG tool.
+- Retrieval API and CLI.
+- `kb_search` tool.
+- Agent runtime RAG integration.
+- RAG behavior evals.
+- RAG regression cases.
+
+Acceptance:
+
+- Query can retrieve relevant chunks.
+- Retrieval response includes citations.
+- Agent can call `kb_search`.
+- RAG behavior has deterministic regression tests.
+
+### Phase 3C: Day 22-23 Memory Foundation
+
+Deliverables:
+
 - Short-term memory.
 - Task context.
 - User preferences.
 - Long-term memory.
 - Memory retrieval.
+- Memory API and CLI.
+- Agent memory context integration.
 
 Acceptance:
 
-- Upload document -> ingest -> retrieve.
+- Memory can be written and read.
+- Memory is scoped and inspectable.
+- Agent can use retrieved memory context.
+
+### Phase 3 Closure: Day 24
+
+Deliverables:
+
+- Phase 3 summary.
+- Updated RAG and memory specs.
+- Updated milestones.
+- Full verification.
+- Known limitations documented.
+
+Acceptance:
+
+- Upload document -> ingest -> chunk -> index -> retrieve.
 - Agent calls `kb_search`.
 - Answer includes citations.
-- Memory can be written and read.
+- Memory can be written, retrieved, and used as scoped context.
 - RAG and memory tests pass.
 
-## Phase 4: Day 19-23 Observability and Evals
+## Phase 4: Day 25-29 Observability and Evals
 
 Deliverables:
 
@@ -163,7 +220,7 @@ Acceptance:
 - Failed cases generate reports.
 - CI runs minimum evals.
 
-## Phase 5: Day 24-27 Web UI
+## Phase 5: Day 30-33 Web UI
 
 Deliverables:
 
@@ -185,7 +242,7 @@ Acceptance:
 - User can view eval reports.
 - Web build passes.
 
-## Phase 6: Day 28-30 Deployment, Docs, and Release
+## Phase 6: Day 34-36 Deployment, Docs, and Release
 
 Deliverables:
 
@@ -229,7 +286,7 @@ At the start of each development day:
 5. Update `docs/milestones.md` when phase-level progress changes.
 6. Update specs or ADRs if implementation changes behavior or decisions.
 
-Daily files should be created just-in-time. Do not pre-create all 45 days.
+Daily files should be created just-in-time. Do not pre-create all 51 days.
 
 ## Generic Daily Start Prompt
 

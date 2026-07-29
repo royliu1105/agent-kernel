@@ -20,14 +20,15 @@ The plan is split into these documents:
 12. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
 13. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
 14. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-15. [Development Plan](development-plan.md): 30-day v0.1 plan and daily working method.
+15. [Development Plan](development-plan.md): v0.1 plan and daily working method.
 16. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
 17. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
 18. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-19. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-20. [ADR 0002](adr/0002-storage.md): storage decision.
-21. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-22. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+19. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
+20. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+21. [ADR 0002](adr/0002-storage.md): storage decision.
+22. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+23. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 ## Current Baseline
 
@@ -40,8 +41,8 @@ Monorepo + Modular Monolith + Worker + Pluggable Interfaces
 The first implementation target is:
 
 ```text
-30 days to v0.1
-45 days to Public Alpha
+36 days to v0.1
+51 days to Public Alpha
 ```
 
 The first day of implementation should focus only on the project skeleton and engineering baseline.

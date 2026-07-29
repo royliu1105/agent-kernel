@@ -5,8 +5,8 @@
 The short-term delivery plan is:
 
 ```text
-Day 1-30: v0.1
-Day 31-45: Public Alpha
+Day 1-36: v0.1
+Day 37-51: Public Alpha
 ```
 
 v0.1 should be a deployable, testable, observable, evaluable, resumable Agent runtime foundation.
@@ -136,7 +136,7 @@ Acceptance:
 - [x] Tool failure retries where safe.
 - [x] Tool calls and decisions are auditable.
 
-### Phase 3: Day 14-18 - RAG and Memory
+### Phase 3: Day 14-24 - RAG Retrieval, Agent Integration, and Memory
 
 Goal:
 
@@ -144,7 +144,18 @@ Goal:
 Let agents use documents, retrieval, citations, and scoped memory.
 ```
 
+Plan:
+
+```text
+Phase 3A: Day 14-18 - RAG Ingestion + Indexing Foundation
+Phase 3B: Day 19-21 - RAG Retrieval + Agent Integration
+Phase 3C: Day 22-23 - Memory Foundation
+Phase 3 Closure: Day 24
+```
+
 Checklist:
+
+#### Phase 3A: RAG Ingestion + Indexing Foundation
 
 - [x] Knowledge base model.
 - [x] Document model.
@@ -164,25 +175,49 @@ Checklist:
 - [x] Mock embeddings.
 - [x] Vector store foundation.
 - [ ] pgvector-native store.
+
+#### Phase 3B: RAG Retrieval + Agent Integration
+
 - [ ] Retriever.
 - [ ] Citation builder.
+- [ ] Retrieval API.
+- [ ] Retrieval CLI.
 - [ ] `kb_search` tool.
+- [ ] Agent runtime RAG integration.
+- [ ] RAG behavior evals.
+- [ ] RAG regression cases.
+
+#### Phase 3C: Memory Foundation
+
 - [ ] Short-term memory.
 - [ ] Task context.
 - [ ] User preferences.
 - [ ] Long-term memory.
 - [ ] Memory retrieval.
+- [ ] Memory API.
+- [ ] Memory CLI.
+- [ ] Agent memory context integration.
+
+#### Phase 3 Closure
+
+- [ ] Phase 3 summary.
+- [ ] RAG spec updated.
+- [ ] Memory spec updated.
+- [ ] Known limitations documented.
+- [ ] Full verification.
 
 Acceptance:
 
-- [ ] Upload document.
-- [ ] Ingest document.
+- [x] Upload document.
+- [x] Ingest document.
+- [x] Chunk document.
+- [x] Index document with mock embeddings.
 - [ ] Retrieve relevant chunks.
 - [ ] Agent calls `kb_search`.
 - [ ] Final answer includes citations.
 - [ ] Memory can be written, read, scoped, and deleted.
 
-### Phase 4: Day 19-23 - Observability and Evals
+### Phase 4: Day 25-29 - Observability and Evals
 
 Goal:
 
@@ -215,7 +250,7 @@ Acceptance:
 - [ ] Failed eval cases produce clear reports.
 - [ ] CI runs minimum deterministic evals.
 
-### Phase 5: Day 24-27 - Web UI
+### Phase 5: Day 30-33 - Web UI
 
 Goal:
 
@@ -244,7 +279,7 @@ Acceptance:
 - [ ] User can view eval reports.
 - [ ] Web build passes.
 
-### Phase 6: Day 28-30 - Deployment, Docs, and v0.1 Release
+### Phase 6: Day 34-36 - Deployment, Docs, and v0.1 Release
 
 Goal:
 
@@ -275,7 +310,7 @@ Acceptance:
 - [ ] Examples work.
 - [ ] Docs explain architecture, usage, tradeoffs, and next steps.
 
-## Public Alpha: Day 31-45
+## Public Alpha: Day 37-51
 
 Goal:
 

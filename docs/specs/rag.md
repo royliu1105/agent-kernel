@@ -114,6 +114,62 @@ Day 18 implements deterministic chunk embedding/indexing:
 
 Day 18 intentionally does not call OpenAI embeddings, use pgvector-native columns/indexes, expose retrieval, build citations, or expose `kb_search`.
 
+## Phase 3B Retrieval and Agent Integration Plan
+
+Phase 3B completes the RAG usage path:
+
+```text
+Day 19: Retriever + Citation Builder + Retrieval API/CLI
+Day 20: kb_search Tool + Agent Runtime Integration
+Day 21: RAG Behavior Evals + Regression Cases
+```
+
+### Day 19 Retrieval Foundation
+
+Day 19 should implement:
+
+- Query embedding with the deterministic mock embedding provider.
+- Vector similarity retrieval over persisted chunk embeddings.
+- Top-k retrieval results.
+- Citation objects linked to knowledge base, document, chunk, and character offsets.
+- Retrieval API and CLI.
+
+Day 19 should not implement `kb_search` tool integration, agent runtime integration, memory, RRF, BM25, hybrid search, or reranking.
+
+### Day 20 Agent RAG Integration
+
+Day 20 should implement:
+
+- `kb_search` as a safe/read-only built-in tool.
+- Runtime support for agents to invoke `kb_search`.
+- Run output or timeline visibility for retrieved chunks and citations.
+- API/CLI examples for an agent run using RAG.
+
+Day 20 should not implement memory or advanced retrieval ranking.
+
+### Day 21 RAG Behavior Evals
+
+Day 21 should implement:
+
+- Deterministic RAG behavior eval cases.
+- Regression cases for retrieval relevance.
+- Regression cases for citation presence.
+- Failure cases for empty or missing knowledge bases.
+
+Day 21 should not implement large benchmark suites, rerankers, or production analytics.
+
+## Deferred Retrieval Enhancements
+
+The following are valuable but deferred beyond Phase 3:
+
+- OpenAI embeddings.
+- pgvector-native vector columns and indexes.
+- BM25 / keyword index.
+- Hybrid search.
+- RRF.
+- Reranking.
+- Query rewriting.
+
 ## API / CLI
 
 Expected API:

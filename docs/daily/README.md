@@ -7,7 +7,7 @@ Use daily plans for short-lived implementation checklists. Use [Milestones](../m
 ## Rules
 
 - Create one file per active development day.
-- Do not pre-create all 45 days.
+- Do not pre-create all 51 days.
 - Create the next day only when that day starts.
 - Keep each daily plan small enough to execute.
 - Update checkboxes as work completes.
