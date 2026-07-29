@@ -72,6 +72,7 @@ class RunEventType(StrEnum):
     APPROVAL_REQUESTED = "approval_requested"
     APPROVAL_APPROVED = "approval_approved"
     APPROVAL_REJECTED = "approval_rejected"
+    MEMORY_RETRIEVED = "memory_retrieved"
     MODEL_CALL_RETRYING = "model_call_retrying"
     MODEL_FALLBACK_SELECTED = "model_fallback_selected"
 

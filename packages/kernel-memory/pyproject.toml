@@ -3,7 +3,7 @@ name = "kernel-memory"
 version = "0.1.0"
 description = "Memory package for Agent Kernel."
 requires-python = ">=3.12,<3.13"
-dependencies = ["kernel-core"]
+dependencies = ["kernel-core", "kernel-storage"]
 
 [build-system]
 requires = ["hatchling"]

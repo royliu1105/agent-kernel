@@ -117,7 +117,29 @@ Day 23 should implement:
 - Run timeline visibility when memory is used.
 - Tests for memory context behavior.
 
-Day 23 should not implement autonomous memory consolidation, graph memory, or broad automatic long-term memory writes.
+Implemented Day 23 runtime input shape:
+
+```json
+{
+  "task": "Summarize this for me.",
+  "memory": {
+    "scopes": ["user:roy", "task:deploy"],
+    "types": ["user_preference", "task_context"],
+    "limit": 10
+  }
+}
+```
+
+Implemented Day 23 behavior:
+
+- Retrieve memory by one or more exact scopes.
+- Optionally filter retrieved memory by memory type.
+- Render retrieved memory into a deterministic system message.
+- Append `memory_retrieved` run events with requested scopes, requested types, limit, item count, and item IDs.
+- Include memory usage metadata in model run output.
+- Fail clearly when memory config is invalid.
+
+Day 23 should not implement automatic memory writes, semantic/vector memory retrieval, autonomous memory consolidation, graph memory, LLM-based memory selection, conflict resolution, provider-native function calling, or memory observability spans.
 
 ## API / CLI
 

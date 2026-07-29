@@ -193,10 +193,10 @@ Checklist:
 - [x] Task context.
 - [x] User preferences.
 - [x] Long-term memory.
-- [ ] Memory retrieval.
+- [x] Memory retrieval.
 - [x] Memory API.
 - [x] Memory CLI.
-- [ ] Agent memory context integration.
+- [x] Agent memory context integration.
 
 #### Phase 3 Closure
 

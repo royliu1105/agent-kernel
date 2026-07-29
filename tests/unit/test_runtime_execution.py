@@ -6,6 +6,7 @@ from kernel_core import (
     ApprovalStatus,
     DocumentChunk,
     DocumentStatus,
+    MemoryType,
     RiskLevel,
     RunEventType,
     RunStatus,
@@ -20,6 +21,7 @@ from kernel_storage import (
     DocumentChunkRepository,
     DocumentRepository,
     KnowledgeBaseRepository,
+    MemoryRepository,
     RunRepository,
     ToolCallRepository,
 )
@@ -72,6 +74,102 @@ async def test_execution_service_completes_queued_run(
         RunEventType.RUN_STARTED,
         RunEventType.RUN_COMPLETED,
     ]
+
+
+@pytest.mark.asyncio
+async def test_execution_service_injects_explicit_memory_context(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    provider = CapturingProvider()
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="memory-agent")
+        memory = MemoryRepository(session).create(
+            type=MemoryType.USER_PREFERENCE,
+            scope="user:roy",
+            content={"language": "zh", "style": "concise"},
+            confidence=0.9,
+        )
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={
+                "task": "summarize notes",
+                "model": "capture:memory",
+                "memory": {
+                    "scopes": ["user:roy"],
+                    "types": ["user_preference"],
+                    "limit": 5,
+                },
+            },
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        completed = await RunExecutionService(provider=provider).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+        events = run_repository.list_events(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert completed.output is not None
+    assert completed.output["memory"] == {
+        "used": True,
+        "item_count": 1,
+        "item_ids": [str(memory.id)],
+    }
+    assert provider.last_request is not None
+    assert provider.last_request.messages[0].role.value == "system"
+    assert provider.last_request.messages[0].name == "memory_context"
+    assert "type=user_preference" in provider.last_request.messages[0].content
+    assert '"language": "zh"' in provider.last_request.messages[0].content
+    assert [event.type for event in events] == [
+        RunEventType.RUN_CREATED,
+        RunEventType.RUN_QUEUED,
+        RunEventType.RUN_STARTED,
+        RunEventType.MEMORY_RETRIEVED,
+        RunEventType.RUN_COMPLETED,
+    ]
+    assert events[3].payload["item_ids"] == [str(memory.id)]
+    assert events[3].payload["requested_scopes"] == ["user:roy"]
+
+
+@pytest.mark.asyncio
+async def test_execution_service_fails_invalid_memory_config(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="memory-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={
+                "task": "summarize notes",
+                "memory": {"scopes": []},
+            },
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        failed = await RunExecutionService(provider=MockLLMProvider()).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+        events = run_repository.list_events(run.id)
+
+    assert failed.status is RunStatus.FAILED
+    assert failed.error_type == "RunExecutionError"
+    assert failed.error_message is not None
+    assert "memory.scopes" in failed.error_message
+    assert events[-1].type is RunEventType.RUN_FAILED
 
 
 @pytest.mark.asyncio
@@ -605,6 +703,24 @@ class FlakyReadOnlyTool:
         if self.call_count == 1:
             raise RuntimeError("temporary tool failure")
         return {"value": arguments["value"], "attempts": self.call_count}
+
+
+class CapturingProvider:
+    def __init__(self) -> None:
+        self.last_request: LLMRequest | None = None
+
+    @property
+    def name(self) -> str:
+        return "capture"
+
+    async def complete(self, request: LLMRequest) -> LLMResponse:
+        self.last_request = request
+        return LLMResponse(
+            provider=self.name,
+            model=request.model,
+            text="captured",
+            usage=LLMUsage(input_tokens=1, output_tokens=1, estimated_cost=0.0),
+        )
 
 
 class FlakyProvider:

@@ -70,3 +70,4 @@ day-03.md
 - [Day 20: kb_search Tool and Agent Runtime Integration](day-20.md)
 - [Day 21: RAG Behavior Evals and Regression Cases](day-21.md)
 - [Day 22: Memory Domain, Storage, API, and CLI](day-22.md)
+- [Day 23: Memory Retrieval and Agent Context Integration](day-23.md)

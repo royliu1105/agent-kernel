@@ -10,6 +10,7 @@ from uuid import UUID
 from kernel_core import (
     Approval,
     ApprovalStatus,
+    MemoryType,
     RiskLevel,
     Run,
     RunEventType,
@@ -17,6 +18,7 @@ from kernel_core import (
     ToolCall,
     ToolCallStatus,
 )
+from kernel_memory import MemoryContext, MemoryRetrievalService
 from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
 from kernel_providers import (
     LLMMessage,
@@ -26,7 +28,7 @@ from kernel_providers import (
     LLMResponse,
     MessageRole,
 )
-from kernel_storage import ApprovalRepository, RunRepository, ToolCallRepository
+from kernel_storage import ApprovalRepository, MemoryRepository, RunRepository, ToolCallRepository
 from kernel_tools import (
     ToolError,
     ToolExecutor,
@@ -53,6 +55,15 @@ class ExplicitToolRequest:
 
     name: str
     arguments: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ExplicitMemoryRequest:
+    """Explicit memory retrieval request embedded directly in run input."""
+
+    scopes: tuple[str, ...]
+    types: tuple[MemoryType, ...] | None = None
+    limit: int = 10
 
 
 @dataclass(frozen=True)
@@ -85,6 +96,7 @@ class RunExecutionService:
         tool_registry: ToolRegistry | None = None,
         tool_executor: ToolExecutor | None = None,
         policy_evaluator: ToolPolicyEvaluator | None = None,
+        memory_retrieval_service: MemoryRetrievalService | None = None,
         retry_policy: RetryPolicy | None = None,
         default_model: str = "mock:mock-default",
         state_machine: RunStateMachine | None = None,
@@ -99,6 +111,7 @@ class RunExecutionService:
         self._tool_registry = tool_registry or create_default_tool_registry()
         self._tool_executor = tool_executor or ToolExecutor(registry=self._tool_registry)
         self._policy_evaluator = policy_evaluator or ToolPolicyEvaluator()
+        self._memory_retrieval_service = memory_retrieval_service or MemoryRetrievalService()
         self._retry_policy = retry_policy or RetryPolicy()
         self._default_model = default_model
         self._state_machine = state_machine or RunStateMachine()
@@ -233,7 +246,15 @@ class RunExecutionService:
 
     async def _execute_model_request(self, *, running: Run, repository: RunRepository) -> Run:
         try:
-            request = _request_from_run(running, default_model=self._default_model)
+            memory_context = self._memory_context_from_run(
+                running=running,
+                repository=repository,
+            )
+            request = _request_from_run(
+                running,
+                default_model=self._default_model,
+                memory_context=memory_context,
+            )
             if self._router is None:
                 raise RunExecutionError("Model execution requires a provider or router.")
             model_refs = _model_refs_from_run(running, default_model=self._default_model)
@@ -294,6 +315,7 @@ class RunExecutionService:
                     model_ref=model_ref,
                     attempt_count=attempt_count,
                     fallback_used=model_index > 0,
+                    memory_context=memory_context,
                 )
 
             if last_error is not None and not self._should_retry_provider(last_error):
@@ -338,16 +360,21 @@ class RunExecutionService:
         model_ref: str,
         attempt_count: int,
         fallback_used: bool,
+        memory_context: MemoryContext | None,
     ) -> Run:
         succeed_transition = self._state_machine.succeed(running)
+        output_payload: dict[str, Any] = {
+            "text": response.text,
+            "provider": response.provider,
+            "model": response.model,
+            "usage": response.usage.model_dump(),
+        }
+        if memory_context is not None:
+            output_payload["memory"] = memory_context.to_output_payload()
+
         completed = repository.complete(
             run_id=running.id,
-            output_payload={
-                "text": response.text,
-                "provider": response.provider,
-                "model": response.model,
-                "usage": response.usage.model_dump(),
-            },
+            output_payload=output_payload,
             input_tokens_total=response.usage.input_tokens,
             output_tokens_total=response.usage.output_tokens,
             estimated_cost_total=response.usage.estimated_cost,
@@ -364,6 +391,39 @@ class RunExecutionService:
         if completed is None:
             raise RunNotFoundError(f"Run {running.id} was not found.")
         return completed
+
+    def _memory_context_from_run(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+    ) -> MemoryContext | None:
+        memory_request = _explicit_memory_request_from_run(running)
+        if memory_request is None:
+            return None
+
+        memory_context = self._memory_retrieval_service.retrieve(
+            repository=MemoryRepository(repository.session),
+            scopes=memory_request.scopes,
+            types=memory_request.types,
+            limit=memory_request.limit,
+        )
+        repository.append_event(
+            run_id=running.id,
+            event_type=RunEventType.MEMORY_RETRIEVED,
+            payload={
+                **memory_context.to_event_payload(),
+                "requested_scopes": list(memory_request.scopes),
+                "requested_types": (
+                    [memory_type.value for memory_type in memory_request.types]
+                    if memory_request.types is not None
+                    else None
+                ),
+                "limit": memory_request.limit,
+            },
+            trace_id=running.trace_id,
+        )
+        return memory_context
 
     async def _execute_explicit_tool_request(
         self,
@@ -622,11 +682,27 @@ class RunExecutionService:
         return failed
 
 
-def _request_from_run(run: Run, *, default_model: str) -> LLMRequest:
+def _request_from_run(
+    run: Run,
+    *,
+    default_model: str,
+    memory_context: MemoryContext | None = None,
+) -> LLMRequest:
     model = _string_from_input(run.input, "model", default_model)
+    messages = _messages_from_input(run.input)
+    if memory_context is not None:
+        messages = (
+            LLMMessage(
+                role=MessageRole.SYSTEM,
+                content=memory_context.to_prompt_text(),
+                name="memory_context",
+                metadata={"memory_item_ids": [str(item_id) for item_id in memory_context.item_ids]},
+            ),
+            *messages,
+        )
     return LLMRequest(
         model=model,
-        messages=_messages_from_input(run.input),
+        messages=messages,
         metadata={"run_id": str(run.id), "agent_id": str(run.agent_id)},
     )
 
@@ -672,6 +748,53 @@ def _explicit_tool_request_from_run(run: Run) -> ExplicitToolRequest | None:
         raise RunExecutionError("Run input field 'tool.arguments' must be a JSON object.")
 
     return ExplicitToolRequest(name=raw_name, arguments=raw_arguments)
+
+
+def _explicit_memory_request_from_run(run: Run) -> ExplicitMemoryRequest | None:
+    raw_memory = run.input.get("memory")
+    if raw_memory is None:
+        return None
+    if not isinstance(raw_memory, dict):
+        raise RunExecutionError("Run input field 'memory' must be a JSON object.")
+
+    raw_scopes = raw_memory.get("scopes")
+    if not isinstance(raw_scopes, list) or not raw_scopes:
+        raise RunExecutionError("Run input field 'memory.scopes' must be a non-empty list.")
+    scopes: list[str] = []
+    for index, scope in enumerate(raw_scopes):
+        if not isinstance(scope, str) or scope == "":
+            raise RunExecutionError(
+                f"Run input field 'memory.scopes[{index}]' must be a non-empty string."
+            )
+        scopes.append(scope)
+
+    raw_types = raw_memory.get("types")
+    memory_types: list[MemoryType] | None = None
+    if raw_types is not None:
+        if not isinstance(raw_types, list):
+            raise RunExecutionError("Run input field 'memory.types' must be a list.")
+        memory_types = []
+        for index, raw_type in enumerate(raw_types):
+            if not isinstance(raw_type, str):
+                raise RunExecutionError(
+                    f"Run input field 'memory.types[{index}]' must be a string."
+                )
+            try:
+                memory_types.append(MemoryType(raw_type))
+            except ValueError as error:
+                raise RunExecutionError(
+                    f"Run input field 'memory.types[{index}]' has unsupported value {raw_type!r}."
+                ) from error
+
+    raw_limit = raw_memory.get("limit", 10)
+    if not isinstance(raw_limit, int) or raw_limit < 1:
+        raise RunExecutionError("Run input field 'memory.limit' must be an integer >= 1.")
+
+    return ExplicitMemoryRequest(
+        scopes=tuple(scopes),
+        types=tuple(memory_types) if memory_types is not None else None,
+        limit=raw_limit,
+    )
 
 
 def _resolve_resume_approval(
