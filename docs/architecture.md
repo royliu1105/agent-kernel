@@ -23,6 +23,35 @@ Web process
 
 The API creates and inspects state. The worker executes long-running agent runs. The CLI is the developer entrypoint. The Web UI exposes operational views such as run timelines, approval queues, knowledge base state, and eval reports.
 
+## v0.1 Release Snapshot
+
+The v0.1 release shape is:
+
+```text
+FastAPI API + Typer CLI + polling worker + Next.js Workbench
+Postgres/SQLite storage + local object store + deterministic evals
+```
+
+Process responsibilities:
+
+- API owns HTTP request handling, validation, and state inspection.
+- Worker owns queued run execution, tool execution, approval resume, retry, and fallback paths.
+- CLI owns local developer workflows and API-backed commands.
+- Web owns the Agent Workbench operator surface.
+- Postgres is the recommended production database.
+- SQLite remains the fastest local development path.
+- Redis is included in the stack for future queue/cache hardening but is not the v0.1 durable queue.
+- Local filesystem object storage is the v0.1 object backend.
+
+Important v0.1 boundaries:
+
+- Web Workbench data is mostly fixture-backed.
+- Web approval decisions are local UI state.
+- Provider-native function calling is deferred.
+- Automatic model planning for tool choice is deferred.
+- Auth, RBAC, and multi-tenant isolation are deferred.
+- OpenTelemetry exporters and Prometheus endpoints are deferred.
+
 ## High-Level Flow
 
 ```text
@@ -104,3 +133,25 @@ agent-kernel/
   tests/
   deploy/
 ```
+
+## Deployment Shape
+
+Local release-hardening deployment uses Docker Compose:
+
+```text
+postgres
+redis
+api
+worker
+web
+```
+
+Container build files:
+
+```text
+deploy/Dockerfile.python
+apps/web/Dockerfile
+```
+
+See [Production Configuration](production-config.md) for runtime variables,
+secrets, storage, and release-hardening expectations.

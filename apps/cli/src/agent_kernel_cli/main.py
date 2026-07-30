@@ -108,7 +108,7 @@ def create_run(
     agent_id: Annotated[UUID, typer.Argument(help="Agent ID.")],
     input_payload: Annotated[
         str,
-        typer.Option("--input", help="Run input JSON object."),
+        typer.Option("--input", help="Run input JSON object or @path."),
     ] = "{}",
     api_url: Annotated[
         str,
@@ -303,7 +303,7 @@ def create_knowledge_base(
     ] = "",
     metadata: Annotated[
         str,
-        typer.Option("--metadata", help="Knowledge base metadata JSON object."),
+        typer.Option("--metadata", help="Knowledge base metadata JSON object or @path."),
     ] = "{}",
     api_url: Annotated[
         str,
@@ -396,7 +396,7 @@ def register_document(
     ] = None,
     metadata: Annotated[
         str,
-        typer.Option("--metadata", help="Document metadata JSON object."),
+        typer.Option("--metadata", help="Document metadata JSON object or @path."),
     ] = "{}",
     api_url: Annotated[
         str,
@@ -431,7 +431,7 @@ def upload_document(
     ] = None,
     metadata: Annotated[
         str,
-        typer.Option("--metadata", help="Document metadata JSON object."),
+        typer.Option("--metadata", help="Document metadata JSON object or @path."),
     ] = "{}",
     api_url: Annotated[
         str,
@@ -440,14 +440,15 @@ def upload_document(
 ) -> None:
     """Upload a local file into a knowledge base through the API."""
 
-    _parse_json_object(metadata)
+    metadata_payload = _read_json_argument(metadata)
+    _parse_json_object(metadata_payload)
     response = _request_file_json(
         "POST",
         f"/v1/knowledge-bases/{knowledge_base_id}/documents/upload",
         api_url=_resolve_api_url(api_url),
         file_path=file_path,
         data={
-            "metadata": metadata,
+            "metadata": metadata_payload,
             **({"title": title} if title is not None else {}),
         },
     )
@@ -638,7 +639,7 @@ def list_document_ingestion_jobs(
 def create_memory(
     type: Annotated[str, typer.Option("--type", help="Memory type.")],
     scope: Annotated[str, typer.Option("--scope", help="Memory scope.")],
-    content: Annotated[str, typer.Option("--content", help="Memory content JSON object.")],
+    content: Annotated[str, typer.Option("--content", help="Memory content JSON object or @path.")],
     source_run_id: Annotated[
         UUID | None,
         typer.Option("--source-run-id", help="Optional source run ID."),
@@ -649,7 +650,7 @@ def create_memory(
     ] = 1.0,
     metadata: Annotated[
         str,
-        typer.Option("--metadata", help="Memory metadata JSON object."),
+        typer.Option("--metadata", help="Memory metadata JSON object or @path."),
     ] = "{}",
     api_url: Annotated[
         str,
@@ -771,14 +772,28 @@ def _resolve_api_url(api_url: str) -> str:
 
 
 def _parse_json_object(value: str) -> dict[str, object]:
+    raw_value = _read_json_argument(value)
     try:
-        parsed = json.loads(value)
+        parsed = json.loads(raw_value)
     except json.JSONDecodeError as error:
         raise typer.BadParameter(f"Invalid JSON: {error.msg}") from error
 
     if not isinstance(parsed, dict):
         raise typer.BadParameter("Input must be a JSON object.")
     return parsed
+
+
+def _read_json_argument(value: str) -> str:
+    if not value.startswith("@"):
+        return value
+
+    path = Path(value[1:])
+    if not path.is_file():
+        raise typer.BadParameter(f"JSON file does not exist: {path}")
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise typer.BadParameter(f"Could not read JSON file: {path}") from error
 
 
 def _cheap_rag_retrieve_for_cases(

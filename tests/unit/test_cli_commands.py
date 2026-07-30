@@ -79,6 +79,47 @@ def test_run_create_cli_sends_input_payload(monkeypatch: pytest.MonkeyPatch) -> 
     assert '"status": "created"' in result.output
 
 
+def test_run_create_cli_accepts_json_file_input(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+    input_path = tmp_path / "run-input.json"
+    input_path.write_text('{"task":"summarize","model":"mock:echo"}', encoding="utf-8")
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> dict[str, str]:
+        calls.append((method, path, json_payload))
+        return {"id": "run-1", "status": "created"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "run",
+            "create",
+            "00000000-0000-0000-0000-000000000001",
+            "--input",
+            f"@{input_path}",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            "/v1/agents/00000000-0000-0000-0000-000000000001/runs",
+            {"input": {"task": "summarize", "model": "mock:echo"}},
+        ),
+    ]
+
+
 def test_run_inspect_and_events_cli_use_read_endpoints(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -478,6 +519,53 @@ def test_document_upload_cli_uses_upload_endpoint(
     assert '"status": "uploaded"' in result.output
 
 
+def test_document_upload_cli_accepts_metadata_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[str, str, Path, dict[str, str]]] = []
+
+    def fake_request_file_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        file_path: Path,
+        data: dict[str, str],
+    ) -> object:
+        calls.append((method, path, file_path, data))
+        return {"id": "doc-1", "status": "uploaded"}
+
+    monkeypatch.setattr(cli_main, "_request_file_json", fake_request_file_json)
+    kb_id = "00000000-0000-0000-0000-000000000011"
+    document_path = tmp_path / "deploy.md"
+    metadata_path = tmp_path / "metadata.json"
+    document_path.write_text("# Deploy\n", encoding="utf-8")
+    metadata_path.write_text('{"source":"example"}', encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "document",
+            "upload",
+            kb_id,
+            str(document_path),
+            "--metadata",
+            f"@{metadata_path}",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            f"/v1/knowledge-bases/{kb_id}/documents/upload",
+            document_path,
+            {"metadata": '{"source":"example"}'},
+        )
+    ]
+
+
 def test_document_ingest_cli_uses_ingest_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, str, dict[str, object] | None]] = []
 
@@ -711,3 +799,54 @@ def test_memory_cli_uses_memory_endpoints(monkeypatch: pytest.MonkeyPatch) -> No
         ("DELETE", f"/v1/memory/{memory_id}", None),
     ]
     assert '"type": "user_preference"' in create_result.output
+
+
+def test_memory_create_cli_accepts_json_file_content(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+    content_path = tmp_path / "memory.json"
+    content_path.write_text('{"language":"en","answer_style":"concise"}', encoding="utf-8")
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        calls.append((method, path, json_payload))
+        return {"id": "memory-1", "type": "user_preference"}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "memory",
+            "create",
+            "--type",
+            "user_preference",
+            "--scope",
+            "user:example",
+            "--content",
+            f"@{content_path}",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        (
+            "POST",
+            "/v1/memory",
+            {
+                "type": "user_preference",
+                "scope": "user:example",
+                "content": {"language": "en", "answer_style": "concise"},
+                "source_run_id": None,
+                "confidence": 1.0,
+                "metadata": {},
+            },
+        )
+    ]

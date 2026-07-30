@@ -1,123 +1,190 @@
 # Product Interfaces
 
-## API Draft
+This document summarizes the v0.1 API, CLI, and Web surfaces.
 
-### Agents
+Some endpoints and commands are implemented as production-grade foundations;
+some planned surfaces remain deferred and are called out explicitly.
+
+## API Surface
+
+### Health
 
 ```http
-POST   /v1/agents
-GET    /v1/agents
-GET    /v1/agents/{agent_id}
-PATCH  /v1/agents/{agent_id}
+GET /healthz
+```
+
+### Agents and Runs
+
+```http
+POST /v1/agents
+GET  /v1/agents/{agent_id}
+POST /v1/agents/{agent_id}/runs
+GET  /v1/runs/{run_id}
+GET  /v1/runs/{run_id}/events
+POST /v1/runs/{run_id}/queue
+POST /v1/runs/{run_id}/cancel
+POST /v1/runs/{run_id}/resume
+```
+
+Deferred:
+
+```http
+GET   /v1/runs
+PATCH /v1/agents/{agent_id}
 DELETE /v1/agents/{agent_id}
+POST  /v1/runs/{run_id}/retry
 ```
 
-### Runs
-
-```http
-POST   /v1/agents/{agent_id}/runs
-GET    /v1/runs
-GET    /v1/runs/{run_id}
-GET    /v1/runs/{run_id}/events
-POST   /v1/runs/{run_id}/cancel
-POST   /v1/runs/{run_id}/resume
-POST   /v1/runs/{run_id}/retry
-```
+Retry and fallback exist in runtime policy, but a public retry API remains
+deferred.
 
 ### Approvals
 
 ```http
-GET    /v1/approvals
-GET    /v1/approvals/{approval_id}
-POST   /v1/approvals/{approval_id}/approve
-POST   /v1/approvals/{approval_id}/reject
+GET  /v1/approvals
+GET  /v1/approvals/{approval_id}
+POST /v1/approvals/{approval_id}/approve
+POST /v1/approvals/{approval_id}/reject
 ```
 
-### Tools
+### Knowledge Base and Documents
 
 ```http
-GET    /v1/tools
-POST   /v1/tools
-GET    /v1/tools/{tool_name}
-PATCH  /v1/tools/{tool_name}
-```
-
-### Knowledge Base
-
-```http
-POST   /v1/documents
-GET    /v1/documents
-GET    /v1/documents/{document_id}
-POST   /v1/documents/{document_id}/ingest
-POST   /v1/retrieval/query
+POST /v1/knowledge-bases
+GET  /v1/knowledge-bases
+GET  /v1/knowledge-bases/{knowledge_base_id}
+POST /v1/knowledge-bases/{knowledge_base_id}/documents
+POST /v1/knowledge-bases/{knowledge_base_id}/documents/upload
+GET  /v1/knowledge-bases/{knowledge_base_id}/documents
+GET  /v1/documents/{document_id}
+POST /v1/documents/{document_id}/ingest
+GET  /v1/documents/{document_id}/ingestion-jobs
+GET  /v1/ingestion-jobs/{job_id}
+POST /v1/documents/{document_id}/chunk
+GET  /v1/documents/{document_id}/chunks
+GET  /v1/document-chunks/{chunk_id}
+POST /v1/documents/{document_id}/index
+GET  /v1/documents/{document_id}/embeddings
+POST /v1/knowledge-bases/{knowledge_base_id}/retrieve
 ```
 
 ### Memory
 
 ```http
-GET    /v1/memory
 POST   /v1/memory
+GET    /v1/memory
+GET    /v1/memory/{memory_id}
 DELETE /v1/memory/{memory_id}
 ```
 
 ### Evals
 
+v0.1 evals are CLI-first.
+
+Deferred:
+
 ```http
-POST   /v1/evals/datasets
-GET    /v1/evals/datasets
-POST   /v1/evals/runs
-GET    /v1/evals/runs/{eval_run_id}
+POST /v1/evals/datasets
+GET  /v1/evals/datasets
+POST /v1/evals/runs
+GET  /v1/evals/runs/{eval_run_id}
 ```
 
-## CLI Draft
+## CLI Surface
+
+JSON object options accept either inline JSON or `@path` to a JSON file.
+
+### Agents and Runs
 
 ```bash
-agent-kernel init
-agent-kernel dev
-agent-kernel server start
-agent-kernel worker start
-
-agent-kernel agent create --name research-agent --prompt prompts/research.md
-agent-kernel agent list
-agent-kernel agent inspect <agent-id>
-
-agent-kernel run create <agent-id> --input "Summarize these docs"
-agent-kernel run watch <run-id>
-agent-kernel run retry <run-id>
+agent-kernel agent create --name "Local Test Agent"
+agent-kernel run create <agent-id> --input '{"task":"hello runtime","model":"mock:echo"}'
+agent-kernel run inspect <run-id>
+agent-kernel run events <run-id>
+agent-kernel run queue <run-id>
 agent-kernel run cancel <run-id>
-
-agent-kernel approval list
-agent-kernel approval approve <approval-id>
-agent-kernel approval reject <approval-id> --reason "Not allowed"
-
-agent-kernel doc upload ./docs/*.md
-agent-kernel doc ingest <document-id>
-agent-kernel kb query "What is our deployment policy?"
-
-agent-kernel eval run ./evals/research.yaml --agent <agent-id>
-agent-kernel eval report <eval-run-id>
 ```
 
-## Web UI Draft
+### Approvals
 
-MVP pages:
+```bash
+agent-kernel approval list
+agent-kernel approval inspect <approval-id>
+agent-kernel approval approve <approval-id>
+agent-kernel approval reject <approval-id>
+```
 
-- Dashboard.
-- Agents.
-- Run detail and timeline.
-- Tool call detail.
-- Approval inbox.
-- Knowledge base.
-- Eval reports.
-- Settings.
+### Knowledge Base, Documents, Chunks, and Embeddings
 
-Primary UI jobs:
+```bash
+agent-kernel kb create --name "Engineering Handbook"
+agent-kernel kb list
+agent-kernel kb inspect <knowledge-base-id>
+agent-kernel kb search <knowledge-base-id> --query "What is our deployment policy?"
+agent-kernel document upload <knowledge-base-id> ./docs/deploy.md
+agent-kernel document ingest <document-id>
+agent-kernel document chunk <document-id>
+agent-kernel document index <document-id>
+agent-kernel chunk list <document-id>
+agent-kernel embedding list <document-id>
+```
 
-- Show recent runs, success rate, cost, latency, and pending approvals.
-- Configure agents, model policies, prompts, tools, and memory policy.
-- Inspect run timelines step by step.
-- Review model calls, tool calls, retrieved chunks, approvals, errors, retries, and costs.
-- Approve or reject risky tool calls.
-- Upload and inspect documents.
-- View ingestion status.
-- Run and inspect eval reports.
+### Memory
+
+```bash
+agent-kernel memory create --type user_preference --scope user:<id> --content '{"language":"en"}'
+agent-kernel memory list --scope user:<id>
+agent-kernel memory inspect <memory-id>
+agent-kernel memory delete <memory-id>
+```
+
+### Evals
+
+```bash
+agent-kernel eval report evals/rag-smoke.json
+agent-kernel eval report evals/rag-smoke.json --no-fail-on-failure
+```
+
+## Worker Surface
+
+```bash
+agent-kernel-worker
+agent-kernel-worker --once --limit 10
+agent-kernel-worker --loop --limit 25 --poll-interval 2
+```
+
+The worker uses persisted queued runs as the v0.1 durable queue.
+
+## Web Surface
+
+The Agent Workbench includes:
+
+```text
+Dashboard
+Agents
+Runs
+Approvals
+Knowledge
+Evals
+Settings
+```
+
+Current Web jobs:
+
+- Show dashboard metrics.
+- Inspect agent operational status.
+- Select runs and inspect timelines.
+- Inspect tool-call details.
+- Approve or reject approval items locally.
+- Inspect local decision history.
+- Inspect knowledge bases and document ingestion status.
+- Inspect eval reports and behavior cases.
+- Inspect read-only runtime, safety, and observability settings.
+
+Important v0.1 limitation:
+
+```text
+The Workbench is mostly fixture-backed and does not yet fetch every live backend API.
+```
+
+The typed Web API client exists as the boundary for future live integration.

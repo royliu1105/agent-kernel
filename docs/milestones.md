@@ -293,21 +293,21 @@ Checklist:
 - [x] `.env.example`.
 - [x] Quickstart.
 - [x] Production config guide.
-- [ ] Architecture docs updated.
-- [ ] Feature specs updated.
+- [x] Architecture docs updated.
+- [x] Feature specs updated.
 - [x] Examples.
 - [x] CONTRIBUTING.
 - [x] SECURITY.
 - [x] ROADMAP.
-- [ ] Release checklist.
-- [ ] v0.1.0 release notes.
+- [x] Release checklist.
+- [x] v0.1.0 release notes.
 
 Acceptance:
 
 - [ ] Fresh clone can run quickstart.
 - [ ] CI is green.
 - [ ] Docker Compose starts full stack.
-- [ ] Examples work.
+- [x] Examples work.
 - [x] Docs explain architecture, usage, tradeoffs, and next steps.
 
 ## Public Alpha: Day 37-51

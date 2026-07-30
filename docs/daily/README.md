@@ -83,3 +83,4 @@ day-03.md
 - [Day 33: Playwright Smoke Tests and Phase 5 Verification](day-33.md)
 - [Day 34: Docker Compose and Fresh Clone Runtime Path](day-34.md)
 - [Day 35: Release Documentation and Examples](day-35.md)
+- [Day 36: v0.1 Release Closure](day-36.md)
