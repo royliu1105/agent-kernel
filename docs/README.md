@@ -16,22 +16,30 @@ The plan is split into these documents:
 8. [User Experience](user-experience.md): Agent Workbench UX, where chat is an input mode rather than the whole product.
 9. [Development Environment](development-environment.md): professional local Python, Docker, Node.js, IDE, and quality-tool setup.
 10. [Quickstart](quickstart.md): real local runtime path for agent/run/worker execution.
-11. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
-12. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
-13. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
-14. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
-15. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
-16. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
-17. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-18. [Development Plan](development-plan.md): v0.1 plan and daily working method.
-19. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
-20. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-21. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-22. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
-23. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-24. [ADR 0002](adr/0002-storage.md): storage decision.
-25. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-26. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+11. [Production Configuration](production-config.md): runtime environment, deployment topology, secrets, storage, and release hardening.
+12. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
+13. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
+14. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
+15. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
+16. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
+17. [Product Interfaces](interfaces.md): API, CLI, and Web UI drafts.
+18. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
+19. [Development Plan](development-plan.md): v0.1 plan and daily working method.
+20. [Milestones](milestones.md): day-by-day milestone map for v0.1 and Public Alpha.
+21. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+22. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+23. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
+24. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+25. [ADR 0002](adr/0002-storage.md): storage decision.
+26. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+27. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+
+Repository-level release docs:
+
+- [CONTRIBUTING](../CONTRIBUTING.md): contribution workflow and quality gates.
+- [SECURITY](../SECURITY.md): vulnerability reporting and security posture.
+- [ROADMAP](../ROADMAP.md): v0.1, Public Alpha, and later production hardening.
+- [Examples](../examples/README.md): runnable local example workflows.
 
 ## Current Baseline
 

@@ -1,0 +1,4 @@
+{
+  "task": "Summarize the deployment rollback policy for an operator.",
+  "model": "mock:echo"
+}

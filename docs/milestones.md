@@ -292,13 +292,13 @@ Checklist:
 - [x] Full Docker Compose.
 - [x] `.env.example`.
 - [x] Quickstart.
-- [ ] Production config guide.
+- [x] Production config guide.
 - [ ] Architecture docs updated.
 - [ ] Feature specs updated.
-- [ ] Examples.
-- [ ] CONTRIBUTING.
-- [ ] SECURITY.
-- [ ] ROADMAP.
+- [x] Examples.
+- [x] CONTRIBUTING.
+- [x] SECURITY.
+- [x] ROADMAP.
 - [ ] Release checklist.
 - [ ] v0.1.0 release notes.
 
@@ -308,7 +308,7 @@ Acceptance:
 - [ ] CI is green.
 - [ ] Docker Compose starts full stack.
 - [ ] Examples work.
-- [ ] Docs explain architecture, usage, tradeoffs, and next steps.
+- [x] Docs explain architecture, usage, tradeoffs, and next steps.
 
 ## Public Alpha: Day 37-51
 

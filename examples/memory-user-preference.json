@@ -1,0 +1,5 @@
+{
+  "language": "en",
+  "answer_style": "concise",
+  "citation_preference": "include_chunk_ids"
+}
