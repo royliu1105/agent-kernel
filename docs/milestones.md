@@ -289,9 +289,9 @@ Make v0.1 usable by a new developer from a fresh clone.
 
 Checklist:
 
-- [ ] Full Docker Compose.
-- [ ] `.env.example`.
-- [ ] Quickstart.
+- [x] Full Docker Compose.
+- [x] `.env.example`.
+- [x] Quickstart.
 - [ ] Production config guide.
 - [ ] Architecture docs updated.
 - [ ] Feature specs updated.

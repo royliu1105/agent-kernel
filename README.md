@@ -6,6 +6,12 @@ The canonical project baseline is captured in [docs/README.md](docs/README.md).
 
 Run the current local runtime path with [docs/quickstart.md](docs/quickstart.md).
 
+Current v0.1 shape:
+
+```text
+Python API + CLI + worker + Postgres/SQLite storage + RAG/memory/tools/evals + Next.js Workbench
+```
+
 ## Local Development
 
 Required tools:
@@ -37,7 +43,7 @@ Run local entrypoints:
 uv run agent-kernel --version
 uv run agent-kernel-worker
 uv run agent-kernel-worker --once --limit 10
-uv run uvicorn agent_kernel_api.main:app --reload
+uv run agent-kernel-api
 ```
 
 Run frontend checks:
@@ -45,6 +51,7 @@ Run frontend checks:
 ```bash
 npm run lint
 npm run build
+npm run test:e2e
 ```
 
 Validate infrastructure config:
@@ -53,8 +60,29 @@ Validate infrastructure config:
 docker compose config
 ```
 
-Start dependencies when Docker Desktop is running:
+Start local infrastructure dependencies when Docker Desktop is running:
 
 ```bash
 docker compose up -d postgres redis
 ```
+
+Start the full local stack when Docker Desktop is running:
+
+```bash
+docker compose up --build
+```
+
+The full stack exposes:
+
+- API: `http://127.0.0.1:8000`
+- API health: `http://127.0.0.1:8000/healthz`
+- Web Workbench: `http://127.0.0.1:3000`
+
+Run the standard local verification set:
+
+```bash
+make verify
+make verify-web
+```
+
+`make verify` avoids browser e2e tests by default. `make verify-web` includes Playwright.

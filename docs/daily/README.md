@@ -81,3 +81,4 @@ day-03.md
 - [Day 31: Run Timeline and Approval Inbox Interactions](day-31.md)
 - [Day 32: Workbench Navigation and Operational Views](day-32.md)
 - [Day 33: Playwright Smoke Tests and Phase 5 Verification](day-33.md)
+- [Day 34: Docker Compose and Fresh Clone Runtime Path](day-34.md)

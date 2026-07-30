@@ -25,5 +25,77 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.python
+    command: >
+      sh -c "alembic upgrade head && agent-kernel-api"
+    environment:
+      AGENT_KERNEL_ENV: ${AGENT_KERNEL_ENV:-development}
+      AGENT_KERNEL_LOG_LEVEL: ${AGENT_KERNEL_LOG_LEVEL:-info}
+      DATABASE_URL: postgresql+psycopg://agent_kernel:agent_kernel@postgres:5432/agent_kernel
+      REDIS_URL: redis://redis:6379/0
+      AGENT_KERNEL_OBJECT_STORE_ROOT: /data/objects
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - object_data:/data/objects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/healthz', timeout=2).read()\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.python
+    command: ["agent-kernel-worker", "--loop", "--limit", "25", "--poll-interval", "2"]
+    environment:
+      AGENT_KERNEL_ENV: ${AGENT_KERNEL_ENV:-development}
+      AGENT_KERNEL_LOG_LEVEL: ${AGENT_KERNEL_LOG_LEVEL:-info}
+      DATABASE_URL: postgresql+psycopg://agent_kernel:agent_kernel@postgres:5432/agent_kernel
+      REDIS_URL: redis://redis:6379/0
+      AGENT_KERNEL_OBJECT_STORE_ROOT: /data/objects
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - object_data:/data/objects
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      NEXT_PUBLIC_AGENT_KERNEL_API_URL: http://127.0.0.1:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
 volumes:
+  object_data:
   postgres_data:
