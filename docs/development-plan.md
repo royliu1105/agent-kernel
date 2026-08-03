@@ -2,14 +2,26 @@
 
 ## Delivery Target
 
-The target is not reduced. The timeline is compressed through daily execution:
+The original v0.1 target is complete and published:
 
 ```text
-36 days to v0.1
-51 days to Public Alpha
+Day 1-38: v0.1.0 foundation, release hardening, tag, CI verification, and GitHub Release
 ```
 
-The v0.1 version should be deployable, testable, recoverable, observable, evaluable, and documented.
+The next target is Public Alpha and then v1.0:
+
+```text
+Day 39-51: Public Alpha hardening
+Day 52-75: Beta production hardening
+Day 76-90: v1.0 release candidate and final release work
+```
+
+The v1.0 version should be stable, deployable, testable, recoverable,
+observable, evaluable, secure enough for serious self-hosted use, and
+documented with upgrade and operational guidance.
+
+See [Post-v0.1 Completion Plan](post-v0.1-plan.md) for the canonical
+post-v0.1 plan.
 
 ## Development Method
 
@@ -260,7 +272,13 @@ Acceptance:
 - User can view eval reports.
 - Web build passes.
 
-## Phase 6: Day 34-36 Deployment, Docs, and Release
+## Phase 6: Day 34-38 Deployment, Docs, and Release
+
+Status:
+
+```text
+Complete
+```
 
 Deliverables:
 
@@ -276,14 +294,103 @@ Deliverables:
 - ROADMAP.
 - Release checklist.
 - v0.1.0 plan.
+- Fresh-run release hardening fixes.
+- Dependency audit review.
+- GitHub CI trigger fix.
+- Annotated `v0.1.0` tag.
+- GitHub Release.
 
 Acceptance:
 
-- Fresh clone can run the quickstart.
-- CI is green.
-- Docker Compose starts the full stack.
-- Examples work.
-- Docs explain architecture and tradeoffs.
+- [x] Fresh clone can run the quickstart.
+- [x] CI is green.
+- [x] Docker Compose starts the full stack.
+- [x] Examples work.
+- [x] Docs explain architecture and tradeoffs.
+
+## Stage 7: Day 39-51 Public Alpha Hardening
+
+Goal: make the published v0.1.0 foundation easy for early external users to
+try, understand, and critique.
+
+Deliverables:
+
+- Public feedback channels.
+- GitHub issue templates.
+- README and quickstart polish.
+- More examples.
+- Live Web API integration for the highest-value Workbench workflows.
+- Expanded behavior evals.
+- Better runtime and setup error messages.
+- Dependency audit follow-up.
+- Public Alpha notes or announcement.
+
+Acceptance:
+
+- [ ] New user can follow README and quickstart without maintainer help.
+- [ ] Full Compose startup is verified from a clean checkout.
+- [ ] Core examples are easy to discover and run.
+- [ ] GitHub CI is green.
+- [ ] Public feedback path is documented.
+
+## Stage 8: Day 52-75 Beta Production Hardening
+
+Goal: make Agent Kernel credible for internal production pilots and serious
+extension by other developers.
+
+Deliverables:
+
+- Auth baseline.
+- RBAC baseline.
+- Tenant or workspace scoping.
+- Provider-native function calling.
+- Durable model/tool/model execution loop.
+- Persisted tool-call records.
+- Redis-backed durable queue.
+- Worker leases and stuck-run recovery.
+- OpenTelemetry exporters.
+- Prometheus-compatible metrics endpoint.
+- S3/MinIO object storage backend.
+- OpenAI embeddings backend.
+- pgvector-native vector store.
+- Persisted eval runs and eval API.
+- Live Web Workbench integration for core operations.
+- SQLite and Postgres migration tests.
+
+Acceptance:
+
+- [ ] Runtime execution survives worker restarts.
+- [ ] Tool calls and approvals are durable and inspectable.
+- [ ] Security boundaries are explicit and tested.
+- [ ] Telemetry can be exported to common production tools.
+- [ ] RAG can run with real embeddings and pgvector.
+- [ ] Storage backends can be switched by configuration.
+
+## Stage 9: Day 76-90 v1.0 Release Candidate
+
+Goal: freeze the stable production contract and remove release surprises.
+
+Deliverables:
+
+- Public API and CLI compatibility policy.
+- Upgrade and migration policy.
+- Versioned configuration docs.
+- Backup and restore guidance.
+- Security hardening checklist.
+- Load and soak test scenarios.
+- Release-blocking eval suites.
+- Full release smoke tests.
+- v1.0 release checklist.
+- v1.0 release notes.
+- Clean-machine release rehearsal.
+
+Acceptance:
+
+- [ ] Stable API and CLI contract is documented.
+- [ ] Clean-machine release rehearsal passes.
+- [ ] Critical paths pass automated tests and evals.
+- [ ] Known limitations are acceptable for v1.0.
+- [ ] v1.0 docs match actual behavior.
 
 ## Daily Start Workflow
 
@@ -304,7 +411,8 @@ At the start of each development day:
 5. Update `docs/milestones.md` when phase-level progress changes.
 6. Update specs or ADRs if implementation changes behavior or decisions.
 
-Daily files should be created just-in-time. Do not pre-create all 51 days.
+Daily files should be created just-in-time. Do not pre-create all planned
+future days.
 
 ## Generic Daily Start Prompt
 

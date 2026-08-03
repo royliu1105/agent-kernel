@@ -152,8 +152,10 @@ These remain valuable but are post-Phase-3 enhancements.
 The v0.1 target is realigned:
 
 ```text
-Day 1-36: v0.1
-Day 37-51: Public Alpha
+Day 1-38: v0.1.0 published release
+Day 39-51: Public Alpha
+Day 52-75: Beta production hardening
+Day 76-90: v1.0 release candidate and release work
 ```
 
 This preserves the original quality bar while making the remaining scope explicit and traceable.

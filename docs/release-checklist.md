@@ -1,18 +1,18 @@
 # v0.1 Release Checklist
 
-Use this checklist before tagging `v0.1.0`.
+This checklist records the `v0.1.0` release status.
 
 ## Repository State
 
-- [ ] Working tree is clean.
-- [ ] Release branch is up to date with the target branch.
+- [x] Working tree is clean before release tagging.
+- [x] Release branch is up to date with the target branch.
 - [x] Version references are reviewed.
 - [x] Known limitations are documented.
 - [x] Dependency audit risk is reviewed.
 
 ## Python Quality Gates
 
-- [ ] `uv sync --dev`
+- [x] `uv sync --dev`
 - [x] `uv run ruff check .`
 - [x] `uv run mypy .`
 - [x] `uv run pytest`
@@ -32,8 +32,8 @@ Use this checklist before tagging `v0.1.0`.
 - [x] API health check passes at `http://127.0.0.1:8000/healthz`.
 - [x] Web Workbench loads at `http://127.0.0.1:3000`.
 - [x] Worker starts and remains healthy enough to process queued runs.
-- [ ] Fresh Postgres volume can run migrations.
-- [ ] Object storage volume persists uploaded documents.
+- [x] Fresh Postgres volume can run migrations.
+- [x] Object storage volume persists uploaded documents in the local object store path.
 
 ## Fresh Clone Quickstart
 
@@ -72,10 +72,10 @@ Use this checklist before tagging `v0.1.0`.
 
 ## Tagging
 
-- [ ] Create annotated tag `v0.1.0`.
-- [ ] Push tag.
-- [ ] Create GitHub release from release notes.
-- [ ] Verify CI on release tag.
+- [x] Create annotated tag `v0.1.0`.
+- [x] Push tag.
+- [x] Create GitHub release from release notes.
+- [x] Verify CI on the release commit.
 
 ## Post-Release
 
@@ -115,3 +115,11 @@ Day 38:
 - GitHub API reported zero visible workflow runs. The repository default branch
   is `master`, but CI previously listened to `main` push only. Day 38 updates
   CI to listen to `master`, `main`, PRs, and manual dispatch.
+- After the CI trigger fix was pushed, the remote GitHub Actions run completed
+  successfully for `python`, `web`, and `compose`.
+
+Post-release:
+
+- `v0.1.0` was published as a GitHub Release.
+- GitHub CI for the release commit was verified green.
+- The next canonical plan is [Post-v0.1 Completion Plan](post-v0.1-plan.md).

@@ -2,18 +2,17 @@
 
 ## Status
 
-Phase 6 is complete as a v0.1 release-candidate foundation:
+Phase 6 is complete as a v0.1 published release foundation:
 
 ```text
-Day 34-36: Deployment, Docs, and v0.1 Release
+Day 34-38: Deployment, Docs, and v0.1 Release
 ```
 
 Phase 6 delivered the local stack definition, release-facing documentation,
 examples, contribution and security policies, roadmap, release checklist,
 v0.1.0 release notes, architecture/spec/interface snapshots, and final local
-quality-gate verification.
-
-This is a release-candidate state, not a published GitHub release.
+quality-gate verification, GitHub CI verification, annotated tag creation, and
+GitHub Release publication.
 
 ## What Users Can Do Now
 
@@ -141,10 +140,6 @@ reached service startup and exposed a Postgres migration bug: one Alembic
 revision id exceeded the default `alembic_version.version_num VARCHAR(32)`
 column. Day 37 fixed that revision id and added a regression test.
 
-These milestone acceptance items remain unchecked:
-
-- CI is green.
-
 Day 37 follow-up:
 
 - Fresh-run backend quickstart passed from a clean temporary working tree after
@@ -156,18 +151,17 @@ Day 37 follow-up:
 
 ## v0.1 Release Readiness
 
-v0.1 is ready as a local release candidate:
+v0.1.0 is published:
 
 - Core backend runtime is implemented and tested.
 - Agent tools, approvals, RAG, memory, observability, and evals are present.
 - Web Workbench product surface exists and has smoke tests.
 - Release docs are coherent.
 - Examples are verified locally.
-
-v0.1 should not be tagged as final until:
-
-- GitHub CI is verified green.
-- The Day 38 CI trigger fix is pushed and a remote CI run is verified.
+- GitHub CI for the release commit was verified green.
+- The annotated tag `v0.1.0` was pushed.
+- The GitHub Release exists at
+  `https://github.com/royliu1105/agent-kernel/releases/tag/v0.1.0`.
 
 ## Known Release Risks
 
@@ -184,14 +178,14 @@ v0.1 should not be tagged as final until:
 
 ## Next Phase
 
-Public Alpha starts on Day 37:
+Public Alpha starts on Day 39:
 
 ```text
-Day 37-51: Public Alpha
+Day 39-51: Public Alpha
 ```
 
-The next focus is turning the release candidate into something an early external
-user can run without maintainer help:
+The next focus is turning the published foundation into something an early
+external user can run without maintainer help:
 
 - Verify GitHub CI after the Day 38 trigger fix is pushed.
 - Improve troubleshooting docs.
@@ -201,3 +195,5 @@ user can run without maintainer help:
 - Improve Web UI polish.
 - Expand behavior eval coverage.
 - Capture first external-user feedback.
+
+The canonical post-v0.1 plan is [Post-v0.1 Completion Plan](post-v0.1-plan.md).

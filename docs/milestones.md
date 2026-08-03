@@ -5,13 +5,19 @@
 The short-term delivery plan is:
 
 ```text
-Day 1-36: v0.1
-Day 37-51: Public Alpha
+Day 1-38: v0.1.0 published release
+Day 39-51: Public Alpha
+Day 52-75: Beta production hardening
+Day 76-90: v1.0 release candidate and release work
 ```
 
-v0.1 should be a deployable, testable, observable, evaluable, resumable Agent runtime foundation.
+v0.1.0 is a deployable, testable, observable, evaluable, resumable Agent runtime foundation.
 
 Public Alpha should be a polished version that an early external user can clone, run, understand, and give feedback on.
+
+Beta should add the production hardening expected for serious self-hosted pilots.
+
+v1.0 should freeze a stable self-hosted runtime contract.
 
 ## Progress Legend
 
@@ -66,7 +72,7 @@ Acceptance:
 Status:
 
 ```text
-[~] In progress
+[x] Done
 ```
 
 Goal:
@@ -279,12 +285,18 @@ Acceptance:
 - [x] User can view eval reports.
 - [x] Web build passes.
 
-### Phase 6: Day 34-36 - Deployment, Docs, and v0.1 Release
+### Phase 6: Day 34-38 - Deployment, Docs, and v0.1 Release
 
 Goal:
 
 ```text
 Make v0.1 usable by a new developer from a fresh clone.
+```
+
+Status:
+
+```text
+[x] Done
 ```
 
 Checklist:
@@ -301,16 +313,22 @@ Checklist:
 - [x] ROADMAP.
 - [x] Release checklist.
 - [x] v0.1.0 release notes.
+- [x] Fresh-run backend quickstart hardening.
+- [x] Fresh-run Web install verification.
+- [x] Docker Compose full-stack verification.
+- [x] GitHub CI trigger fix and remote green run.
+- [x] Annotated `v0.1.0` tag.
+- [x] GitHub Release.
 
 Acceptance:
 
-- [ ] Fresh clone can run quickstart.
-- [ ] CI is green.
-- [ ] Docker Compose starts full stack.
+- [x] Fresh clone can run quickstart.
+- [x] CI is green.
+- [x] Docker Compose starts full stack.
 - [x] Examples work.
 - [x] Docs explain architecture, usage, tradeoffs, and next steps.
 
-## Public Alpha: Day 37-51
+## Public Alpha: Day 39-51
 
 Goal:
 
@@ -318,12 +336,21 @@ Goal:
 Turn v0.1 into a polished early-user release.
 ```
 
+Status:
+
+```text
+[ ] Not started
+```
+
 Checklist:
 
-- [x] Fix v0.1 bugs.
-- [x] Improve quickstart.
+- [ ] Create public feedback channels.
+- [ ] Add issue templates.
+- [ ] Improve README first-run path.
+- [ ] Improve quickstart from first-user perspective.
 - [ ] Improve examples.
 - [ ] Improve Web UI polish.
+- [ ] Replace key fixture-backed Web views with live API integration.
 - [x] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.
@@ -339,6 +366,86 @@ Acceptance:
 - [x] Known limitations are documented.
 - [ ] Public Alpha release notes are clear.
 - [ ] Feedback channels are documented.
+
+## Beta: Day 52-75
+
+Goal:
+
+```text
+Make Agent Kernel credible for internal production pilots and serious extension
+by other developers.
+```
+
+Status:
+
+```text
+[ ] Not started
+```
+
+Checklist:
+
+- [ ] Authentication baseline.
+- [ ] Authorization/RBAC baseline.
+- [ ] Tenant or workspace scoping model.
+- [ ] Provider-native function calling.
+- [ ] Durable model/tool/model execution loop.
+- [ ] Persisted tool-call records.
+- [ ] Redis-backed durable queue.
+- [ ] Worker leasing and stuck-run recovery.
+- [ ] OpenTelemetry exporter configuration.
+- [ ] Prometheus-compatible metrics endpoint.
+- [ ] S3/MinIO object storage backend.
+- [ ] OpenAI embeddings backend.
+- [ ] pgvector-native vector store.
+- [ ] Persisted eval runs.
+- [ ] Eval API.
+- [ ] Live Web Workbench integration for core operator workflows.
+- [ ] SQLite and Postgres migration tests.
+
+Acceptance:
+
+- [ ] Runtime execution survives worker restarts.
+- [ ] Tool calls and approvals are durable and inspectable.
+- [ ] Security boundaries are explicit and tested.
+- [ ] Telemetry can be exported to common production tools.
+- [ ] RAG can run with real embeddings and pgvector.
+- [ ] Storage backends can be switched by configuration.
+
+## v1.0 Release Candidate: Day 76-90
+
+Goal:
+
+```text
+Freeze the stable production contract and remove surprises before v1.0.
+```
+
+Status:
+
+```text
+[ ] Not started
+```
+
+Checklist:
+
+- [ ] Public API and CLI compatibility policy.
+- [ ] Upgrade and migration policy.
+- [ ] Versioned configuration documentation.
+- [ ] Backup and restore guidance.
+- [ ] Security hardening checklist.
+- [ ] Load and soak test scenarios.
+- [ ] Release-blocking eval suites.
+- [ ] Full release smoke tests.
+- [ ] v1.0 release checklist.
+- [ ] v1.0 release notes.
+- [ ] Clean-machine release rehearsal.
+
+Acceptance:
+
+- [ ] Stable API and CLI contract is documented.
+- [ ] Clean-machine release rehearsal passes.
+- [ ] Critical paths pass automated tests and evals.
+- [ ] Known limitations are acceptable for v1.0.
+- [ ] v1.0 docs match actual behavior.
 
 ## Rule for Updating This File
 

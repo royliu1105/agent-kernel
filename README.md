@@ -8,6 +8,14 @@ Run the current local runtime path with [docs/quickstart.md](docs/quickstart.md)
 
 If local setup gets stuck, use [docs/troubleshooting.md](docs/troubleshooting.md).
 
+Current release:
+
+- [Agent Kernel v0.1.0](https://github.com/royliu1105/agent-kernel/releases/tag/v0.1.0)
+
+Post-v0.1 completion plan:
+
+- [Public Alpha, Beta, and v1.0 plan](docs/post-v0.1-plan.md)
+
 Current v0.1 shape:
 
 ```text
