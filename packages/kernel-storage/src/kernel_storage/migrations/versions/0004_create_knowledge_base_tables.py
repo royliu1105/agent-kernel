@@ -1,6 +1,6 @@
 """Create knowledge base and document tables.
 
-Revision ID: 0004_create_knowledge_base_tables
+Revision ID: 0004_create_kb_tables
 Revises: 0003_create_approvals
 Create Date: 2026-07-29
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0004_create_knowledge_base_tables"
+revision = "0004_create_kb_tables"
 down_revision = "0003_create_approvals"
 branch_labels = None
 depends_on = None

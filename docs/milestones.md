@@ -327,8 +327,8 @@ Checklist:
 - [ ] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.
-- [ ] Harden Docker Compose startup.
-- [ ] Add troubleshooting docs.
+- [x] Harden Docker Compose startup.
+- [x] Add troubleshooting docs.
 - [ ] Add first external-user feedback loop.
 - [ ] Prepare Public Alpha announcement.
 
@@ -336,7 +336,7 @@ Acceptance:
 
 - [ ] A new user can run the project without maintainer help.
 - [ ] Core examples work end to end.
-- [ ] Known limitations are documented.
+- [x] Known limitations are documented.
 - [ ] Public Alpha release notes are clear.
 - [ ] Feedback channels are documented.
 

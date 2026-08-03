@@ -130,18 +130,29 @@ Verified:
 - Python worker image build completed.
 - Compose configuration is valid.
 
-Blocked:
+Previously blocked:
 
 ```text
 Web image build could not fetch node:24-bookworm-slim metadata because Docker Hub token requests timed out.
 ```
 
-Because of that external network blocker, these milestone acceptance items remain
-unchecked:
+After the Node base image was pulled successfully on Day 37, Docker Compose
+reached service startup and exposed a Postgres migration bug: one Alembic
+revision id exceeded the default `alembic_version.version_num VARCHAR(32)`
+column. Day 37 fixed that revision id and added a regression test.
 
-- Fresh clone can run quickstart.
+These milestone acceptance items remain unchecked:
+
 - CI is green.
-- Docker Compose starts full stack.
+
+Day 37 follow-up:
+
+- Fresh-run backend quickstart passed from a clean temporary working tree after
+  fixing default SQLite migration directory creation.
+- Fresh-run Web dependency install is still not confirmed because `npm install`
+  made no progress for multiple minutes during verification.
+- Docker Compose full stack passed with healthy API, healthy Web, healthy
+  Postgres, healthy Redis, and a started worker.
 
 ## v0.1 Release Readiness
 
@@ -155,16 +166,14 @@ v0.1 is ready as a local release candidate:
 
 v0.1 should not be tagged as final until:
 
-- A clean fresh-clone quickstart pass is completed.
+- A complete clean fresh-clone quickstart pass, including Web dependency
+  install, is completed.
 - GitHub CI is verified green.
-- Full Docker Compose stack starts successfully.
-- Docker Hub pull issue is resolved or base image availability is otherwise
-  confirmed.
 - Dependency audit risk is reviewed.
 
 ## Known Release Risks
 
-- Docker full-stack startup is blocked by external Docker Hub timeout.
+- Fresh-run Web dependency install is not yet confirmed.
 - `npm install` reports 3 high severity vulnerabilities.
 - Web Workbench is mostly fixture-backed.
 - Auth/RBAC/tenant isolation are not implemented.
@@ -185,8 +194,7 @@ Day 37-51: Public Alpha
 The next focus is turning the release candidate into something an early external
 user can run without maintainer help:
 
-- Resolve Docker full-stack startup verification.
-- Run fresh-clone quickstart.
+- Run complete fresh-clone quickstart, including Web dependency install.
 - Verify GitHub CI.
 - Improve troubleshooting docs.
 - Improve examples.

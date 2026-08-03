@@ -13,40 +13,40 @@ Use this checklist before tagging `v0.1.0`.
 ## Python Quality Gates
 
 - [ ] `uv sync --dev`
-- [ ] `uv run ruff check .`
-- [ ] `uv run mypy .`
-- [ ] `uv run pytest`
-- [ ] `uv run agent-kernel eval report evals/rag-smoke.json`
+- [x] `uv run ruff check .`
+- [x] `uv run mypy .`
+- [x] `uv run pytest`
+- [x] `uv run agent-kernel eval report evals/rag-smoke.json`
 
 ## Web Quality Gates
 
 - [ ] `npm install`
-- [ ] `npm run lint`
-- [ ] `npm run build`
-- [ ] `npm run test:e2e`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] `npm run test:e2e`
 
 ## Docker and Runtime
 
-- [ ] `docker compose config`
-- [ ] `docker compose up --build`
-- [ ] API health check passes at `http://127.0.0.1:8000/healthz`.
-- [ ] Web Workbench loads at `http://127.0.0.1:3000`.
-- [ ] Worker starts and remains healthy enough to process queued runs.
+- [x] `docker compose config`
+- [x] `docker compose up --build`
+- [x] API health check passes at `http://127.0.0.1:8000/healthz`.
+- [x] Web Workbench loads at `http://127.0.0.1:3000`.
+- [x] Worker starts and remains healthy enough to process queued runs.
 - [ ] Fresh Postgres volume can run migrations.
 - [ ] Object storage volume persists uploaded documents.
 
 ## Fresh Clone Quickstart
 
 - [ ] Follow [Quickstart](quickstart.md) from a clean checkout.
-- [ ] Create an agent.
-- [ ] Create a mock run.
-- [ ] Queue the run.
-- [ ] Execute the worker once.
-- [ ] Inspect run output.
-- [ ] Inspect run events.
-- [ ] Run the RAG example.
-- [ ] Run the memory example.
-- [ ] Run the cheap eval.
+- [x] Create an agent.
+- [x] Create a mock run.
+- [x] Queue the run.
+- [x] Execute the worker once.
+- [x] Inspect run output.
+- [x] Inspect run events.
+- [x] Run the RAG example.
+- [x] Run the memory example.
+- [x] Run the cheap eval.
 
 ## Documentation
 
@@ -82,3 +82,20 @@ Use this checklist before tagging `v0.1.0`.
 - [ ] Open Public Alpha tracking issues.
 - [ ] Review dependency advisories.
 - [ ] Capture first external-user feedback.
+
+## Latest Verification Notes
+
+Day 37:
+
+- Fresh-run backend quickstart path passed from a clean temporary working tree
+  after fixing default SQLite migration directory creation.
+- Fresh-run Web dependency install is not yet confirmed. `npm install` first
+  failed under sandboxed npm cache/log access, then an elevated retry produced
+  no progress output for multiple minutes and was interrupted.
+- Full Docker Compose startup passed after `node:24-bookworm-slim` was pulled
+  successfully and an Alembic revision id length bug was fixed.
+- Docker Compose verification confirmed healthy API, healthy Web, healthy
+  Postgres, healthy Redis, and a started worker.
+- Local post-change gates passed: `ruff`, `mypy`, `pytest`, `rag-smoke eval`,
+  `npm run lint`, `npm run build`, and `npm run test:e2e`.
+- `docker compose config` passed.

@@ -7,7 +7,7 @@ from logging.config import fileConfig
 from alembic import context
 from kernel_storage import models as storage_models
 from kernel_storage.base import Base
-from kernel_storage.config import get_database_url
+from kernel_storage.config import get_database_url, prepare_database_url
 from sqlalchemy import engine_from_config, pool
 
 _ = storage_models
@@ -38,7 +38,7 @@ def run_migrations_online() -> None:
     """Run migrations with a live database connection."""
 
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = get_database_url()
+    configuration["sqlalchemy.url"] = prepare_database_url()
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",

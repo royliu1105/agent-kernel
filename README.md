@@ -6,6 +6,8 @@ The canonical project baseline is captured in [docs/README.md](docs/README.md).
 
 Run the current local runtime path with [docs/quickstart.md](docs/quickstart.md).
 
+If local setup gets stuck, use [docs/troubleshooting.md](docs/troubleshooting.md).
+
 Current v0.1 shape:
 
 ```text

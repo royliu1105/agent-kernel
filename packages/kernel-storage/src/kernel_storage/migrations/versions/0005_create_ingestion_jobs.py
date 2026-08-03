@@ -1,7 +1,7 @@
 """Create ingestion job table.
 
 Revision ID: 0005_create_ingestion_jobs
-Revises: 0004_create_knowledge_base_tables
+Revises: 0004_create_kb_tables
 Create Date: 2026-07-29
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "0005_create_ingestion_jobs"
-down_revision = "0004_create_knowledge_base_tables"
+down_revision = "0004_create_kb_tables"
 branch_labels = None
 depends_on = None
 
