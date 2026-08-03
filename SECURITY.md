@@ -89,3 +89,6 @@ npm install reports 3 high severity vulnerabilities.
 
 Do not run force upgrades blindly. Review whether the fix is compatible with
 Next.js, React, and Playwright before applying.
+
+The current v0.1 review is documented in
+[docs/dependency-audit.md](docs/dependency-audit.md).

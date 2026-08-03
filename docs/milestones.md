@@ -320,11 +320,11 @@ Turn v0.1 into a polished early-user release.
 
 Checklist:
 
-- [ ] Fix v0.1 bugs.
-- [ ] Improve quickstart.
+- [x] Fix v0.1 bugs.
+- [x] Improve quickstart.
 - [ ] Improve examples.
 - [ ] Improve Web UI polish.
-- [ ] Add missing tests around fragile paths.
+- [x] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.
 - [x] Harden Docker Compose startup.
@@ -334,8 +334,8 @@ Checklist:
 
 Acceptance:
 
-- [ ] A new user can run the project without maintainer help.
-- [ ] Core examples work end to end.
+- [x] A new user can run the project without maintainer help.
+- [x] Core examples work end to end.
 - [x] Known limitations are documented.
 - [ ] Public Alpha release notes are clear.
 - [ ] Feedback channels are documented.

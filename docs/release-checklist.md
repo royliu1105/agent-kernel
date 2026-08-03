@@ -6,9 +6,9 @@ Use this checklist before tagging `v0.1.0`.
 
 - [ ] Working tree is clean.
 - [ ] Release branch is up to date with the target branch.
-- [ ] Version references are reviewed.
-- [ ] Known limitations are documented.
-- [ ] Dependency audit risk is reviewed.
+- [x] Version references are reviewed.
+- [x] Known limitations are documented.
+- [x] Dependency audit risk is reviewed.
 
 ## Python Quality Gates
 
@@ -20,7 +20,7 @@ Use this checklist before tagging `v0.1.0`.
 
 ## Web Quality Gates
 
-- [ ] `npm install`
+- [x] `npm install`
 - [x] `npm run lint`
 - [x] `npm run build`
 - [x] `npm run test:e2e`
@@ -37,7 +37,7 @@ Use this checklist before tagging `v0.1.0`.
 
 ## Fresh Clone Quickstart
 
-- [ ] Follow [Quickstart](quickstart.md) from a clean checkout.
+- [x] Follow [Quickstart](quickstart.md) from a clean checkout.
 - [x] Create an agent.
 - [x] Create a mock run.
 - [x] Queue the run.
@@ -50,25 +50,25 @@ Use this checklist before tagging `v0.1.0`.
 
 ## Documentation
 
-- [ ] README is current.
-- [ ] Docs index is current.
-- [ ] Architecture docs are current.
-- [ ] Interface docs are current.
-- [ ] Feature spec index is current.
-- [ ] Production config guide is current.
-- [ ] CONTRIBUTING is current.
-- [ ] SECURITY is current.
-- [ ] ROADMAP is current.
-- [ ] Release notes are current.
+- [x] README is current.
+- [x] Docs index is current.
+- [x] Architecture docs are current.
+- [x] Interface docs are current.
+- [x] Feature spec index is current.
+- [x] Production config guide is current.
+- [x] CONTRIBUTING is current.
+- [x] SECURITY is current.
+- [x] ROADMAP is current.
+- [x] Release notes are current.
 
 ## Release Notes
 
-- [ ] `docs/releases/v0.1.0.md` exists.
-- [ ] Completed capabilities are listed.
-- [ ] Known limitations are listed.
-- [ ] Verification commands are listed.
-- [ ] Upgrade notes are included.
-- [ ] Public Alpha next steps are included.
+- [x] `docs/releases/v0.1.0.md` exists.
+- [x] Completed capabilities are listed.
+- [x] Known limitations are listed.
+- [x] Verification commands are listed.
+- [x] Upgrade notes are included.
+- [x] Public Alpha next steps are included.
 
 ## Tagging
 
@@ -89,9 +89,11 @@ Day 37:
 
 - Fresh-run backend quickstart path passed from a clean temporary working tree
   after fixing default SQLite migration directory creation.
-- Fresh-run Web dependency install is not yet confirmed. `npm install` first
-  failed under sandboxed npm cache/log access, then an elevated retry produced
-  no progress output for multiple minutes and was interrupted.
+- Fresh-run Web dependency install was not confirmed on Day 37. `npm install`
+  first failed under sandboxed npm cache/log access, then an elevated retry
+  produced no progress output for multiple minutes and was interrupted. Day 38
+  later confirmed fresh-run Web install, lint, and build from a clean temporary
+  checkout.
 - Full Docker Compose startup passed after `node:24-bookworm-slim` was pulled
   successfully and an Alembic revision id length bug was fixed.
 - Docker Compose verification confirmed healthy API, healthy Web, healthy
@@ -99,3 +101,17 @@ Day 37:
 - Local post-change gates passed: `ruff`, `mypy`, `pytest`, `rag-smoke eval`,
   `npm run lint`, `npm run build`, and `npm run test:e2e`.
 - `docker compose config` passed.
+
+Day 38:
+
+- Fresh-run Web path passed from a clean temporary checkout:
+  `npm install`, `npm run lint`, and `npm run build`.
+- Dependency audit risk was reviewed and documented in
+  [Dependency Audit Review](dependency-audit.md).
+- `npm audit --json` still reports 3 high severity findings through Next.js
+  transitive `postcss` and optional transitive `sharp`.
+- No forced audit fix was applied. Latest stable Next.js was already installed,
+  and the suggested fix path was incompatible with this project.
+- GitHub API reported zero visible workflow runs. The repository default branch
+  is `master`, but CI previously listened to `main` push only. Day 38 updates
+  CI to listen to `master`, `main`, PRs, and manual dispatch.

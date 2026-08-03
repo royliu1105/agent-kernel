@@ -85,3 +85,4 @@ day-03.md
 - [Day 35: Release Documentation and Examples](day-35.md)
 - [Day 36: v0.1 Release Closure](day-36.md)
 - [Day 37: Public Alpha Release Blocker Triage](day-37.md)
+- [Day 38: v0.1 Final Release Verification](day-38.md)

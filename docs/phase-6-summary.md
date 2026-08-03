@@ -149,8 +149,8 @@ Day 37 follow-up:
 
 - Fresh-run backend quickstart passed from a clean temporary working tree after
   fixing default SQLite migration directory creation.
-- Fresh-run Web dependency install is still not confirmed because `npm install`
-  made no progress for multiple minutes during verification.
+- Fresh-run Web dependency install passed on Day 38 from a clean temporary
+  checkout with `npm install`, `npm run lint`, and `npm run build`.
 - Docker Compose full stack passed with healthy API, healthy Web, healthy
   Postgres, healthy Redis, and a started worker.
 
@@ -166,15 +166,14 @@ v0.1 is ready as a local release candidate:
 
 v0.1 should not be tagged as final until:
 
-- A complete clean fresh-clone quickstart pass, including Web dependency
-  install, is completed.
 - GitHub CI is verified green.
-- Dependency audit risk is reviewed.
+- The Day 38 CI trigger fix is pushed and a remote CI run is verified.
 
 ## Known Release Risks
 
-- Fresh-run Web dependency install is not yet confirmed.
-- `npm install` reports 3 high severity vulnerabilities.
+- `npm install` reports 3 high severity vulnerabilities. The Day 38 dependency
+  audit review documents the decision not to force incompatible dependency
+  changes for v0.1.
 - Web Workbench is mostly fixture-backed.
 - Auth/RBAC/tenant isolation are not implemented.
 - Provider-native function calling is not implemented.
@@ -194,11 +193,10 @@ Day 37-51: Public Alpha
 The next focus is turning the release candidate into something an early external
 user can run without maintainer help:
 
-- Run complete fresh-clone quickstart, including Web dependency install.
-- Verify GitHub CI.
+- Verify GitHub CI after the Day 38 trigger fix is pushed.
 - Improve troubleshooting docs.
 - Improve examples.
-- Review npm audit findings.
+- Track npm audit findings until a compatible Next.js update is available.
 - Add missing tests around fragile release paths.
 - Improve Web UI polish.
 - Expand behavior eval coverage.
