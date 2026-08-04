@@ -359,7 +359,7 @@ Checklist:
 - [x] Implement live approval approve/reject mutation UI.
 - [x] Implement live knowledge base list integration.
 - [x] Add missing tests around fragile paths.
-- [ ] Expand behavior eval coverage.
+- [x] Expand behavior eval coverage.
 - [ ] Improve error messages.
 - [x] Harden Docker Compose startup.
 - [x] Add troubleshooting docs.

@@ -40,6 +40,7 @@ CHEAP_EVAL_NAMESPACE = UUID("00000000-0000-0000-0000-000000000029")
 class _CheapCitation:
     document_id: UUID
     document_title: str
+    document_source_uri: str
     chunk_id: UUID
     chunk_index: int
     start_char: int
@@ -49,6 +50,7 @@ class _CheapCitation:
 @dataclass(frozen=True)
 class _CheapRetrievalResult:
     content: str
+    score: float
     citation: _CheapCitation
 
 
@@ -817,9 +819,11 @@ def _cheap_rag_retrieve_for_cases(
             results=tuple(
                 _CheapRetrievalResult(
                     content=content,
+                    score=1.0,
                     citation=_CheapCitation(
                         document_id=uuid5(CHEAP_EVAL_NAMESPACE, f"{case.name}:document"),
                         document_title=f"Cheap Eval Document: {case.name}",
+                        document_source_uri=_cheap_eval_source_uri(case),
                         chunk_id=uuid5(CHEAP_EVAL_NAMESPACE, f"{case.name}:chunk:{index}"),
                         chunk_index=index,
                         start_char=0,
@@ -837,6 +841,12 @@ def _cheap_eval_content(case: RagEvalCase) -> str:
     terms = [case.query, *case.top_result_must_contain]
     unique_terms = list(dict.fromkeys(term for term in terms if term))
     return " ".join(unique_terms)
+
+
+def _cheap_eval_source_uri(case: RagEvalCase) -> str:
+    if case.citation_source_uri_must_contain:
+        return "object://local/docs/" + "/".join(case.citation_source_uri_must_contain)
+    return f"object://local/docs/{case.name}.md"
 
 
 def _request_json(

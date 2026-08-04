@@ -17,6 +17,9 @@ class RetrievedCitation(Protocol):
     def document_title(self) -> str: ...
 
     @property
+    def document_source_uri(self) -> str: ...
+
+    @property
     def chunk_id(self) -> object: ...
 
     @property
@@ -32,6 +35,9 @@ class RetrievedCitation(Protocol):
 class RetrievedResult(Protocol):
     @property
     def content(self) -> str: ...
+
+    @property
+    def score(self) -> float: ...
 
     @property
     def citation(self) -> RetrievedCitation: ...
@@ -51,7 +57,10 @@ class RagEvalCase:
     query: str
     top_k: int = 5
     min_results: int = 1
+    max_results: int | None = None
+    min_top_score: float | None = None
     top_result_must_contain: tuple[str, ...] = ()
+    citation_source_uri_must_contain: tuple[str, ...] = ()
     all_results_require_citations: bool = True
     expect_empty: bool = False
     expected_error_type: str | None = None
@@ -101,8 +110,11 @@ class RagEvalRunner:
         assertions = [
             _assert_empty_behavior(case=case, response=response),
             _assert_min_results(case=case, response=response),
+            _assert_max_results(case=case, response=response),
+            _assert_min_top_score(case=case, response=response),
             _assert_top_result_contains(case=case, response=response),
             _assert_citations(case=case, response=response),
+            _assert_citation_source_uri(case=case, response=response),
         ]
         return EvalCaseResult(
             case_name=case.name,
@@ -190,6 +202,59 @@ def _assert_min_results(
     )
 
 
+def _assert_max_results(
+    *,
+    case: RagEvalCase,
+    response: RetrievalLikeResponse,
+) -> EvalAssertionResult:
+    if case.expect_empty or case.max_results is None:
+        return EvalAssertionResult(
+            name="max_results",
+            passed=True,
+            message="Maximum result assertion not required.",
+        )
+
+    result_count = len(response.results)
+    passed = result_count <= case.max_results
+    return EvalAssertionResult(
+        name="max_results",
+        passed=passed,
+        message=(
+            f"Retrieved {result_count} result(s), expected at most {case.max_results}."
+        ),
+    )
+
+
+def _assert_min_top_score(
+    *,
+    case: RagEvalCase,
+    response: RetrievalLikeResponse,
+) -> EvalAssertionResult:
+    if case.expect_empty or case.min_top_score is None:
+        return EvalAssertionResult(
+            name="min_top_score",
+            passed=True,
+            message="Top-score assertion not required.",
+        )
+    if not response.results:
+        return EvalAssertionResult(
+            name="min_top_score",
+            passed=False,
+            message="Expected top score, but retrieval returned no results.",
+        )
+
+    score = response.results[0].score
+    return EvalAssertionResult(
+        name="min_top_score",
+        passed=score >= case.min_top_score,
+        message=(
+            f"Top score {score:.6f} met minimum {case.min_top_score:.6f}."
+            if score >= case.min_top_score
+            else f"Top score {score:.6f} was below minimum {case.min_top_score:.6f}."
+        ),
+    )
+
+
 def _assert_top_result_contains(
     *,
     case: RagEvalCase,
@@ -247,6 +312,41 @@ def _assert_citations(
             "All retrieved results included valid citations."
             if not missing_indexes
             else f"Missing or invalid citation for result index(es): {missing_indexes}."
+        ),
+    )
+
+
+def _assert_citation_source_uri(
+    *,
+    case: RagEvalCase,
+    response: RetrievalLikeResponse,
+) -> EvalAssertionResult:
+    if case.expect_empty or not case.citation_source_uri_must_contain:
+        return EvalAssertionResult(
+            name="citation_source_uri",
+            passed=True,
+            message="Citation source URI assertion not required.",
+        )
+
+    missing_indexes: list[int] = []
+    for index, result in enumerate(response.results):
+        source_uri = result.citation.document_source_uri.lower()
+        if any(
+            term.lower() not in source_uri
+            for term in case.citation_source_uri_must_contain
+        ):
+            missing_indexes.append(index)
+
+    return EvalAssertionResult(
+        name="citation_source_uri",
+        passed=not missing_indexes,
+        message=(
+            "All citation source URIs contained required terms."
+            if not missing_indexes
+            else (
+                "Citation source URI missed required term(s) for result "
+                f"index(es): {missing_indexes}."
+            )
         ),
     )
 

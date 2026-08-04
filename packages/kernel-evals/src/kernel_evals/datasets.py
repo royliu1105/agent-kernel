@@ -69,9 +69,16 @@ def _case_from_mapping(raw: object, *, index: int) -> RagEvalCase:
         query=_required_string(raw, "query", path=path),
         top_k=_optional_int(raw, "top_k", path=path, default=5, minimum=1),
         min_results=_optional_int(raw, "min_results", path=path, default=1, minimum=0),
+        max_results=_optional_int_or_none(raw, "max_results", path=path, minimum=0),
+        min_top_score=_optional_float_or_none(raw, "min_top_score", path=path, minimum=0.0),
         top_result_must_contain=_optional_string_tuple(
             raw,
             "top_result_must_contain",
+            path=path,
+        ),
+        citation_source_uri_must_contain=_optional_string_tuple(
+            raw,
+            "citation_source_uri_must_contain",
             path=path,
         ),
         all_results_require_citations=_optional_bool(
@@ -122,6 +129,40 @@ def _optional_int(
             f"{path}.{key} must be an integer greater than or equal to {minimum}."
         )
     return value
+
+
+def _optional_int_or_none(
+    raw: dict[str, Any],
+    key: str,
+    *,
+    path: str,
+    minimum: int,
+) -> int | None:
+    value = raw.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, int) or value < minimum:
+        raise EvalDatasetError(
+            f"{path}.{key} must be an integer greater than or equal to {minimum} when provided."
+        )
+    return value
+
+
+def _optional_float_or_none(
+    raw: dict[str, Any],
+    key: str,
+    *,
+    path: str,
+    minimum: float,
+) -> float | None:
+    value = raw.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, int | float) or value < minimum:
+        raise EvalDatasetError(
+            f"{path}.{key} must be a number greater than or equal to {minimum} when provided."
+        )
+    return float(value)
 
 
 def _optional_string_tuple(

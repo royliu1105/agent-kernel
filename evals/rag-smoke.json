@@ -6,7 +6,10 @@
       "query": "alpha deployment rollback checklist",
       "top_k": 1,
       "min_results": 1,
+      "max_results": 1,
+      "min_top_score": 0.0,
       "top_result_must_contain": ["deployment", "rollback"],
+      "citation_source_uri_must_contain": ["deploy.md"],
       "all_results_require_citations": true
     },
     {

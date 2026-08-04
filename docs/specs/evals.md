@@ -87,7 +87,10 @@ Supported Day 28 case fields:
   "query": "alpha deployment rollback checklist",
   "top_k": 1,
   "min_results": 1,
+  "max_results": 1,
+  "min_top_score": 0.0,
   "top_result_must_contain": ["deployment", "rollback"],
+  "citation_source_uri_must_contain": ["deploy.md"],
   "all_results_require_citations": true,
   "expect_empty": false,
   "expected_error_type": null
@@ -112,6 +115,30 @@ Day 29 adds the first CI-runnable eval report path:
 Day 29 intentionally does not implement full eval API, persisted eval runs,
 LLM-as-judge, real-model CI evals, full agent behavior evals, or Web UI eval
 reports.
+
+## Day 47 Behavior Eval Coverage Expansion
+
+Day 47 expands deterministic RAG behavior assertions without adding an eval
+platform or persisted eval runs.
+
+Additional supported RAG case fields:
+
+- `max_results`: optional upper bound for result count. This protects `top_k`
+  behavior from accidentally returning too many chunks.
+- `min_top_score`: optional minimum score for the top result. This catches
+  obvious scoring regressions while keeping thresholds dataset-owned.
+- `citation_source_uri_must_contain`: optional list of terms that each result's
+  citation source URI must include.
+
+Additional Day 47 assertions:
+
+- Maximum retrieved result count.
+- Minimum top-result score.
+- Citation source URI contains required terms.
+
+Day 47 intentionally does not implement persisted eval runs, an eval API,
+LLM-as-judge, real-model CI evals, Web eval authoring, or release-blocking eval
+suites.
 
 ## API / CLI
 
