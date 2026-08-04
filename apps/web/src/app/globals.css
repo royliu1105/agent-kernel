@@ -48,6 +48,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 code {
   border-radius: 5px;
   background: var(--surface-muted);
@@ -308,6 +313,35 @@ code {
 
 .section-header.compact {
   min-height: 30px;
+}
+
+.lookup-form {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.lookup-form label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lookup-form input {
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: white;
+  color: var(--foreground);
+  padding: 7px 10px;
+}
+
+.lookup-form input:focus {
+  border-color: var(--teal);
+  outline: 2px solid var(--teal-soft);
 }
 
 .secondary-action {
@@ -620,6 +654,53 @@ code {
   margin: -5px 0 12px;
 }
 
+.lookup-error {
+  margin: 12px 0 0;
+  border: 1px solid #f2afa8;
+  border-radius: 7px;
+  background: var(--red-soft);
+  color: var(--red);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.live-run-result {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.42fr) minmax(0, 0.58fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.live-run-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.live-run-meta div {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fbfcfd;
+  padding: 10px;
+}
+
+.live-run-meta dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.live-run-meta dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.live-timeline {
+  margin: 0;
+}
+
 .approval-actions {
   display: grid;
   justify-items: end;
@@ -810,7 +891,8 @@ code {
 
   .main-grid,
   .detail-grid,
-  .split-grid {
+  .split-grid,
+  .live-run-result {
     grid-template-columns: 1fr;
   }
 }
@@ -864,6 +946,10 @@ code {
   .tool-detail div {
     grid-template-columns: 1fr;
     gap: 5px;
+  }
+
+  .lookup-form {
+    grid-template-columns: 1fr;
   }
 
   .metric-grid,

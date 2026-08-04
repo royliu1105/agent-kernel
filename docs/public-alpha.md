@@ -90,7 +90,10 @@ Current status:
 
 - Health status is implemented in the Workbench topbar through
   `/api/agent-kernel/health`.
-- Run detail and run timeline live integration remain next.
+- Run detail is implemented through `/api/agent-kernel/runs/{run_id}`.
+- Run timeline is implemented through
+  `/api/agent-kernel/runs/{run_id}/events`.
+- Runs are looked up explicitly by ID until the backend exposes list-runs.
 
 Priority 1:
 

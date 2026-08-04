@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import type {
   ApprovalSummary,
   EvalReportSummary,
   KnowledgeBaseSummary,
+  LiveRun,
+  LiveRunEvent,
   RuntimeHealth,
   RunEventSummary,
   RunSummary,
@@ -81,6 +83,13 @@ type SettingGroup = {
   }[];
 };
 
+type LiveRunLookupState = {
+  status: "idle" | "loading" | "loaded" | "error";
+  run: LiveRun | null;
+  events: LiveRunEvent[];
+  error: string | null;
+};
+
 const initialRuntimeHealth: RuntimeHealth = {
   state: "checking",
   service: "agent-kernel-api",
@@ -88,6 +97,13 @@ const initialRuntimeHealth: RuntimeHealth = {
   baseUrl: "unknown",
   checkedAt: null,
   latencyMs: null,
+};
+
+const initialLiveRunLookup: LiveRunLookupState = {
+  status: "idle",
+  run: null,
+  events: [],
+  error: null,
 };
 
 const navItems: { id: WorkbenchView; label: string }[] = [
@@ -542,6 +558,9 @@ export default function Home() {
   const [selectedEvalName, setSelectedEvalName] = useState(evalReports[0].name);
   const [approvals, setApprovals] = useState(initialApprovals);
   const [runtimeHealth, setRuntimeHealth] = useState<RuntimeHealth>(initialRuntimeHealth);
+  const [liveRunId, setLiveRunId] = useState("");
+  const [liveRunLookup, setLiveRunLookup] =
+    useState<LiveRunLookupState>(initialLiveRunLookup);
 
   useEffect(() => {
     let ignore = false;
@@ -634,6 +653,64 @@ export default function Home() {
           : approval,
       ),
     );
+  }
+
+  async function lookupLiveRun(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const runId = liveRunId.trim();
+    if (runId.length === 0) {
+      setLiveRunLookup({
+        ...initialLiveRunLookup,
+        status: "error",
+        error: "Enter a run ID first.",
+      });
+      return;
+    }
+
+    setLiveRunLookup({
+      ...initialLiveRunLookup,
+      status: "loading",
+    });
+
+    try {
+      const [runResponse, eventsResponse] = await Promise.all([
+        fetch(`/api/agent-kernel/runs/${encodeURIComponent(runId)}`, {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        }),
+        fetch(`/api/agent-kernel/runs/${encodeURIComponent(runId)}/events`, {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        }),
+      ]);
+
+      if (!runResponse.ok) {
+        throw new Error(`Run lookup returned HTTP ${runResponse.status}`);
+      }
+
+      if (!eventsResponse.ok) {
+        throw new Error(`Run events lookup returned HTTP ${eventsResponse.status}`);
+      }
+
+      const [run, events] = (await Promise.all([
+        runResponse.json(),
+        eventsResponse.json(),
+      ])) as [LiveRun, LiveRunEvent[]];
+
+      setLiveRunLookup({
+        status: "loaded",
+        run,
+        events,
+        error: null,
+      });
+    } catch (error) {
+      setLiveRunLookup({
+        ...initialLiveRunLookup,
+        status: "error",
+        error: error instanceof Error ? error.message : "Run lookup failed",
+      });
+    }
   }
 
   return (
@@ -741,6 +818,7 @@ export default function Home() {
     if (activeView === "runs") {
       return (
         <>
+          <section className="single-grid">{renderLiveRunLookup()}</section>
           <section className="main-grid">{renderRunList()}{renderTimeline()}</section>
           <section className="single-grid">{renderToolDetail()}</section>
         </>
@@ -913,6 +991,7 @@ export default function Home() {
 
     return (
       <>
+        <section className="single-grid">{renderLiveRunLookup()}</section>
         <section className="main-grid">{renderRunList()}{renderTimeline()}</section>
         <section className="detail-grid">{renderToolDetail()}{renderApprovalInbox()}</section>
         <section className="lower-grid">
@@ -922,6 +1001,85 @@ export default function Home() {
           {renderSettingsSummary()}
         </section>
       </>
+    );
+  }
+
+  function renderLiveRunLookup() {
+    const isLoading = liveRunLookup.status === "loading";
+
+    return (
+      <section className="panel live-run-panel" aria-labelledby="live-run-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Live API</p>
+            <h2 id="live-run-heading">Run lookup</h2>
+          </div>
+          <span className="signal-badge">live</span>
+        </div>
+
+        <form className="lookup-form" onSubmit={lookupLiveRun}>
+          <label htmlFor="live-run-id">Run ID</label>
+          <input
+            id="live-run-id"
+            onChange={(event) => setLiveRunId(event.target.value)}
+            placeholder="Paste a UUID from agent-kernel run create"
+            type="text"
+            value={liveRunId}
+          />
+          <button className="secondary-action" disabled={isLoading} type="submit">
+            {isLoading ? "Looking up" : "Lookup"}
+          </button>
+        </form>
+
+        <p className="local-note">
+          This lookup calls the real Agent Kernel API through the Web app. The run list below is
+          still fixture-backed until the backend exposes a list-runs endpoint.
+        </p>
+
+        {liveRunLookup.status === "error" ? (
+          <p className="lookup-error" role="status">
+            {liveRunLookup.error}
+          </p>
+        ) : null}
+
+        {liveRunLookup.run === null ? null : (
+          <div className="live-run-result">
+            <dl className="live-run-meta">
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <StatusBadge status={liveRunLookup.run.status} />
+                </dd>
+              </div>
+              <div>
+                <dt>Agent</dt>
+                <dd>{liveRunLookup.run.agent_id}</dd>
+              </div>
+              <div>
+                <dt>Trace</dt>
+                <dd>{liveRunLookup.run.trace_id ?? "none"}</dd>
+              </div>
+              <div>
+                <dt>Cost</dt>
+                <dd>${liveRunLookup.run.estimated_cost_total.toFixed(6)}</dd>
+              </div>
+            </dl>
+
+            <ol className="timeline live-timeline" aria-label="Live run timeline">
+              {liveRunLookup.events.map((event) => (
+                <li className="timeline-item complete" key={event.id}>
+                  <span className="timeline-index">{event.sequence}</span>
+                  <div>
+                    <strong>{event.type}</strong>
+                    <p>{event.created_at}</p>
+                    <code>{eventSummary(event.payload)}</code>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </section>
     );
   }
 
@@ -1195,6 +1353,15 @@ function runtimeStatusLabel(health: RuntimeHealth) {
   }
 
   return "API unreachable";
+}
+
+function eventSummary(payload: Record<string, unknown>) {
+  const entries = Object.entries(payload);
+  if (entries.length === 0) {
+    return "{}";
+  }
+
+  return JSON.stringify(Object.fromEntries(entries.slice(0, 3)));
 }
 
 function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail["status"] }) {

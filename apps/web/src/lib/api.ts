@@ -65,6 +65,33 @@ export type RuntimeHealth = {
   error?: string;
 };
 
+export type LiveRun = {
+  id: string;
+  agent_id: string;
+  status: RunStatus;
+  input: Record<string, unknown>;
+  output: Record<string, unknown> | null;
+  trace_id: string | null;
+  error_type: string | null;
+  error_message: string | null;
+  input_tokens_total: number;
+  output_tokens_total: number;
+  estimated_cost_total: number;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
+};
+
+export type LiveRunEvent = {
+  id: string;
+  run_id: string;
+  sequence: number;
+  type: string;
+  payload: Record<string, unknown>;
+  trace_id: string | null;
+  created_at: string;
+};
+
 export type WorkbenchSnapshot = {
   runs: RunSummary[];
   timeline: RunEventSummary[];

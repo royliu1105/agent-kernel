@@ -88,3 +88,4 @@ day-03.md
 - [Day 38: v0.1 Final Release Verification](day-38.md)
 - [Day 39: Public Alpha Kickoff](day-39.md)
 - [Day 40: Workbench Live API Health](day-40.md)
+- [Day 41: Live Run Lookup and Timeline](day-41.md)

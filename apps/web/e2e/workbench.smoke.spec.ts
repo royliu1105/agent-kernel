@@ -42,6 +42,11 @@ test("operator can inspect runs and approve tool calls locally", async ({ page }
 
   await page.getByRole("button", { name: "Runs" }).click();
   await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Run lookup" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Lookup" }).click();
+  await expect(page.getByText("Enter a run ID first.")).toBeVisible();
+
   await expect(page.getByRole("heading", { name: "run_9b1c" })).toBeVisible();
   await expect(page.getByText("Approval waiting")).toBeVisible();
   await expect(page.getByText("Tool call ID")).toBeVisible();
