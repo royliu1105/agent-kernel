@@ -1,0 +1,97 @@
+### Agent Kernel Public Alpha HTTP Requests
+#
+# Use with REST Client-style tools that support .http files.
+# Replace placeholder IDs after each create call.
+
+@api = http://127.0.0.1:8000
+@agent_id = replace-with-agent-id
+@run_id = replace-with-run-id
+@knowledge_base_id = replace-with-knowledge-base-id
+@approval_id = replace-with-approval-id
+
+### Health
+GET {{api}}/healthz
+Accept: application/json
+
+### Create agent
+POST {{api}}/v1/agents
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "HTTP Example Agent",
+  "description": "Created from examples/public-alpha.http"
+}
+
+### Create run
+POST {{api}}/v1/agents/{{agent_id}}/runs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "input": {
+    "task": "Summarize the deployment rollback policy for an operator.",
+    "model": "mock:echo"
+  }
+}
+
+### Queue run
+POST {{api}}/v1/runs/{{run_id}}/queue
+Accept: application/json
+
+### Inspect run
+GET {{api}}/v1/runs/{{run_id}}
+Accept: application/json
+
+### Run events
+GET {{api}}/v1/runs/{{run_id}}/events
+Accept: application/json
+
+### Create knowledge base
+POST {{api}}/v1/knowledge-bases
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "HTTP Example Handbook",
+  "description": "Knowledge base created from examples/public-alpha.http",
+  "metadata": {
+    "source": "public-alpha-http-example"
+  }
+}
+
+### List knowledge bases
+GET {{api}}/v1/knowledge-bases
+Accept: application/json
+
+### Retrieve from knowledge base
+POST {{api}}/v1/knowledge-bases/{{knowledge_base_id}}/retrieve
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "When should an operator roll back a deployment?",
+  "top_k": 5
+}
+
+### List approvals
+GET {{api}}/v1/approvals
+Accept: application/json
+
+### Approve approval
+POST {{api}}/v1/approvals/{{approval_id}}/approve
+Content-Type: application/json
+Accept: application/json
+
+{
+  "decision_note": "Approved from HTTP example"
+}
+
+### Reject approval
+POST {{api}}/v1/approvals/{{approval_id}}/reject
+Content-Type: application/json
+Accept: application/json
+
+{
+  "reason": "Rejected from HTTP example"
+}

@@ -32,8 +32,10 @@ Recommended first-run order:
 4. Run the RAG workflow.
 5. Run the memory workflow.
 6. Run the deterministic eval.
-7. Open the Web Workbench.
-8. Try the full Docker Compose stack if Docker Desktop is available.
+7. Run the [Public Alpha Walkthrough](../examples/public-alpha-walkthrough.md)
+   for a guided end-to-end examples path.
+8. Open the Web Workbench.
+9. Try the full Docker Compose stack if Docker Desktop is available.
 
 This path intentionally uses mock models by default. No external LLM credentials
 are required unless users choose an `openai:*` model.

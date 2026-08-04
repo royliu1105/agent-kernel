@@ -197,9 +197,25 @@ Open:
 http://127.0.0.1:3000
 ```
 
-The current Workbench is fixture-backed. It exposes the v0.1 product surface,
-including dashboard, agents, runs, approvals, knowledge, evals, and settings,
-but it does not yet fetch all live backend data.
+The current Workbench is partially live and partially fixture-backed. It exposes
+the v0.1 product surface, including dashboard, agents, runs, approvals,
+knowledge, evals, and settings, but it does not yet fetch all live backend data.
+
+Public Alpha live paths currently include:
+
+- API health status.
+- Run lookup by run ID.
+- Run events lookup by run ID.
+- Approval inbox list.
+- Approval approve/reject mutations.
+- Knowledge base list.
+- Retrieval search with raw cited chunks.
+
+For guided product workflows, see:
+
+- [Examples README](../examples/README.md)
+- [Public Alpha Walkthrough](../examples/public-alpha-walkthrough.md)
+- [Public Alpha HTTP requests](../examples/public-alpha.http)
 
 ## Full Docker Compose Stack
 
@@ -261,7 +277,8 @@ make verify-web
   no fixture is registered.
 - The worker currently uses persisted queued runs as the MVP queue.
 - Redis-backed scheduling and distributed worker leases are deferred.
-- Web approval decisions are local UI state until live Web mutation is added.
+- Some Web areas remain fixture-backed previews until their backend list/detail
+  APIs are complete.
 
 ## Public Alpha Feedback
 

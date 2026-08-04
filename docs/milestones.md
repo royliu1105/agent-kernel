@@ -349,7 +349,7 @@ Checklist:
 - [x] Add issue templates.
 - [x] Improve README first-run path.
 - [x] Improve quickstart from first-user perspective.
-- [ ] Improve examples.
+- [x] Improve examples.
 - [ ] Improve Web UI polish.
 - [ ] Replace key fixture-backed Web views with live API integration.
 - [x] Document first live Web API integration priorities.
