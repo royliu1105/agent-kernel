@@ -82,9 +82,15 @@ existing backend surface.
 
 Priority 0:
 
-- Health status from `/healthz`.
+- Health status from `/healthz` through the Web same-origin health proxy.
 - Run detail from `/v1/runs/{run_id}`.
 - Run timeline from `/v1/runs/{run_id}/events`.
+
+Current status:
+
+- Health status is implemented in the Workbench topbar through
+  `/api/agent-kernel/health`.
+- Run detail and run timeline live integration remain next.
 
 Priority 1:
 
@@ -117,5 +123,4 @@ Public Alpha can close when:
 - GitHub CI is green on `master`.
 - Known limitations are clear.
 - Feedback channels are documented and issue templates are available.
-- The first live Web API integration path is implemented or clearly queued for
-  the next day.
+- The first live Web API integration path is implemented.

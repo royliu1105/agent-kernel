@@ -163,6 +163,7 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -170,6 +171,23 @@ code {
   color: var(--muted);
   padding: 7px 10px;
   font-size: 13px;
+}
+
+.runtime-status.online {
+  border-color: #a8d9bf;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.runtime-status.offline {
+  border-color: #f2afa8;
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.runtime-status small {
+  color: inherit;
+  opacity: 0.75;
 }
 
 .workspace-view {
@@ -181,6 +199,14 @@ code {
   height: 8px;
   border-radius: 999px;
   background: var(--green);
+}
+
+.status-dot.checking {
+  background: var(--amber);
+}
+
+.status-dot.offline {
+  background: var(--red);
 }
 
 .metric-grid {

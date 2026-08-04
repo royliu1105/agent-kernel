@@ -4,7 +4,9 @@ test("operator can navigate core Workbench views", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
-  await expect(page.getByLabel("Runtime status")).toContainText("Local UI state");
+  await expect(page.getByLabel("Runtime status")).toContainText(
+    /Checking API|API reachable|API unreachable/,
+  );
 
   await page.getByRole("button", { name: "Agents" }).click();
   await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();

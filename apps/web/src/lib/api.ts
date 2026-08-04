@@ -53,6 +53,18 @@ export type EvalReportSummary = {
   caseCount: number;
 };
 
+export type RuntimeHealthState = "checking" | "online" | "offline";
+
+export type RuntimeHealth = {
+  state: RuntimeHealthState;
+  service: string;
+  status: string;
+  baseUrl: string;
+  checkedAt: string | null;
+  latencyMs: number | null;
+  error?: string;
+};
+
 export type WorkbenchSnapshot = {
   runs: RunSummary[];
   timeline: RunEventSummary[];

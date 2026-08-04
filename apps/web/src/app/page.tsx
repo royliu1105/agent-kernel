@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type {
   ApprovalSummary,
   EvalReportSummary,
   KnowledgeBaseSummary,
+  RuntimeHealth,
   RunEventSummary,
   RunSummary,
 } from "../lib/api";
@@ -78,6 +79,15 @@ type SettingGroup = {
     value: string;
     detail: string;
   }[];
+};
+
+const initialRuntimeHealth: RuntimeHealth = {
+  state: "checking",
+  service: "agent-kernel-api",
+  status: "checking",
+  baseUrl: "unknown",
+  checkedAt: null,
+  latencyMs: null,
 };
 
 const navItems: { id: WorkbenchView; label: string }[] = [
@@ -531,6 +541,44 @@ export default function Home() {
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState(knowledgeBases[0].id);
   const [selectedEvalName, setSelectedEvalName] = useState(evalReports[0].name);
   const [approvals, setApprovals] = useState(initialApprovals);
+  const [runtimeHealth, setRuntimeHealth] = useState<RuntimeHealth>(initialRuntimeHealth);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadRuntimeHealth() {
+      try {
+        const response = await fetch("/api/agent-kernel/health", {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Health proxy returned HTTP ${response.status}`);
+        }
+
+        const health = (await response.json()) as RuntimeHealth;
+        if (!ignore) {
+          setRuntimeHealth(health);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setRuntimeHealth({
+            ...initialRuntimeHealth,
+            state: "offline",
+            status: "unreachable",
+            error: error instanceof Error ? error.message : "Health check failed",
+          });
+        }
+      }
+    }
+
+    void loadRuntimeHealth();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const selectedRun = runs.find((run) => run.id === selectedRunId) ?? runs[0];
   const selectedTimeline = timelinesByRun[selectedRun.id] ?? [];
@@ -618,9 +666,10 @@ export default function Home() {
             <p className="eyebrow">{viewCopy[activeView].eyebrow}</p>
             <h1>{viewCopy[activeView].title}</h1>
           </div>
-          <div className="runtime-status" aria-label="Runtime status">
-            <span className="status-dot" />
-            {viewCopy[activeView].status}
+          <div className={`runtime-status ${runtimeHealth.state}`} aria-label="Runtime status">
+            <span className={`status-dot ${runtimeHealth.state}`} />
+            <span>{runtimeStatusLabel(runtimeHealth)}</span>
+            <small>{viewCopy[activeView].status}</small>
           </div>
         </header>
 
@@ -1133,6 +1182,19 @@ export default function Home() {
       </section>
     );
   }
+}
+
+function runtimeStatusLabel(health: RuntimeHealth) {
+  if (health.state === "checking") {
+    return "Checking API";
+  }
+
+  if (health.state === "online") {
+    const latency = health.latencyMs === null ? "" : ` · ${health.latencyMs}ms`;
+    return `API reachable${latency}`;
+  }
+
+  return "API unreachable";
 }
 
 function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail["status"] }) {

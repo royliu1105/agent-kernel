@@ -352,6 +352,7 @@ Checklist:
 - [ ] Improve Web UI polish.
 - [ ] Replace key fixture-backed Web views with live API integration.
 - [x] Document first live Web API integration priorities.
+- [x] Implement first live Web API health integration.
 - [x] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.
