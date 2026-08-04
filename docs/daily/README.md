@@ -90,3 +90,4 @@ day-03.md
 - [Day 40: Workbench Live API Health](day-40.md)
 - [Day 41: Live Run Lookup and Timeline](day-41.md)
 - [Day 42: Live Approval Inbox](day-42.md)
+- [Day 43: Live Approval Mutation UI](day-43.md)

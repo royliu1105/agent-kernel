@@ -38,6 +38,45 @@ test("operator can navigate core Workbench views", async ({ page }) => {
 });
 
 test("operator can inspect runs and approve tool calls locally", async ({ page }) => {
+  await page.route("**/api/agent-kernel/approvals", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: [
+        {
+          id: "live_appr_001",
+          run_id: "11111111-1111-4111-8111-111111111111",
+          tool_call_id: "22222222-2222-4222-8222-222222222222",
+          status: "requested",
+          reason: "Live external write requires review",
+          requested_by: null,
+          reviewed_by: null,
+          decision_note: null,
+          trace_id: "live-trace",
+          requested_at: "2026-08-04T00:00:00Z",
+          resolved_at: null,
+        },
+      ],
+    });
+  });
+  await page.route("**/api/agent-kernel/approvals/live_appr_001/approve", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        id: "live_appr_001",
+        run_id: "11111111-1111-4111-8111-111111111111",
+        tool_call_id: "22222222-2222-4222-8222-222222222222",
+        status: "approved",
+        reason: "Live external write requires review",
+        requested_by: null,
+        reviewed_by: null,
+        decision_note: "Approved from Workbench",
+        trace_id: "live-trace",
+        requested_at: "2026-08-04T00:00:00Z",
+        resolved_at: "2026-08-04T00:01:00Z",
+      },
+    });
+  });
+
   await page.goto("/");
 
   await page.getByRole("button", { name: "Runs" }).click();
@@ -62,9 +101,12 @@ test("operator can inspect runs and approve tool calls locally", async ({ page }
   await expect(page.getByLabel("Live approvals status")).toContainText(
     /Loading live approvals|live approvals from API|Live approvals unavailable|Approval list/,
   );
+  await expect(page.getByText("Live external write requires review")).toBeVisible();
+  await page.getByRole("button", { name: "Approve live" }).click();
+  await expect(page.getByText("approved · 2026-08-04T00:01:00Z")).toBeVisible();
   await expect(page.getByText("Decisions here are local UI state for Day 32.")).toBeVisible();
 
-  await page.getByRole("button", { name: "Approve" }).first().click();
+  await page.getByRole("button", { name: /^Approve$/ }).first().click();
   await expect(page.getByText("approved · just now")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Decision history" })).toBeVisible();
   await expect(page.getByText("appr_421")).toBeVisible();

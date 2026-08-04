@@ -110,8 +110,10 @@ Current status:
 - Approve/reject proxy routes exist under
   `/api/agent-kernel/approvals/{approval_id}/approve` and
   `/api/agent-kernel/approvals/{approval_id}/reject`.
-- Visible approval decision buttons still operate on fixture-backed local UI
-  state until live mutation wiring is completed.
+- Live approval approve/reject buttons call the same-origin Web proxy and update
+  the visible live approval record.
+- Fixture-backed local approval decisions remain visible for product preview
+  coverage until the Workbench is fully live.
 
 Priority 2:
 

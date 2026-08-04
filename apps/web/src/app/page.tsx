@@ -95,6 +95,7 @@ type LiveApprovalState = {
   status: "loading" | "loaded" | "error";
   approvals: LiveApproval[];
   error: string | null;
+  mutatingApprovalId: string | null;
 };
 
 const initialRuntimeHealth: RuntimeHealth = {
@@ -117,6 +118,7 @@ const initialLiveApprovals: LiveApprovalState = {
   status: "loading",
   approvals: [],
   error: null,
+  mutatingApprovalId: null,
 };
 
 const navItems: { id: WorkbenchView; label: string }[] = [
@@ -597,6 +599,7 @@ export default function Home() {
             status: "loaded",
             approvals: approvalsResponse,
             error: null,
+            mutatingApprovalId: null,
           });
         }
       } catch (error) {
@@ -605,6 +608,7 @@ export default function Home() {
             status: "error",
             approvals: [],
             error: error instanceof Error ? error.message : "Approval list lookup failed",
+            mutatingApprovalId: null,
           });
         }
       }
@@ -765,6 +769,52 @@ export default function Home() {
         status: "error",
         error: error instanceof Error ? error.message : "Run lookup failed",
       });
+    }
+  }
+
+  async function decideLiveApproval(approvalId: string, decision: ApprovalDecision) {
+    const action = decision === "approved" ? "approve" : "reject";
+
+    setLiveApprovals((current) => ({
+      ...current,
+      error: null,
+      mutatingApprovalId: approvalId,
+    }));
+
+    try {
+      const response = await fetch(`/api/agent-kernel/approvals/${approvalId}/${action}`, {
+        body:
+          decision === "approved"
+            ? JSON.stringify({ decision_note: "Approved from Workbench" })
+            : JSON.stringify({ reason: "Rejected from Workbench" }),
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Live approval ${decision} returned HTTP ${response.status}`);
+      }
+
+      const updatedApproval = (await response.json()) as LiveApproval;
+      setLiveApprovals((current) => ({
+        ...current,
+        status: "loaded",
+        approvals: current.approvals.map((approval) =>
+          approval.id === updatedApproval.id ? updatedApproval : approval,
+        ),
+        error: null,
+        mutatingApprovalId: null,
+      }));
+    } catch (error) {
+      setLiveApprovals((current) => ({
+        ...current,
+        status: current.status === "loading" ? "error" : current.status,
+        error: error instanceof Error ? error.message : "Live approval mutation failed",
+        mutatingApprovalId: null,
+      }));
     }
   }
 
@@ -1277,10 +1327,39 @@ export default function Home() {
                     {approval.run_id} · {approval.requested_at}
                   </span>
                 </div>
-                <code>{approval.tool_call_id}</code>
+                <div className="live-approval-actions">
+                  <code>{approval.tool_call_id}</code>
+                  {approval.status === "requested" ? (
+                    <div className="button-pair">
+                      <button
+                        disabled={liveApprovals.mutatingApprovalId === approval.id}
+                        onClick={() => decideLiveApproval(approval.id, "approved")}
+                        type="button"
+                      >
+                        Approve live
+                      </button>
+                      <button
+                        disabled={liveApprovals.mutatingApprovalId === approval.id}
+                        onClick={() => decideLiveApproval(approval.id, "rejected")}
+                        type="button"
+                      >
+                        Reject live
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={`decision-pill ${approval.status}`}>
+                      {approval.status} · {approval.resolved_at ?? "pending sync"}
+                    </span>
+                  )}
+                </div>
               </article>
             ))}
           </div>
+        ) : null}
+        {liveApprovals.error ? (
+          <p className="lookup-error" role="status">
+            {liveApprovals.error}
+          </p>
         ) : null}
         <p className="local-note">Decisions here are local UI state for Day 32.</p>
         <div className="stack">

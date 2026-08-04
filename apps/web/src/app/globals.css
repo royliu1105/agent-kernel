@@ -760,6 +760,13 @@ code {
   overflow-wrap: anywhere;
 }
 
+.live-approval-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: 220px;
+}
+
 .approval-actions {
   display: grid;
   justify-items: end;
@@ -994,6 +1001,7 @@ code {
 
   .row-side,
   .approval-actions,
+  .live-approval-actions,
   .doc-progress,
   .case-side {
     justify-items: start;
