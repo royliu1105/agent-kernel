@@ -1,0 +1,92 @@
+name: Bug report
+description: Report a reproducible Agent Kernel bug.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping harden Agent Kernel. Please include enough detail for
+        maintainers to reproduce the issue without guessing about your local setup.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+      placeholder: The worker marks a queued run as failed when...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: List the exact commands or UI actions.
+      placeholder: |
+        1. uv sync
+        2. uv run alembic upgrade head
+        3. uv run agent-kernel ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include relevant error output.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - API
+        - CLI
+        - Worker
+        - Web Workbench
+        - RAG
+        - Memory
+        - Tools and approvals
+        - Evals
+        - Docker or local setup
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python, uv, Node.js, Docker, database, and Agent Kernel version or commit.
+      placeholder: |
+        OS:
+        Python:
+        uv:
+        Node.js:
+        Docker:
+        Database:
+        Commit:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Redact secrets before sharing.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues first.
+          required: true
+        - label: I removed secrets, API keys, tokens, and private data from this report.
+          required: true

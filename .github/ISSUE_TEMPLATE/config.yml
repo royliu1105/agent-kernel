@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: v0.1.0 Release
+    url: https://github.com/royliu1105/agent-kernel/releases/tag/v0.1.0
+    about: Download or inspect the current public release.
+  - name: Public Alpha plan
+    url: https://github.com/royliu1105/agent-kernel/blob/master/docs/post-v0.1-plan.md
+    about: Read the Public Alpha, Beta, and v1.0 completion plan.

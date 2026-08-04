@@ -88,6 +88,19 @@ Every meaningful pull request should include:
 
 Prefer small, reviewable pull requests.
 
+## Issues and Public Alpha Feedback
+
+Use the GitHub issue templates for:
+
+- Reproducible bugs.
+- Focused feature requests.
+- Public Alpha first-run feedback.
+
+Good issues include exact commands or UI actions, expected behavior, actual
+behavior, environment details, and redacted logs when useful.
+
+Do not include secrets, API keys, tokens, private documents, or private logs.
+
 ## Coding Guidelines
 
 - Follow existing package boundaries and naming.

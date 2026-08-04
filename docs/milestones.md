@@ -339,24 +339,25 @@ Turn v0.1 into a polished early-user release.
 Status:
 
 ```text
-[ ] Not started
+[~] In progress
 ```
 
 Checklist:
 
-- [ ] Create public feedback channels.
-- [ ] Add issue templates.
-- [ ] Improve README first-run path.
-- [ ] Improve quickstart from first-user perspective.
+- [x] Create public feedback channels.
+- [x] Add issue templates.
+- [x] Improve README first-run path.
+- [x] Improve quickstart from first-user perspective.
 - [ ] Improve examples.
 - [ ] Improve Web UI polish.
 - [ ] Replace key fixture-backed Web views with live API integration.
+- [x] Document first live Web API integration priorities.
 - [x] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.
 - [x] Harden Docker Compose startup.
 - [x] Add troubleshooting docs.
-- [ ] Add first external-user feedback loop.
+- [x] Add first external-user feedback loop.
 - [ ] Prepare Public Alpha announcement.
 
 Acceptance:
@@ -365,7 +366,7 @@ Acceptance:
 - [x] Core examples work end to end.
 - [x] Known limitations are documented.
 - [ ] Public Alpha release notes are clear.
-- [ ] Feedback channels are documented.
+- [x] Feedback channels are documented.
 
 ## Beta: Day 52-75
 

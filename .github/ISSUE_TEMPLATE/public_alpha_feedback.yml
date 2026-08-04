@@ -1,0 +1,67 @@
+name: Public Alpha feedback
+description: Share early-user feedback after trying Agent Kernel.
+title: "feedback: "
+labels: ["public-alpha", "feedback", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this after trying the v0.1.0 release or current `master`.
+        We are especially interested in first-run friction, confusing docs,
+        missing examples, and operator-workflow gaps.
+  - type: dropdown
+    id: path
+    attributes:
+      label: What did you try?
+      options:
+        - README first-run path
+        - Quickstart with SQLite
+        - Quickstart with Postgres and Redis
+        - Full Docker Compose stack
+        - Mock agent run
+        - RAG workflow
+        - Memory workflow
+        - Eval workflow
+        - Web Workbench
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What happened?
+      description: Tell us where things were smooth or confusing.
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Biggest friction
+      description: What made the project harder to try or understand?
+    validations:
+      required: true
+  - type: textarea
+    id: expectation
+    attributes:
+      label: Expected next step
+      description: What did you expect the project to let you do next?
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python, uv, Node.js, Docker, database, and commit or release.
+      placeholder: |
+        OS:
+        Python:
+        uv:
+        Node.js:
+        Docker:
+        Database:
+        Release or commit:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I removed secrets, API keys, tokens, and private data from this feedback.
+          required: true

@@ -8,6 +8,10 @@ install deps -> migrate storage -> create agent/run -> execute worker -> inspect
 
 Use mock models for the default path. No external LLM credentials are required.
 
+If you are trying Agent Kernel for the first time during Public Alpha, start
+with the SQLite quick path, then share setup friction through the
+[Public Alpha Guide](public-alpha.md).
+
 ## Prerequisites
 
 - Python 3.12 through `uv`.
@@ -258,3 +262,15 @@ make verify-web
 - The worker currently uses persisted queued runs as the MVP queue.
 - Redis-backed scheduling and distributed worker leases are deferred.
 - Web approval decisions are local UI state until live Web mutation is added.
+
+## Public Alpha Feedback
+
+If this quickstart fails or feels confusing, open a GitHub Issue with:
+
+- The command that failed.
+- The expected result.
+- The actual output.
+- OS, Python, `uv`, Node.js, Docker, and database details.
+- The release or commit SHA.
+
+Do not include secrets, API keys, tokens, private documents, or private logs.

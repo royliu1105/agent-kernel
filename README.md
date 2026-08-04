@@ -1,6 +1,6 @@
 # Agent Kernel
 
-Agent Kernel is planned as a self-hosted, observable, evaluable, resumable production-grade AI Agent Runtime for building real agent applications with tools, memory, knowledge bases, human approval, and workflows.
+Agent Kernel is a self-hosted, observable, evaluable, resumable production-grade AI Agent Runtime for building real agent applications with tools, memory, knowledge bases, human approval, and workflows.
 
 The canonical project baseline is captured in [docs/README.md](docs/README.md).
 
@@ -16,6 +16,11 @@ Post-v0.1 completion plan:
 
 - [Public Alpha, Beta, and v1.0 plan](docs/post-v0.1-plan.md)
 
+Public Alpha:
+
+- [Public Alpha guide](docs/public-alpha.md)
+- [Feedback templates](.github/ISSUE_TEMPLATE)
+
 Current v0.1 shape:
 
 ```text
@@ -23,6 +28,10 @@ Python API + CLI + worker + Postgres/SQLite storage + RAG/memory/tools/evals + N
 ```
 
 ## Local Development
+
+For a first run, follow [Quickstart](docs/quickstart.md). The default path uses
+SQLite and mock models, so it does not require Docker or external LLM
+credentials.
 
 Required tools:
 
@@ -96,3 +105,10 @@ make verify-web
 ```
 
 `make verify` avoids browser e2e tests by default. `make verify-web` includes Playwright.
+
+## Feedback
+
+Agent Kernel is in Public Alpha hardening after the `v0.1.0` release. Please
+use GitHub Issues for reproducible bugs, focused feature requests, or first-run
+feedback. Redact secrets, API keys, tokens, private documents, and private logs
+before sharing output.

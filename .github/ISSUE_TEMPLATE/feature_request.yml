@@ -1,0 +1,75 @@
+name: Feature request
+description: Propose a focused improvement to Agent Kernel.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Agent Kernel is currently hardening from v0.1.0 toward Public Alpha,
+        Beta, and v1.0. Please frame feature requests around real user workflows.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or operator problem should this solve?
+      placeholder: As an operator, I need to...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should change?
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Suggested stage
+      options:
+        - Public Alpha usability
+        - Beta production hardening
+        - v1.0 release candidate
+        - Beyond v1.0
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Provider abstraction
+        - Tool calling
+        - Durable execution
+        - Approvals
+        - RAG
+        - Memory
+        - Observability
+        - Evals
+        - Web Workbench
+        - Deployment
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider?
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks or tradeoffs
+      description: What could this complicate?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: This is not a request to turn Agent Kernel into a hosted SaaS or no-code builder before v1.0.
+          required: true
+        - label: I searched existing issues first.
+          required: true
