@@ -61,6 +61,18 @@ export type KnowledgeBaseSummary = {
   status: "active" | "indexing" | "failed";
 };
 
+export type KnowledgeBaseStatus = "active" | "archived";
+
+export type LiveKnowledgeBase = {
+  id: string;
+  name: string;
+  description: string;
+  status: KnowledgeBaseStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
 export type EvalReportSummary = {
   name: string;
   passed: boolean;

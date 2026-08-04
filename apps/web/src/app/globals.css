@@ -509,6 +509,7 @@ code {
 
 .risk-badge.read_only,
 .risk-badge.filesystem_write,
+.kb-status.archived,
 .count-pill,
 .signal-badge {
   background: var(--violet-soft);
@@ -767,6 +768,39 @@ code {
   min-width: 220px;
 }
 
+.live-kb-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.live-kb-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 12px;
+}
+
+.live-kb-item strong {
+  font-size: 14px;
+}
+
+.live-kb-item p,
+.live-kb-item span {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.live-kb-item div {
+  min-width: 0;
+}
+
 .approval-actions {
   display: grid;
   justify-items: end;
@@ -951,7 +985,8 @@ code {
   .metric-grid,
   .lower-grid,
   .agent-grid,
-  .settings-grid {
+  .settings-grid,
+  .live-kb-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -994,6 +1029,7 @@ code {
   .eval-report-card,
   .history-item,
   .live-approval-item,
+  .live-kb-item,
   .settings-list div {
     align-items: stretch;
     flex-direction: column;
@@ -1023,7 +1059,8 @@ code {
   .metric-grid,
   .lower-grid,
   .agent-grid,
-  .settings-grid {
+  .settings-grid,
+  .live-kb-list {
     grid-template-columns: 1fr;
   }
 

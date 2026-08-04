@@ -356,6 +356,7 @@ Checklist:
 - [x] Implement live run detail and timeline lookup.
 - [x] Implement live approval inbox status integration.
 - [x] Implement live approval approve/reject mutation UI.
+- [x] Implement live knowledge base list integration.
 - [x] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.

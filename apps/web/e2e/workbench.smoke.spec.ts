@@ -1,6 +1,23 @@
 import { expect, test } from "@playwright/test";
 
 test("operator can navigate core Workbench views", async ({ page }) => {
+  await page.route("**/api/agent-kernel/knowledge-bases", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: [
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          name: "Live Operations KB",
+          description: "Knowledge base returned by live API",
+          status: "active",
+          metadata: {},
+          created_at: "2026-08-04T00:00:00Z",
+          updated_at: "2026-08-04T00:01:00Z",
+        },
+      ],
+    });
+  });
+
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
@@ -14,7 +31,9 @@ test("operator can navigate core Workbench views", async ({ page }) => {
   await expect(page.getByText("memory_search")).toBeVisible();
 
   await page.getByRole("button", { name: "Knowledge" }).click();
-  await expect(page.getByRole("heading", { name: "Knowledge" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Knowledge", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Knowledge base list" })).toBeVisible();
+  await expect(page.getByText("Live Operations KB")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Document ingestion" })).toBeVisible();
   await expect(page.getByText("rollback-playbook.md")).toBeVisible();
 

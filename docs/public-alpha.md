@@ -114,6 +114,9 @@ Current status:
   the visible live approval record.
 - Fixture-backed local approval decisions remain visible for product preview
   coverage until the Workbench is fully live.
+- Knowledge base list loads through `/api/agent-kernel/knowledge-bases`.
+- Fixture-backed document ingestion previews remain visible until live document
+  and ingestion summary endpoints are ready.
 
 Priority 2:
 

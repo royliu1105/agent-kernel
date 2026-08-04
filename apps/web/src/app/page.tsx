@@ -7,6 +7,7 @@ import type {
   EvalReportSummary,
   KnowledgeBaseSummary,
   LiveApproval,
+  LiveKnowledgeBase,
   LiveRun,
   LiveRunEvent,
   RuntimeHealth,
@@ -98,6 +99,12 @@ type LiveApprovalState = {
   mutatingApprovalId: string | null;
 };
 
+type LiveKnowledgeBaseState = {
+  status: "loading" | "loaded" | "error";
+  knowledgeBases: LiveKnowledgeBase[];
+  error: string | null;
+};
+
 const initialRuntimeHealth: RuntimeHealth = {
   state: "checking",
   service: "agent-kernel-api",
@@ -119,6 +126,12 @@ const initialLiveApprovals: LiveApprovalState = {
   approvals: [],
   error: null,
   mutatingApprovalId: null,
+};
+
+const initialLiveKnowledgeBases: LiveKnowledgeBaseState = {
+  status: "loading",
+  knowledgeBases: [],
+  error: null,
 };
 
 const navItems: { id: WorkbenchView; label: string }[] = [
@@ -578,6 +591,8 @@ export default function Home() {
     useState<LiveRunLookupState>(initialLiveRunLookup);
   const [liveApprovals, setLiveApprovals] =
     useState<LiveApprovalState>(initialLiveApprovals);
+  const [liveKnowledgeBases, setLiveKnowledgeBases] =
+    useState<LiveKnowledgeBaseState>(initialLiveKnowledgeBases);
 
   useEffect(() => {
     let ignore = false;
@@ -615,6 +630,47 @@ export default function Home() {
     }
 
     void loadLiveApprovals();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLiveKnowledgeBases() {
+      try {
+        const response = await fetch("/api/agent-kernel/knowledge-bases", {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Knowledge base list returned HTTP ${response.status}`);
+        }
+
+        const knowledgeBasesResponse = (await response.json()) as LiveKnowledgeBase[];
+        if (!ignore) {
+          setLiveKnowledgeBases({
+            status: "loaded",
+            knowledgeBases: knowledgeBasesResponse,
+            error: null,
+          });
+        }
+      } catch (error) {
+        if (!ignore) {
+          setLiveKnowledgeBases({
+            status: "error",
+            knowledgeBases: [],
+            error:
+              error instanceof Error ? error.message : "Knowledge base list lookup failed",
+          });
+        }
+      }
+    }
+
+    void loadLiveKnowledgeBases();
 
     return () => {
       ignore = true;
@@ -941,67 +997,10 @@ export default function Home() {
 
     if (activeView === "knowledge") {
       return (
-        <section className="split-grid">
-          <section className="panel" aria-labelledby="knowledge-list-heading">
-            <div className="section-header">
-              <div>
-                <p className="eyebrow">Knowledge bases</p>
-                <h2 id="knowledge-list-heading">Indexes</h2>
-              </div>
-              <span className="count-pill">{knowledgeBases.length}</span>
-            </div>
-            <div className="knowledge-list">
-              {knowledgeBases.map((knowledgeBase) => (
-                <button
-                  className={
-                    knowledgeBase.id === selectedKnowledgeBase.id ? "kb-row selected" : "kb-row"
-                  }
-                  key={knowledgeBase.id}
-                  onClick={() => setSelectedKnowledgeBaseId(knowledgeBase.id)}
-                  type="button"
-                >
-                  <div>
-                    <strong>{knowledgeBase.name}</strong>
-                    <p>
-                      {knowledgeBase.documents} docs · {knowledgeBase.indexedChunks} chunks
-                    </p>
-                  </div>
-                  <span className={`kb-status ${knowledgeBase.status}`}>
-                    {knowledgeBase.status}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="panel" aria-labelledby="document-ingestion-heading">
-            <div className="section-header">
-              <div>
-                <p className="eyebrow">{selectedKnowledgeBase.id}</p>
-                <h2 id="document-ingestion-heading">Document ingestion</h2>
-              </div>
-              <span className="count-pill">{selectedDocuments.length}</span>
-            </div>
-            <div className="document-list">
-              {selectedDocuments.map((document) => (
-                <article className="document-item" key={document.id}>
-                  <div>
-                    <strong>{document.fileName}</strong>
-                    <p>
-                      {document.id} · {document.chunks} chunks · {document.updatedAt}
-                    </p>
-                  </div>
-                  <div className="doc-progress">
-                    <IngestionBadge status={document.status} />
-                    <div className="progress-bar" aria-label={`${document.fileName} progress`}>
-                      <span style={{ width: `${document.progress}%` }} />
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        </section>
+        <>
+          <section className="single-grid">{renderLiveKnowledgeBases()}</section>
+          <section className="split-grid">{renderKnowledgeIndexList()}{renderDocumentIngestion()}</section>
+        </>
       );
     }
 
@@ -1184,6 +1183,118 @@ export default function Home() {
             </ol>
           </div>
         )}
+      </section>
+    );
+  }
+
+  function renderLiveKnowledgeBases() {
+    return (
+      <section className="panel live-kb-panel" aria-labelledby="live-kb-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Live API</p>
+            <h2 id="live-kb-heading">Knowledge base list</h2>
+          </div>
+          <span className="signal-badge">live</span>
+        </div>
+        <div
+          className={`live-api-strip ${liveKnowledgeBases.status}`}
+          aria-label="Live knowledge bases status"
+        >
+          <span className={`status-dot ${liveKnowledgeBases.status === "loaded" ? "online" : "checking"}`} />
+          <strong>{liveKnowledgeBaseStatusText(liveKnowledgeBases)}</strong>
+        </div>
+        {liveKnowledgeBases.status === "loaded" && liveKnowledgeBases.knowledgeBases.length > 0 ? (
+          <div className="live-kb-list" aria-label="Live knowledge bases">
+            {liveKnowledgeBases.knowledgeBases.map((knowledgeBase) => (
+              <article className="live-kb-item" key={knowledgeBase.id}>
+                <div>
+                  <strong>{knowledgeBase.name}</strong>
+                  <p>{knowledgeBase.description || "No description"}</p>
+                  <span>
+                    {knowledgeBase.id} · updated {knowledgeBase.updated_at}
+                  </span>
+                </div>
+                <span className={`kb-status ${knowledgeBase.status}`}>
+                  {knowledgeBase.status}
+                </span>
+              </article>
+            ))}
+          </div>
+        ) : null}
+        {liveKnowledgeBases.error ? (
+          <p className="lookup-error" role="status">
+            {liveKnowledgeBases.error}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
+
+  function renderKnowledgeIndexList() {
+    return (
+      <section className="panel" aria-labelledby="knowledge-list-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Fixture preview</p>
+            <h2 id="knowledge-list-heading">Indexes</h2>
+          </div>
+          <span className="count-pill">{knowledgeBases.length}</span>
+        </div>
+        <div className="knowledge-list">
+          {knowledgeBases.map((knowledgeBase) => (
+            <button
+              className={
+                knowledgeBase.id === selectedKnowledgeBase.id ? "kb-row selected" : "kb-row"
+              }
+              key={knowledgeBase.id}
+              onClick={() => setSelectedKnowledgeBaseId(knowledgeBase.id)}
+              type="button"
+            >
+              <div>
+                <strong>{knowledgeBase.name}</strong>
+                <p>
+                  {knowledgeBase.documents} docs · {knowledgeBase.indexedChunks} chunks
+                </p>
+              </div>
+              <span className={`kb-status ${knowledgeBase.status}`}>
+                {knowledgeBase.status}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  function renderDocumentIngestion() {
+    return (
+      <section className="panel" aria-labelledby="document-ingestion-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">{selectedKnowledgeBase.id}</p>
+            <h2 id="document-ingestion-heading">Document ingestion</h2>
+          </div>
+          <span className="count-pill">{selectedDocuments.length}</span>
+        </div>
+        <div className="document-list">
+          {selectedDocuments.map((document) => (
+            <article className="document-item" key={document.id}>
+              <div>
+                <strong>{document.fileName}</strong>
+                <p>
+                  {document.id} · {document.chunks} chunks · {document.updatedAt}
+                </p>
+              </div>
+              <div className="doc-progress">
+                <IngestionBadge status={document.status} />
+                <div className="progress-bar" aria-label={`${document.fileName} progress`}>
+                  <span style={{ width: `${document.progress}%` }} />
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     );
   }
@@ -1528,6 +1639,18 @@ function liveApprovalStatusText(state: LiveApprovalState) {
   }
 
   return state.error ?? "Live approvals unavailable";
+}
+
+function liveKnowledgeBaseStatusText(state: LiveKnowledgeBaseState) {
+  if (state.status === "loading") {
+    return "Loading live knowledge bases";
+  }
+
+  if (state.status === "loaded") {
+    return `${state.knowledgeBases.length} live knowledge bases from API`;
+  }
+
+  return state.error ?? "Live knowledge bases unavailable";
 }
 
 function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail["status"] }) {
