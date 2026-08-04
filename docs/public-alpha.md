@@ -98,10 +98,20 @@ Current status:
 Priority 1:
 
 - Approval inbox from `/v1/approvals`.
-- Approve and reject actions through `/v1/approvals/{approval_id}/approve` and
+- Approve and reject proxy routes for
+  `/v1/approvals/{approval_id}/approve` and
   `/v1/approvals/{approval_id}/reject`.
 - Knowledge base list from `/v1/knowledge-bases`.
 - Retrieval flow through `/v1/knowledge-bases/{knowledge_base_id}/retrieve`.
+
+Current status:
+
+- Approval inbox status loads through `/api/agent-kernel/approvals`.
+- Approve/reject proxy routes exist under
+  `/api/agent-kernel/approvals/{approval_id}/approve` and
+  `/api/agent-kernel/approvals/{approval_id}/reject`.
+- Visible approval decision buttons still operate on fixture-backed local UI
+  state until live mutation wiring is completed.
 
 Priority 2:
 

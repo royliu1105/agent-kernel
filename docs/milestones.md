@@ -354,6 +354,7 @@ Checklist:
 - [x] Document first live Web API integration priorities.
 - [x] Implement first live Web API health integration.
 - [x] Implement live run detail and timeline lookup.
+- [x] Implement live approval inbox status integration.
 - [x] Add missing tests around fragile paths.
 - [ ] Expand behavior eval coverage.
 - [ ] Improve error messages.

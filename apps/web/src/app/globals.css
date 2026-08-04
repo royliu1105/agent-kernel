@@ -701,6 +701,65 @@ code {
   margin: 0;
 }
 
+.live-api-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  margin: -4px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fbfcfd;
+  color: var(--muted);
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.live-api-strip.loaded {
+  border-color: #a8d9bf;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.live-api-strip.error {
+  border-color: #f2afa8;
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.live-approval-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.live-approval-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fbfcfd;
+  padding: 10px;
+}
+
+.live-approval-item strong {
+  font-size: 13px;
+}
+
+.live-approval-item p,
+.live-approval-item span {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.live-approval-item code {
+  max-width: 180px;
+  overflow-wrap: anywhere;
+}
+
 .approval-actions {
   display: grid;
   justify-items: end;
@@ -927,6 +986,7 @@ code {
   .case-item,
   .eval-report-card,
   .history-item,
+  .live-approval-item,
   .settings-list div {
     align-items: stretch;
     flex-direction: column;

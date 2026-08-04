@@ -37,6 +37,22 @@ export type ApprovalSummary = {
   requestedAt: string;
 };
 
+export type ApprovalStatus = "requested" | "approved" | "rejected" | "expired" | "canceled";
+
+export type LiveApproval = {
+  id: string;
+  run_id: string;
+  tool_call_id: string;
+  status: ApprovalStatus;
+  reason: string;
+  requested_by: string | null;
+  reviewed_by: string | null;
+  decision_note: string | null;
+  trace_id: string | null;
+  requested_at: string;
+  resolved_at: string | null;
+};
+
 export type KnowledgeBaseSummary = {
   id: string;
   name: string;

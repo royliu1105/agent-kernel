@@ -6,6 +6,7 @@ import type {
   ApprovalSummary,
   EvalReportSummary,
   KnowledgeBaseSummary,
+  LiveApproval,
   LiveRun,
   LiveRunEvent,
   RuntimeHealth,
@@ -90,6 +91,12 @@ type LiveRunLookupState = {
   error: string | null;
 };
 
+type LiveApprovalState = {
+  status: "loading" | "loaded" | "error";
+  approvals: LiveApproval[];
+  error: string | null;
+};
+
 const initialRuntimeHealth: RuntimeHealth = {
   state: "checking",
   service: "agent-kernel-api",
@@ -103,6 +110,12 @@ const initialLiveRunLookup: LiveRunLookupState = {
   status: "idle",
   run: null,
   events: [],
+  error: null,
+};
+
+const initialLiveApprovals: LiveApprovalState = {
+  status: "loading",
+  approvals: [],
   error: null,
 };
 
@@ -561,6 +574,48 @@ export default function Home() {
   const [liveRunId, setLiveRunId] = useState("");
   const [liveRunLookup, setLiveRunLookup] =
     useState<LiveRunLookupState>(initialLiveRunLookup);
+  const [liveApprovals, setLiveApprovals] =
+    useState<LiveApprovalState>(initialLiveApprovals);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLiveApprovals() {
+      try {
+        const response = await fetch("/api/agent-kernel/approvals", {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Approval list returned HTTP ${response.status}`);
+        }
+
+        const approvalsResponse = (await response.json()) as LiveApproval[];
+        if (!ignore) {
+          setLiveApprovals({
+            status: "loaded",
+            approvals: approvalsResponse,
+            error: null,
+          });
+        }
+      } catch (error) {
+        if (!ignore) {
+          setLiveApprovals({
+            status: "error",
+            approvals: [],
+            error: error instanceof Error ? error.message : "Approval list lookup failed",
+          });
+        }
+      }
+    }
+
+    void loadLiveApprovals();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -1207,6 +1262,26 @@ export default function Home() {
           <h2 id="approvals-heading">Approval inbox</h2>
           <span className="count-pill">{pendingApprovals.length}</span>
         </div>
+        <div className={`live-api-strip ${liveApprovals.status}`} aria-label="Live approvals status">
+          <span className={`status-dot ${liveApprovals.status === "loaded" ? "online" : "checking"}`} />
+          <strong>{liveApprovalStatusText(liveApprovals)}</strong>
+        </div>
+        {liveApprovals.status === "loaded" && liveApprovals.approvals.length > 0 ? (
+          <div className="live-approval-list" aria-label="Live approvals">
+            {liveApprovals.approvals.slice(0, 4).map((approval) => (
+              <article className="live-approval-item" key={approval.id}>
+                <div>
+                  <strong>{approval.status}</strong>
+                  <p>{approval.reason}</p>
+                  <span>
+                    {approval.run_id} · {approval.requested_at}
+                  </span>
+                </div>
+                <code>{approval.tool_call_id}</code>
+              </article>
+            ))}
+          </div>
+        ) : null}
         <p className="local-note">Decisions here are local UI state for Day 32.</p>
         <div className="stack">
           {approvals.map((approval) => (
@@ -1362,6 +1437,18 @@ function eventSummary(payload: Record<string, unknown>) {
   }
 
   return JSON.stringify(Object.fromEntries(entries.slice(0, 3)));
+}
+
+function liveApprovalStatusText(state: LiveApprovalState) {
+  if (state.status === "loading") {
+    return "Loading live approvals";
+  }
+
+  if (state.status === "loaded") {
+    return `${state.approvals.length} live approvals from API`;
+  }
+
+  return state.error ?? "Live approvals unavailable";
 }
 
 function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail["status"] }) {

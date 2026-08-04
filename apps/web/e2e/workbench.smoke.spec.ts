@@ -59,6 +59,9 @@ test("operator can inspect runs and approve tool calls locally", async ({ page }
 
   await page.getByRole("button", { name: "Approvals" }).click();
   await expect(page.getByRole("heading", { name: "Approval inbox" })).toBeVisible();
+  await expect(page.getByLabel("Live approvals status")).toContainText(
+    /Loading live approvals|live approvals from API|Live approvals unavailable|Approval list/,
+  );
   await expect(page.getByText("Decisions here are local UI state for Day 32.")).toBeVisible();
 
   await page.getByRole("button", { name: "Approve" }).first().click();
