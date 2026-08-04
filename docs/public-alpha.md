@@ -115,6 +115,9 @@ Current status:
 - Fixture-backed local approval decisions remain visible for product preview
   coverage until the Workbench is fully live.
 - Knowledge base list loads through `/api/agent-kernel/knowledge-bases`.
+- Retrieval search loads through
+  `/api/agent-kernel/knowledge-bases/{knowledge_base_id}/retrieve` and shows
+  raw cited chunks.
 - Fixture-backed document ingestion previews remain visible until live document
   and ingestion summary endpoints are ready.
 

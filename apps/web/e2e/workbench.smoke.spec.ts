@@ -17,6 +17,36 @@ test("operator can navigate core Workbench views", async ({ page }) => {
       ],
     });
   });
+  await page.route(
+    "**/api/agent-kernel/knowledge-bases/33333333-3333-4333-8333-333333333333/retrieve",
+    async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        json: {
+          knowledge_base_id: "33333333-3333-4333-8333-333333333333",
+          query: "rollback",
+          model: "mock-embedding",
+          results: [
+            {
+              content: "Use the rollback playbook when deployment health checks fail.",
+              score: 0.9123,
+              citation: {
+                knowledge_base_id: "33333333-3333-4333-8333-333333333333",
+                document_id: "44444444-4444-4444-8444-444444444444",
+                document_title: "Rollback Playbook",
+                document_source_uri: "memory://rollback-playbook.md",
+                chunk_id: "55555555-5555-4555-8555-555555555555",
+                chunk_index: 0,
+                start_char: 0,
+                end_char: 62,
+              },
+              metadata: {},
+            },
+          ],
+        },
+      });
+    },
+  );
 
   await page.goto("/");
 
@@ -34,8 +64,14 @@ test("operator can navigate core Workbench views", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Knowledge", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Knowledge base list" })).toBeVisible();
   await expect(page.getByText("Live Operations KB")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Retrieval search" })).toBeVisible();
+  await page.getByRole("button", { name: "Use for search" }).click();
+  await page.getByLabel("Search query").fill("rollback");
+  await page.getByRole("button", { name: "Search live" }).click();
+  await expect(page.getByText("Rollback Playbook", { exact: true })).toBeVisible();
+  await expect(page.getByText("memory://rollback-playbook.md")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Document ingestion" })).toBeVisible();
-  await expect(page.getByText("rollback-playbook.md")).toBeVisible();
+  await expect(page.getByText("rollback-playbook.md", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Release Notes" }).click();
   await expect(page.getByText("2026-07-release-notes.md")).toBeVisible();

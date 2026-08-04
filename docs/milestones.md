@@ -276,6 +276,7 @@ Checklist:
 - [x] Settings page.
 - [x] API client.
 - [x] Playwright smoke tests.
+- [x] Live retrieval search integration.
 
 Acceptance:
 

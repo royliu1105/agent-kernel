@@ -92,3 +92,4 @@ day-03.md
 - [Day 42: Live Approval Inbox](day-42.md)
 - [Day 43: Live Approval Mutation UI](day-43.md)
 - [Day 44: Live Knowledge Base List](day-44.md)
+- [Day 45: Live Retrieval Search Flow](day-45.md)

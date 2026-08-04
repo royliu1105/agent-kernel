@@ -73,6 +73,31 @@ export type LiveKnowledgeBase = {
   updated_at: string;
 };
 
+export type LiveRetrievalCitation = {
+  knowledge_base_id: string;
+  document_id: string;
+  document_title: string;
+  document_source_uri: string;
+  chunk_id: string;
+  chunk_index: number;
+  start_char: number;
+  end_char: number;
+};
+
+export type LiveRetrievalResult = {
+  content: string;
+  score: number;
+  citation: LiveRetrievalCitation;
+  metadata: Record<string, unknown>;
+};
+
+export type LiveRetrievalResponse = {
+  knowledge_base_id: string;
+  query: string;
+  model: string;
+  results: LiveRetrievalResult[];
+};
+
 export type EvalReportSummary = {
   name: string;
   passed: boolean;

@@ -323,13 +323,15 @@ code {
   margin-bottom: 10px;
 }
 
-.lookup-form label {
+.lookup-form label,
+.retrieval-form label {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
 }
 
-.lookup-form input {
+.lookup-form input,
+.retrieval-form input {
   min-width: 0;
   min-height: 36px;
   border: 1px solid var(--border);
@@ -339,7 +341,8 @@ code {
   padding: 7px 10px;
 }
 
-.lookup-form input:focus {
+.lookup-form input:focus,
+.retrieval-form input:focus {
   border-color: var(--teal);
   outline: 2px solid var(--teal-soft);
 }
@@ -351,6 +354,12 @@ code {
   background: var(--surface);
   color: var(--foreground);
   padding: 6px 10px;
+}
+
+.compact-action {
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 12px;
 }
 
 .run-list,
@@ -791,7 +800,7 @@ code {
 }
 
 .live-kb-item p,
-.live-kb-item span {
+.live-kb-item div span {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 12px;
@@ -799,6 +808,74 @@ code {
 
 .live-kb-item div {
   min-width: 0;
+}
+
+.retrieval-form {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 0.32fr) auto minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.retrieval-results {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.retrieval-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fbfcfd;
+  padding: 10px 12px;
+}
+
+.retrieval-summary strong {
+  font-size: 14px;
+}
+
+.retrieval-summary span {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.retrieval-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.28fr);
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 12px;
+}
+
+.retrieval-result strong {
+  font-size: 14px;
+}
+
+.retrieval-result p {
+  margin: 6px 0;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.retrieval-result span,
+.retrieval-result code {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.retrieval-result code {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .approval-actions {
@@ -993,7 +1070,9 @@ code {
   .main-grid,
   .detail-grid,
   .split-grid,
-  .live-run-result {
+  .live-run-result,
+  .retrieval-form,
+  .retrieval-result {
     grid-template-columns: 1fr;
   }
 }
@@ -1054,6 +1133,11 @@ code {
 
   .lookup-form {
     grid-template-columns: 1fr;
+  }
+
+  .retrieval-summary {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .metric-grid,

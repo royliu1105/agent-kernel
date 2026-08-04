@@ -8,6 +8,7 @@ import type {
   KnowledgeBaseSummary,
   LiveApproval,
   LiveKnowledgeBase,
+  LiveRetrievalResponse,
   LiveRun,
   LiveRunEvent,
   RuntimeHealth,
@@ -105,6 +106,12 @@ type LiveKnowledgeBaseState = {
   error: string | null;
 };
 
+type LiveRetrievalState = {
+  status: "idle" | "loading" | "loaded" | "error";
+  response: LiveRetrievalResponse | null;
+  error: string | null;
+};
+
 const initialRuntimeHealth: RuntimeHealth = {
   state: "checking",
   service: "agent-kernel-api",
@@ -131,6 +138,12 @@ const initialLiveApprovals: LiveApprovalState = {
 const initialLiveKnowledgeBases: LiveKnowledgeBaseState = {
   status: "loading",
   knowledgeBases: [],
+  error: null,
+};
+
+const initialLiveRetrieval: LiveRetrievalState = {
+  status: "idle",
+  response: null,
   error: null,
 };
 
@@ -593,6 +606,10 @@ export default function Home() {
     useState<LiveApprovalState>(initialLiveApprovals);
   const [liveKnowledgeBases, setLiveKnowledgeBases] =
     useState<LiveKnowledgeBaseState>(initialLiveKnowledgeBases);
+  const [liveRetrievalKnowledgeBaseId, setLiveRetrievalKnowledgeBaseId] = useState("");
+  const [liveRetrievalQuery, setLiveRetrievalQuery] = useState("");
+  const [liveRetrieval, setLiveRetrieval] =
+    useState<LiveRetrievalState>(initialLiveRetrieval);
 
   useEffect(() => {
     let ignore = false;
@@ -874,6 +891,58 @@ export default function Home() {
     }
   }
 
+  async function searchLiveKnowledgeBase(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const knowledgeBaseId = liveRetrievalKnowledgeBaseId.trim();
+    const query = liveRetrievalQuery.trim();
+
+    if (knowledgeBaseId.length === 0 || query.length === 0) {
+      setLiveRetrieval({
+        ...initialLiveRetrieval,
+        status: "error",
+        error: "Enter a knowledge base ID and search query first.",
+      });
+      return;
+    }
+
+    setLiveRetrieval({
+      ...initialLiveRetrieval,
+      status: "loading",
+    });
+
+    try {
+      const response = await fetch(
+        `/api/agent-kernel/knowledge-bases/${encodeURIComponent(knowledgeBaseId)}/retrieve`,
+        {
+          body: JSON.stringify({ query, top_k: 5 }),
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+          },
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Knowledge retrieval returned HTTP ${response.status}`);
+      }
+
+      const retrievalResponse = (await response.json()) as LiveRetrievalResponse;
+      setLiveRetrieval({
+        status: "loaded",
+        response: retrievalResponse,
+        error: null,
+      });
+    } catch (error) {
+      setLiveRetrieval({
+        ...initialLiveRetrieval,
+        status: "error",
+        error: error instanceof Error ? error.message : "Knowledge retrieval failed",
+      });
+    }
+  }
+
   return (
     <main className="workbench-shell">
       <aside className="sidebar">
@@ -999,6 +1068,7 @@ export default function Home() {
       return (
         <>
           <section className="single-grid">{renderLiveKnowledgeBases()}</section>
+          <section className="single-grid">{renderLiveRetrievalSearch()}</section>
           <section className="split-grid">{renderKnowledgeIndexList()}{renderDocumentIngestion()}</section>
         </>
       );
@@ -1215,6 +1285,13 @@ export default function Home() {
                     {knowledgeBase.id} · updated {knowledgeBase.updated_at}
                   </span>
                 </div>
+                <button
+                  className="secondary-action compact-action"
+                  onClick={() => setLiveRetrievalKnowledgeBaseId(knowledgeBase.id)}
+                  type="button"
+                >
+                  Use for search
+                </button>
                 <span className={`kb-status ${knowledgeBase.status}`}>
                   {knowledgeBase.status}
                 </span>
@@ -1227,6 +1304,82 @@ export default function Home() {
             {liveKnowledgeBases.error}
           </p>
         ) : null}
+      </section>
+    );
+  }
+
+  function renderLiveRetrievalSearch() {
+    const isLoading = liveRetrieval.status === "loading";
+
+    return (
+      <section className="panel live-retrieval-panel" aria-labelledby="live-retrieval-heading">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Live API</p>
+            <h2 id="live-retrieval-heading">Retrieval search</h2>
+          </div>
+          <span className="signal-badge">live</span>
+        </div>
+
+        <form className="retrieval-form" onSubmit={searchLiveKnowledgeBase}>
+          <label htmlFor="live-retrieval-kb-id">Knowledge base ID</label>
+          <input
+            id="live-retrieval-kb-id"
+            onChange={(event) => setLiveRetrievalKnowledgeBaseId(event.target.value)}
+            placeholder="Paste a knowledge base UUID"
+            type="text"
+            value={liveRetrievalKnowledgeBaseId}
+          />
+          <label htmlFor="live-retrieval-query">Search query</label>
+          <input
+            id="live-retrieval-query"
+            onChange={(event) => setLiveRetrievalQuery(event.target.value)}
+            placeholder="Search indexed chunks"
+            type="text"
+            value={liveRetrievalQuery}
+          />
+          <button className="secondary-action" disabled={isLoading} type="submit">
+            {isLoading ? "Searching" : "Search live"}
+          </button>
+        </form>
+
+        <p className="local-note">
+          This search calls the real retrieval API and shows raw cited chunks. Final answer
+          synthesis remains a later agent-runtime concern.
+        </p>
+
+        {liveRetrieval.status === "error" ? (
+          <p className="lookup-error" role="status">
+            {liveRetrieval.error}
+          </p>
+        ) : null}
+
+        {liveRetrieval.response === null ? null : (
+          <div className="retrieval-results" aria-label="Live retrieval results">
+            <div className="retrieval-summary">
+              <strong>{liveRetrieval.response.results.length} results</strong>
+              <span>
+                {liveRetrieval.response.model} · {liveRetrieval.response.query}
+              </span>
+            </div>
+            {liveRetrieval.response.results.length === 0 ? (
+              <p className="empty-state">No chunks matched this query.</p>
+            ) : (
+              liveRetrieval.response.results.map((result) => (
+                <article className="retrieval-result" key={result.citation.chunk_id}>
+                  <div>
+                    <strong>{result.citation.document_title}</strong>
+                    <p>{result.content}</p>
+                    <span>
+                      chunk {result.citation.chunk_index} · score {result.score.toFixed(3)}
+                    </span>
+                  </div>
+                  <code>{result.citation.document_source_uri}</code>
+                </article>
+              ))
+            )}
+          </div>
+        )}
       </section>
     );
   }
