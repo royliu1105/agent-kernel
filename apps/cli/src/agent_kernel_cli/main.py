@@ -867,7 +867,7 @@ def _request_json(
         message = f"API returned {error.response.status_code}: {detail}"
         raise ClickException(message) from error
     except httpx.RequestError as error:
-        raise ClickException(f"Could not reach Agent Kernel API: {error}") from error
+        raise ClickException(_api_unreachable_message(url=url, error=error)) from error
 
 
 def _request_file_json(
@@ -899,7 +899,7 @@ def _request_file_json(
         message = f"API returned {error.response.status_code}: {detail}"
         raise ClickException(message) from error
     except httpx.RequestError as error:
-        raise ClickException(f"Could not reach Agent Kernel API: {error}") from error
+        raise ClickException(_api_unreachable_message(url=url, error=error)) from error
 
 
 def _extract_error_detail(response: httpx.Response) -> str:
@@ -911,6 +911,17 @@ def _extract_error_detail(response: httpx.Response) -> str:
     if isinstance(payload, dict) and "detail" in payload:
         return str(payload["detail"])
     return json.dumps(payload, sort_keys=True)
+
+
+def _api_unreachable_message(*, url: str, error: httpx.RequestError) -> str:
+    return (
+        f"Could not reach Agent Kernel API at {url}.\n"
+        "Start the API with `uv run agent-kernel-api`, then verify "
+        "`curl http://127.0.0.1:8000/healthz`.\n"
+        "If the API is running elsewhere, set `AGENT_KERNEL_API_URL` or pass "
+        "`--api-url`.\n"
+        f"Underlying error: {error}"
+    )
 
 
 def _echo_json(payload: object) -> None:

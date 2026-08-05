@@ -273,6 +273,51 @@ dependency upgrade when a compatible stable version is available.
 
 ## Runtime Commands
 
+### CLI Cannot Reach the API
+
+Most CLI commands call the local API. If the API is not running, commands can
+fail with:
+
+```text
+Could not reach Agent Kernel API at http://127.0.0.1:8000/...
+```
+
+Start the API:
+
+```bash
+uv run agent-kernel-api
+```
+
+Verify health:
+
+```bash
+curl http://127.0.0.1:8000/healthz
+```
+
+Expected:
+
+```json
+{"status":"ok","service":"agent-kernel-api"}
+```
+
+If the API is running on another host or port, either set:
+
+```bash
+export AGENT_KERNEL_API_URL=http://127.0.0.1:8000
+```
+
+or pass:
+
+```bash
+uv run agent-kernel agent create --name "Example" --api-url http://127.0.0.1:8000
+```
+
+Also check port usage:
+
+```bash
+lsof -nP -iTCP:8000 -sTCP:LISTEN
+```
+
 ### CLI JSON Is Hard to Quote
 
 Most JSON object arguments accept inline JSON or `@file`.
@@ -304,6 +349,49 @@ Real OpenAI models require:
 ```bash
 export OPENAI_API_KEY=...
 ```
+
+### Knowledge Base Search Returns No Results
+
+RAG retrieval only searches indexed chunks. The required sequence is:
+
+```bash
+uv run agent-kernel kb create --name "Example Handbook"
+uv run agent-kernel document upload <knowledge-base-id> examples/docs/deployment-playbook.md
+uv run agent-kernel document ingest <document-id>
+uv run agent-kernel document chunk <document-id>
+uv run agent-kernel document index <document-id>
+uv run agent-kernel kb search <knowledge-base-id> --query "rollback"
+```
+
+If search returns no results, confirm:
+
+- You are using the correct knowledge base ID.
+- `document chunk <document-id>` completed before indexing.
+- `document index <document-id>` returned a positive `embedding_count`.
+- The query uses terms that appear in the document.
+
+### Workbench Says API Unreachable
+
+The Workbench live panels call the API through same-origin Web routes. If the
+top bar shows API unreachable or a live panel shows a lookup error:
+
+1. Confirm the API is running at `http://127.0.0.1:8000/healthz`.
+2. Confirm the Web app is running at `http://127.0.0.1:3000`.
+3. If the API uses another URL, set `NEXT_PUBLIC_AGENT_KERNEL_API_URL` before
+   starting the Web app.
+4. Refresh the browser after restarting API or Web.
+
+Useful local commands:
+
+```bash
+curl http://127.0.0.1:8000/healthz
+npm run web:dev
+```
+
+During Public Alpha, some Workbench sections are fixture-backed previews while
+the live API paths are being connected. Fixture-backed preview data does not
+prove the backend API is reachable; use the top-bar health indicator or live
+lookup panels for that.
 
 ## Release Verification
 

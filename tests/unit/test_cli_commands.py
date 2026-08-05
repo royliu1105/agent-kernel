@@ -2,8 +2,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 from agent_kernel_cli import main as cli_main
+from click import ClickException
 from typer.testing import CliRunner
 
 
@@ -850,3 +852,59 @@ def test_memory_create_cli_accepts_json_file_content(
             },
         )
     ]
+
+
+def test_request_json_reports_actionable_api_unreachable_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_request(
+        self: httpx.Client,
+        method: str,
+        url: str,
+        *,
+        json: dict[str, object] | None = None,
+    ) -> httpx.Response:
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(httpx.Client, "request", fake_request)
+
+    with pytest.raises(ClickException) as error_info:
+        cli_main._request_json("GET", "/healthz", api_url="http://127.0.0.1:8000")
+
+    message = str(error_info.value)
+    assert "Could not reach Agent Kernel API at http://127.0.0.1:8000/healthz" in message
+    assert "uv run agent-kernel-api" in message
+    assert "AGENT_KERNEL_API_URL" in message
+    assert "connection refused" in message
+
+
+def test_request_file_json_reports_actionable_api_unreachable_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    document_path = tmp_path / "deploy.md"
+    document_path.write_text("# Deploy\n", encoding="utf-8")
+
+    def fake_request(
+        self: httpx.Client,
+        method: str,
+        url: str,
+        **kwargs: object,
+    ) -> httpx.Response:
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(httpx.Client, "request", fake_request)
+
+    with pytest.raises(ClickException) as error_info:
+        cli_main._request_file_json(
+            "POST",
+            "/v1/upload",
+            api_url="http://127.0.0.1:8000",
+            file_path=document_path,
+            data={},
+        )
+
+    message = str(error_info.value)
+    assert "Could not reach Agent Kernel API at http://127.0.0.1:8000/v1/upload" in message
+    assert "curl http://127.0.0.1:8000/healthz" in message
+    assert "AGENT_KERNEL_API_URL" in message

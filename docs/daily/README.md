@@ -95,3 +95,4 @@ day-03.md
 - [Day 45: Live Retrieval Search Flow](day-45.md)
 - [Day 46: Public Alpha Examples Refresh](day-46.md)
 - [Day 47: Behavior Eval Coverage Expansion](day-47.md)
+- [Day 48: Error Message and Troubleshooting Polish](day-48.md)

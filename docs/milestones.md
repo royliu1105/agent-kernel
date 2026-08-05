@@ -360,7 +360,7 @@ Checklist:
 - [x] Implement live knowledge base list integration.
 - [x] Add missing tests around fragile paths.
 - [x] Expand behavior eval coverage.
-- [ ] Improve error messages.
+- [x] Improve error messages.
 - [x] Harden Docker Compose startup.
 - [x] Add troubleshooting docs.
 - [x] Add first external-user feedback loop.
