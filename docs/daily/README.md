@@ -98,3 +98,4 @@ day-03.md
 - [Day 48: Error Message and Troubleshooting Polish](day-48.md)
 - [Day 49: Web Polish and First-User UX Pass](day-49.md)
 - [Day 50: Public Alpha Release Notes and Announcement Draft](day-50.md)
+- [Day 51: Public Alpha Closure and Full Verification](day-51.md)

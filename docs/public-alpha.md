@@ -1,7 +1,7 @@
 # Public Alpha Guide
 
-Agent Kernel is currently moving from the published `v0.1.0` foundation into
-Public Alpha hardening.
+Agent Kernel completed the Day 39-51 Public Alpha hardening milestone after the
+published `v0.1.0` foundation.
 
 Public Alpha is not a new product direction. It is the phase where the existing
 runtime is made easier for early users to try, inspect, and critique.
@@ -10,7 +10,7 @@ runtime is made easier for early users to try, inspect, and critique.
 
 ```text
 Current release: v0.1.0
-Current track: Public Alpha hardening
+Current track: Public Alpha complete; Beta hardening next
 Primary goal: make first-run experience and feedback loops reliable
 ```
 
@@ -20,6 +20,7 @@ Start here:
 - [Quickstart](quickstart.md)
 - [Troubleshooting](troubleshooting.md)
 - [Public Alpha Release Notes](releases/public-alpha.md)
+- [Public Alpha Summary](public-alpha-summary.md)
 - [v0.1 Snapshot](v0.1.md)
 - [Post-v0.1 Completion Plan](post-v0.1-plan.md)
 

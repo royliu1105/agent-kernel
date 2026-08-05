@@ -340,7 +340,7 @@ Turn v0.1 into a polished early-user release.
 Status:
 
 ```text
-[~] In progress
+[x] Complete
 ```
 
 Checklist:
@@ -351,7 +351,7 @@ Checklist:
 - [x] Improve quickstart from first-user perspective.
 - [x] Improve examples.
 - [x] Improve Web UI polish.
-- [ ] Replace key fixture-backed Web views with live API integration.
+- [x] Replace key backend-supported fixture-backed Web paths with live API integration.
 - [x] Document first live Web API integration priorities.
 - [x] Implement first live Web API health integration.
 - [x] Implement live run detail and timeline lookup.
@@ -373,6 +373,14 @@ Acceptance:
 - [x] Known limitations are documented.
 - [x] Public Alpha release notes are clear.
 - [x] Feedback channels are documented.
+
+Closure notes:
+
+- Key live Web API paths are complete for health, run lookup, timeline,
+  approvals, approval mutations, knowledge base list, and retrieval search.
+- Remaining preview-backed Workbench areas are documented as Beta/v1.0 follow-up
+  work rather than Public Alpha blockers.
+- See [Public Alpha Summary](public-alpha-summary.md).
 
 ## Beta: Day 52-75
 

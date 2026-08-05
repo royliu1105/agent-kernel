@@ -310,6 +310,8 @@ Acceptance:
 
 ## Stage 7: Day 39-51 Public Alpha Hardening
 
+Status: complete.
+
 Goal: make the published v0.1.0 foundation easy for early external users to
 try, understand, and critique.
 
@@ -327,11 +329,13 @@ Deliverables:
 
 Acceptance:
 
-- [ ] New user can follow README and quickstart without maintainer help.
-- [ ] Full Compose startup is verified from a clean checkout.
-- [ ] Core examples are easy to discover and run.
-- [ ] GitHub CI is green.
-- [ ] Public feedback path is documented.
+- [x] New user can follow README and quickstart without maintainer help.
+- [x] Full Compose startup is verified from a clean checkout.
+- [x] Core examples are easy to discover and run.
+- [x] GitHub CI is green.
+- [x] Public feedback path is documented.
+
+Summary: [Public Alpha Summary](public-alpha-summary.md).
 
 ## Stage 8: Day 52-75 Beta Production Hardening
 

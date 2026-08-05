@@ -69,6 +69,12 @@ Every post-v0.1 phase should preserve these rules:
 
 ## Stage 1: Public Alpha Hardening
 
+Status:
+
+```text
+Complete
+```
+
 Suggested days:
 
 ```text
@@ -110,6 +116,8 @@ Exit criteria:
 - Full Docker Compose startup is verified from a clean checkout.
 - Known limitations are clearly listed.
 - At least one external-user feedback path is documented.
+
+Closure summary: [Public Alpha Summary](public-alpha-summary.md).
 
 ## Stage 2: Beta Production Hardening
 
