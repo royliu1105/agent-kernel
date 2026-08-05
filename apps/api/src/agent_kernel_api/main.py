@@ -67,6 +67,7 @@ from kernel_storage import (
 )
 from sqlalchemy.orm import Session, sessionmaker
 
+from agent_kernel_api.auth import ApiKeyAuthMiddleware, api_key_auth_enabled_from_env
 from agent_kernel_api.schemas import (
     AgentCreateRequest,
     AgentResponse,
@@ -103,9 +104,16 @@ def create_app(
     chunking_service: DocumentChunkingService | None = None,
     indexing_service: DocumentIndexingService | None = None,
     retriever: Retriever | None = None,
+    api_key_auth_enabled: bool | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
+    auth_enabled = api_key_auth_enabled
+    if auth_enabled is None:
+        auth_enabled = api_key_auth_enabled_from_env()
+    if auth_enabled:
+        app.add_middleware(ApiKeyAuthMiddleware, session_factory=factory)
+
     runner = execution_service or RunExecutionService(
         tool_registry=create_rag_tool_registry(session_factory=factory)
     )

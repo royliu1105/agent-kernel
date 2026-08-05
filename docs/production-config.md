@@ -142,8 +142,30 @@ At minimum, treat these as secrets:
 - `DATABASE_URL`
 - `REDIS_URL` when credentials are present
 - `OPENAI_API_KEY`
+- Plaintext Agent Kernel API keys returned during creation
 - Future auth signing keys
 - Future encryption keys
+
+## API Authentication
+
+Beta API key authentication can be enabled with:
+
+```text
+AGENT_KERNEL_API_KEY_AUTH_ENABLED=true
+```
+
+When enabled:
+
+- `/healthz` remains public.
+- API keys can be supplied with `Authorization: Bearer <key>`.
+- API keys can also be supplied with `X-Agent-Kernel-Api-Key`.
+- Missing, invalid, revoked, expired, or disabled-principal API keys are
+  rejected with `401 Unauthorized`.
+- Valid API keys load the principal, key, and workspace memberships into the
+  request auth context.
+
+Local quickstart flows keep API key authentication disabled by default. Route
+permission checks are added in later Beta slices.
 
 ## Networking
 

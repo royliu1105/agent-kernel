@@ -70,6 +70,23 @@ Day 53 identity persistence baseline:
   sessions, OIDC, SSO, password login, or user management UI.
 - Day 53 does not retrofit existing resource tables with `workspace_id`.
 
+Day 54 API authentication baseline:
+
+- API key authentication is enforced by middleware when
+  `AGENT_KERNEL_API_KEY_AUTH_ENABLED` is true.
+- Local development keeps API key authentication disabled by default.
+- `/healthz` remains public so container and load-balancer health checks do not
+  require secrets.
+- API keys can be supplied through `Authorization: Bearer <key>` or
+  `X-Agent-Kernel-Api-Key`.
+- Valid API keys load a request auth context with principal, API key, and
+  workspace memberships.
+- Missing, invalid, revoked, expired, or disabled-principal API keys return
+  `401 Unauthorized`.
+- Day 54 does not add route-level permission checks.
+- Day 54 does not add browser sessions, OIDC, SSO, password login, or Web auth
+  UI.
+
 Risk levels:
 
 ```text
@@ -260,6 +277,7 @@ Beta security baseline:
 - Disabled principals are denied.
 - API keys are persisted as hashes and non-secret prefixes only.
 - Revoked and expired API keys cannot authenticate.
+- Missing or invalid API keys are rejected when API key auth is enabled.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.
 - Tool result size limit is enforced.

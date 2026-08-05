@@ -399,7 +399,7 @@ Status:
 
 Checklist:
 
-- [~] Authentication baseline.
+- [x] API key authentication middleware.
 - [x] Authorization/RBAC domain baseline.
 - [x] Workspace scoping domain model.
 - [x] Identity persistence and API key storage foundation.
@@ -417,6 +417,33 @@ Checklist:
 - [ ] Eval API.
 - [ ] Live Web Workbench integration for core operator workflows.
 - [ ] SQLite and Postgres migration tests.
+
+Daily execution map:
+
+- [x] Day 52: Identity, workspace, and RBAC domain foundation.
+- [x] Day 53: Identity persistence and API key storage foundation.
+- [x] Day 54: API key authentication middleware.
+- [ ] Day 55: Route-level authorization baseline.
+- [ ] Day 56: Workspace scope retrofit plan and first scoped resources.
+- [ ] Day 57: Approval authorization enforcement.
+- [ ] Day 58: Auth/RBAC docs and security test closure.
+- [ ] Day 59: Worker lease model and storage foundation.
+- [ ] Day 60: Stuck-run detection and recovery.
+- [ ] Day 61: Redis queue adapter foundation.
+- [ ] Day 62: Durable retry visibility and worker restart tests.
+- [ ] Day 63: Durable execution closure.
+- [ ] Day 64: Provider-native tool-call adapter contract.
+- [ ] Day 65: OpenAI native tool-call parsing and persistence.
+- [ ] Day 66: Model/tool/model execution loop.
+- [ ] Day 67: Provider-native tool-call evals and regression tests.
+- [ ] Day 68: OpenAI embeddings backend.
+- [ ] Day 69: pgvector-native vector store.
+- [ ] Day 70: S3/MinIO object storage backend.
+- [ ] Day 71: Production RAG/storage integration tests.
+- [ ] Day 72: OpenTelemetry exporter configuration.
+- [ ] Day 73: Prometheus-compatible metrics endpoint.
+- [ ] Day 74: Persisted eval runs, eval API, and live Web operator views.
+- [ ] Day 75: Beta closure, summary docs, and full verification.
 
 Acceptance:
 

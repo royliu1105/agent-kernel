@@ -101,3 +101,4 @@ day-03.md
 - [Day 51: Public Alpha Closure and Full Verification](day-51.md)
 - [Day 52: Beta Kickoff and Identity RBAC Foundation](day-52.md)
 - [Day 53: Identity Persistence and API Key Foundation](day-53.md)
+- [Day 54: API Key Authentication Middleware](day-54.md)
