@@ -71,6 +71,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from agent_kernel_api.auth import (
     ApiKeyAuthMiddleware,
     api_key_auth_enabled_from_env,
+    current_principal_id,
     current_workspace_id,
     require_permission,
 )
@@ -322,14 +323,24 @@ def create_app(
         session: Session = Depends(get_session),  # noqa: B008
     ) -> RunResponse:
         try:
-            if (
-                RunRepository(session).get(
-                    run_id,
-                    workspace_id=current_workspace_id(http_request),
-                )
-                is None
-            ):
+            workspace_id = current_workspace_id(http_request)
+            if RunRepository(session).get(run_id, workspace_id=workspace_id) is None:
                 raise RunNotFoundError(f"Run {run_id} was not found.")
+            if request is not None and request.approval_id is not None:
+                approval = ApprovalRepository(session).get(
+                    request.approval_id,
+                    workspace_id=workspace_id,
+                )
+                if approval is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Approval not found",
+                    )
+                if approval.run_id != run_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Approval {approval.id} does not belong to run {run_id}.",
+                    )
             run = await runner.resume(
                 run_id=run_id,
                 repository=RunRepository(session),
@@ -350,10 +361,14 @@ def create_app(
         tags=["approvals"],
     )
     def list_approvals(
+        http_request: Request,
         status_filter: Annotated[ApprovalStatus | None, Query(alias="status")] = None,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[ApprovalResponse]:
-        approvals = ApprovalRepository(session).list(status=status_filter)
+        approvals = ApprovalRepository(session).list(
+            status=status_filter,
+            workspace_id=current_workspace_id(http_request),
+        )
         return [_approval_response(approval) for approval in approvals]
 
     @app.get(
@@ -364,9 +379,13 @@ def create_app(
     )
     def get_approval(
         approval_id: UUID,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> ApprovalResponse:
-        approval = ApprovalRepository(session).get(approval_id)
+        approval = ApprovalRepository(session).get(
+            approval_id,
+            workspace_id=current_workspace_id(http_request),
+        )
         if approval is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
         return _approval_response(approval)
@@ -379,13 +398,16 @@ def create_app(
     )
     def approve_approval(
         approval_id: UUID,
+        http_request: Request,
         request: ApprovalApproveRequest | None = None,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> ApprovalResponse:
         try:
             approval = ApprovalRepository(session).approve(
                 approval_id=approval_id,
+                reviewed_by=current_principal_id(http_request),
                 decision_note=request.decision_note if request is not None else None,
+                workspace_id=current_workspace_id(http_request),
             )
         except ApprovalDecisionError as error:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
@@ -471,6 +493,7 @@ def create_app(
     )
     def reject_approval(
         approval_id: UUID,
+        http_request: Request,
         request: ApprovalRejectRequest,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> ApprovalResponse:
@@ -478,6 +501,8 @@ def create_app(
             approval = ApprovalRepository(session).reject(
                 approval_id=approval_id,
                 decision_note=request.reason,
+                reviewed_by=current_principal_id(http_request),
+                workspace_id=current_workspace_id(http_request),
             )
         except ApprovalDecisionError as error:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error

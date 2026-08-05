@@ -84,6 +84,16 @@ Day 56 workspace scope baseline:
 - Authenticated API calls populate and filter agent/run workspace scope.
 - Other runtime and RAG resources remain unscoped until later Beta slices.
 
+Day 57 approval authorization baseline:
+
+- Approval records do not store a separate `workspace_id`.
+- Approval workspace scope is derived through `approvals.run_id ->
+  runs.workspace_id`.
+- Authenticated approval list/get/approve/reject paths filter through the
+  related run workspace.
+- Resume approval prechecks also filter through the related run workspace.
+- Other runtime and RAG resources remain unscoped until later Beta slices.
+
 ### Execution State
 
 Stored in Postgres, coordinated by Redis:

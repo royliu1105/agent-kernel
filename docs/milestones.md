@@ -404,6 +404,7 @@ Checklist:
 - [x] Authorization/RBAC domain baseline.
 - [x] Workspace scoping domain model.
 - [x] Agent and run workspace scope retrofit.
+- [x] Approval authorization enforcement.
 - [x] Identity persistence and API key storage foundation.
 - [ ] Provider-native function calling.
 - [ ] Durable model/tool/model execution loop.
@@ -427,7 +428,7 @@ Daily execution map:
 - [x] Day 54: API key authentication middleware.
 - [x] Day 55: Route-level authorization baseline.
 - [x] Day 56: Workspace scope retrofit plan and first scoped resources.
-- [ ] Day 57: Approval authorization enforcement.
+- [x] Day 57: Approval authorization enforcement.
 - [ ] Day 58: Auth/RBAC docs and security test closure.
 - [ ] Day 59: Worker lease model and storage foundation.
 - [ ] Day 60: Stuck-run detection and recovery.

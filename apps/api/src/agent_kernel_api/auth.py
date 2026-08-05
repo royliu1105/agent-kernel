@@ -123,6 +123,15 @@ def current_workspace_id(request: Request) -> UUID | None:
     return context.api_key.workspace_id
 
 
+def current_principal_id(request: Request) -> UUID | None:
+    """Return the authenticated principal id when auth is enabled."""
+
+    context = get_auth_context(request)
+    if context is None:
+        return None
+    return context.principal.id
+
+
 def require_permission(permission: Permission) -> Callable[[Request], None]:
     """Create a FastAPI dependency that enforces one workspace permission."""
 

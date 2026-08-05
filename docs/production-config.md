@@ -175,8 +175,10 @@ Current object-level workspace scoping:
 
 - Agents are created and read within the authenticated API key workspace.
 - Runs are created and read within the authenticated API key workspace.
-- Knowledge, memory, document, approval, tool-call, eval, and observability
-  resources are scoped in later Beta slices.
+- Approval list, detail, approve, reject, and resume approval prechecks are
+  scoped through the related run workspace.
+- Knowledge, memory, document, tool-call, eval, and observability resources are
+  scoped in later Beta slices.
 
 ## Networking
 

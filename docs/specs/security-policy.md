@@ -120,6 +120,23 @@ Day 56 workspace scope baseline:
 - Day 56 does not scope knowledge bases, documents, memory, approvals, tool
   calls, run events, chunks, embeddings, or ingestion jobs.
 
+Day 57 approval authorization baseline:
+
+- Approval workspace scope is derived through `approvals.run_id ->
+  runs.workspace_id`.
+- Authenticated approval lists are filtered by the authenticated API key
+  workspace.
+- Authenticated approval detail, approve, and reject routes return `404` for
+  approvals outside the current workspace.
+- Approval decisions made with API key auth enabled record the authenticated
+  principal id in `reviewed_by`.
+- Run resume prechecks reject approval ids outside the current workspace before
+  runtime resume logic executes.
+- Existing unauthenticated local quickstart behavior remains compatible.
+- Day 57 does not add `workspace_id` directly to approvals and does not scope
+  knowledge bases, documents, memory, tool calls, chunks, embeddings, or
+  ingestion jobs.
+
 Risk levels:
 
 ```text

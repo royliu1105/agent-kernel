@@ -138,6 +138,19 @@ agent-kernel run resume <run-id> --approval-id <approval-id>
 - Approved arguments must match requested arguments.
 - Risk and side effects must be visible to reviewers.
 
+Day 57 approval authorization baseline:
+
+- Approval authorization uses the authenticated API key workspace.
+- Approval workspace scope is derived from the approval's run instead of storing
+  a second workspace id on the approval record.
+- Approval list, inspect, approve, and reject API routes only operate on
+  approvals in the current workspace when API key auth is enabled.
+- Approval decisions record the authenticated principal id as `reviewed_by`.
+- Resume requests that reference an approval outside the current workspace are
+  rejected before runtime resume logic executes.
+- Local unauthenticated quickstart flows keep the previous unscoped approval
+  behavior.
+
 ## Observability
 
 - Approval request span/event.

@@ -760,22 +760,42 @@ class ApprovalRepository:
         self._session.commit()
         return approval
 
-    def list(self, *, status: ApprovalStatus | None = None) -> list[Approval]:
+    def list(
+        self,
+        *,
+        status: ApprovalStatus | None = None,
+        workspace_id: UUID | None = None,
+    ) -> list[Approval]:
         statement = select(ApprovalRecord).order_by(ApprovalRecord.requested_at)
         if status is not None:
             statement = statement.where(ApprovalRecord.status == status.value)
+        if workspace_id is not None:
+            statement = statement.join(
+                RunRecord,
+                ApprovalRecord.run_id == RunRecord.id,
+            ).where(RunRecord.workspace_id == str(workspace_id))
         return [_approval_from_record(record) for record in self._session.scalars(statement)]
 
-    def list_for_run(self, run_id: UUID) -> builtins.list[Approval]:
+    def list_for_run(
+        self,
+        run_id: UUID,
+        *,
+        workspace_id: UUID | None = None,
+    ) -> builtins.list[Approval]:
         statement = (
             select(ApprovalRecord)
             .where(ApprovalRecord.run_id == str(run_id))
             .order_by(ApprovalRecord.requested_at)
         )
+        if workspace_id is not None:
+            statement = statement.join(
+                RunRecord,
+                ApprovalRecord.run_id == RunRecord.id,
+            ).where(RunRecord.workspace_id == str(workspace_id))
         return [_approval_from_record(record) for record in self._session.scalars(statement)]
 
-    def get(self, approval_id: UUID) -> Approval | None:
-        record = self._session.get(ApprovalRecord, str(approval_id))
+    def get(self, approval_id: UUID, *, workspace_id: UUID | None = None) -> Approval | None:
+        record = self._get_record(approval_id=approval_id, workspace_id=workspace_id)
         if record is None:
             return None
         return _approval_from_record(record)
@@ -786,6 +806,7 @@ class ApprovalRepository:
         approval_id: UUID,
         reviewed_by: UUID | None = None,
         decision_note: str | None = None,
+        workspace_id: UUID | None = None,
     ) -> Approval | None:
         return self._decide(
             approval_id=approval_id,
@@ -793,6 +814,7 @@ class ApprovalRepository:
             reviewed_by=reviewed_by,
             decision_note=decision_note,
             event_type=RunEventType.APPROVAL_APPROVED,
+            workspace_id=workspace_id,
         )
 
     def reject(
@@ -801,6 +823,7 @@ class ApprovalRepository:
         approval_id: UUID,
         decision_note: str,
         reviewed_by: UUID | None = None,
+        workspace_id: UUID | None = None,
     ) -> Approval | None:
         return self._decide(
             approval_id=approval_id,
@@ -808,6 +831,7 @@ class ApprovalRepository:
             reviewed_by=reviewed_by,
             decision_note=decision_note,
             event_type=RunEventType.APPROVAL_REJECTED,
+            workspace_id=workspace_id,
         )
 
     def _decide(
@@ -818,8 +842,9 @@ class ApprovalRepository:
         reviewed_by: UUID | None,
         decision_note: str | None,
         event_type: RunEventType,
+        workspace_id: UUID | None,
     ) -> Approval | None:
-        record = self._session.get(ApprovalRecord, str(approval_id))
+        record = self._get_record(approval_id=approval_id, workspace_id=workspace_id)
         if record is None:
             return None
         if ApprovalStatus(record.status) is not ApprovalStatus.REQUESTED:
@@ -845,6 +870,25 @@ class ApprovalRepository:
         )
         self._session.commit()
         return _approval_from_record(record)
+
+    def _get_record(
+        self,
+        *,
+        approval_id: UUID,
+        workspace_id: UUID | None = None,
+    ) -> ApprovalRecord | None:
+        if workspace_id is None:
+            return self._session.get(ApprovalRecord, str(approval_id))
+
+        statement = (
+            select(ApprovalRecord)
+            .join(RunRecord, ApprovalRecord.run_id == RunRecord.id)
+            .where(
+                ApprovalRecord.id == str(approval_id),
+                RunRecord.workspace_id == str(workspace_id),
+            )
+        )
+        return self._session.scalar(statement)
 
     def _next_event_sequence(self, run_id: UUID) -> int:
         statement = select(func.max(RunEventRecord.sequence)).where(

@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from kernel_core import ApprovalStatus, RiskLevel, RunEventType, ToolCall, ToolCallStatus
@@ -8,6 +8,7 @@ from kernel_storage import (
     ApprovalRepository,
     RunRepository,
     ToolCallRepository,
+    WorkspaceRepository,
 )
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -61,6 +62,45 @@ def test_approval_repository_lists_and_gets_approvals(
     assert loaded.id == approval.id
 
 
+def test_approval_repository_filters_approvals_by_workspace(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        first_workspace = WorkspaceRepository(session).create(name="First", slug="first-approval")
+        second_workspace = WorkspaceRepository(session).create(
+            name="Second",
+            slug="second-approval",
+        )
+        first_tool_call = _create_waiting_tool_call(session, workspace_id=first_workspace.id)
+        second_tool_call = _create_waiting_tool_call(session, workspace_id=second_workspace.id)
+        repository = ApprovalRepository(session)
+        first_approval = repository.create_requested(
+            tool_call_id=first_tool_call.id,
+            reason="First workspace approval.",
+        )
+        second_approval = repository.create_requested(
+            tool_call_id=second_tool_call.id,
+            reason="Second workspace approval.",
+        )
+        assert first_approval is not None
+        assert second_approval is not None
+
+        first_workspace_approvals = repository.list(workspace_id=first_workspace.id)
+        loaded_from_first = repository.get(
+            first_approval.id,
+            workspace_id=first_workspace.id,
+        )
+        hidden_from_second = repository.get(
+            first_approval.id,
+            workspace_id=second_workspace.id,
+        )
+
+    assert [approval.id for approval in first_workspace_approvals] == [first_approval.id]
+    assert loaded_from_first is not None
+    assert loaded_from_first.id == first_approval.id
+    assert hidden_from_second is None
+
+
 def test_approval_repository_approves_and_rejects_with_events(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
@@ -103,6 +143,42 @@ def test_approval_repository_approves_and_rejects_with_events(
     assert RunEventType.APPROVAL_APPROVED in [event.type for event in events]
 
 
+def test_approval_repository_decisions_are_workspace_scoped(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        first_workspace = WorkspaceRepository(session).create(
+            name="First Decision",
+            slug="first-decision",
+        )
+        second_workspace = WorkspaceRepository(session).create(
+            name="Second Decision",
+            slug="second-decision",
+        )
+        tool_call = _create_waiting_tool_call(session, workspace_id=first_workspace.id)
+        repository = ApprovalRepository(session)
+        approval = repository.create_requested(
+            tool_call_id=tool_call.id,
+            reason="Review needed.",
+        )
+        assert approval is not None
+
+        hidden_decision = repository.approve(
+            approval_id=approval.id,
+            workspace_id=second_workspace.id,
+        )
+        scoped_decision = repository.approve(
+            approval_id=approval.id,
+            decision_note="Same workspace.",
+            workspace_id=first_workspace.id,
+        )
+
+    assert hidden_decision is None
+    assert scoped_decision is not None
+    assert scoped_decision.status is ApprovalStatus.APPROVED
+    assert scoped_decision.decision_note == "Same workspace."
+
+
 def test_approval_repository_rejects_duplicate_decisions(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
@@ -129,9 +205,13 @@ def test_approval_repository_returns_none_for_missing_records(
         assert repository.reject(approval_id=uuid4(), decision_note="Missing.") is None
 
 
-def _create_waiting_tool_call(session: Session) -> ToolCall:
-    agent = AgentRepository(session).create(name="approval-agent")
-    run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "approve"})
+def _create_waiting_tool_call(session: Session, *, workspace_id: UUID | None = None) -> ToolCall:
+    agent = AgentRepository(session).create(name="approval-agent", workspace_id=workspace_id)
+    run = RunRepository(session).create(
+        agent_id=agent.id,
+        workspace_id=workspace_id,
+        input_payload={"task": "approve"},
+    )
     repository = ToolCallRepository(session)
     tool_call = repository.create_requested(
         run_id=run.id,
