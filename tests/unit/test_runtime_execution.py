@@ -331,6 +331,54 @@ async def test_execution_service_retries_retryable_provider_error(
 
 
 @pytest.mark.asyncio
+async def test_provider_retry_events_remain_visible_after_session_reopen(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="durable-retry-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"task": "retry persistently", "model": "flaky:mock-retry"},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+        provider = FlakyProvider(
+            name="flaky",
+            failures=[LLMProviderError("temporary outage", error_type="mock_transient")],
+        )
+
+        completed = await RunExecutionService(router=ModelRouter({"flaky": provider})).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+
+    with sqlite_session_factory() as reopened_session:
+        reopened_repository = RunRepository(reopened_session)
+        loaded = reopened_repository.get(run.id)
+        events = reopened_repository.list_events(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert loaded is not None
+    assert loaded.status is RunStatus.SUCCEEDED
+    assert [event.type for event in events] == [
+        RunEventType.RUN_CREATED,
+        RunEventType.RUN_QUEUED,
+        RunEventType.RUN_STARTED,
+        RunEventType.MODEL_CALL_RETRYING,
+        RunEventType.RUN_COMPLETED,
+    ]
+    retry_event = events[3]
+    assert retry_event.payload["attempt"] == 2
+    assert retry_event.payload["error_type"] == "mock_transient"
+    assert events[-1].payload["attempt_count"] == 2
+
+
+@pytest.mark.asyncio
 async def test_execution_service_falls_back_after_retryable_provider_error(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
@@ -536,6 +584,48 @@ async def test_execution_service_retries_safe_tool_failure(
     assert flaky_tool.call_count == 2
     assert RunEventType.TOOL_CALL_RETRYING in [event.type for event in events]
     assert events[-1].type is RunEventType.RUN_COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_tool_retry_events_remain_visible_after_session_reopen(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    registry = create_default_tool_registry()
+    flaky_tool = FlakyReadOnlyTool()
+    registry.register(flaky_tool)
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="durable-tool-retry-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"tool": {"name": "flaky_read", "arguments": {"value": "stable"}}},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        completed = await RunExecutionService(tool_registry=registry).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+
+    with sqlite_session_factory() as reopened_session:
+        reopened_repository = RunRepository(reopened_session)
+        loaded = reopened_repository.get(run.id)
+        events = reopened_repository.list_events(run.id)
+        tool_calls = ToolCallRepository(reopened_session).list_for_run(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert loaded is not None
+    assert loaded.status is RunStatus.SUCCEEDED
+    assert RunEventType.TOOL_CALL_RETRYING in [event.type for event in events]
+    retry_event = next(event for event in events if event.type is RunEventType.TOOL_CALL_RETRYING)
+    assert retry_event.payload["attempt"] == 2
+    assert retry_event.payload["error_type"] == "tool_execution_failed"
+    assert tool_calls[0].result == {"value": "stable", "attempts": 2}
 
 
 @pytest.mark.asyncio

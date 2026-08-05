@@ -3,7 +3,13 @@ from uuid import UUID
 
 import pytest
 from kernel_core import RunEventType, RunStatus, utc_now
-from kernel_runtime import StuckRunRecoveryService
+from kernel_providers import MockLLMProvider
+from kernel_runtime import (
+    ModelRouter,
+    QueuedRunWorker,
+    RunExecutionService,
+    StuckRunRecoveryService,
+)
 from kernel_storage import AgentRepository, RunRepository, WorkerLeaseRepository
 from kernel_storage.models import WorkerLeaseRecord
 from sqlalchemy import select
@@ -102,6 +108,40 @@ def test_recovery_ignores_non_expired_leases(
     assert run is not None
     assert run.status is RunStatus.RUNNING
     assert active_lease is not None
+
+
+@pytest.mark.asyncio
+async def test_worker_restart_recovery_prevents_duplicate_execution(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    run_id, lease_token = _create_leased_run(
+        sqlite_session_factory,
+        status=RunStatus.RUNNING,
+    )
+    _expire_lease(sqlite_session_factory, lease_token=lease_token)
+
+    recovery_result = StuckRunRecoveryService(
+        session_factory=sqlite_session_factory
+    ).recover_once(limit=10)
+    restarted_worker = QueuedRunWorker(
+        session_factory=sqlite_session_factory,
+        execution_service=RunExecutionService(
+            router=ModelRouter({"mock": MockLLMProvider(response_prefix="Restarted")})
+        ),
+    )
+    worker_result = await restarted_worker.run_once(limit=10)
+
+    with sqlite_session_factory() as session:
+        run = RunRepository(session).get(run_id)
+        events = RunRepository(session).list_events(run_id)
+
+    assert recovery_result.recovered_count == 1
+    assert worker_result.processed_count == 0
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    assert run.error_type == "worker_lease_expired"
+    assert events[-1].type is RunEventType.RUN_FAILED
+    assert RunEventType.RUN_COMPLETED not in [event.type for event in events]
 
 
 def test_recovery_rejects_invalid_limit(

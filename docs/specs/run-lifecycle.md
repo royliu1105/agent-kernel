@@ -170,6 +170,18 @@ Day 61 Redis queue adapter baseline:
 - Redis is a coordination and wakeup layer, not the durable source of truth.
 - Day 61 does not wire Redis into API queueing or default worker polling.
 
+Day 62 durable retry and restart visibility baseline:
+
+- Provider retry events remain persisted and inspectable after reopening a
+  database session.
+- Safe tool retry events remain persisted and inspectable after reopening a
+  database session.
+- Worker restart recovery is covered by regression tests: an expired
+  `running` lease can be recovered by a new process and the failed stuck run is
+  not executed again by a restarted worker.
+- Day 62 does not add delayed retry scheduling, exponential backoff, a public
+  retry API, or automatic Redis-backed worker polling.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

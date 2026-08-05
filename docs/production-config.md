@@ -128,6 +128,17 @@ key `agent-kernel:runs:queued`, but API queueing and worker polling do not use
 it by default yet. Redis-backed scheduling and advanced retry queues are later
 Beta slices.
 
+Durable retry and restart visibility:
+
+- Provider retry and fallback events are persisted in run timelines.
+- Safe tool retry events are persisted in run timelines.
+- Regression coverage verifies retry events remain visible after reopening a
+  database session.
+- Regression coverage verifies a restarted worker does not re-execute a run
+  failed by stuck-run recovery.
+- Public manual retry APIs, delayed retry scheduling, and exponential backoff
+  remain later hardening work.
+
 ## Web
 
 Recommended Web command after build:
