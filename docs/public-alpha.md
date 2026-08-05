@@ -120,6 +120,8 @@ Current status:
 - Retrieval search loads through
   `/api/agent-kernel/knowledge-bases/{knowledge_base_id}/retrieve` and shows
   raw cited chunks.
+- The Workbench shows a Public Alpha scope banner that distinguishes live API
+  paths from preview data.
 - Fixture-backed document ingestion previews remain visible until live document
   and ingestion summary endpoints are ready.
 

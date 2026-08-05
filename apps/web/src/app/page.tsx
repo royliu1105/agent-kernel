@@ -161,27 +161,27 @@ const viewCopy: Record<WorkbenchView, { eyebrow: string; title: string; status: 
   dashboard: {
     eyebrow: "Production runtime",
     title: "Agent Workbench",
-    status: "Local UI state",
+    status: "Public Alpha",
   },
   agents: {
     eyebrow: "Agent registry",
     title: "Agents",
-    status: "Fixture-backed",
+    status: "Preview",
   },
   runs: {
     eyebrow: "Execution trace",
     title: "Runs",
-    status: "Inspectable",
+    status: "Live lookup",
   },
   approvals: {
     eyebrow: "Human review",
     title: "Approvals",
-    status: "Local decisions",
+    status: "Live + preview",
   },
   knowledge: {
     eyebrow: "RAG operations",
     title: "Knowledge",
-    status: "Ingestion view",
+    status: "Live retrieval",
   },
   evals: {
     eyebrow: "Quality gates",
@@ -758,7 +758,7 @@ export default function Home() {
     {
       label: "Pending approvals",
       value: `${pendingApprovals.length}`,
-      detail: "local decisions only",
+      detail: "preview inbox plus live status",
     },
     {
       label: "Indexed chunks",
@@ -990,10 +990,29 @@ export default function Home() {
           ))}
         </section>
 
+        {renderWorkbenchScopeBanner()}
+
         <section className="workspace-view">{renderActiveView()}</section>
       </section>
     </main>
   );
+
+  function renderWorkbenchScopeBanner() {
+    return (
+      <section className="scope-banner" aria-label="Workbench data scope">
+        <div>
+          <span className="signal-badge">Public Alpha</span>
+          <strong>Live where it matters for first-run verification.</strong>
+          <p>
+            Health, run lookup, approvals, knowledge bases, and retrieval search call the
+            backend API. Agent cards, list previews, document ingestion, and eval summaries
+            remain preview data until their live list endpoints are complete.
+          </p>
+        </div>
+        <code>API: {runtimeHealth.baseUrl}</code>
+      </section>
+    );
+  }
 
   function renderActiveView() {
     if (activeView === "agents") {
@@ -1211,9 +1230,7 @@ export default function Home() {
         </p>
 
         {liveRunLookup.status === "error" ? (
-          <p className="lookup-error" role="status">
-            {liveRunLookup.error}
-          </p>
+          <LiveError message={liveRunLookup.error} />
         ) : null}
 
         {liveRunLookup.run === null ? null : (
@@ -1300,9 +1317,7 @@ export default function Home() {
           </div>
         ) : null}
         {liveKnowledgeBases.error ? (
-          <p className="lookup-error" role="status">
-            {liveKnowledgeBases.error}
-          </p>
+          <LiveError message={liveKnowledgeBases.error} />
         ) : null}
       </section>
     );
@@ -1349,9 +1364,7 @@ export default function Home() {
         </p>
 
         {liveRetrieval.status === "error" ? (
-          <p className="lookup-error" role="status">
-            {liveRetrieval.error}
-          </p>
+          <LiveError message={liveRetrieval.error} />
         ) : null}
 
         {liveRetrieval.response === null ? null : (
@@ -1621,11 +1634,12 @@ export default function Home() {
           </div>
         ) : null}
         {liveApprovals.error ? (
-          <p className="lookup-error" role="status">
-            {liveApprovals.error}
-          </p>
+          <LiveError message={liveApprovals.error} />
         ) : null}
-        <p className="local-note">Decisions here are local UI state for Day 32.</p>
+        <p className="local-note">
+          Live approvals appear above. The approval cards below are preview data for
+          first-run UI coverage.
+        </p>
         <div className="stack">
           {approvals.map((approval) => (
             <article className="approval-item" key={approval.id}>
@@ -1804,6 +1818,17 @@ function liveKnowledgeBaseStatusText(state: LiveKnowledgeBaseState) {
   }
 
   return state.error ?? "Live knowledge bases unavailable";
+}
+
+function LiveError({ message }: { message: string | null }) {
+  return (
+    <div className="lookup-error" role="status">
+      <strong>{message ?? "Live API request failed."}</strong>
+      <span>
+        Start `uv run agent-kernel-api`, verify `/healthz`, then refresh the Workbench.
+      </span>
+    </div>
+  );
 }
 
 function StatusBadge({ status }: { status: RunSummary["status"] | ToolCallDetail["status"] }) {

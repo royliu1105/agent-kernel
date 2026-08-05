@@ -221,6 +221,41 @@ code {
   margin-bottom: 16px;
 }
 
+.scope-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  border-block: 1px solid var(--border);
+  background: #fbfcfd;
+  padding: 12px 2px;
+}
+
+.scope-banner div {
+  min-width: 0;
+}
+
+.scope-banner strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.scope-banner p {
+  max-width: 860px;
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scope-banner code {
+  flex: 0 1 auto;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+
 .metric-card,
 .panel {
   border: 1px solid var(--border);
@@ -665,6 +700,8 @@ code {
 }
 
 .lookup-error {
+  display: grid;
+  gap: 5px;
   margin: 12px 0 0;
   border: 1px solid #f2afa8;
   border-radius: 7px;
@@ -672,6 +709,15 @@ code {
   color: var(--red);
   padding: 10px 12px;
   font-size: 13px;
+}
+
+.lookup-error strong,
+.lookup-error span {
+  overflow-wrap: anywhere;
+}
+
+.lookup-error span {
+  color: #7f1d1d;
 }
 
 .live-run-result {
@@ -1074,6 +1120,15 @@ code {
   .retrieval-form,
   .retrieval-result {
     grid-template-columns: 1fr;
+  }
+
+  .scope-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scope-banner code {
+    max-width: 100%;
   }
 }
 

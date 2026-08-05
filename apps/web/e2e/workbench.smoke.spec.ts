@@ -54,6 +54,8 @@ test("operator can navigate core Workbench views", async ({ page }) => {
   await expect(page.getByLabel("Runtime status")).toContainText(
     /Checking API|API reachable|API unreachable/,
   );
+  await expect(page.getByLabel("Workbench data scope")).toContainText("Public Alpha");
+  await expect(page.getByText("Live where it matters for first-run verification.")).toBeVisible();
 
   await page.getByRole("button", { name: "Agents" }).click();
   await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
@@ -159,7 +161,7 @@ test("operator can inspect runs and approve tool calls locally", async ({ page }
   await expect(page.getByText("Live external write requires review")).toBeVisible();
   await page.getByRole("button", { name: "Approve live" }).click();
   await expect(page.getByText("approved · 2026-08-04T00:01:00Z")).toBeVisible();
-  await expect(page.getByText("Decisions here are local UI state for Day 32.")).toBeVisible();
+  await expect(page.getByText(/approval cards below are preview data/)).toBeVisible();
 
   await page.getByRole("button", { name: /^Approve$/ }).first().click();
   await expect(page.getByText("approved · just now")).toBeVisible();

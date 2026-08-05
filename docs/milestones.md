@@ -350,7 +350,7 @@ Checklist:
 - [x] Improve README first-run path.
 - [x] Improve quickstart from first-user perspective.
 - [x] Improve examples.
-- [ ] Improve Web UI polish.
+- [x] Improve Web UI polish.
 - [ ] Replace key fixture-backed Web views with live API integration.
 - [x] Document first live Web API integration priorities.
 - [x] Implement first live Web API health integration.
