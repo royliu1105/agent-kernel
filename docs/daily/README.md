@@ -113,3 +113,4 @@ day-03.md
 - [Day 63: Durable Execution Closure](day-63.md)
 - [Day 64: Provider-Native Tool-Call Adapter Contract](day-64.md)
 - [Day 65: OpenAI Native Tool-Call Parsing and Persistence](day-65.md)
+- [Day 66: Model/Tool/Model Execution Loop](day-66.md)

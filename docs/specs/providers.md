@@ -135,8 +135,19 @@ Day 65 OpenAI native tool-call parsing:
   `error_type = openai_invalid_tool_call`.
 - Responses containing function calls use `finish_reason = tool_calls`.
 
-Day 65 explicitly does not execute provider-native tool calls or run a
-model/tool/model loop. That starts in Day 66.
+Day 66 model/tool/model provider interaction:
+
+- Runtime model requests can include provider-facing tool definitions and
+  `tool_choice = auto`.
+- If a provider returns one native tool call, the runtime executes or gates that
+  tool call through the internal tool system.
+- After a safe tool call succeeds, the runtime sends a follow-up provider
+  request with `tool_choice = none`, no tool definitions, an assistant marker
+  for the provider tool-call request, and a `tool` message containing the
+  executed tool result.
+- The run completes from the follow-up provider response.
+- Multiple tool calls, nested loops, streaming tool calls, and approval resume
+  into a follow-up provider call remain deferred.
 
 ## State Transitions
 

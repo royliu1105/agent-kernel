@@ -438,7 +438,7 @@ Daily execution map:
 - [x] Day 63: Durable execution closure.
 - [x] Day 64: Provider-native tool-call adapter contract.
 - [x] Day 65: OpenAI native tool-call parsing and persistence.
-- [ ] Day 66: Model/tool/model execution loop.
+- [x] Day 66: Model/tool/model execution loop.
 - [ ] Day 67: Provider-native tool-call evals and regression tests.
 - [ ] Day 68: OpenAI embeddings backend.
 - [ ] Day 69: pgvector-native vector store.

@@ -169,10 +169,28 @@ Day 65 provider-native tool-call parsing and persistence:
 - Unknown provider-requested tools are persisted as `dangerous` risk so later
   execution can fail or gate them conservatively.
 
-Still deferred after Day 65:
+Day 66 model/tool/model execution loop:
 
-- Executing provider-native tool calls in the agent run loop.
-- Feeding tool results back into a second model call.
+- Runtime model requests include enabled provider-facing tool definitions.
+- A provider-native response with exactly one tool call is persisted before
+  execution.
+- The persisted tool call is policy-checked through the same policy evaluator
+  used by explicit `input.tool` calls.
+- Allowed native tool calls execute through the same tool executor, retry
+  policy, metrics, and timeline events as explicit tool calls.
+- The completed tool result is sent back to the provider as a follow-up `tool`
+  message.
+- The run completes from the follow-up model response.
+- Risky native tool calls pause for approval before execution.
+- Unknown native tool calls fail safely and do not trigger a follow-up model
+  call.
+
+Still deferred after Day 66:
+
+- Multiple provider-native tool calls in one model response.
+- Nested or recursive model/tool/model loops.
+- Resuming a provider-native approval into a follow-up model call after approval.
+- Provider-native behavior evals.
 
 ## State Transitions
 

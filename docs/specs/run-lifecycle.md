@@ -210,6 +210,24 @@ Day 65 provider-native tool-call persistence baseline:
   into a model, or change run terminal-state behavior. The model/tool/model
   execution loop starts on Day 66.
 
+Day 66 provider-native model/tool/model baseline:
+
+- Initial model requests include enabled provider-facing tool definitions.
+- A model response containing exactly one native tool call enters a bounded
+  model/tool/model loop.
+- The native tool call is persisted as `tool_call_requested`, then goes through
+  `policy_evaluated`, tool execution, and `tool_call_completed` or failure
+  events.
+- A successful tool result is sent to the same provider in a follow-up tool
+  message, and the run completes from the provider's second model response.
+- Token and cost totals include both model calls in the loop.
+- Approval-required native tool calls transition the run to
+  `waiting_approval`.
+- Unknown or denied native tools fail the run safely before any follow-up model
+  call.
+- Day 66 supports one native tool call per loop and does not implement nested
+  loops or provider-native approval resume.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

@@ -29,11 +29,14 @@ from kernel_observability import (
 )
 from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
 from kernel_providers import (
+    LLMFinishReason,
     LLMMessage,
     LLMProvider,
     LLMProviderError,
     LLMRequest,
     LLMResponse,
+    LLMToolChoice,
+    LLMUsage,
     MessageRole,
 )
 from kernel_storage import ApprovalRepository, MemoryRepository, RunRepository, ToolCallRepository
@@ -45,6 +48,8 @@ from kernel_tools import (
     create_default_tool_registry,
 )
 
+from kernel_runtime.provider_tool_calls import persist_provider_tool_calls
+from kernel_runtime.provider_tools import tool_registry_to_llm_tool_definitions
 from kernel_runtime.router import ModelRouter
 from kernel_runtime.state_machine import RunStateMachine
 
@@ -274,6 +279,12 @@ class RunExecutionService:
                 default_model=self._default_model,
                 memory_context=memory_context,
             )
+            request = request.model_copy(
+                update={
+                    "tools": tool_registry_to_llm_tool_definitions(self._tool_registry),
+                    "tool_choice": LLMToolChoice.AUTO,
+                }
+            )
             if self._router is None:
                 raise RunExecutionError("Model execution requires a provider or router.")
             model_refs = _model_refs_from_run(running, default_model=self._default_model)
@@ -350,6 +361,20 @@ class RunExecutionService:
                         )
                         continue
                     break
+                if response.finish_reason is LLMFinishReason.TOOL_CALLS or response.tool_calls:
+                    return await self._execute_provider_native_tool_loop(
+                        running=running,
+                        repository=repository,
+                        initial_request=routed_request,
+                        initial_response=response,
+                        provider=route.provider,
+                        provider_name=route.provider_name,
+                        model_ref=model_ref,
+                        attempt_count=attempt_count,
+                        fallback_used=model_index > 0,
+                        memory_context=memory_context,
+                        initial_latency_ms=latency_ms,
+                    )
                 return self._complete_model_run(
                     running=running,
                     repository=repository,
@@ -406,6 +431,184 @@ class RunExecutionService:
             provider=last_provider,
         )
 
+    async def _execute_provider_native_tool_loop(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+        initial_request: LLMRequest,
+        initial_response: LLMResponse,
+        provider: LLMProvider,
+        provider_name: str,
+        model_ref: str,
+        attempt_count: int,
+        fallback_used: bool,
+        memory_context: MemoryContext | None,
+        initial_latency_ms: int,
+    ) -> Run:
+        if len(initial_response.tool_calls) != 1:
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type="unsupported_native_tool_call_count",
+                error_message="Exactly one provider-native tool call is supported in this loop.",
+                provider=provider_name,
+            )
+
+        tool_call_repository = ToolCallRepository(repository.session)
+        persisted_calls = persist_provider_tool_calls(
+            running=running,
+            response=initial_response,
+            tool_call_repository=tool_call_repository,
+            tool_registry=self._tool_registry,
+        )
+        tool_call = persisted_calls[0]
+
+        try:
+            tool = self._tool_registry.get(tool_call.tool_name)
+        except ToolError as error:
+            tool_call_repository.fail(
+                tool_call_id=tool_call.id,
+                error_type=error.error_type,
+                error_message=str(error),
+            )
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type=error.error_type,
+                error_message=str(error),
+                provider=provider_name,
+            )
+
+        decision = self._policy_evaluator.evaluate(tool.metadata)
+        if decision.decision is PolicyDecisionType.DENY:
+            tool_call_repository.record_policy_decision(
+                tool_call_id=tool_call.id,
+                decision=decision.decision.value,
+                reason=decision.reason,
+                status=ToolCallStatus.DENIED,
+            )
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type="tool_denied",
+                error_message=decision.reason,
+                provider=provider_name,
+            )
+
+        if decision.decision is PolicyDecisionType.REQUIRE_APPROVAL:
+            waiting_tool_call = tool_call_repository.record_policy_decision(
+                tool_call_id=tool_call.id,
+                decision=decision.decision.value,
+                reason=decision.reason,
+                status=ToolCallStatus.WAITING_APPROVAL,
+                requires_approval=True,
+            )
+            if waiting_tool_call is None:
+                raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
+            approval = ApprovalRepository(repository.session).create_requested(
+                tool_call_id=waiting_tool_call.id,
+                reason=decision.reason,
+            )
+            if approval is None:
+                raise RunExecutionError(f"Approval could not be created for {tool_call.id}.")
+            wait_transition = self._state_machine.wait_for_approval(running)
+            waiting = repository.apply_transition(
+                run_id=running.id,
+                status=wait_transition.to_status,
+                event_type=wait_transition.event_type,
+                payload={
+                    "from_status": wait_transition.from_status.value,
+                    "to_status": wait_transition.to_status.value,
+                    "approval_id": str(approval.id),
+                    "tool_call_id": str(waiting_tool_call.id),
+                    "tool_name": waiting_tool_call.tool_name,
+                    "provider": provider_name,
+                    "provider_tool_call_id": waiting_tool_call.provider_tool_call_id,
+                    "reason": decision.reason,
+                },
+            )
+            if waiting is None:
+                raise RunNotFoundError(f"Run {running.id} was not found.")
+            return waiting
+
+        checked_tool_call = tool_call_repository.record_policy_decision(
+            tool_call_id=tool_call.id,
+            decision=decision.decision.value,
+            reason=decision.reason,
+            status=ToolCallStatus.POLICY_CHECKED,
+        )
+        if checked_tool_call is None:
+            raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
+
+        completed_tool_call = await self._execute_tool_call_only(
+            running=running,
+            repository=repository,
+            tool_call=checked_tool_call,
+            tool_call_repository=tool_call_repository,
+        )
+        followup_request = _request_with_tool_result(
+            initial_request=initial_request,
+            initial_response=initial_response,
+            tool_call=completed_tool_call,
+        )
+        followup_timer = LatencyTimer.start()
+        try:
+            final_response = await provider.complete(followup_request)
+            followup_latency_ms = followup_timer.elapsed_ms()
+        except LLMProviderError as error:
+            self._record_model_failure_metrics(
+                provider=provider_name,
+                model=initial_request.model,
+                error_type=error.error_type,
+                latency_ms=followup_timer.elapsed_ms(),
+            )
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type=error.error_type,
+                error_message=str(error),
+                provider=provider_name,
+            )
+
+        combined_response = final_response.model_copy(
+            update={
+                "usage": LLMUsage(
+                    input_tokens=(
+                        initial_response.usage.input_tokens
+                        + final_response.usage.input_tokens
+                    ),
+                    output_tokens=(
+                        initial_response.usage.output_tokens
+                        + final_response.usage.output_tokens
+                    ),
+                    estimated_cost=(
+                        initial_response.usage.estimated_cost
+                        + final_response.usage.estimated_cost
+                    ),
+                )
+            }
+        )
+        return self._complete_model_run(
+            running=running,
+            repository=repository,
+            response=combined_response,
+            provider=provider_name,
+            model_ref=model_ref,
+            attempt_count=attempt_count + 1,
+            fallback_used=fallback_used,
+            memory_context=memory_context,
+            latency_ms=initial_latency_ms + followup_latency_ms,
+            extra_output={
+                "provider_tool_loop": {
+                    "tool_call_id": str(completed_tool_call.id),
+                    "provider_tool_call_id": completed_tool_call.provider_tool_call_id,
+                    "tool_name": completed_tool_call.tool_name,
+                    "tool_result": completed_tool_call.result,
+                }
+            },
+        )
+
     def _complete_model_run(
         self,
         *,
@@ -418,6 +621,7 @@ class RunExecutionService:
         fallback_used: bool,
         memory_context: MemoryContext | None,
         latency_ms: int,
+        extra_output: dict[str, Any] | None = None,
     ) -> Run:
         succeed_transition = self._state_machine.succeed(running)
         output_payload: dict[str, Any] = {
@@ -426,6 +630,8 @@ class RunExecutionService:
             "model": response.model,
             "usage": response.usage.model_dump(),
         }
+        if extra_output:
+            output_payload.update(extra_output)
         if memory_context is not None:
             output_payload["memory"] = memory_context.to_output_payload()
 
@@ -469,6 +675,7 @@ class RunExecutionService:
                 "model_ref": model_ref,
                 "attempt_count": attempt_count,
                 "fallback_used": fallback_used,
+                **(extra_output or {}),
             },
         )
         if completed is None:
@@ -640,6 +847,38 @@ class RunExecutionService:
         repository: RunRepository,
         tool_call_repository: ToolCallRepository,
     ) -> Run:
+        try:
+            completed_tool_call = await self._execute_tool_call_only(
+                running=running,
+                repository=repository,
+                tool_call=tool_call,
+                tool_call_repository=tool_call_repository,
+                approval=approval,
+            )
+        except ToolError as error:
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type=error.error_type,
+                error_message=str(error),
+            )
+
+        return self._complete_tool_run(
+            running=running,
+            repository=repository,
+            completed_tool_call=completed_tool_call,
+            approval=approval,
+        )
+
+    async def _execute_tool_call_only(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+        tool_call: ToolCall,
+        tool_call_repository: ToolCallRepository,
+        approval: Approval | None = None,
+    ) -> ToolCall:
         running_tool_call = tool_call_repository.mark_running(tool_call_id=tool_call.id)
         if running_tool_call is None:
             raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
@@ -664,12 +903,7 @@ class RunExecutionService:
                 error_type=error.error_type,
                 latency_ms=latency_ms,
             )
-            return self._fail_running_run(
-                running=running,
-                repository=repository,
-                error_type=error.error_type,
-                error_message=str(error),
-            )
+            raise
 
         latency_ms = tool_timer.elapsed_ms()
         completed_tool_call = tool_call_repository.complete(
@@ -700,6 +934,16 @@ class RunExecutionService:
             tool_name=completed_tool_call.tool_name,
             latency_ms=latency_ms,
         )
+        return completed_tool_call
+
+    def _complete_tool_run(
+        self,
+        *,
+        running: Run,
+        repository: RunRepository,
+        completed_tool_call: ToolCall,
+        approval: Approval | None,
+    ) -> Run:
 
         succeed_transition = self._state_machine.succeed(running)
         completed = repository.complete(
@@ -971,6 +1215,51 @@ def _request_from_run(
         model=model,
         messages=messages,
         metadata={"run_id": str(run.id), "agent_id": str(run.agent_id)},
+    )
+
+
+def _request_with_tool_result(
+    *,
+    initial_request: LLMRequest,
+    initial_response: LLMResponse,
+    tool_call: ToolCall,
+) -> LLMRequest:
+    tool_result_payload = {
+        "tool_call_id": str(tool_call.id),
+        "provider_tool_call_id": tool_call.provider_tool_call_id,
+        "tool_name": tool_call.tool_name,
+        "result": tool_call.result or {},
+    }
+    return initial_request.model_copy(
+        update={
+            "messages": (
+                *initial_request.messages,
+                LLMMessage(
+                    role=MessageRole.ASSISTANT,
+                    content=initial_response.text,
+                    name="provider_tool_call_request",
+                    metadata={
+                        "finish_reason": initial_response.finish_reason.value,
+                        "tool_calls": [
+                            requested_tool_call.model_dump(mode="json")
+                            for requested_tool_call in initial_response.tool_calls
+                        ],
+                    },
+                ),
+                LLMMessage(
+                    role=MessageRole.TOOL,
+                    content=json.dumps(tool_result_payload, sort_keys=True),
+                    name=tool_call.tool_name,
+                    metadata={
+                        "tool_call_id": str(tool_call.id),
+                        "provider_name": tool_call.provider_name,
+                        "provider_tool_call_id": tool_call.provider_tool_call_id,
+                    },
+                ),
+            ),
+            "tools": (),
+            "tool_choice": LLMToolChoice.NONE,
+        }
     )
 
 

@@ -14,7 +14,17 @@ from kernel_core import (
     ToolCallStatus,
 )
 from kernel_observability import InMemoryMetricsRecorder
-from kernel_providers import LLMProviderError, LLMRequest, LLMResponse, LLMUsage, MockLLMProvider
+from kernel_providers import (
+    LLMFinishReason,
+    LLMProviderError,
+    LLMRequest,
+    LLMResponse,
+    LLMToolCall,
+    LLMToolChoice,
+    LLMUsage,
+    MessageRole,
+    MockLLMProvider,
+)
 from kernel_rag import DocumentIndexingService, create_rag_tool_registry
 from kernel_runtime import ModelRouter, RunExecutionError, RunExecutionService
 from kernel_storage import (
@@ -421,6 +431,172 @@ async def test_execution_service_falls_back_after_retryable_provider_error(
     assert backup.call_count == 1
     assert RunEventType.MODEL_FALLBACK_SELECTED in [event.type for event in events]
     assert events[-1].payload["fallback_used"] is True
+
+
+@pytest.mark.asyncio
+async def test_execution_service_completes_provider_native_tool_loop(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    provider = NativeToolLoopProvider(
+        tool_call=LLMToolCall(
+            id="call_echo_001",
+            name="echo",
+            arguments={"message": "native hello"},
+            raw={
+                "type": "function_call",
+                "call_id": "call_echo_001",
+                "name": "echo",
+                "arguments": '{"message":"native hello"}',
+            },
+        ),
+        final_text="final answer with tool result",
+    )
+    metrics_recorder = InMemoryMetricsRecorder()
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="native-tool-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"task": "use native tool", "model": "native:mock-native"},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        completed = await RunExecutionService(
+            router=ModelRouter({"native": provider}),
+            metrics_recorder=metrics_recorder,
+        ).execute(run_id=run.id, repository=run_repository)
+        events = run_repository.list_events(run.id)
+        tool_calls = ToolCallRepository(session).list_for_run(run.id)
+
+    assert completed.status is RunStatus.SUCCEEDED
+    assert completed.input_tokens_total == 12
+    assert completed.output_tokens_total == 3
+    assert completed.output is not None
+    assert completed.output["text"] == "final answer with tool result"
+    assert completed.output["provider_tool_loop"] == {
+        "tool_call_id": str(tool_calls[0].id),
+        "provider_tool_call_id": "call_echo_001",
+        "tool_name": "echo",
+        "tool_result": {"message": "native hello"},
+    }
+    assert provider.call_count == 2
+    assert provider.requests[0].tools[0].name == "echo"
+    assert provider.requests[0].tool_choice is LLMToolChoice.AUTO
+    assert provider.requests[1].tools == ()
+    assert provider.requests[1].tool_choice is LLMToolChoice.NONE
+    assert provider.requests[1].messages[-1].role is MessageRole.TOOL
+    assert provider.requests[1].messages[-1].name == "echo"
+    assert "native hello" in provider.requests[1].messages[-1].content
+    assert tool_calls[0].provider_name == "native"
+    assert tool_calls[0].provider_tool_call_id == "call_echo_001"
+    assert tool_calls[0].status is ToolCallStatus.SUCCEEDED
+    assert tool_calls[0].result == {"message": "native hello"}
+    assert [event.type for event in events] == [
+        RunEventType.RUN_CREATED,
+        RunEventType.RUN_QUEUED,
+        RunEventType.RUN_STARTED,
+        RunEventType.TOOL_CALL_REQUESTED,
+        RunEventType.POLICY_EVALUATED,
+        RunEventType.TOOL_CALL_COMPLETED,
+        RunEventType.RUN_COMPLETED,
+    ]
+    assert events[-1].payload["provider_tool_loop"]["provider_tool_call_id"] == "call_echo_001"
+    model_labels = {"provider": "native", "model": "mock-native", "status": "succeeded"}
+    assert metrics_recorder.counter_value("llm_model_calls_total", labels=model_labels) == 1
+
+
+@pytest.mark.asyncio
+async def test_execution_service_pauses_provider_native_risky_tool_for_approval(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    provider = NativeToolLoopProvider(
+        tool_call=LLMToolCall(
+            id="call_write_001",
+            name="external_write",
+            arguments={"value": "draft"},
+            raw={"type": "function_call", "call_id": "call_write_001"},
+        ),
+        final_text="unused",
+    )
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="native-approval-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"task": "write through native tool", "model": "native:mock-native"},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        waiting = await RunExecutionService(
+            router=ModelRouter({"native": provider}),
+            tool_registry=_approval_tool_registry(),
+        ).execute(run_id=run.id, repository=run_repository)
+        approvals = ApprovalRepository(session).list_for_run(run.id)
+        tool_calls = ToolCallRepository(session).list_for_run(run.id)
+        events = run_repository.list_events(run.id)
+
+    assert waiting.status is RunStatus.WAITING_APPROVAL
+    assert provider.call_count == 1
+    assert len(approvals) == 1
+    assert approvals[0].tool_call_id == tool_calls[0].id
+    assert tool_calls[0].provider_name == "native"
+    assert tool_calls[0].provider_tool_call_id == "call_write_001"
+    assert tool_calls[0].status is ToolCallStatus.WAITING_APPROVAL
+    assert events[-1].type is RunEventType.RUN_WAITING_APPROVAL
+    assert events[-1].payload["provider_tool_call_id"] == "call_write_001"
+
+
+@pytest.mark.asyncio
+async def test_execution_service_fails_unknown_provider_native_tool(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    provider = NativeToolLoopProvider(
+        tool_call=LLMToolCall(
+            id="call_unknown_001",
+            name="unknown_tool",
+            arguments={},
+            raw={"type": "function_call", "call_id": "call_unknown_001"},
+        ),
+        final_text="unused",
+    )
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="native-unknown-agent")
+        run_repository = RunRepository(session)
+        run = run_repository.create(
+            agent_id=agent.id,
+            input_payload={"task": "unknown native tool", "model": "native:mock-native"},
+        )
+        run_repository.apply_transition(
+            run_id=run.id,
+            status=RunStatus.QUEUED,
+            event_type=RunEventType.RUN_QUEUED,
+            payload={"from_status": "created", "to_status": "queued"},
+        )
+
+        failed = await RunExecutionService(router=ModelRouter({"native": provider})).execute(
+            run_id=run.id,
+            repository=run_repository,
+        )
+        tool_calls = ToolCallRepository(session).list_for_run(run.id)
+        events = run_repository.list_events(run.id)
+
+    assert failed.status is RunStatus.FAILED
+    assert failed.error_type == "unknown_tool"
+    assert provider.call_count == 1
+    assert tool_calls[0].risk_level is RiskLevel.DANGEROUS
+    assert tool_calls[0].status is ToolCallStatus.FAILED
+    assert tool_calls[0].provider_tool_call_id == "call_unknown_001"
+    assert events[-1].type is RunEventType.RUN_FAILED
 
 
 @pytest.mark.asyncio
@@ -946,6 +1122,39 @@ class FlakyProvider:
             model=request.model,
             text=f"{self.name} success: {prompt}",
             usage=LLMUsage(input_tokens=1, output_tokens=1, estimated_cost=0.0),
+        )
+
+
+class NativeToolLoopProvider:
+    def __init__(self, *, tool_call: LLMToolCall, final_text: str) -> None:
+        self._tool_call = tool_call
+        self._final_text = final_text
+        self.requests: list[LLMRequest] = []
+
+    @property
+    def name(self) -> str:
+        return "native"
+
+    @property
+    def call_count(self) -> int:
+        return len(self.requests)
+
+    async def complete(self, request: LLMRequest) -> LLMResponse:
+        self.requests.append(request)
+        if len(self.requests) == 1:
+            return LLMResponse(
+                provider=self.name,
+                model=request.model,
+                text="",
+                usage=LLMUsage(input_tokens=5, output_tokens=0, estimated_cost=0.0),
+                finish_reason=LLMFinishReason.TOOL_CALLS,
+                tool_calls=(self._tool_call,),
+            )
+        return LLMResponse(
+            provider=self.name,
+            model=request.model,
+            text=self._final_text,
+            usage=LLMUsage(input_tokens=7, output_tokens=3, estimated_cost=0.0),
         )
 
 
