@@ -113,9 +113,17 @@ agent-kernel-worker --loop --limit 25 --poll-interval 2
 Run at least one worker process for queued agent execution.
 
 Current worker behavior uses persisted queued runs as the MVP queue. The Beta
-storage layer now includes worker leases, but the worker polling loop has not
-yet switched to lease-backed claiming. Stuck-run recovery, Redis-backed
-scheduling, and advanced retry queues are later Beta slices.
+storage layer now includes worker leases and an explicit stuck-run recovery
+mode:
+
+```bash
+agent-kernel-worker --recover-stuck --limit 100
+```
+
+Recovery marks expired `running` or `resuming` runs as failed instead of
+automatically requeueing them. This avoids blindly repeating side effects.
+The worker polling loop has not yet switched to lease-backed claiming.
+Redis-backed scheduling and advanced retry queues are later Beta slices.
 
 ## Web
 

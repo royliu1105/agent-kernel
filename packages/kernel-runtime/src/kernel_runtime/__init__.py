@@ -7,6 +7,11 @@ from kernel_runtime.execution import (
     RunNotFoundError,
 )
 from kernel_runtime.prompts import PromptRegistry, PromptVersion
+from kernel_runtime.recovery import (
+    StuckRunRecoveryBatchResult,
+    StuckRunRecoveryResult,
+    StuckRunRecoveryService,
+)
 from kernel_runtime.router import ModelRoute, ModelRouter, UnknownModelRouteError
 from kernel_runtime.state_machine import (
     InvalidRunTransitionError,
@@ -27,6 +32,9 @@ __all__ = [
     "RunNotFoundError",
     "RunStateMachine",
     "RunTransition",
+    "StuckRunRecoveryBatchResult",
+    "StuckRunRecoveryResult",
+    "StuckRunRecoveryService",
     "UnknownModelRouteError",
     "QueuedRunWorker",
     "WorkerBatchResult",

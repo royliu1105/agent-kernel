@@ -107,3 +107,4 @@ day-03.md
 - [Day 57: Approval Authorization Enforcement](day-57.md)
 - [Day 58: Auth/RBAC Docs and Security Test Closure](day-58.md)
 - [Day 59: Worker Lease Model and Storage Foundation](day-59.md)
+- [Day 60: Stuck-Run Detection and Recovery](day-60.md)

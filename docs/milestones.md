@@ -411,7 +411,7 @@ Checklist:
 - [ ] Durable model/tool/model execution loop.
 - [ ] Persisted tool-call records.
 - [ ] Redis-backed durable queue.
-- [~] Worker leasing and stuck-run recovery.
+- [x] Worker leasing and stuck-run recovery.
 - [ ] OpenTelemetry exporter configuration.
 - [ ] Prometheus-compatible metrics endpoint.
 - [ ] S3/MinIO object storage backend.
@@ -432,7 +432,7 @@ Daily execution map:
 - [x] Day 57: Approval authorization enforcement.
 - [x] Day 58: Auth/RBAC docs and security test closure.
 - [x] Day 59: Worker lease model and storage foundation.
-- [ ] Day 60: Stuck-run detection and recovery.
+- [x] Day 60: Stuck-run detection and recovery.
 - [ ] Day 61: Redis queue adapter foundation.
 - [ ] Day 62: Durable retry visibility and worker restart tests.
 - [ ] Day 63: Durable execution closure.

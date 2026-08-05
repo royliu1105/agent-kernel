@@ -105,6 +105,16 @@ Day 59 worker lease storage baseline:
 - Day 59 does not yet switch the worker polling loop to lease-backed claiming;
   that belongs to the stuck-run recovery slice.
 
+Day 60 stuck-run recovery baseline:
+
+- Expired, unreleased worker leases can be listed in expiration order.
+- Recovery fails `running` and `resuming` runs with
+  `error_type = worker_lease_expired` and appends `run_failed`.
+- Recovery releases expired leases after failing or safely skipping them.
+- Expired queued-run leases are released without failing the queued run.
+- Recovery is explicit; normal worker polling still does not automatically run
+  recovery before each pass.
+
 ### Execution State
 
 Stored in Postgres, coordinated by Redis:

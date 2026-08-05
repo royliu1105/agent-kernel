@@ -574,6 +574,22 @@ class WorkerLeaseRepository:
             return None
         return _worker_lease_from_record(record)
 
+    def list_expired(self, *, limit: int = 100) -> list[WorkerLease]:
+        if limit < 1:
+            raise ValueError("Lease list limit must be at least 1.")
+
+        now = utc_now()
+        statement = (
+            select(WorkerLeaseRecord)
+            .where(
+                WorkerLeaseRecord.released_at.is_(None),
+                WorkerLeaseRecord.expires_at <= now,
+            )
+            .order_by(WorkerLeaseRecord.expires_at)
+            .limit(limit)
+        )
+        return [_worker_lease_from_record(record) for record in self._session.scalars(statement)]
+
     def heartbeat(
         self,
         *,

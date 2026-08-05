@@ -143,6 +143,21 @@ Day 59 worker lease storage semantics:
 - Day 59 does not change the public run status machine and does not switch the
   worker polling loop to lease-backed claiming.
 
+Day 60 stuck-run recovery semantics:
+
+- Recovery scans expired, unreleased worker leases.
+- Expired leases for `running` and `resuming` runs transition those runs to
+  `failed` with `error_type = worker_lease_expired`.
+- Recovery appends `run_failed` with lease id, worker id, previous status, and
+  failure reason.
+- Expired leases for `queued` runs are released without failing the run.
+- Non-expired leases are ignored.
+- Recovery is explicit through runtime service or
+  `agent-kernel-worker --recover-stuck`; it is not automatically run before
+  every worker polling pass yet.
+- Recovery does not automatically requeue expired running work because tool
+  side effects must not be repeated blindly.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

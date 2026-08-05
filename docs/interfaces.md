@@ -151,9 +151,12 @@ agent-kernel eval report evals/rag-smoke.json --no-fail-on-failure
 agent-kernel-worker
 agent-kernel-worker --once --limit 10
 agent-kernel-worker --loop --limit 25 --poll-interval 2
+agent-kernel-worker --recover-stuck --limit 100
 ```
 
-The worker uses persisted queued runs as the v0.1 durable queue.
+The worker uses persisted queued runs as the v0.1 durable queue. Beta recovery
+can explicitly fail expired leased runs with `worker_lease_expired` so operators
+can unblock stuck work without blindly repeating side effects.
 
 ## Web Surface
 
