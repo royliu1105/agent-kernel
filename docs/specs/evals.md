@@ -140,6 +140,41 @@ Day 47 intentionally does not implement persisted eval runs, an eval API,
 LLM-as-judge, real-model CI evals, Web eval authoring, or release-blocking eval
 suites.
 
+## Day 67 Provider-Native Tool-Call Eval Foundation
+
+Day 67 adds a deterministic eval runner for provider-native tool-call behavior:
+
+- `ToolCallEvalToolCall`: one observed tool call from a runtime, replay, or
+  external harness.
+- `ToolCallEvalObservation`: one observed run outcome with status, output,
+  error type, timeline events, tool calls, and optional model-call count.
+- `ToolCallEvalCase`: expected behavior for one agent/tool-call scenario.
+- `ToolCallEvalRunner`: async runner that executes cases and returns the same
+  `EvalReport` shape used by existing evals.
+
+Implemented Day 67 assertions:
+
+- Run status.
+- Error type.
+- Tool-call count.
+- Tool name.
+- Tool status.
+- Provider tool-call id.
+- Timeline event sequence.
+- Model-call count.
+- Presence of `output.provider_tool_loop`.
+- Required output content terms.
+
+The first runtime-backed regression cases cover:
+
+- Safe provider-native tool call completes a model/tool/model run.
+- Approval-required provider-native tool call pauses at `waiting_approval`.
+- Unknown provider-native tool call fails safely before a follow-up model call.
+
+Day 67 intentionally does not implement persisted eval runs, eval API endpoints,
+eval Web views, LLM-as-judge, live-provider evals, or release-blocking eval
+suites. Those remain part of later Beta and v1.0 hardening.
+
 ## API / CLI
 
 Expected API:

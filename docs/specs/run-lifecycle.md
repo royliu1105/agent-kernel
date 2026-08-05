@@ -228,6 +228,17 @@ Day 66 provider-native model/tool/model baseline:
 - Day 66 supports one native tool call per loop and does not implement nested
   loops or provider-native approval resume.
 
+Day 67 provider-native lifecycle regression evals:
+
+- Deterministic eval cases exercise real runtime lifecycle outcomes for native
+  tool-call execution.
+- The safe case expects:
+  `run_created -> run_queued -> run_started -> tool_call_requested -> policy_evaluated -> tool_call_completed -> run_completed`.
+- The approval case expects:
+  `run_created -> run_queued -> run_started -> tool_call_requested -> policy_evaluated -> approval_requested -> run_waiting_approval`.
+- The unknown-tool case expects:
+  `run_created -> run_queued -> run_started -> tool_call_requested -> tool_call_failed -> run_failed`.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

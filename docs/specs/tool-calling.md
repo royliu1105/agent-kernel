@@ -185,12 +185,20 @@ Day 66 model/tool/model execution loop:
 - Unknown native tool calls fail safely and do not trigger a follow-up model
   call.
 
-Still deferred after Day 66:
+Day 67 provider-native behavior evals:
+
+- `ToolCallEvalRunner` adds deterministic regression coverage for provider-native
+  tool-call behavior.
+- Runtime-backed eval cases cover safe completion, approval pause, and unknown
+  tool failure.
+- Eval assertions check persisted tool-call metadata, provider tool-call ids,
+  timeline event sequence, model-call count, and final run outcome.
+
+Still deferred after Day 67:
 
 - Multiple provider-native tool calls in one model response.
 - Nested or recursive model/tool/model loops.
 - Resuming a provider-native approval into a follow-up model call after approval.
-- Provider-native behavior evals.
 
 ## State Transitions
 

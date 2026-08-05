@@ -149,6 +149,15 @@ Day 66 model/tool/model provider interaction:
 - Multiple tool calls, nested loops, streaming tool calls, and approval resume
   into a follow-up provider call remain deferred.
 
+Day 67 provider-native regression evals:
+
+- Provider-native tool-call behavior is covered by deterministic eval cases
+  that observe real runtime outcomes without making network calls.
+- The first eval cases cover safe tool completion, approval pause, and unknown
+  tool failure.
+- The eval assertions check provider tool-call ids, timeline event sequence,
+  run status, model-call count, and provider tool loop output.
+
 ## State Transitions
 
 Provider calls do not own run state. The runtime execution service owns run transitions and uses

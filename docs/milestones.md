@@ -407,9 +407,9 @@ Checklist:
 - [x] Approval authorization enforcement.
 - [x] Identity persistence and API key storage foundation.
 - [x] Auth/RBAC docs and security test closure.
-- [ ] Provider-native function calling.
-- [ ] Durable model/tool/model execution loop.
-- [ ] Persisted tool-call records.
+- [x] Provider-native function calling.
+- [x] Durable model/tool/model execution loop.
+- [x] Persisted tool-call records.
 - [~] Redis-backed durable queue.
 - [x] Worker leasing and stuck-run recovery.
 - [ ] OpenTelemetry exporter configuration.
@@ -439,7 +439,7 @@ Daily execution map:
 - [x] Day 64: Provider-native tool-call adapter contract.
 - [x] Day 65: OpenAI native tool-call parsing and persistence.
 - [x] Day 66: Model/tool/model execution loop.
-- [ ] Day 67: Provider-native tool-call evals and regression tests.
+- [x] Day 67: Provider-native tool-call evals and regression tests.
 - [ ] Day 68: OpenAI embeddings backend.
 - [ ] Day 69: pgvector-native vector store.
 - [ ] Day 70: S3/MinIO object storage backend.
@@ -452,7 +452,7 @@ Daily execution map:
 Acceptance:
 
 - [x] Runtime execution survives worker restarts.
-- [ ] Tool calls and approvals are durable and inspectable.
+- [x] Tool calls and approvals are durable and inspectable.
 - [ ] Security boundaries are explicit and tested.
 - [ ] Telemetry can be exported to common production tools.
 - [ ] RAG can run with real embeddings and pgvector.

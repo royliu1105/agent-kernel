@@ -4,6 +4,12 @@ from kernel_evals.datasets import EvalDatasetError, RagEvalDataset, load_rag_eva
 from kernel_evals.models import EvalAssertionResult, EvalCaseResult, EvalReport
 from kernel_evals.rag import RagEvalCase, RagEvalRunner
 from kernel_evals.reporting import eval_report_to_dict
+from kernel_evals.tool_calls import (
+    ToolCallEvalCase,
+    ToolCallEvalObservation,
+    ToolCallEvalRunner,
+    ToolCallEvalToolCall,
+)
 
 __all__ = [
     "EvalDatasetError",
@@ -13,6 +19,10 @@ __all__ = [
     "RagEvalCase",
     "RagEvalDataset",
     "RagEvalRunner",
+    "ToolCallEvalCase",
+    "ToolCallEvalObservation",
+    "ToolCallEvalRunner",
+    "ToolCallEvalToolCall",
     "eval_report_to_dict",
     "load_rag_eval_dataset",
 ]
