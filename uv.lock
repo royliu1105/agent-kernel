@@ -29,6 +29,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "kernel-core" },
     { name = "kernel-identity" },
+    { name = "kernel-observability" },
     { name = "kernel-rag" },
     { name = "kernel-runtime" },
     { name = "kernel-storage" },
@@ -41,6 +42,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-identity", editable = "packages/kernel-identity" },
+    { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "kernel-rag", editable = "packages/kernel-rag" },
     { name = "kernel-runtime", editable = "packages/kernel-runtime" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
@@ -73,6 +75,7 @@ version = "0.1.0"
 source = { editable = "apps/worker" }
 dependencies = [
     { name = "kernel-core" },
+    { name = "kernel-observability" },
     { name = "kernel-providers" },
     { name = "kernel-rag" },
     { name = "kernel-runtime" },
@@ -83,6 +86,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "kernel-core", editable = "packages/kernel-core" },
+    { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "kernel-providers", editable = "packages/kernel-providers" },
     { name = "kernel-rag", editable = "packages/kernel-rag" },
     { name = "kernel-runtime", editable = "packages/kernel-runtime" },

@@ -6,6 +6,7 @@ import asyncio
 from typing import Annotated
 
 import typer
+from kernel_observability import configure_opentelemetry
 from kernel_providers import MockLLMProvider, OpenAIProvider, ReplayLLMProvider
 from kernel_rag import create_rag_tool_registry
 from kernel_runtime import (
@@ -61,6 +62,7 @@ def cli(
         typer.echo("agent-kernel-worker ready")
         return
 
+    configure_opentelemetry()
     engine = create_engine_for_url()
     session_factory = create_session_factory(engine)
     if recover_stuck:

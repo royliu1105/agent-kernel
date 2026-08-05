@@ -259,6 +259,26 @@ Day 28 intentionally does not implement Prometheus endpoints, OpenTelemetry
 metrics exporters, persisted metric tables, retrieval traces, eval dashboards, or
 Web UI metric views.
 
+## Day 72 OpenTelemetry Exporter Configuration
+
+Day 72 adds the first production exporter configuration boundary:
+
+- OpenTelemetry remains disabled by default.
+- `AGENT_KERNEL_OTEL_ENABLED=true` enables process-level setup.
+- `AGENT_KERNEL_OTEL_SERVICE_NAME` controls the emitted service name.
+- `AGENT_KERNEL_OTEL_EXPORTER=otlp-http` configures an OTLP/HTTP trace exporter.
+- `AGENT_KERNEL_OTEL_EXPORTER=console` configures a local console trace exporter.
+- `AGENT_KERNEL_OTEL_ENDPOINT` points to the collector base endpoint.
+- `AGENT_KERNEL_OTEL_TRACES_ENDPOINT` can override the final trace endpoint.
+- API and worker startup paths both call the same idempotent configuration
+  helper.
+- Missing OpenTelemetry SDK packages produce a clear configuration error only
+  when telemetry is enabled.
+
+Day 72 intentionally does not add fine-grained span instrumentation around
+every runtime operation, OpenTelemetry metrics, Prometheus scraping, or Grafana
+dashboards. Those remain later observability hardening slices.
+
 MVP metrics:
 
 ```text

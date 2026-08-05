@@ -25,6 +25,7 @@ from kernel_core import (
     RunEvent,
 )
 from kernel_identity import Permission
+from kernel_observability import configure_opentelemetry
 from kernel_rag import (
     DocumentChunkingService,
     DocumentIndexingService,
@@ -114,6 +115,7 @@ def create_app(
     retriever: Retriever | None = None,
     api_key_auth_enabled: bool | None = None,
 ) -> FastAPI:
+    configure_opentelemetry()
     app = FastAPI(title="Agent Kernel API", version="0.1.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
     auth_enabled = api_key_auth_enabled

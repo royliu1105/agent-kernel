@@ -412,7 +412,7 @@ Checklist:
 - [x] Persisted tool-call records.
 - [~] Redis-backed durable queue.
 - [x] Worker leasing and stuck-run recovery.
-- [ ] OpenTelemetry exporter configuration.
+- [x] OpenTelemetry exporter configuration.
 - [ ] Prometheus-compatible metrics endpoint.
 - [x] S3/MinIO object storage backend.
 - [x] OpenAI embeddings backend.
@@ -444,7 +444,7 @@ Daily execution map:
 - [x] Day 69: pgvector-native vector store.
 - [x] Day 70: S3/MinIO object storage backend.
 - [x] Day 71: Production RAG/storage integration tests.
-- [ ] Day 72: OpenTelemetry exporter configuration.
+- [x] Day 72: OpenTelemetry exporter configuration.
 - [ ] Day 73: Prometheus-compatible metrics endpoint.
 - [ ] Day 74: Persisted eval runs, eval API, and live Web operator views.
 - [ ] Day 75: Beta closure, summary docs, and full verification.

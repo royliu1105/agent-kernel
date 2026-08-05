@@ -11,16 +11,21 @@ from kernel_observability import (
     JsonLogFormatter,
     LatencyTimer,
     ObservabilityContext,
+    OpenTelemetryConfig,
+    OpenTelemetryConfigurationError,
     build_log_fields,
     build_log_record,
+    configure_opentelemetry,
     create_span_id,
     create_trace_id,
     ensure_span_id,
     ensure_trace_id,
+    load_otel_config,
     log_event,
     normalize_labels,
     redact_log_fields,
 )
+from kernel_observability import otel as otel_module
 
 
 def test_trace_and_span_ids_use_otel_compatible_hex_shapes() -> None:
@@ -212,3 +217,144 @@ def test_in_memory_metrics_recorder_tracks_counters_and_observations() -> None:
 
 def test_normalize_labels_returns_stable_sorted_label_key() -> None:
     assert normalize_labels({"b": "2", "a": "1"}) == (("a", "1"), ("b", "2"))
+
+
+def test_load_otel_config_defaults_to_disabled() -> None:
+    config = load_otel_config({})
+
+    assert config == OpenTelemetryConfig(
+        enabled=False,
+        service_name="agent-kernel",
+        exporter="otlp-http",
+        endpoint="http://localhost:4318",
+    )
+
+
+def test_load_otel_config_parses_exporter_environment() -> None:
+    config = load_otel_config(
+        {
+            "AGENT_KERNEL_OTEL_ENABLED": "true",
+            "AGENT_KERNEL_OTEL_SERVICE_NAME": "agent-kernel-api",
+            "AGENT_KERNEL_OTEL_EXPORTER": "console",
+            "AGENT_KERNEL_OTEL_ENDPOINT": "http://collector:4318",
+        }
+    )
+
+    assert config == OpenTelemetryConfig(
+        enabled=True,
+        service_name="agent-kernel-api",
+        exporter="console",
+        endpoint="http://collector:4318",
+    )
+
+
+def test_load_otel_config_rejects_invalid_values() -> None:
+    with pytest.raises(OpenTelemetryConfigurationError, match="boolean"):
+        load_otel_config({"AGENT_KERNEL_OTEL_ENABLED": "sometimes"})
+    with pytest.raises(OpenTelemetryConfigurationError, match="AGENT_KERNEL_OTEL_EXPORTER"):
+        load_otel_config({"AGENT_KERNEL_OTEL_EXPORTER": "zipkin"})
+
+
+def test_configure_opentelemetry_is_noop_when_disabled() -> None:
+    otel_module.reset_opentelemetry_configuration_for_tests()
+
+    result = configure_opentelemetry(OpenTelemetryConfig(enabled=False))
+
+    assert result.enabled is False
+    assert result.configured is False
+    assert result.reason == "disabled"
+
+
+def test_configure_opentelemetry_wires_otlp_http_exporter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    otel_module.reset_opentelemetry_configuration_for_tests()
+    trace_api = _FakeTraceApi()
+
+    monkeypatch.setattr(
+        otel_module,
+        "_import_otel_sdk",
+        lambda: otel_module._OpenTelemetrySdk(
+            trace_api=trace_api,
+            resource_class=_FakeResource,
+            tracer_provider_class=_FakeTracerProvider,
+            batch_span_processor_class=_FakeBatchSpanProcessor,
+            console_span_exporter_class=_FakeConsoleSpanExporter,
+            otlp_span_exporter_class=_FakeOtlpSpanExporter,
+        ),
+    )
+
+    result = configure_opentelemetry(
+        OpenTelemetryConfig(
+            enabled=True,
+            service_name="agent-kernel-api",
+            exporter="otlp-http",
+            endpoint="http://collector:4318",
+        )
+    )
+
+    assert result.enabled is True
+    assert result.configured is True
+    assert result.service_name == "agent-kernel-api"
+    assert isinstance(trace_api.provider, _FakeTracerProvider)
+    assert trace_api.provider.resource == {"service.name": "agent-kernel-api"}
+    processor = trace_api.provider.processors[0]
+    assert isinstance(processor.exporter, _FakeOtlpSpanExporter)
+    assert processor.exporter.endpoint == "http://collector:4318/v1/traces"
+
+    second = configure_opentelemetry(OpenTelemetryConfig(enabled=True))
+    assert second.configured is False
+    assert second.reason == "already_configured"
+
+
+def test_configure_opentelemetry_reports_missing_sdk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    otel_module.reset_opentelemetry_configuration_for_tests()
+
+    def raise_missing_sdk() -> object:
+        raise OpenTelemetryConfigurationError("missing sdk")
+
+    monkeypatch.setattr(otel_module, "_import_otel_sdk", raise_missing_sdk)
+
+    with pytest.raises(OpenTelemetryConfigurationError, match="missing sdk"):
+        configure_opentelemetry(OpenTelemetryConfig(enabled=True))
+
+
+class _FakeTraceApi:
+    def __init__(self) -> None:
+        self.provider: _FakeTracerProvider | None = None
+
+    def set_tracer_provider(self, provider: object) -> None:
+        assert isinstance(provider, _FakeTracerProvider)
+        self.provider = provider
+
+
+class _FakeResource:
+    @classmethod
+    def create(cls, attributes: dict[str, str]) -> dict[str, str]:
+        return attributes
+
+
+class _FakeTracerProvider:
+    def __init__(self, *, resource: dict[str, str]) -> None:
+        self.resource = resource
+        self.processors: list[_FakeBatchSpanProcessor] = []
+
+    def add_span_processor(self, processor: object) -> None:
+        assert isinstance(processor, _FakeBatchSpanProcessor)
+        self.processors.append(processor)
+
+
+class _FakeBatchSpanProcessor:
+    def __init__(self, exporter: object) -> None:
+        self.exporter = exporter
+
+
+class _FakeConsoleSpanExporter:
+    pass
+
+
+class _FakeOtlpSpanExporter:
+    def __init__(self, *, endpoint: str) -> None:
+        self.endpoint = endpoint

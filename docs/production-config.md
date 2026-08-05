@@ -39,6 +39,10 @@ AGENT_KERNEL_S3_PREFIX=prod
 AGENT_KERNEL_S3_ENDPOINT_URL=
 AGENT_KERNEL_S3_REGION=us-east-1
 AGENT_KERNEL_VECTOR_STORE=auto
+AGENT_KERNEL_OTEL_ENABLED=true
+AGENT_KERNEL_OTEL_SERVICE_NAME=agent-kernel
+AGENT_KERNEL_OTEL_EXPORTER=otlp-http
+AGENT_KERNEL_OTEL_ENDPOINT=http://otel-collector:4318
 ```
 
 Web:
@@ -125,6 +129,31 @@ Embedding storage:
   default `text-embedding-3-small` configuration. If you choose a different
   embedding dimension in production, add a matching pgvector expression index
   before treating that path as performance-ready.
+
+## OpenTelemetry
+
+OpenTelemetry trace exporter setup is controlled by:
+
+```bash
+AGENT_KERNEL_OTEL_ENABLED=true
+AGENT_KERNEL_OTEL_SERVICE_NAME=agent-kernel-api
+AGENT_KERNEL_OTEL_EXPORTER=otlp-http
+AGENT_KERNEL_OTEL_ENDPOINT=http://otel-collector:4318
+AGENT_KERNEL_OTEL_TRACES_ENDPOINT=
+```
+
+Supported exporters:
+
+- `otlp-http`: sends spans to an OTLP/HTTP collector. If
+  `AGENT_KERNEL_OTEL_TRACES_ENDPOINT` is empty, Agent Kernel appends
+  `/v1/traces` to `AGENT_KERNEL_OTEL_ENDPOINT`.
+- `console`: writes spans to stdout for local inspection.
+
+OpenTelemetry is disabled by default. Production images that enable it must
+include `opentelemetry-sdk` and `opentelemetry-exporter-otlp-proto-http`.
+The API and worker both call the shared configuration helper at startup. The
+helper is idempotent, so repeated app creation in tests and local reload flows
+does not attach duplicate span processors.
 
 ## Database Migrations
 

@@ -7,6 +7,7 @@ dependencies = [
   "fastapi>=0.115.0",
   "kernel-core",
   "kernel-identity",
+  "kernel-observability",
   "kernel-rag",
   "kernel-runtime",
   "kernel-storage",
