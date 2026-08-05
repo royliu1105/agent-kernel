@@ -1,14 +1,18 @@
+from datetime import timedelta
 from uuid import UUID
 
-from kernel_core import DocumentStatus, KnowledgeBaseStatus, RunEventType, RunStatus
+from kernel_core import DocumentStatus, KnowledgeBaseStatus, RunEventType, RunStatus, utc_now
 from kernel_observability import TRACE_ID_PATTERN
 from kernel_storage import (
     AgentRepository,
     DocumentRepository,
     KnowledgeBaseRepository,
     RunRepository,
+    WorkerLeaseRepository,
     WorkspaceRepository,
 )
+from kernel_storage.models import WorkerLeaseRecord
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -152,6 +156,108 @@ def test_run_repository_lists_queued_runs(sqlite_session_factory: sessionmaker[S
 
     assert [run.id for run in queued] == [queued_run.id]
     assert created_run.id not in {run.id for run in queued}
+
+
+def test_worker_lease_repository_acquires_heartbeats_and_releases(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="worker-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "leased"})
+        RunRepository(session).update_status(run_id=run.id, status=RunStatus.QUEUED)
+        repository = WorkerLeaseRepository(session)
+
+        lease = repository.acquire(run_id=run.id, worker_id="worker-a", ttl_seconds=60)
+        assert lease is not None
+        duplicate = repository.acquire(run_id=run.id, worker_id="worker-b", ttl_seconds=60)
+        active = repository.get_active(run_id=run.id)
+        heartbeat = repository.heartbeat(lease_token=lease.lease_token, ttl_seconds=120)
+        released = repository.release(lease_token=lease.lease_token)
+        active_after_release = repository.get_active(run_id=run.id)
+
+    assert lease.run_id == run.id
+    assert lease.worker_id == "worker-a"
+    assert duplicate is None
+    assert active is not None
+    assert active.id == lease.id
+    assert heartbeat is not None
+    assert heartbeat.expires_at > lease.expires_at
+    assert released is not None
+    assert released.released_at is not None
+    assert active_after_release is None
+
+
+def test_worker_lease_repository_only_acquires_queued_runs(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="worker-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "created"})
+
+        lease = WorkerLeaseRepository(session).acquire(
+            run_id=run.id,
+            worker_id="worker-a",
+            ttl_seconds=60,
+        )
+
+    assert lease is None
+
+
+def test_worker_lease_repository_allows_reacquire_after_expiration(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="worker-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "expired"})
+        RunRepository(session).update_status(run_id=run.id, status=RunStatus.QUEUED)
+        repository = WorkerLeaseRepository(session)
+        first = repository.acquire(run_id=run.id, worker_id="worker-a", ttl_seconds=60)
+        assert first is not None
+
+        record = session.scalar(
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.id == str(first.id))
+        )
+        assert record is not None
+        record.expires_at = utc_now() - timedelta(seconds=1)
+        session.commit()
+
+        second = repository.acquire(run_id=run.id, worker_id="worker-b", ttl_seconds=60)
+        expired_record = session.scalar(
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.id == str(first.id))
+        )
+
+    assert second is not None
+    assert second.id != first.id
+    assert second.worker_id == "worker-b"
+    assert expired_record is not None
+    assert expired_record.released_at is not None
+
+
+def test_worker_lease_repository_rejects_invalid_inputs(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="worker-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "invalid"})
+        RunRepository(session).update_status(run_id=run.id, status=RunStatus.QUEUED)
+        repository = WorkerLeaseRepository(session)
+
+        try:
+            repository.acquire(run_id=run.id, worker_id="", ttl_seconds=60)
+        except ValueError as error:
+            worker_id_error = str(error)
+        else:
+            worker_id_error = ""
+
+        try:
+            repository.acquire(run_id=run.id, worker_id="worker-a", ttl_seconds=0)
+        except ValueError as error:
+            ttl_error = str(error)
+        else:
+            ttl_error = ""
+
+    assert worker_id_error == "Lease worker_id must not be empty."
+    assert ttl_error == "Lease ttl_seconds must be at least 1."
 
 
 def test_run_repository_completes_run_with_output_and_usage(

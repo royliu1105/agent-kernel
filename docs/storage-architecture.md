@@ -94,11 +94,23 @@ Day 57 approval authorization baseline:
 - Resume approval prechecks also filter through the related run workspace.
 - Other runtime and RAG resources remain unscoped until later Beta slices.
 
+Day 59 worker lease storage baseline:
+
+- `worker_leases` stores durable worker claims for queued runs.
+- A lease belongs to one run and records `worker_id`, opaque `lease_token`,
+  acquisition time, heartbeat time, expiration time, and optional release time.
+- Lease acquisition is repository-enforced: only queued runs can be leased, and
+  only one active lease can exist for a run.
+- Expired leases can be superseded by a new lease.
+- Day 59 does not yet switch the worker polling loop to lease-backed claiming;
+  that belongs to the stuck-run recovery slice.
+
 ### Execution State
 
 Stored in Postgres, coordinated by Redis:
 
 - Runs.
+- Worker leases.
 - Run steps.
 - Messages.
 - Model calls.

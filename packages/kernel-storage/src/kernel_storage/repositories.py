@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import builtins
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from kernel_core import (
     Agent,
@@ -30,6 +30,7 @@ from kernel_core import (
     RunStatus,
     ToolCall,
     ToolCallStatus,
+    WorkerLease,
     utc_now,
 )
 from kernel_identity import (
@@ -64,6 +65,7 @@ from kernel_storage.models import (
     RunEventRecord,
     RunRecord,
     ToolCallRecord,
+    WorkerLeaseRecord,
     WorkspaceMembershipRecord,
     WorkspaceRecord,
 )
@@ -524,6 +526,109 @@ class RunRepository:
                 trace_id=trace_id,
             )
         )
+
+
+class WorkerLeaseRepository:
+    """Persistence operations for worker run leases."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def acquire(
+        self,
+        *,
+        run_id: UUID,
+        worker_id: str,
+        ttl_seconds: int = 60,
+    ) -> WorkerLease | None:
+        if ttl_seconds < 1:
+            raise ValueError("Lease ttl_seconds must be at least 1.")
+        if not worker_id.strip():
+            raise ValueError("Lease worker_id must not be empty.")
+
+        run = self._session.get(RunRecord, str(run_id))
+        if run is None or RunStatus(run.status) is not RunStatus.QUEUED:
+            return None
+
+        now = utc_now()
+        active_lease = self._active_record_for_run(run_id=run_id, now=now)
+        if active_lease is not None:
+            return None
+
+        self._release_expired_records(run_id=run_id, now=now)
+        lease = WorkerLease(
+            run_id=run_id,
+            worker_id=worker_id.strip(),
+            lease_token=str(uuid4()),
+            acquired_at=now,
+            heartbeat_at=now,
+            expires_at=now + timedelta(seconds=ttl_seconds),
+        )
+        self._session.add(_worker_lease_to_record(lease))
+        self._session.commit()
+        return lease
+
+    def get_active(self, *, run_id: UUID) -> WorkerLease | None:
+        record = self._active_record_for_run(run_id=run_id, now=utc_now())
+        if record is None:
+            return None
+        return _worker_lease_from_record(record)
+
+    def heartbeat(
+        self,
+        *,
+        lease_token: str,
+        ttl_seconds: int = 60,
+    ) -> WorkerLease | None:
+        if ttl_seconds < 1:
+            raise ValueError("Lease ttl_seconds must be at least 1.")
+
+        now = utc_now()
+        record = self._session.scalar(
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease_token)
+        )
+        if record is None or not _worker_lease_record_is_active(record, now):
+            return None
+
+        record.heartbeat_at = now
+        record.expires_at = now + timedelta(seconds=ttl_seconds)
+        self._session.commit()
+        return _worker_lease_from_record(record)
+
+    def release(self, *, lease_token: str) -> WorkerLease | None:
+        now = utc_now()
+        record = self._session.scalar(
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease_token)
+        )
+        if record is None or record.released_at is not None:
+            return None
+
+        record.released_at = now
+        self._session.commit()
+        return _worker_lease_from_record(record)
+
+    def _active_record_for_run(self, *, run_id: UUID, now: datetime) -> WorkerLeaseRecord | None:
+        statement = (
+            select(WorkerLeaseRecord)
+            .where(
+                WorkerLeaseRecord.run_id == str(run_id),
+                WorkerLeaseRecord.released_at.is_(None),
+            )
+            .order_by(WorkerLeaseRecord.acquired_at.desc())
+        )
+        for record in self._session.scalars(statement):
+            if _worker_lease_record_is_active(record, now):
+                return record
+        return None
+
+    def _release_expired_records(self, *, run_id: UUID, now: datetime) -> None:
+        statement = select(WorkerLeaseRecord).where(
+            WorkerLeaseRecord.run_id == str(run_id),
+            WorkerLeaseRecord.released_at.is_(None),
+        )
+        for record in self._session.scalars(statement):
+            if not _worker_lease_record_is_active(record, now):
+                record.released_at = now
 
 
 class ToolCallRepository:
@@ -1399,6 +1504,43 @@ def _run_from_record(record: RunRecord) -> Run:
         ended_at=record.ended_at,
         created_at=record.created_at,
     )
+
+
+def _worker_lease_to_record(lease: WorkerLease) -> WorkerLeaseRecord:
+    return WorkerLeaseRecord(
+        id=str(lease.id),
+        run_id=str(lease.run_id),
+        worker_id=lease.worker_id,
+        lease_token=lease.lease_token,
+        acquired_at=lease.acquired_at,
+        heartbeat_at=lease.heartbeat_at,
+        expires_at=lease.expires_at,
+        released_at=lease.released_at,
+    )
+
+
+def _worker_lease_from_record(record: WorkerLeaseRecord) -> WorkerLease:
+    return WorkerLease(
+        id=UUID(record.id),
+        run_id=UUID(record.run_id),
+        worker_id=record.worker_id,
+        lease_token=record.lease_token,
+        acquired_at=record.acquired_at,
+        heartbeat_at=record.heartbeat_at,
+        expires_at=record.expires_at,
+        released_at=record.released_at,
+    )
+
+
+def _worker_lease_record_is_active(record: WorkerLeaseRecord, now: datetime) -> bool:
+    if record.released_at is not None:
+        return False
+
+    expires_at = record.expires_at
+    comparison_now = now
+    if expires_at.tzinfo is None and comparison_now.tzinfo is not None:
+        comparison_now = comparison_now.replace(tzinfo=None)
+    return expires_at > comparison_now
 
 
 def _apply_status(record: RunRecord, status: RunStatus) -> None:

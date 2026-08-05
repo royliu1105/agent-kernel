@@ -27,6 +27,7 @@ Initial entities:
 - `ToolCall`
 - `Approval`
 - `RunEvent`
+- `WorkerLease`
 
 Day 2 storage contract:
 
@@ -127,6 +128,20 @@ Day 6 worker semantics:
 - OpenAI execution remains opt-in through `openai:*` model references and `OPENAI_API_KEY`.
 - Redis is not used as the Day 6 queue. Redis-backed scheduling, leasing, heartbeats, and
   distributed concurrency are explicitly deferred.
+
+Day 59 worker lease storage semantics:
+
+- `WorkerLease` is an internal coordination record for durable worker execution.
+- A lease references one run and records `worker_id`, opaque `lease_token`,
+  `acquired_at`, `heartbeat_at`, `expires_at`, and optional `released_at`.
+- Only queued runs can acquire a lease.
+- A run can have at most one active, unreleased, unexpired lease.
+- Heartbeats extend lease expiration only when the caller presents the active
+  lease token.
+- Release marks the lease as no longer active.
+- Expired leases can be superseded by a new lease.
+- Day 59 does not change the public run status machine and does not switch the
+  worker polling loop to lease-backed claiming.
 
 Day 12 approval interrupt/resume semantics:
 

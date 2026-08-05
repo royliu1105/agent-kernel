@@ -25,6 +25,7 @@ from kernel_core.models import (
     RunStepType,
     ToolCall,
     ToolCallStatus,
+    WorkerLease,
     utc_now,
 )
 
@@ -53,5 +54,6 @@ __all__ = [
     "RunStepType",
     "ToolCall",
     "ToolCallStatus",
+    "WorkerLease",
     "utc_now",
 ]

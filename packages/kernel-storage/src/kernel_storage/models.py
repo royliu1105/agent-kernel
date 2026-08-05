@@ -186,6 +186,30 @@ class RunRecord(Base):
     approvals: Mapped[list[ApprovalRecord]] = relationship(
         back_populates="run", cascade="all, delete-orphan"
     )
+    worker_leases: Mapped[list[WorkerLeaseRecord]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
+
+class WorkerLeaseRecord(Base):
+    __tablename__ = "worker_leases"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    worker_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    lease_token: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    acquired_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    heartbeat_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    run: Mapped[RunRecord] = relationship(back_populates="worker_leases")
 
 
 class RunStepRecord(Base):

@@ -173,6 +173,17 @@ class Run(KernelModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class WorkerLease(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    run_id: UUID
+    worker_id: str = Field(min_length=1, max_length=255)
+    lease_token: str = Field(min_length=1, max_length=255)
+    acquired_at: datetime = Field(default_factory=utc_now)
+    heartbeat_at: datetime = Field(default_factory=utc_now)
+    expires_at: datetime
+    released_at: datetime | None = None
+
+
 class RunStep(KernelModel):
     id: UUID = Field(default_factory=uuid4)
     run_id: UUID

@@ -20,6 +20,7 @@ from kernel_storage.repositories import (
     PrincipalRepository,
     RunRepository,
     ToolCallRepository,
+    WorkerLeaseRepository,
     WorkspaceMembershipRepository,
     WorkspaceRepository,
 )
@@ -45,6 +46,7 @@ __all__ = [
     "PrincipalRepository",
     "RunRepository",
     "ToolCallRepository",
+    "WorkerLeaseRepository",
     "WorkspaceMembershipRepository",
     "WorkspaceRepository",
     "create_engine_for_url",

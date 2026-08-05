@@ -112,8 +112,10 @@ agent-kernel-worker --loop --limit 25 --poll-interval 2
 
 Run at least one worker process for queued agent execution.
 
-Current worker behavior uses persisted queued runs as the MVP queue. Redis-backed
-scheduling, distributed leases, and advanced retry queues are deferred.
+Current worker behavior uses persisted queued runs as the MVP queue. The Beta
+storage layer now includes worker leases, but the worker polling loop has not
+yet switched to lease-backed claiming. Stuck-run recovery, Redis-backed
+scheduling, and advanced retry queues are later Beta slices.
 
 ## Web
 
