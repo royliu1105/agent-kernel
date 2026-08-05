@@ -443,7 +443,7 @@ Daily execution map:
 - [x] Day 68: OpenAI embeddings backend.
 - [x] Day 69: pgvector-native vector store.
 - [x] Day 70: S3/MinIO object storage backend.
-- [ ] Day 71: Production RAG/storage integration tests.
+- [x] Day 71: Production RAG/storage integration tests.
 - [ ] Day 72: OpenTelemetry exporter configuration.
 - [ ] Day 73: Prometheus-compatible metrics endpoint.
 - [ ] Day 74: Persisted eval runs, eval API, and live Web operator views.
