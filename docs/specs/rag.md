@@ -30,11 +30,11 @@ Initial entities:
 - `RetrievalResult`
 - `Citation`
 
-MVP storage:
+Current storage:
 
 ```text
 Document metadata -> Postgres
-Document body/artifacts -> LocalObjectStore
+Document body/artifacts -> ObjectStore (LocalObjectStore or S3ObjectStore)
 Embeddings -> pgvector
 ```
 
@@ -73,6 +73,29 @@ Day 15 implements the first RAG data-plane path:
 - Enforce a conservative upload size limit.
 
 Day 15 intentionally does not parse uploaded files, chunk text, call embeddings, write vectors, retrieve content, or expose `kb_search`.
+
+## Day 70 S3/MinIO Object Storage Backend
+
+Day 70 adds a configurable object-store boundary:
+
+- `ObjectStore` protocol defines document/artifact write and URI read behavior.
+- `LocalObjectStore` remains the default developer and CI backend.
+- `S3ObjectStore` supports AWS S3 and MinIO-compatible endpoints.
+- `create_object_store()` selects the backend with
+  `AGENT_KERNEL_OBJECT_STORE_BACKEND`.
+- S3 configuration uses:
+  - `AGENT_KERNEL_S3_BUCKET`
+  - `AGENT_KERNEL_S3_PREFIX`
+  - `AGENT_KERNEL_S3_ENDPOINT_URL`
+  - `AGENT_KERNEL_S3_REGION`
+- Local URIs use `object://local/<object-key>`.
+- S3 URIs use `s3://<bucket>/<object-key>`.
+- S3 writes preserve content type and store sha256 checksum metadata.
+- Ingestion, chunking, and API startup now depend on the `ObjectStore`
+  protocol rather than the concrete local filesystem store.
+
+Day 70 intentionally does not add multipart uploads, presigned URLs, object
+encryption management, lifecycle policies, or live S3/MinIO CI.
 
 ## Day 16 Ingestion and Parser Foundation
 

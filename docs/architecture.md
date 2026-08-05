@@ -40,16 +40,16 @@ Process responsibilities:
 - Web owns the Agent Workbench operator surface.
 - Postgres is the recommended production database.
 - SQLite remains the fastest local development path.
-- Redis is included in the stack for future queue/cache hardening but is not the v0.1 durable queue.
-- Local filesystem object storage is the v0.1 object backend.
+- Redis has a queue adapter foundation; default API/worker paths still keep
+  scheduling conservative.
+- Object storage can use local filesystem storage or S3/MinIO-compatible
+  storage through configuration.
 
-Important v0.1 boundaries:
+Important current boundaries:
 
 - Web Workbench data is mostly fixture-backed.
 - Web approval decisions are local UI state.
-- Provider-native function calling is deferred.
 - Automatic model planning for tool choice is deferred.
-- Auth, RBAC, and multi-tenant isolation are deferred.
 - OpenTelemetry exporters and Prometheus endpoints are deferred.
 
 ## High-Level Flow

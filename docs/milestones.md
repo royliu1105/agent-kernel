@@ -414,7 +414,7 @@ Checklist:
 - [x] Worker leasing and stuck-run recovery.
 - [ ] OpenTelemetry exporter configuration.
 - [ ] Prometheus-compatible metrics endpoint.
-- [ ] S3/MinIO object storage backend.
+- [x] S3/MinIO object storage backend.
 - [x] OpenAI embeddings backend.
 - [x] pgvector-native vector store.
 - [ ] Persisted eval runs.
@@ -442,7 +442,7 @@ Daily execution map:
 - [x] Day 67: Provider-native tool-call evals and regression tests.
 - [x] Day 68: OpenAI embeddings backend.
 - [x] Day 69: pgvector-native vector store.
-- [ ] Day 70: S3/MinIO object storage backend.
+- [x] Day 70: S3/MinIO object storage backend.
 - [ ] Day 71: Production RAG/storage integration tests.
 - [ ] Day 72: OpenTelemetry exporter configuration.
 - [ ] Day 73: Prometheus-compatible metrics endpoint.
@@ -456,7 +456,7 @@ Acceptance:
 - [ ] Security boundaries are explicit and tested.
 - [ ] Telemetry can be exported to common production tools.
 - [x] RAG can run with real embeddings and pgvector.
-- [ ] Storage backends can be switched by configuration.
+- [x] Storage backends can be switched by configuration.
 
 ## v1.0 Release Candidate: Day 76-90
 

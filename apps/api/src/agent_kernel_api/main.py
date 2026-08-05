@@ -33,9 +33,10 @@ from kernel_rag import (
     DocumentNotFoundError,
     DocumentNotIndexableError,
     DocumentNotReadyError,
-    LocalObjectStore,
+    ObjectStore,
     ObjectTooLargeError,
     Retriever,
+    create_object_store,
     create_rag_tool_registry,
 )
 from kernel_rag import (
@@ -106,7 +107,7 @@ from agent_kernel_api.schemas import (
 def create_app(
     session_factory: sessionmaker[Session] | None = None,
     execution_service: RunExecutionService | None = None,
-    object_store: LocalObjectStore | None = None,
+    object_store: ObjectStore | None = None,
     ingestion_service: DocumentIngestionService | None = None,
     chunking_service: DocumentChunkingService | None = None,
     indexing_service: DocumentIndexingService | None = None,
@@ -124,7 +125,7 @@ def create_app(
     runner = execution_service or RunExecutionService(
         tool_registry=create_rag_tool_registry(session_factory=factory)
     )
-    store = object_store or LocalObjectStore()
+    store = object_store or create_object_store()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)
     indexer = indexing_service or DocumentIndexingService()

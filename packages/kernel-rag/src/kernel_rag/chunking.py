@@ -9,7 +9,7 @@ from uuid import UUID
 from kernel_core import Document, DocumentChunk, DocumentStatus, IngestionJobStatus
 from kernel_storage import DocumentChunkRepository, DocumentRepository, IngestionJobRepository
 
-from kernel_rag.object_store import LocalObjectStore
+from kernel_rag.object_store import ObjectStore, create_object_store
 
 DEFAULT_CHUNK_SIZE_CHARS = 1000
 DEFAULT_CHUNK_OVERLAP_CHARS = 150
@@ -94,10 +94,10 @@ class DocumentChunkingService:
     def __init__(
         self,
         *,
-        object_store: LocalObjectStore | None = None,
+        object_store: ObjectStore | None = None,
         chunker: TextChunker | None = None,
     ) -> None:
-        self._object_store = object_store or LocalObjectStore()
+        self._object_store = object_store or create_object_store()
         self._chunker = chunker or TextChunker()
 
     def chunk_document(

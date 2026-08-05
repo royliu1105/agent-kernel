@@ -7,7 +7,7 @@ from uuid import UUID
 from kernel_core import Document, DocumentStatus, IngestionJob
 from kernel_storage import DocumentRepository, IngestionJobRepository, IngestionJobStateError
 
-from kernel_rag.object_store import LocalObjectStore
+from kernel_rag.object_store import ObjectStore, create_object_store
 from kernel_rag.parsers import ParserError, TextMarkdownParser, UnsupportedDocumentError
 
 
@@ -27,10 +27,10 @@ class DocumentIngestionService:
     def __init__(
         self,
         *,
-        object_store: LocalObjectStore | None = None,
+        object_store: ObjectStore | None = None,
         parser: TextMarkdownParser | None = None,
     ) -> None:
-        self._object_store = object_store or LocalObjectStore()
+        self._object_store = object_store or create_object_store()
         self._parser = parser or TextMarkdownParser()
 
     def ingest(

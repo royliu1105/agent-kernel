@@ -32,7 +32,12 @@ AGENT_KERNEL_ENV=production
 AGENT_KERNEL_LOG_LEVEL=info
 DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/agent_kernel
 REDIS_URL=redis://redis:6379/0
+AGENT_KERNEL_OBJECT_STORE_BACKEND=s3
 AGENT_KERNEL_OBJECT_STORE_ROOT=/data/objects
+AGENT_KERNEL_S3_BUCKET=agent-kernel
+AGENT_KERNEL_S3_PREFIX=prod
+AGENT_KERNEL_S3_ENDPOINT_URL=
+AGENT_KERNEL_S3_REGION=us-east-1
 AGENT_KERNEL_VECTOR_STORE=auto
 ```
 
@@ -66,14 +71,38 @@ Postgres + pgvector image
 SQLite is supported for local development only. Do not use SQLite as the primary
 multi-user production database.
 
-Object storage in v0.1 is a local filesystem-backed abstraction controlled by:
+Object storage is selected with:
+
+```bash
+AGENT_KERNEL_OBJECT_STORE_BACKEND=local
+AGENT_KERNEL_OBJECT_STORE_BACKEND=s3
+```
+
+Local object storage is controlled by:
 
 ```bash
 AGENT_KERNEL_OBJECT_STORE_ROOT=/data/objects
 ```
 
-Mount this path as durable storage in container deployments. S3/MinIO-compatible
-object storage is a later enhancement.
+Mount this path as durable storage when using the local backend.
+
+S3/MinIO-compatible storage is controlled by:
+
+```bash
+AGENT_KERNEL_S3_BUCKET=agent-kernel
+AGENT_KERNEL_S3_PREFIX=prod
+AGENT_KERNEL_S3_ENDPOINT_URL=https://minio.example.com
+AGENT_KERNEL_S3_REGION=us-east-1
+```
+
+Leave `AGENT_KERNEL_S3_ENDPOINT_URL` empty for AWS S3. Set it for MinIO or
+another S3-compatible service. Production deployments should provide standard
+AWS-compatible credentials through platform secrets, such as
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+
+The S3 backend uses `s3://bucket/key` URIs and stores document artifacts with
+sha256 metadata. Application images that enable `AGENT_KERNEL_OBJECT_STORE_BACKEND=s3`
+must include `boto3` or inject an S3-compatible client.
 
 Embedding storage:
 
@@ -198,6 +227,7 @@ At minimum, treat these as secrets:
 - `DATABASE_URL`
 - `REDIS_URL` when credentials are present
 - `OPENAI_API_KEY`
+- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` when using S3/MinIO
 - Plaintext Agent Kernel API keys returned during creation
 - Future auth signing keys
 - Future encryption keys

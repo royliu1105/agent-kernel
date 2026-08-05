@@ -171,6 +171,7 @@ Persistence and infrastructure adapters:
 - Postgres.
 - pgvector.
 - Local object storage.
+- S3/MinIO-compatible object storage.
 - Redis queue implementation.
 
 ## Application Entrypoints
