@@ -137,6 +137,19 @@ Day 57 approval authorization baseline:
   knowledge bases, documents, memory, tool calls, chunks, embeddings, or
   ingestion jobs.
 
+Day 58 Auth/RBAC closure baseline:
+
+- `docs/auth-rbac.md` is the reader-facing Auth/RBAC baseline for Beta.
+- The Auth/RBAC docs define API key enablement, supported headers, roles,
+  permissions, route checks, object scope, approval authorization, production
+  guidance, deferred scope, and the security test matrix.
+- Security closure tests cover role permission decisions, identity persistence,
+  API key hashing, API auth middleware, route-level permission denial,
+  agent/run workspace isolation, approval workspace isolation, and approval
+  resume compatibility.
+- Day 58 does not add a new auth mechanism or broaden object-level workspace
+  scoping.
+
 Risk levels:
 
 ```text
@@ -328,6 +341,10 @@ Beta security baseline:
 - API keys are persisted as hashes and non-secret prefixes only.
 - Revoked and expired API keys cannot authenticate.
 - Missing or invalid API keys are rejected when API key auth is enabled.
+- API auth env flag parsing is deterministic.
+- Viewer role cannot review approvals.
+- Approval routes cannot access approvals from another workspace.
+- Resume cannot use an approval from another workspace.
 - Authenticated principals without a required route permission receive `403`.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.

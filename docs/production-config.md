@@ -180,6 +180,9 @@ Current object-level workspace scoping:
 - Knowledge, memory, document, tool-call, eval, and observability resources are
   scoped in later Beta slices.
 
+See [Auth and RBAC](auth-rbac.md) for the full role, permission, object-scope,
+and security test matrix.
+
 ## Networking
 
 Expose only the API and Web services publicly.

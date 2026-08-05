@@ -17,32 +17,33 @@ The plan is split into these documents:
 9. [Development Environment](development-environment.md): professional local Python, Docker, Node.js, IDE, and quality-tool setup.
 10. [Quickstart](quickstart.md): real local runtime path for agent/run/worker execution.
 11. [Production Configuration](production-config.md): runtime environment, deployment topology, secrets, storage, and release hardening.
-12. [Dependency Audit Review](dependency-audit.md): npm audit findings, risk acceptance, and follow-up policy.
-13. [Troubleshooting](troubleshooting.md): local setup, Docker, uv, npm, port, worker, and release-verification failure modes.
-14. [Agent Kernel v0.1](v0.1.md): v0.1 product snapshot, capability matrix, readiness, and next steps.
-15. [Public Alpha Guide](public-alpha.md): early-user trial path, feedback workflow, and live Web API priorities.
-16. [Post-v0.1 Completion Plan](post-v0.1-plan.md): Public Alpha, Beta, and v1.0 completion plan.
-17. [Public Alpha Summary](public-alpha-summary.md): completed Day 39-51 hardening work, verification scope, limitations, and Beta entry point.
-18. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
-19. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
-20. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
-21. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
-22. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
-23. [Phase 6 Summary](phase-6-summary.md): completed v0.1 release-hardening work, verification, and remaining release blockers.
-24. [Product Interfaces](interfaces.md): v0.1 API, CLI, worker, and Web UI surface.
-25. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-26. [Development Plan](development-plan.md): v0.1 plan and daily working method.
-27. [Milestones](milestones.md): day-by-day milestone map for v0.1, Public Alpha, Beta, and v1.0.
-28. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-29. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
-30. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
-31. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
-32. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-33. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
-34. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-35. [ADR 0002](adr/0002-storage.md): storage decision.
-36. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-37. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+12. [Auth and RBAC](auth-rbac.md): Beta API key auth, workspace roles, permissions, object scope, and security test matrix.
+13. [Dependency Audit Review](dependency-audit.md): npm audit findings, risk acceptance, and follow-up policy.
+14. [Troubleshooting](troubleshooting.md): local setup, Docker, uv, npm, port, worker, and release-verification failure modes.
+15. [Agent Kernel v0.1](v0.1.md): v0.1 product snapshot, capability matrix, readiness, and next steps.
+16. [Public Alpha Guide](public-alpha.md): early-user trial path, feedback workflow, and live Web API priorities.
+17. [Post-v0.1 Completion Plan](post-v0.1-plan.md): Public Alpha, Beta, and v1.0 completion plan.
+18. [Public Alpha Summary](public-alpha-summary.md): completed Day 39-51 hardening work, verification scope, limitations, and Beta entry point.
+19. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
+20. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
+21. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
+22. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
+23. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
+24. [Phase 6 Summary](phase-6-summary.md): completed v0.1 release-hardening work, verification, and remaining release blockers.
+25. [Product Interfaces](interfaces.md): v0.1 API, CLI, worker, and Web UI surface.
+26. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
+27. [Development Plan](development-plan.md): v0.1 plan and daily working method.
+28. [Milestones](milestones.md): day-by-day milestone map for v0.1, Public Alpha, Beta, and v1.0.
+29. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+30. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
+31. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
+32. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
+33. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+34. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
+35. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+36. [ADR 0002](adr/0002-storage.md): storage decision.
+37. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+38. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 Repository-level release docs:
 

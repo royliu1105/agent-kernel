@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from agent_kernel_api.auth import api_key_auth_enabled_from_env
 from agent_kernel_api.main import create_app
 from fastapi.testclient import TestClient
 from kernel_core import RiskLevel, ToolCallStatus
@@ -14,6 +15,7 @@ from kernel_storage import (
     WorkspaceMembershipRepository,
     WorkspaceRepository,
 )
+from pytest import MonkeyPatch
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -58,6 +60,22 @@ def test_api_key_auth_rejects_invalid_key(
 
     assert response.status_code == 401
     assert response.json() == {"detail": "API key is invalid, revoked, or expired."}
+
+
+def test_api_key_auth_enabled_from_env_parses_truthy_and_falsey_values(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AGENT_KERNEL_API_KEY_AUTH_ENABLED", "true")
+    assert api_key_auth_enabled_from_env() is True
+
+    monkeypatch.setenv("AGENT_KERNEL_API_KEY_AUTH_ENABLED", "1")
+    assert api_key_auth_enabled_from_env() is True
+
+    monkeypatch.setenv("AGENT_KERNEL_API_KEY_AUTH_ENABLED", "off")
+    assert api_key_auth_enabled_from_env() is False
+
+    monkeypatch.delenv("AGENT_KERNEL_API_KEY_AUTH_ENABLED", raising=False)
+    assert api_key_auth_enabled_from_env() is False
 
 
 def test_api_key_auth_accepts_bearer_key_and_updates_last_used(
@@ -168,6 +186,28 @@ def test_route_authorization_allows_operator_write(
 
     assert response.status_code == 201
     assert response.json()["name"] == "operator-created"
+
+
+def test_route_authorization_rejects_viewer_approval_review(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    plaintext_key, workspace_id = _issue_api_key_with_workspace(
+        sqlite_session_factory,
+        "ak_viewer_approval_review",
+        role=WorkspaceRole.VIEWER,
+    )
+    _approval_id = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_id)
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    )
+
+    response = client.get(
+        "/v1/approvals",
+        headers={"Authorization": f"Bearer {plaintext_key}"},
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Permission 'approval:review' is required."}
 
 
 def test_authenticated_agent_create_uses_api_key_workspace(

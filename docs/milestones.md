@@ -406,6 +406,7 @@ Checklist:
 - [x] Agent and run workspace scope retrofit.
 - [x] Approval authorization enforcement.
 - [x] Identity persistence and API key storage foundation.
+- [x] Auth/RBAC docs and security test closure.
 - [ ] Provider-native function calling.
 - [ ] Durable model/tool/model execution loop.
 - [ ] Persisted tool-call records.
@@ -429,7 +430,7 @@ Daily execution map:
 - [x] Day 55: Route-level authorization baseline.
 - [x] Day 56: Workspace scope retrofit plan and first scoped resources.
 - [x] Day 57: Approval authorization enforcement.
-- [ ] Day 58: Auth/RBAC docs and security test closure.
+- [x] Day 58: Auth/RBAC docs and security test closure.
 - [ ] Day 59: Worker lease model and storage foundation.
 - [ ] Day 60: Stuck-run detection and recovery.
 - [ ] Day 61: Redis queue adapter foundation.
