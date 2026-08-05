@@ -30,6 +30,7 @@ class AgentCreateRequest(ApiModel):
 
 class AgentResponse(ApiModel):
     id: UUID
+    workspace_id: UUID | None
     name: str
     description: str
     status: AgentStatus
@@ -52,6 +53,7 @@ class RunResumeRequest(ApiModel):
 class RunResponse(ApiModel):
     id: UUID
     agent_id: UUID
+    workspace_id: UUID | None
     status: RunStatus
     input: dict[str, Any]
     output: dict[str, Any] | None

@@ -105,6 +105,21 @@ Day 55 route authorization baseline:
 - Day 55 does not retrofit existing resource tables with `workspace_id`.
 - Day 55 does not add object-level ownership checks.
 
+Day 56 workspace scope baseline:
+
+- `Agent` and `Run` now carry optional `workspace_id`.
+- `agents.workspace_id` and `runs.workspace_id` are nullable for compatibility
+  with existing local development rows.
+- Authenticated agent creation stores the authenticated API key workspace id.
+- Authenticated run creation stores the authenticated API key workspace id.
+- Agent and run reads are filtered by the authenticated API key workspace when
+  auth is enabled.
+- Runs cannot be created for an agent outside the current authenticated
+  workspace.
+- Existing unauthenticated local quickstart behavior remains compatible.
+- Day 56 does not scope knowledge bases, documents, memory, approvals, tool
+  calls, run events, chunks, embeddings, or ingestion jobs.
+
 Risk levels:
 
 ```text

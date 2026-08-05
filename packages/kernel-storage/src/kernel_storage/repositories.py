@@ -290,15 +290,23 @@ class AgentRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create(self, *, name: str, description: str = "") -> Agent:
-        agent = Agent(name=name, description=description)
+    def create(
+        self,
+        *,
+        name: str,
+        description: str = "",
+        workspace_id: UUID | None = None,
+    ) -> Agent:
+        agent = Agent(name=name, description=description, workspace_id=workspace_id)
         self._session.add(_agent_to_record(agent))
         self._session.commit()
         return agent
 
-    def get(self, agent_id: UUID) -> Agent | None:
+    def get(self, agent_id: UUID, *, workspace_id: UUID | None = None) -> Agent | None:
         record = self._session.get(AgentRecord, str(agent_id))
         if record is None:
+            return None
+        if workspace_id is not None and record.workspace_id != str(workspace_id):
             return None
         return _agent_from_record(record)
 
@@ -319,8 +327,14 @@ class RunRepository:
         agent_id: UUID,
         input_payload: dict[str, Any],
         trace_id: str | None = None,
+        workspace_id: UUID | None = None,
     ) -> Run:
-        run = Run(agent_id=agent_id, input=input_payload, trace_id=ensure_trace_id(trace_id))
+        run = Run(
+            agent_id=agent_id,
+            workspace_id=workspace_id,
+            input=input_payload,
+            trace_id=ensure_trace_id(trace_id),
+        )
         self._session.add(_run_to_record(run))
         self._session.add(
             RunEventRecord(
@@ -335,9 +349,11 @@ class RunRepository:
         self._session.commit()
         return run
 
-    def get(self, run_id: UUID) -> Run | None:
+    def get(self, run_id: UUID, *, workspace_id: UUID | None = None) -> Run | None:
         record = self._session.get(RunRecord, str(run_id))
         if record is None:
+            return None
+        if workspace_id is not None and record.workspace_id != str(workspace_id):
             return None
         return _run_from_record(record)
 
@@ -1264,6 +1280,7 @@ class MemoryRepository:
 def _agent_to_record(agent: Agent) -> AgentRecord:
     return AgentRecord(
         id=str(agent.id),
+        workspace_id=str(agent.workspace_id) if agent.workspace_id is not None else None,
         name=agent.name,
         description=agent.description,
         status=agent.status.value,
@@ -1283,6 +1300,7 @@ def _agent_to_record(agent: Agent) -> AgentRecord:
 def _agent_from_record(record: AgentRecord) -> Agent:
     return Agent(
         id=UUID(record.id),
+        workspace_id=UUID(record.workspace_id) if record.workspace_id is not None else None,
         name=record.name,
         description=record.description,
         status=AgentStatus(record.status),
@@ -1303,6 +1321,7 @@ def _run_to_record(run: Run) -> RunRecord:
     return RunRecord(
         id=str(run.id),
         agent_id=str(run.agent_id),
+        workspace_id=str(run.workspace_id) if run.workspace_id is not None else None,
         status=run.status.value,
         input_payload=run.input,
         output_payload=run.output,
@@ -1322,6 +1341,7 @@ def _run_from_record(record: RunRecord) -> Run:
     return Run(
         id=UUID(record.id),
         agent_id=UUID(record.agent_id),
+        workspace_id=UUID(record.workspace_id) if record.workspace_id is not None else None,
         status=RunStatus(record.status),
         input=record.input_payload,
         output=record.output_payload,

@@ -8,7 +8,7 @@ from typing import Annotated
 from uuid import UUID
 
 import uvicorn
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, status
 from kernel_core import (
     Agent,
     Approval,
@@ -71,6 +71,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from agent_kernel_api.auth import (
     ApiKeyAuthMiddleware,
     api_key_auth_enabled_from_env,
+    current_workspace_id,
     require_permission,
 )
 from agent_kernel_api.schemas import (
@@ -145,11 +146,13 @@ def create_app(
     )
     def create_agent(
         request: AgentCreateRequest,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> AgentResponse:
         agent = AgentRepository(session).create(
             name=request.name,
             description=request.description,
+            workspace_id=current_workspace_id(http_request),
         )
         return _agent_response(agent)
 
@@ -161,9 +164,13 @@ def create_app(
     )
     def get_agent(
         agent_id: UUID,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> AgentResponse:
-        agent = AgentRepository(session).get(agent_id)
+        agent = AgentRepository(session).get(
+            agent_id,
+            workspace_id=current_workspace_id(http_request),
+        )
         if agent is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
         return _agent_response(agent)
@@ -178,11 +185,18 @@ def create_app(
     def create_run(
         agent_id: UUID,
         request: RunCreateRequest,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> RunResponse:
-        if AgentRepository(session).get(agent_id) is None:
+        workspace_id = current_workspace_id(http_request)
+        agent = AgentRepository(session).get(agent_id, workspace_id=workspace_id)
+        if agent is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agent not found")
-        run = RunRepository(session).create(agent_id=agent_id, input_payload=request.input)
+        run = RunRepository(session).create(
+            agent_id=agent_id,
+            workspace_id=workspace_id,
+            input_payload=request.input,
+        )
         return _run_response(run)
 
     @app.get(
@@ -193,9 +207,10 @@ def create_app(
     )
     def get_run(
         run_id: UUID,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> RunResponse:
-        run = RunRepository(session).get(run_id)
+        run = RunRepository(session).get(run_id, workspace_id=current_workspace_id(http_request))
         if run is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         return _run_response(run)
@@ -208,9 +223,14 @@ def create_app(
     )
     def list_run_events(
         run_id: UUID,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[RunEventResponse]:
-        if RunRepository(session).get(run_id) is None:
+        run = RunRepository(session).get(
+            run_id,
+            workspace_id=current_workspace_id(http_request),
+        )
+        if run is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         events = RunRepository(session).list_events(run_id)
         return [_run_event_response(event) for event in events]
@@ -223,10 +243,11 @@ def create_app(
     )
     def queue_run(
         run_id: UUID,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> RunResponse:
         repository = RunRepository(session)
-        run = repository.get(run_id)
+        run = repository.get(run_id, workspace_id=current_workspace_id(http_request))
         if run is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
 
@@ -259,10 +280,11 @@ def create_app(
     )
     def cancel_run(
         run_id: UUID,
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> RunResponse:
         repository = RunRepository(session)
-        run = repository.get(run_id)
+        run = repository.get(run_id, workspace_id=current_workspace_id(http_request))
         if run is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
 
@@ -295,10 +317,19 @@ def create_app(
     )
     async def resume_run(
         run_id: UUID,
+        http_request: Request,
         request: RunResumeRequest | None = None,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> RunResponse:
         try:
+            if (
+                RunRepository(session).get(
+                    run_id,
+                    workspace_id=current_workspace_id(http_request),
+                )
+                is None
+            ):
+                raise RunNotFoundError(f"Run {run_id} was not found.")
             run = await runner.resume(
                 run_id=run_id,
                 repository=RunRepository(session),
@@ -821,6 +852,7 @@ def main() -> None:
 def _agent_response(agent: Agent) -> AgentResponse:
     return AgentResponse(
         id=agent.id,
+        workspace_id=agent.workspace_id,
         name=agent.name,
         description=agent.description,
         status=agent.status,
@@ -837,6 +869,7 @@ def _run_response(run: Run) -> RunResponse:
     return RunResponse(
         id=run.id,
         agent_id=run.agent_id,
+        workspace_id=run.workspace_id,
         status=run.status,
         input=run.input,
         output=run.output,

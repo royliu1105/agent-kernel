@@ -116,6 +116,12 @@ class AgentRecord(Base):
     __tablename__ = "agents"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    workspace_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("workspaces.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
     status: Mapped[str] = mapped_column(
@@ -143,6 +149,12 @@ class RunRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     agent_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    workspace_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("workspaces.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     status: Mapped[str] = mapped_column(String(64), nullable=False, default=RunStatus.CREATED.value)
     input_payload: Mapped[dict[str, Any]] = mapped_column(

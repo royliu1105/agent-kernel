@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Iterable
+from uuid import UUID
 
 from fastapi import HTTPException, Request
 from kernel_identity import (
@@ -111,6 +112,15 @@ def get_auth_context(request: Request) -> AuthContext | None:
     if isinstance(context, AuthContext):
         return context
     return None
+
+
+def current_workspace_id(request: Request) -> UUID | None:
+    """Return the authenticated request workspace id when auth is enabled."""
+
+    context = get_auth_context(request)
+    if context is None:
+        return None
+    return context.api_key.workspace_id
 
 
 def require_permission(permission: Permission) -> Callable[[Request], None]:

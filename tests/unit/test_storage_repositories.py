@@ -7,6 +7,7 @@ from kernel_storage import (
     DocumentRepository,
     KnowledgeBaseRepository,
     RunRepository,
+    WorkspaceRepository,
 )
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -26,6 +27,25 @@ def test_agent_repository_creates_and_loads_agent(
     assert loaded.id == created.id
     assert loaded.name == "research-agent"
     assert loaded.description == "Research assistant"
+
+
+def test_agent_repository_filters_by_workspace(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        workspace = WorkspaceRepository(session).create(name="A", slug="a")
+        other_workspace = WorkspaceRepository(session).create(name="B", slug="b")
+        created = AgentRepository(session).create(
+            name="scoped-agent",
+            workspace_id=workspace.id,
+        )
+
+        visible = AgentRepository(session).get(created.id, workspace_id=workspace.id)
+        hidden = AgentRepository(session).get(created.id, workspace_id=other_workspace.id)
+
+    assert visible is not None
+    assert visible.workspace_id == workspace.id
+    assert hidden is None
 
 
 def test_run_repository_creates_run_and_initial_event(
@@ -51,6 +71,27 @@ def test_run_repository_creates_run_and_initial_event(
     assert events[0].type is RunEventType.RUN_CREATED
     assert events[0].payload == {"status": "created"}
     assert events[0].trace_id == loaded.trace_id
+
+
+def test_run_repository_filters_by_workspace(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        workspace = WorkspaceRepository(session).create(name="A", slug="a")
+        other_workspace = WorkspaceRepository(session).create(name="B", slug="b")
+        agent = AgentRepository(session).create(name="ops-agent", workspace_id=workspace.id)
+        run = RunRepository(session).create(
+            agent_id=agent.id,
+            workspace_id=workspace.id,
+            input_payload={"task": "scoped"},
+        )
+
+        visible = RunRepository(session).get(run.id, workspace_id=workspace.id)
+        hidden = RunRepository(session).get(run.id, workspace_id=other_workspace.id)
+
+    assert visible is not None
+    assert visible.workspace_id == workspace.id
+    assert hidden is None
 
 
 def test_run_repository_accepts_explicit_trace_id(

@@ -171,6 +171,13 @@ permission checks currently use the authenticated API key's workspace as the
 request workspace. Object-level workspace scoping is added in later Beta
 slices.
 
+Current object-level workspace scoping:
+
+- Agents are created and read within the authenticated API key workspace.
+- Runs are created and read within the authenticated API key workspace.
+- Knowledge, memory, document, approval, tool-call, eval, and observability
+  resources are scoped in later Beta slices.
+
 ## Networking
 
 Expose only the API and Web services publicly.

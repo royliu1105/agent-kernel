@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from agent_kernel_api.main import create_app
 from fastapi.testclient import TestClient
 from kernel_identity import PrincipalType, WorkspaceRole
@@ -119,13 +121,16 @@ def test_route_authorization_rejects_viewer_write(
 def test_route_authorization_allows_viewer_read(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
-    plaintext_key = _issue_api_key(
+    plaintext_key, workspace_id = _issue_api_key_with_workspace(
         sqlite_session_factory,
         "ak_viewer_read_secret",
         role=WorkspaceRole.VIEWER,
     )
     with sqlite_session_factory() as session:
-        agent = AgentRepository(session).create(name="readable-agent")
+        agent = AgentRepository(session).create(
+            name="readable-agent",
+            workspace_id=workspace_id,
+        )
     client = TestClient(
         create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
     )
@@ -159,6 +164,103 @@ def test_route_authorization_allows_operator_write(
 
     assert response.status_code == 201
     assert response.json()["name"] == "operator-created"
+
+
+def test_authenticated_agent_create_uses_api_key_workspace(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    plaintext_key, workspace_id = _issue_api_key_with_workspace(
+        sqlite_session_factory,
+        "ak_scoped_agent_secret",
+        role=WorkspaceRole.OPERATOR,
+    )
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    )
+
+    response = client.post(
+        "/v1/agents",
+        json={"name": "scoped-agent"},
+        headers={"Authorization": f"Bearer {plaintext_key}"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["workspace_id"] == str(workspace_id)
+
+
+def test_agent_read_is_workspace_scoped(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    key_a = _issue_api_key(sqlite_session_factory, "ak_workspace_a")
+    key_b = _issue_api_key(sqlite_session_factory, "ak_workspace_b")
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    )
+    created = client.post(
+        "/v1/agents",
+        json={"name": "private-agent"},
+        headers={"Authorization": f"Bearer {key_a}"},
+    ).json()
+
+    response = client.get(
+        f"/v1/agents/{created['id']}",
+        headers={"Authorization": f"Bearer {key_b}"},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Agent not found"}
+
+
+def test_run_create_requires_agent_in_current_workspace(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    key_a = _issue_api_key(sqlite_session_factory, "ak_run_workspace_a")
+    key_b = _issue_api_key(sqlite_session_factory, "ak_run_workspace_b")
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    )
+    created = client.post(
+        "/v1/agents",
+        json={"name": "run-agent"},
+        headers={"Authorization": f"Bearer {key_a}"},
+    ).json()
+
+    response = client.post(
+        f"/v1/agents/{created['id']}/runs",
+        json={"input": {"task": "blocked"}},
+        headers={"Authorization": f"Bearer {key_b}"},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Agent not found"}
+
+
+def test_run_read_is_workspace_scoped(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    key_a = _issue_api_key(sqlite_session_factory, "ak_run_read_workspace_a")
+    key_b = _issue_api_key(sqlite_session_factory, "ak_run_read_workspace_b")
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    )
+    agent = client.post(
+        "/v1/agents",
+        json={"name": "run-read-agent"},
+        headers={"Authorization": f"Bearer {key_a}"},
+    ).json()
+    run = client.post(
+        f"/v1/agents/{agent['id']}/runs",
+        json={"input": {"task": "private"}},
+        headers={"Authorization": f"Bearer {key_a}"},
+    ).json()
+
+    response = client.get(
+        f"/v1/runs/{run['id']}",
+        headers={"Authorization": f"Bearer {key_b}"},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Run not found"}
 
 
 def test_api_key_auth_rejects_disabled_principal(
@@ -205,6 +307,20 @@ def _issue_api_key(
     *,
     role: WorkspaceRole = WorkspaceRole.OPERATOR,
 ) -> str:
+    plaintext, _workspace_id = _issue_api_key_with_workspace(
+        sqlite_session_factory,
+        plaintext_key,
+        role=role,
+    )
+    return plaintext
+
+
+def _issue_api_key_with_workspace(
+    sqlite_session_factory: sessionmaker[Session],
+    plaintext_key: str,
+    *,
+    role: WorkspaceRole = WorkspaceRole.OPERATOR,
+) -> tuple[str, UUID]:
     with sqlite_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
@@ -223,4 +339,4 @@ def _issue_api_key(
             plaintext_key=plaintext_key,
         )
         assert credential is not None
-        return credential.plaintext_key
+        return credential.plaintext_key, workspace.id

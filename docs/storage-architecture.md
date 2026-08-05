@@ -75,6 +75,15 @@ Day 53 identity storage baseline:
 - Existing runtime resources are not workspace-scoped yet; that retrofit belongs
   to later Beta slices.
 
+Day 56 workspace scope baseline:
+
+- `agents.workspace_id` is nullable and points at `workspaces.id`.
+- `runs.workspace_id` is nullable and points at `workspaces.id`.
+- Nullable workspace ids preserve compatibility for pre-auth local development
+  rows and fixture-driven tests.
+- Authenticated API calls populate and filter agent/run workspace scope.
+- Other runtime and RAG resources remain unscoped until later Beta slices.
+
 ### Execution State
 
 Stored in Postgres, coordinated by Redis:
