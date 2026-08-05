@@ -19,6 +19,7 @@ Start here:
 - [README](../README.md)
 - [Quickstart](quickstart.md)
 - [Troubleshooting](troubleshooting.md)
+- [Public Alpha Release Notes](releases/public-alpha.md)
 - [v0.1 Snapshot](v0.1.md)
 - [Post-v0.1 Completion Plan](post-v0.1-plan.md)
 
@@ -149,3 +150,4 @@ Public Alpha can close when:
 - Known limitations are clear.
 - Feedback channels are documented and issue templates are available.
 - The first live Web API integration path is implemented.
+- Public Alpha release notes and announcement draft are clear.

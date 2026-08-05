@@ -364,14 +364,14 @@ Checklist:
 - [x] Harden Docker Compose startup.
 - [x] Add troubleshooting docs.
 - [x] Add first external-user feedback loop.
-- [ ] Prepare Public Alpha announcement.
+- [x] Prepare Public Alpha announcement.
 
 Acceptance:
 
 - [x] A new user can run the project without maintainer help.
 - [x] Core examples work end to end.
 - [x] Known limitations are documented.
-- [ ] Public Alpha release notes are clear.
+- [x] Public Alpha release notes are clear.
 - [x] Feedback channels are documented.
 
 ## Beta: Day 52-75

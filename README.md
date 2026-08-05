@@ -19,6 +19,7 @@ Post-v0.1 completion plan:
 Public Alpha:
 
 - [Public Alpha guide](docs/public-alpha.md)
+- [Public Alpha release notes draft](docs/releases/public-alpha.md)
 - [Feedback templates](.github/ISSUE_TEMPLATE)
 
 Current v0.1 shape:
