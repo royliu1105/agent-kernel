@@ -137,6 +137,35 @@ Day 68 adds a real OpenAI embeddings provider behind the existing
 Day 68 intentionally does not make OpenAI embeddings the default provider,
 does not add pgvector-native storage, and does not add live OpenAI calls to CI.
 
+## Day 69 pgvector-Native Vector Store
+
+Day 69 adds an optional pgvector-native storage and similarity-search path:
+
+- `AGENT_KERNEL_VECTOR_STORE=auto` uses pgvector on PostgreSQL and JSON-vector
+  fallback elsewhere.
+- `AGENT_KERNEL_VECTOR_STORE=json` always uses the SQLite-compatible JSON-vector
+  path.
+- `AGENT_KERNEL_VECTOR_STORE=pgvector` requires PostgreSQL and fails clearly on
+  other databases.
+- Migration `0013_pgvector_embeddings` is a no-op on SQLite and, on PostgreSQL,
+  installs the `vector` extension, adds `chunk_embeddings.vector_pg`, backfills
+  it from the existing JSON `vector` column, and creates a cosine HNSW index.
+- `ChunkEmbeddingRepository.replace_for_document` keeps writing JSON vectors
+  for compatibility and also populates `vector_pg` when pgvector is enabled.
+- `ChunkEmbeddingRepository.similarity_search` orders by pgvector cosine
+  distance on PostgreSQL:
+
+```sql
+ORDER BY ce.vector_pg::vector(<dimensions>) <=> CAST(:query_vector AS vector(<dimensions>))
+```
+
+- The default migration creates a cosine HNSW expression index for 1536
+  dimensions, matching the default `text-embedding-3-small` configuration.
+
+Day 69 intentionally keeps JSON vectors as the compatibility source of truth
+for local tests and does not add BM25, hybrid search, RRF, reranking, query
+rewriting, or live Postgres CI.
+
 ## Phase 3B Retrieval and Agent Integration Plan
 
 Phase 3B completes the RAG usage path:
@@ -209,7 +238,6 @@ Day 21 should not implement large benchmark suites, rerankers, production analyt
 
 The following are valuable but deferred beyond Phase 3:
 
-- pgvector-native vector columns and indexes.
 - BM25 / keyword index.
 - Hybrid search.
 - RRF.

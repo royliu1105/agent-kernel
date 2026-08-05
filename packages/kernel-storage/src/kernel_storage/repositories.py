@@ -48,9 +48,10 @@ from kernel_identity import (
     hash_api_key,
 )
 from kernel_observability import ensure_trace_id
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from kernel_storage.config import get_vector_store_mode
 from kernel_storage.models import (
     AgentRecord,
     ApiKeyRecord,
@@ -85,6 +86,10 @@ class IngestionJobStateError(ValueError):
 
 class DocumentChunkingError(ValueError):
     """Raised when document chunks cannot be persisted."""
+
+
+class VectorStoreConfigError(ValueError):
+    """Raised when vector store configuration is not valid for the database."""
 
 
 class MemoryNotFoundError(ValueError):
@@ -1342,8 +1347,9 @@ class DocumentChunkRepository:
 class ChunkEmbeddingRepository:
     """Persistence operations for chunk embeddings."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, vector_store_mode: str | None = None) -> None:
         self._session = session
+        self._vector_store_mode = vector_store_mode or get_vector_store_mode()
 
     def replace_for_document(
         self,
@@ -1359,6 +1365,7 @@ class ChunkEmbeddingRepository:
             raise DocumentChunkingError("All embeddings must belong to the target document.")
         if any(embedding.model != model for embedding in embeddings):
             raise DocumentChunkingError("All embeddings must use the selected model.")
+        use_pgvector = _use_pgvector(self._session, self._vector_store_mode)
 
         self._session.query(ChunkEmbeddingRecord).filter(
             ChunkEmbeddingRecord.document_id == str(document_id),
@@ -1366,6 +1373,9 @@ class ChunkEmbeddingRepository:
         ).delete(synchronize_session=False)
         for embedding in embeddings:
             self._session.add(_chunk_embedding_to_record(embedding))
+        self._session.flush()
+        if use_pgvector:
+            self._write_pgvector_embeddings(embeddings)
 
         document.status = DocumentStatus.INDEXED.value
         document.error_message = None
@@ -1398,6 +1408,14 @@ class ChunkEmbeddingRepository:
         model: str,
         limit: int = 5,
     ) -> list[tuple[ChunkEmbedding, float]]:
+        if _use_pgvector(self._session, self._vector_store_mode):
+            return self._similarity_search_pgvector(
+                knowledge_base_id=knowledge_base_id,
+                query_vector=query_vector,
+                model=model,
+                limit=limit,
+            )
+
         statement = (
             select(ChunkEmbeddingRecord)
             .join(DocumentRecord, ChunkEmbeddingRecord.document_id == DocumentRecord.id)
@@ -1409,6 +1427,70 @@ class ChunkEmbeddingRepository:
             for record in self._session.scalars(statement)
         ]
         return sorted(scored, key=lambda item: item[1], reverse=True)[:limit]
+
+    def _write_pgvector_embeddings(self, embeddings: list[ChunkEmbedding]) -> None:
+        for embedding in embeddings:
+            self._session.execute(
+                text(
+                    """
+                    UPDATE chunk_embeddings
+                    SET vector_pg = CAST(:vector AS vector)
+                    WHERE id = :embedding_id
+                    """
+                ),
+                {
+                    "embedding_id": str(embedding.id),
+                    "vector": _pgvector_literal(embedding.vector),
+                },
+            )
+
+    def _similarity_search_pgvector(
+        self,
+        *,
+        knowledge_base_id: UUID,
+        query_vector: list[float],
+        model: str,
+        limit: int,
+    ) -> list[tuple[ChunkEmbedding, float]]:
+        query_literal = _pgvector_literal(query_vector)
+        dimensions = len(query_vector)
+        rows = self._session.execute(
+            text(
+                f"""
+                SELECT
+                    ce.id AS embedding_id,
+                    1 - (
+                        ce.vector_pg::vector({dimensions})
+                        <=> CAST(:query_vector AS vector({dimensions}))
+                    ) AS score
+                FROM chunk_embeddings AS ce
+                JOIN documents AS d ON ce.document_id = d.id
+                WHERE d.knowledge_base_id = :knowledge_base_id
+                    AND ce.model = :model
+                    AND ce.dimensions = :dimensions
+                    AND ce.vector_pg IS NOT NULL
+                ORDER BY
+                    ce.vector_pg::vector({dimensions})
+                    <=> CAST(:query_vector AS vector({dimensions}))
+                LIMIT :limit
+                """
+            ),
+            {
+                "knowledge_base_id": str(knowledge_base_id),
+                "query_vector": query_literal,
+                "model": model,
+                "dimensions": dimensions,
+                "limit": max(1, limit),
+            },
+        ).mappings()
+
+        results: list[tuple[ChunkEmbedding, float]] = []
+        for row in rows:
+            record = self._session.get(ChunkEmbeddingRecord, str(row["embedding_id"]))
+            if record is None:
+                continue
+            results.append((_chunk_embedding_from_record(record), float(row["score"])))
+        return results
 
 
 class MemoryRepository:
@@ -1841,6 +1923,37 @@ def _cosine_similarity(left: list[float], right: list[float]) -> float:
     if left_norm == 0.0 or right_norm == 0.0:
         return 0.0
     return dot / (left_norm * right_norm)
+
+
+def _use_pgvector(session: Session, mode: str) -> bool:
+    dialect_name = session.get_bind().dialect.name
+    if mode == "json":
+        return False
+    if mode == "auto":
+        return dialect_name == "postgresql"
+    if mode == "pgvector":
+        if dialect_name != "postgresql":
+            raise VectorStoreConfigError(
+                "AGENT_KERNEL_VECTOR_STORE=pgvector requires a PostgreSQL database."
+            )
+        return True
+    raise VectorStoreConfigError(
+        "AGENT_KERNEL_VECTOR_STORE must be one of: auto, json, pgvector."
+    )
+
+
+def _pgvector_literal(vector: list[float]) -> str:
+    if not vector:
+        raise VectorStoreConfigError("pgvector requires a non-empty vector.")
+
+    values: list[str] = []
+    for value in vector:
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise VectorStoreConfigError("pgvector values must be numeric.")
+        if not math.isfinite(float(value)):
+            raise VectorStoreConfigError("pgvector values must be finite.")
+        values.append(f"{float(value):.12g}")
+    return f"[{','.join(values)}]"
 
 
 def _principal_to_record(principal: Principal) -> PrincipalRecord:

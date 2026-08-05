@@ -177,6 +177,15 @@ Then wire `OpenAIEmbeddingProvider` where your application constructs the
 indexing and retrieval services. Keep the same embedding model and dimensions
 for both indexing and search.
 
+Vector storage defaults to:
+
+```bash
+export AGENT_KERNEL_VECTOR_STORE=auto
+```
+
+In `auto` mode, SQLite uses the JSON-vector fallback and PostgreSQL uses the
+pgvector-native path after migrations are applied.
+
 Create and inspect a scoped memory item:
 
 ```bash

@@ -1,12 +1,15 @@
 from uuid import UUID
 
+import pytest
 from kernel_core import ChunkEmbedding, Document, DocumentChunk, DocumentStatus, KnowledgeBase
 from kernel_storage import (
     ChunkEmbeddingRepository,
     DocumentChunkRepository,
     DocumentRepository,
     KnowledgeBaseRepository,
+    VectorStoreConfigError,
 )
+from kernel_storage.repositories import _pgvector_literal
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -95,6 +98,81 @@ def test_chunk_embedding_repository_similarity_search_ranks_vectors(
 
     assert [embedding.chunk_id for embedding, _score in results] == [chunks[0].id, chunks[1].id]
     assert results[0][1] > results[1][1]
+
+
+def test_chunk_embedding_repository_json_mode_ranks_vectors(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        knowledge_base, document, chunks = _create_chunked_document(session)
+        repository = ChunkEmbeddingRepository(session, vector_store_mode="json")
+        embeddings = repository.replace_for_document(
+            document_id=document.id,
+            model="mock",
+            embeddings=[
+                ChunkEmbedding(
+                    document_id=document.id,
+                    chunk_id=chunks[0].id,
+                    model="mock",
+                    dimensions=2,
+                    vector=[1.0, 0.0],
+                    checksum="sha256:a",
+                ),
+                ChunkEmbedding(
+                    document_id=document.id,
+                    chunk_id=chunks[1].id,
+                    model="mock",
+                    dimensions=2,
+                    vector=[0.0, 1.0],
+                    checksum="sha256:b",
+                ),
+            ],
+        )
+        assert embeddings is not None
+
+        results = repository.similarity_search(
+            knowledge_base_id=knowledge_base.id,
+            query_vector=[0.9, 0.1],
+            model="mock",
+            limit=2,
+        )
+
+    assert [embedding.chunk_id for embedding, _score in results] == [chunks[0].id, chunks[1].id]
+
+
+def test_chunk_embedding_repository_pgvector_mode_requires_postgres(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        _knowledge_base, document, chunks = _create_chunked_document(session)
+        repository = ChunkEmbeddingRepository(session, vector_store_mode="pgvector")
+
+        with pytest.raises(VectorStoreConfigError, match="requires a PostgreSQL database"):
+            repository.replace_for_document(
+                document_id=document.id,
+                model="mock",
+                embeddings=[
+                    ChunkEmbedding(
+                        document_id=document.id,
+                        chunk_id=chunks[0].id,
+                        model="mock",
+                        dimensions=2,
+                        vector=[1.0, 0.0],
+                        checksum="sha256:a",
+                    )
+                ],
+            )
+
+
+def test_pgvector_literal_validates_vector_values() -> None:
+    assert _pgvector_literal([1, -0.25, 0.333333333333]) == "[1,-0.25,0.333333333333]"
+
+    with pytest.raises(VectorStoreConfigError, match="non-empty"):
+        _pgvector_literal([])
+    with pytest.raises(VectorStoreConfigError, match="numeric"):
+        _pgvector_literal([True])
+    with pytest.raises(VectorStoreConfigError, match="finite"):
+        _pgvector_literal([float("nan")])
 
 
 def test_chunk_embedding_repository_returns_none_for_missing_document(

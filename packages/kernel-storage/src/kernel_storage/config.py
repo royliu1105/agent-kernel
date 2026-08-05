@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 
 DEFAULT_DATABASE_URL = "sqlite:///./.agent-kernel/agent_kernel.db"
 DATABASE_URL_ENV = "DATABASE_URL"
+DEFAULT_VECTOR_STORE_MODE = "auto"
+VECTOR_STORE_MODE_ENV = "AGENT_KERNEL_VECTOR_STORE"
+SUPPORTED_VECTOR_STORE_MODES = frozenset({"auto", "json", "pgvector"})
 
 
 def get_database_url() -> str:
@@ -17,6 +21,17 @@ def get_database_url() -> str:
     """
 
     return os.getenv(DATABASE_URL_ENV, DEFAULT_DATABASE_URL)
+
+
+def get_vector_store_mode(env: Mapping[str, str] | None = None) -> str:
+    values = env or os.environ
+    mode = values.get(VECTOR_STORE_MODE_ENV, DEFAULT_VECTOR_STORE_MODE).strip().lower()
+    if mode == "":
+        return DEFAULT_VECTOR_STORE_MODE
+    if mode not in SUPPORTED_VECTOR_STORE_MODES:
+        supported = ", ".join(sorted(SUPPORTED_VECTOR_STORE_MODES))
+        raise ValueError(f"{VECTOR_STORE_MODE_ENV} must be one of: {supported}.")
+    return mode
 
 
 def prepare_database_url(database_url: str | None = None) -> str:

@@ -180,7 +180,7 @@ Checklist:
 - [x] OpenAI embeddings.
 - [x] Mock embeddings.
 - [x] Vector store foundation.
-- [ ] pgvector-native store.
+- [x] pgvector-native store.
 
 #### Phase 3B: RAG Retrieval + Agent Integration
 
@@ -416,7 +416,7 @@ Checklist:
 - [ ] Prometheus-compatible metrics endpoint.
 - [ ] S3/MinIO object storage backend.
 - [x] OpenAI embeddings backend.
-- [ ] pgvector-native vector store.
+- [x] pgvector-native vector store.
 - [ ] Persisted eval runs.
 - [ ] Eval API.
 - [ ] Live Web Workbench integration for core operator workflows.
@@ -441,7 +441,7 @@ Daily execution map:
 - [x] Day 66: Model/tool/model execution loop.
 - [x] Day 67: Provider-native tool-call evals and regression tests.
 - [x] Day 68: OpenAI embeddings backend.
-- [ ] Day 69: pgvector-native vector store.
+- [x] Day 69: pgvector-native vector store.
 - [ ] Day 70: S3/MinIO object storage backend.
 - [ ] Day 71: Production RAG/storage integration tests.
 - [ ] Day 72: OpenTelemetry exporter configuration.
@@ -455,7 +455,7 @@ Acceptance:
 - [x] Tool calls and approvals are durable and inspectable.
 - [ ] Security boundaries are explicit and tested.
 - [ ] Telemetry can be exported to common production tools.
-- [ ] RAG can run with real embeddings and pgvector.
+- [x] RAG can run with real embeddings and pgvector.
 - [ ] Storage backends can be switched by configuration.
 
 ## v1.0 Release Candidate: Day 76-90

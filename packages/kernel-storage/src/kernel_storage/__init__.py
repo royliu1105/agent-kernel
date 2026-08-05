@@ -1,7 +1,14 @@
 """Storage primitives for Agent Kernel."""
 
 from kernel_storage.base import Base
-from kernel_storage.config import DEFAULT_DATABASE_URL, get_database_url
+from kernel_storage.config import (
+    DEFAULT_DATABASE_URL,
+    DEFAULT_VECTOR_STORE_MODE,
+    SUPPORTED_VECTOR_STORE_MODES,
+    VECTOR_STORE_MODE_ENV,
+    get_database_url,
+    get_vector_store_mode,
+)
 from kernel_storage.repositories import (
     AgentRepository,
     ApiKeyRepository,
@@ -20,6 +27,7 @@ from kernel_storage.repositories import (
     PrincipalRepository,
     RunRepository,
     ToolCallRepository,
+    VectorStoreConfigError,
     WorkerLeaseRepository,
     WorkspaceMembershipRepository,
     WorkspaceRepository,
@@ -34,6 +42,7 @@ __all__ = [
     "Base",
     "ChunkEmbeddingRepository",
     "DEFAULT_DATABASE_URL",
+    "DEFAULT_VECTOR_STORE_MODE",
     "DocumentChunkRepository",
     "DocumentChunkingError",
     "DocumentRepository",
@@ -46,10 +55,14 @@ __all__ = [
     "PrincipalRepository",
     "RunRepository",
     "ToolCallRepository",
+    "VectorStoreConfigError",
+    "SUPPORTED_VECTOR_STORE_MODES",
+    "VECTOR_STORE_MODE_ENV",
     "WorkerLeaseRepository",
     "WorkspaceMembershipRepository",
     "WorkspaceRepository",
     "create_engine_for_url",
     "create_session_factory",
     "get_database_url",
+    "get_vector_store_mode",
 ]

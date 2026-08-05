@@ -33,6 +33,7 @@ AGENT_KERNEL_LOG_LEVEL=info
 DATABASE_URL=postgresql+psycopg://user:password@postgres:5432/agent_kernel
 REDIS_URL=redis://redis:6379/0
 AGENT_KERNEL_OBJECT_STORE_ROOT=/data/objects
+AGENT_KERNEL_VECTOR_STORE=auto
 ```
 
 Web:
@@ -83,8 +84,18 @@ Embedding storage:
 - Store `OPENAI_API_KEY` as a secret.
 - `OPENAI_EMBEDDING_MODEL` and `OPENAI_EMBEDDING_DIMENSIONS` should be pinned
   per environment so retrieval quality does not drift accidentally.
-- pgvector-native storage is still a later Beta slice; current storage remains
-  JSON-vector based.
+- `AGENT_KERNEL_VECTOR_STORE=auto` uses pgvector on PostgreSQL and JSON-vector
+  fallback on SQLite.
+- `AGENT_KERNEL_VECTOR_STORE=json` forces portable JSON-vector similarity.
+- `AGENT_KERNEL_VECTOR_STORE=pgvector` requires PostgreSQL and the
+  `0013_pgvector_embeddings` migration.
+- JSON vectors remain stored for compatibility; pgvector uses the
+  `chunk_embeddings.vector_pg` column and cosine HNSW index for PostgreSQL
+  similarity search.
+- The default pgvector index targets 1536-dimensional vectors, matching the
+  default `text-embedding-3-small` configuration. If you choose a different
+  embedding dimension in production, add a matching pgvector expression index
+  before treating that path as performance-ready.
 
 ## Database Migrations
 

@@ -246,9 +246,9 @@ Chunk content is stored in Postgres for v0.1 so retrieval debugging and future c
 - Token estimate.
 - Chunk metadata.
 
-Embedding vectors are intentionally separate from chunk records and will be added behind vector-store storage in a later phase.
+Embedding vectors are intentionally separate from chunk records.
 
-Day 18 vector storage foundation uses a SQLite-compatible JSON vector representation:
+Day 18 vector storage foundation used a SQLite-compatible JSON vector representation:
 
 - Chunk ID.
 - Document ID.
@@ -258,7 +258,21 @@ Day 18 vector storage foundation uses a SQLite-compatible JSON vector representa
 - Vector checksum.
 - Embedding metadata.
 
-This is not the final production vector index. The repository boundary is intentionally shaped so a later pgvector-native implementation can replace JSON vectors without changing API behavior.
+Day 69 adds a PostgreSQL pgvector-native path behind the same repository
+boundary:
+
+- `chunk_embeddings.vector` remains the portable JSON representation.
+- `chunk_embeddings.vector_pg` stores the pgvector representation on
+  PostgreSQL.
+- `AGENT_KERNEL_VECTOR_STORE=auto` uses pgvector on PostgreSQL and JSON vectors
+  elsewhere.
+- `AGENT_KERNEL_VECTOR_STORE=json` forces JSON-vector similarity.
+- `AGENT_KERNEL_VECTOR_STORE=pgvector` requires PostgreSQL.
+- The pgvector migration installs the `vector` extension, backfills
+  `vector_pg`, and creates a cosine HNSW index.
+
+This preserves SQLite-friendly local development while giving production
+PostgreSQL deployments a native vector-search path.
 
 Full document content should not be stored in run events, logs, or metadata.
 

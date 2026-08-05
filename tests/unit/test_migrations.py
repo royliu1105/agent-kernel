@@ -26,6 +26,28 @@ def test_migration_revision_ids_fit_alembic_version_column() -> None:
         )
 
 
+def test_pgvector_migration_is_guarded_for_postgres() -> None:
+    migration_file = (
+        Path(__file__).resolve().parents[2]
+        / "packages"
+        / "kernel-storage"
+        / "src"
+        / "kernel_storage"
+        / "migrations"
+        / "versions"
+        / "0013_pgvector_embeddings.py"
+    )
+
+    content = migration_file.read_text()
+
+    assert 'bind.dialect.name != "postgresql"' in content
+    assert "CREATE EXTENSION IF NOT EXISTS vector" in content
+    assert "vector_pg vector" in content
+    assert "vector_pg::vector(1536)" in content
+    assert "WHERE dimensions = 1536" in content
+    assert "USING hnsw" in content
+
+
 def _find_string_assignment(tree: ast.Module, name: str) -> str | None:
     for node in tree.body:
         if not isinstance(node, ast.Assign):
