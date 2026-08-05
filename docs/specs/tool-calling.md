@@ -151,10 +151,26 @@ Day 64 provider-native tool-call adapter contract:
 - Mock provider can return deterministic tool calls for later runtime loop
   tests.
 
-Still deferred after Day 64:
+Day 65 provider-native tool-call parsing and persistence:
 
-- Parsing OpenAI native function-call output.
-- Persisting provider-native tool calls.
+- OpenAI native function-call output is parsed into normalized `LLMToolCall`
+  records.
+- Provider-originated tool calls can be persisted with:
+  - `provider_name`
+  - `provider_tool_call_id`
+  - `raw_provider_payload`
+  - normalized tool name
+  - normalized arguments
+- `create_provider_requested` persists provider-native requested calls through
+  the same `tool_calls` table and `tool_call_requested` timeline event.
+- `persist_provider_tool_calls` persists all normalized tool calls from an
+  `LLMResponse` without executing them.
+- Known registered tools inherit their configured risk level.
+- Unknown provider-requested tools are persisted as `dangerous` risk so later
+  execution can fail or gate them conservatively.
+
+Still deferred after Day 65:
+
 - Executing provider-native tool calls in the agent run loop.
 - Feeding tool results back into a second model call.
 

@@ -265,6 +265,11 @@ class ToolCallRecord(Base):
     )
     requires_approval: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     approval_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    provider_name: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    provider_tool_call_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+    raw_provider_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     span_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     error_type: Mapped[str | None] = mapped_column(String(255), nullable=True)

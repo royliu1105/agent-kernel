@@ -124,9 +124,19 @@ Day 64 provider-native tool-call contract:
   `LLMToolDefinition` lives in `kernel_runtime.provider_tools` so provider
   packages do not depend on the tool package.
 
-Day 64 explicitly does not parse OpenAI function-call output, persist
-provider-native tool calls, or run a model/tool/model loop. Those start in Day
-65 and Day 66.
+Day 65 OpenAI native tool-call parsing:
+
+- `OpenAIProvider` parses Responses API `function_call` output items into
+  `LLMToolCall`.
+- OpenAI `arguments` may be a JSON string or JSON object.
+- Malformed function-call arguments raise `LLMProviderError` with
+  `error_type = openai_invalid_tool_arguments`.
+- Missing function-call ids or names raise `LLMProviderError` with
+  `error_type = openai_invalid_tool_call`.
+- Responses containing function calls use `finish_reason = tool_calls`.
+
+Day 65 explicitly does not execute provider-native tool calls or run a
+model/tool/model loop. That starts in Day 66.
 
 ## State Transitions
 

@@ -197,6 +197,19 @@ Day 63 durable execution closure baseline:
   provider-native function calling, or automatically requeue expired in-flight
   work.
 
+Day 65 provider-native tool-call persistence baseline:
+
+- OpenAI native function-call responses can be normalized into provider-neutral
+  `LLMToolCall` objects.
+- Provider-native requested tool calls can be persisted to `tool_calls` with
+  provider name, provider tool-call id, raw provider payload, normalized tool
+  name, and normalized arguments.
+- Persisting provider-native tool calls appends the existing
+  `tool_call_requested` timeline event.
+- Day 65 does not execute provider-native tool calls, feed tool results back
+  into a model, or change run terminal-state behavior. The model/tool/model
+  execution loop starts on Day 66.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

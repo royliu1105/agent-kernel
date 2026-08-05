@@ -661,6 +661,9 @@ class ToolCallRepository:
         arguments: dict[str, Any],
         risk_level: RiskLevel,
         requires_approval: bool = False,
+        provider_name: str | None = None,
+        provider_tool_call_id: str | None = None,
+        raw_provider_payload: dict[str, Any] | None = None,
         step_id: UUID | None = None,
         trace_id: str | None = None,
         span_id: str | None = None,
@@ -676,6 +679,9 @@ class ToolCallRepository:
             arguments=arguments,
             risk_level=risk_level,
             requires_approval=requires_approval,
+            provider_name=provider_name,
+            provider_tool_call_id=provider_tool_call_id,
+            raw_provider_payload=raw_provider_payload,
             trace_id=trace_id or run.trace_id,
             span_id=span_id,
         )
@@ -688,11 +694,36 @@ class ToolCallRepository:
                 "tool_name": tool_name,
                 "risk_level": risk_level.value,
                 "requires_approval": requires_approval,
+                "provider_name": provider_name,
+                "provider_tool_call_id": provider_tool_call_id,
             },
             trace_id=tool_call.trace_id,
         )
         self._session.commit()
         return tool_call
+
+    def create_provider_requested(
+        self,
+        *,
+        run_id: UUID,
+        provider_name: str,
+        provider_tool_call_id: str,
+        tool_name: str,
+        arguments: dict[str, Any],
+        risk_level: RiskLevel,
+        raw_provider_payload: dict[str, Any],
+        trace_id: str | None = None,
+    ) -> ToolCall | None:
+        return self.create_requested(
+            run_id=run_id,
+            tool_name=tool_name,
+            arguments=arguments,
+            risk_level=risk_level,
+            provider_name=provider_name,
+            provider_tool_call_id=provider_tool_call_id,
+            raw_provider_payload=raw_provider_payload,
+            trace_id=trace_id,
+        )
 
     def get(self, tool_call_id: UUID) -> ToolCall | None:
         record = self._session.get(ToolCallRecord, str(tool_call_id))
@@ -1591,6 +1622,9 @@ def _tool_call_to_record(tool_call: ToolCall) -> ToolCallRecord:
         risk_level=tool_call.risk_level.value,
         requires_approval=tool_call.requires_approval,
         approval_id=str(tool_call.approval_id) if tool_call.approval_id is not None else None,
+        provider_name=tool_call.provider_name,
+        provider_tool_call_id=tool_call.provider_tool_call_id,
+        raw_provider_payload=tool_call.raw_provider_payload,
         trace_id=tool_call.trace_id,
         span_id=tool_call.span_id,
         error_type=tool_call.error_type,
@@ -1612,6 +1646,9 @@ def _tool_call_from_record(record: ToolCallRecord) -> ToolCall:
         risk_level=RiskLevel(record.risk_level),
         requires_approval=record.requires_approval,
         approval_id=UUID(record.approval_id) if record.approval_id is not None else None,
+        provider_name=record.provider_name,
+        provider_tool_call_id=record.provider_tool_call_id,
+        raw_provider_payload=record.raw_provider_payload,
         trace_id=record.trace_id,
         span_id=record.span_id,
         error_type=record.error_type,

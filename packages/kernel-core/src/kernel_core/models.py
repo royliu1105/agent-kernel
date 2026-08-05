@@ -223,6 +223,9 @@ class ToolCall(KernelModel):
     risk_level: RiskLevel = RiskLevel.READ_ONLY
     requires_approval: bool = False
     approval_id: UUID | None = None
+    provider_name: str | None = None
+    provider_tool_call_id: str | None = None
+    raw_provider_payload: dict[str, Any] | None = None
     trace_id: str | None = None
     span_id: str | None = None
     error_type: str | None = None

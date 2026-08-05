@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Mapping
 from typing import Any
@@ -9,10 +10,12 @@ from typing import Any
 import httpx
 
 from kernel_providers.base import (
+    LLMFinishReason,
     LLMMessage,
     LLMProviderError,
     LLMRequest,
     LLMResponse,
+    LLMToolCall,
     LLMToolDefinition,
     LLMUsage,
 )
@@ -94,6 +97,8 @@ class OpenAIProvider:
             model=str(data.get("model", request.model)),
             text=_extract_text(data),
             usage=_extract_usage(data),
+            finish_reason=_extract_finish_reason(data),
+            tool_calls=_extract_tool_calls(data),
             raw=data,
         )
 
@@ -151,6 +156,114 @@ def _extract_text(data: dict[str, Any]) -> str:
                 if isinstance(text, str):
                     parts.append(text)
     return "".join(parts)
+
+
+def _extract_finish_reason(data: dict[str, Any]) -> LLMFinishReason:
+    if _has_tool_calls(data):
+        return LLMFinishReason.TOOL_CALLS
+
+    status = data.get("status")
+    if status == "incomplete":
+        incomplete_details = data.get("incomplete_details")
+        if isinstance(incomplete_details, dict) and incomplete_details.get("reason") == (
+            "max_output_tokens"
+        ):
+            return LLMFinishReason.LENGTH
+        return LLMFinishReason.UNKNOWN
+    if status == "failed":
+        return LLMFinishReason.ERROR
+    return LLMFinishReason.STOP
+
+
+def _extract_tool_calls(data: dict[str, Any]) -> tuple[LLMToolCall, ...]:
+    calls: list[LLMToolCall] = []
+    output = data.get("output")
+    if not isinstance(output, list):
+        return ()
+
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") == "function_call":
+            calls.append(_tool_call_from_output_item(item))
+            continue
+
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        for content_item in content:
+            if isinstance(content_item, dict) and content_item.get("type") == "function_call":
+                calls.append(_tool_call_from_output_item(content_item))
+
+    return tuple(calls)
+
+
+def _has_tool_calls(data: dict[str, Any]) -> bool:
+    output = data.get("output")
+    if not isinstance(output, list):
+        return False
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") == "function_call":
+            return True
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        if any(
+            isinstance(value, dict) and value.get("type") == "function_call"
+            for value in content
+        ):
+            return True
+    return False
+
+
+def _tool_call_from_output_item(item: dict[str, Any]) -> LLMToolCall:
+    call_id = _string_value(item, "call_id") or _string_value(item, "id")
+    name = _string_value(item, "name")
+    if call_id is None or name is None:
+        raise LLMProviderError(
+            "OpenAI function call output is missing call_id/id or name.",
+            error_type="openai_invalid_tool_call",
+        )
+
+    return LLMToolCall(
+        id=call_id,
+        name=name,
+        arguments=_tool_arguments_from_output_item(item),
+        raw=item,
+    )
+
+
+def _tool_arguments_from_output_item(item: dict[str, Any]) -> dict[str, Any]:
+    raw_arguments = item.get("arguments", {})
+    if isinstance(raw_arguments, dict):
+        return raw_arguments
+    if isinstance(raw_arguments, str):
+        try:
+            parsed = json.loads(raw_arguments)
+        except json.JSONDecodeError as error:
+            raise LLMProviderError(
+                "OpenAI function call arguments are not valid JSON.",
+                error_type="openai_invalid_tool_arguments",
+            ) from error
+        if not isinstance(parsed, dict):
+            raise LLMProviderError(
+                "OpenAI function call arguments must decode to a JSON object.",
+                error_type="openai_invalid_tool_arguments",
+            )
+        return parsed
+    raise LLMProviderError(
+        "OpenAI function call arguments must be a JSON object or JSON string.",
+        error_type="openai_invalid_tool_arguments",
+    )
+
+
+def _string_value(values: dict[str, Any], key: str) -> str | None:
+    value = values.get(key)
+    if isinstance(value, str) and value != "":
+        return value
+    return None
 
 
 def _extract_usage(data: dict[str, Any]) -> LLMUsage:

@@ -123,6 +123,16 @@ Day 61 Redis queue adapter baseline:
   `agent-kernel:runs:queued`.
 - Enqueued values are UUID strings; workers must validate the run in Postgres
   before execution.
+
+Day 65 provider-native tool-call metadata baseline:
+
+- `tool_calls.provider_name` stores the provider that requested the native tool
+  call.
+- `tool_calls.provider_tool_call_id` stores the provider's opaque call id.
+- `tool_calls.raw_provider_payload` stores the original provider function-call
+  item for audit and debugging.
+- Normalized `tool_name` and `arguments` remain first-class fields so policy,
+  approvals, and execution do not depend on provider-specific payload shapes.
 - Day 61 does not add a Redis table, migration, or default worker wiring.
 
 ### Execution State

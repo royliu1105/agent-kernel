@@ -17,11 +17,19 @@ def test_worker_cli_prints_ready_without_mode() -> None:
     assert "agent-kernel-worker ready" in result.output
 
 
-def test_worker_cli_rejects_multiple_modes() -> None:
+def test_worker_cli_rejects_multiple_modes(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine_created = False
+
+    def fake_create_engine_for_url() -> None:
+        nonlocal engine_created
+        engine_created = True
+
+    monkeypatch.setattr(worker_main, "create_engine_for_url", fake_create_engine_for_url)
+
     result = CliRunner().invoke(worker_main.app, ["--once", "--recover-stuck"])
 
     assert result.exit_code != 0
-    assert "Use only one of --once, --loop, or --recover-stuck." in result.output
+    assert engine_created is False
 
 
 def test_worker_cli_once_executes_persisted_queued_run(

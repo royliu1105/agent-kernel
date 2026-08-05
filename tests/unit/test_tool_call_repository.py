@@ -33,6 +33,39 @@ def test_tool_call_repository_persists_requested_call_and_event(
     assert events[-1].payload["tool_name"] == "echo"
 
 
+def test_tool_call_repository_persists_provider_native_metadata(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    raw_provider_payload = {
+        "type": "function_call",
+        "call_id": "call_001",
+        "name": "echo",
+        "arguments": '{"message":"hello"}',
+    }
+    with sqlite_session_factory() as session:
+        agent = AgentRepository(session).create(name="tool-agent")
+        run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "use tool"})
+        repository = ToolCallRepository(session)
+
+        tool_call = repository.create_provider_requested(
+            run_id=run.id,
+            provider_name="openai",
+            provider_tool_call_id="call_001",
+            tool_name="echo",
+            arguments={"message": "hello"},
+            risk_level=RiskLevel.READ_ONLY,
+            raw_provider_payload=raw_provider_payload,
+        )
+        events = RunRepository(session).list_events(run.id)
+
+    assert tool_call is not None
+    assert tool_call.provider_name == "openai"
+    assert tool_call.provider_tool_call_id == "call_001"
+    assert tool_call.raw_provider_payload == raw_provider_payload
+    assert events[-1].payload["provider_name"] == "openai"
+    assert events[-1].payload["provider_tool_call_id"] == "call_001"
+
+
 def test_tool_call_repository_lists_calls_for_run(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
