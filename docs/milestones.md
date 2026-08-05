@@ -400,6 +400,7 @@ Status:
 Checklist:
 
 - [x] API key authentication middleware.
+- [x] Route-level authorization baseline.
 - [x] Authorization/RBAC domain baseline.
 - [x] Workspace scoping domain model.
 - [x] Identity persistence and API key storage foundation.
@@ -423,7 +424,7 @@ Daily execution map:
 - [x] Day 52: Identity, workspace, and RBAC domain foundation.
 - [x] Day 53: Identity persistence and API key storage foundation.
 - [x] Day 54: API key authentication middleware.
-- [ ] Day 55: Route-level authorization baseline.
+- [x] Day 55: Route-level authorization baseline.
 - [ ] Day 56: Workspace scope retrofit plan and first scoped resources.
 - [ ] Day 57: Approval authorization enforcement.
 - [ ] Day 58: Auth/RBAC docs and security test closure.

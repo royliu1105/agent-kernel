@@ -102,3 +102,4 @@ day-03.md
 - [Day 52: Beta Kickoff and Identity RBAC Foundation](day-52.md)
 - [Day 53: Identity Persistence and API Key Foundation](day-53.md)
 - [Day 54: API Key Authentication Middleware](day-54.md)
+- [Day 55: Route-Level Authorization Baseline](day-55.md)

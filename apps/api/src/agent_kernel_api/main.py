@@ -24,6 +24,7 @@ from kernel_core import (
     Run,
     RunEvent,
 )
+from kernel_identity import Permission
 from kernel_rag import (
     DocumentChunkingService,
     DocumentIndexingService,
@@ -67,7 +68,11 @@ from kernel_storage import (
 )
 from sqlalchemy.orm import Session, sessionmaker
 
-from agent_kernel_api.auth import ApiKeyAuthMiddleware, api_key_auth_enabled_from_env
+from agent_kernel_api.auth import (
+    ApiKeyAuthMiddleware,
+    api_key_auth_enabled_from_env,
+    require_permission,
+)
 from agent_kernel_api.schemas import (
     AgentCreateRequest,
     AgentResponse,
@@ -135,6 +140,7 @@ def create_app(
         "/v1/agents",
         response_model=AgentResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.AGENT_WRITE))],
         tags=["agents"],
     )
     def create_agent(
@@ -147,7 +153,12 @@ def create_app(
         )
         return _agent_response(agent)
 
-    @app.get("/v1/agents/{agent_id}", response_model=AgentResponse, tags=["agents"])
+    @app.get(
+        "/v1/agents/{agent_id}",
+        response_model=AgentResponse,
+        dependencies=[Depends(require_permission(Permission.AGENT_READ))],
+        tags=["agents"],
+    )
     def get_agent(
         agent_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -161,6 +172,7 @@ def create_app(
         "/v1/agents/{agent_id}/runs",
         response_model=RunResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.RUN_WRITE))],
         tags=["runs"],
     )
     def create_run(
@@ -173,7 +185,12 @@ def create_app(
         run = RunRepository(session).create(agent_id=agent_id, input_payload=request.input)
         return _run_response(run)
 
-    @app.get("/v1/runs/{run_id}", response_model=RunResponse, tags=["runs"])
+    @app.get(
+        "/v1/runs/{run_id}",
+        response_model=RunResponse,
+        dependencies=[Depends(require_permission(Permission.RUN_READ))],
+        tags=["runs"],
+    )
     def get_run(
         run_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -183,7 +200,12 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         return _run_response(run)
 
-    @app.get("/v1/runs/{run_id}/events", response_model=list[RunEventResponse], tags=["runs"])
+    @app.get(
+        "/v1/runs/{run_id}/events",
+        response_model=list[RunEventResponse],
+        dependencies=[Depends(require_permission(Permission.RUN_READ))],
+        tags=["runs"],
+    )
     def list_run_events(
         run_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -193,7 +215,12 @@ def create_app(
         events = RunRepository(session).list_events(run_id)
         return [_run_event_response(event) for event in events]
 
-    @app.post("/v1/runs/{run_id}/queue", response_model=RunResponse, tags=["runs"])
+    @app.post(
+        "/v1/runs/{run_id}/queue",
+        response_model=RunResponse,
+        dependencies=[Depends(require_permission(Permission.RUN_WRITE))],
+        tags=["runs"],
+    )
     def queue_run(
         run_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -224,7 +251,12 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         return _run_response(updated)
 
-    @app.post("/v1/runs/{run_id}/cancel", response_model=RunResponse, tags=["runs"])
+    @app.post(
+        "/v1/runs/{run_id}/cancel",
+        response_model=RunResponse,
+        dependencies=[Depends(require_permission(Permission.RUN_WRITE))],
+        tags=["runs"],
+    )
     def cancel_run(
         run_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -255,7 +287,12 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
         return _run_response(updated)
 
-    @app.post("/v1/runs/{run_id}/resume", response_model=RunResponse, tags=["runs"])
+    @app.post(
+        "/v1/runs/{run_id}/resume",
+        response_model=RunResponse,
+        dependencies=[Depends(require_permission(Permission.RUN_WRITE))],
+        tags=["runs"],
+    )
     async def resume_run(
         run_id: UUID,
         request: RunResumeRequest | None = None,
@@ -275,7 +312,12 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
         return _run_response(run)
 
-    @app.get("/v1/approvals", response_model=list[ApprovalResponse], tags=["approvals"])
+    @app.get(
+        "/v1/approvals",
+        response_model=list[ApprovalResponse],
+        dependencies=[Depends(require_permission(Permission.APPROVAL_REVIEW))],
+        tags=["approvals"],
+    )
     def list_approvals(
         status_filter: Annotated[ApprovalStatus | None, Query(alias="status")] = None,
         session: Session = Depends(get_session),  # noqa: B008
@@ -286,6 +328,7 @@ def create_app(
     @app.get(
         "/v1/approvals/{approval_id}",
         response_model=ApprovalResponse,
+        dependencies=[Depends(require_permission(Permission.APPROVAL_REVIEW))],
         tags=["approvals"],
     )
     def get_approval(
@@ -300,6 +343,7 @@ def create_app(
     @app.post(
         "/v1/approvals/{approval_id}/approve",
         response_model=ApprovalResponse,
+        dependencies=[Depends(require_permission(Permission.APPROVAL_REVIEW))],
         tags=["approvals"],
     )
     def approve_approval(
@@ -322,6 +366,7 @@ def create_app(
         "/v1/memory",
         response_model=MemoryResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.MEMORY_WRITE))],
         tags=["memory"],
     )
     def create_memory(
@@ -338,7 +383,12 @@ def create_app(
         )
         return _memory_response(memory)
 
-    @app.get("/v1/memory", response_model=list[MemoryResponse], tags=["memory"])
+    @app.get(
+        "/v1/memory",
+        response_model=list[MemoryResponse],
+        dependencies=[Depends(require_permission(Permission.MEMORY_READ))],
+        tags=["memory"],
+    )
     def list_memory(
         scope: str | None = None,
         type_filter: Annotated[MemoryType | None, Query(alias="type")] = None,
@@ -352,7 +402,12 @@ def create_app(
         )
         return [_memory_response(memory) for memory in memories]
 
-    @app.get("/v1/memory/{memory_id}", response_model=MemoryResponse, tags=["memory"])
+    @app.get(
+        "/v1/memory/{memory_id}",
+        response_model=MemoryResponse,
+        dependencies=[Depends(require_permission(Permission.MEMORY_READ))],
+        tags=["memory"],
+    )
     def get_memory(
         memory_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -362,7 +417,12 @@ def create_app(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
         return _memory_response(memory)
 
-    @app.delete("/v1/memory/{memory_id}", response_model=MemoryDeleteResponse, tags=["memory"])
+    @app.delete(
+        "/v1/memory/{memory_id}",
+        response_model=MemoryDeleteResponse,
+        dependencies=[Depends(require_permission(Permission.MEMORY_WRITE))],
+        tags=["memory"],
+    )
     def delete_memory(
         memory_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
@@ -375,6 +435,7 @@ def create_app(
     @app.post(
         "/v1/approvals/{approval_id}/reject",
         response_model=ApprovalResponse,
+        dependencies=[Depends(require_permission(Permission.APPROVAL_REVIEW))],
         tags=["approvals"],
     )
     def reject_approval(
@@ -397,6 +458,7 @@ def create_app(
         "/v1/knowledge-bases",
         response_model=KnowledgeBaseResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_WRITE))],
         tags=["knowledge-bases"],
     )
     def create_knowledge_base(
@@ -413,6 +475,7 @@ def create_app(
     @app.get(
         "/v1/knowledge-bases",
         response_model=list[KnowledgeBaseResponse],
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["knowledge-bases"],
     )
     def list_knowledge_bases(
@@ -424,6 +487,7 @@ def create_app(
     @app.get(
         "/v1/knowledge-bases/{knowledge_base_id}",
         response_model=KnowledgeBaseResponse,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["knowledge-bases"],
     )
     def get_knowledge_base(
@@ -441,6 +505,7 @@ def create_app(
     @app.post(
         "/v1/knowledge-bases/{knowledge_base_id}/retrieve",
         response_model=RetrievalResponseModel,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["retrieval"],
     )
     def retrieve_from_knowledge_base(
@@ -466,6 +531,7 @@ def create_app(
         "/v1/knowledge-bases/{knowledge_base_id}/documents",
         response_model=DocumentResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_WRITE))],
         tags=["documents"],
     )
     def create_document(
@@ -493,6 +559,7 @@ def create_app(
         "/v1/knowledge-bases/{knowledge_base_id}/documents/upload",
         response_model=DocumentResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_WRITE))],
         tags=["documents"],
     )
     async def upload_document(
@@ -548,6 +615,7 @@ def create_app(
     @app.get(
         "/v1/knowledge-bases/{knowledge_base_id}/documents",
         response_model=list[DocumentResponse],
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["documents"],
     )
     def list_documents(
@@ -565,6 +633,7 @@ def create_app(
     @app.get(
         "/v1/documents/{document_id}",
         response_model=DocumentResponse,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["documents"],
     )
     def get_document(
@@ -580,6 +649,7 @@ def create_app(
         "/v1/documents/{document_id}/chunk",
         response_model=list[DocumentChunkResponse],
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_WRITE))],
         tags=["chunks"],
     )
     def chunk_document(
@@ -605,6 +675,7 @@ def create_app(
     @app.get(
         "/v1/documents/{document_id}/chunks",
         response_model=list[DocumentChunkResponse],
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["chunks"],
     )
     def list_document_chunks(
@@ -619,6 +690,7 @@ def create_app(
     @app.get(
         "/v1/document-chunks/{chunk_id}",
         response_model=DocumentChunkResponse,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["chunks"],
     )
     def get_document_chunk(
@@ -637,6 +709,7 @@ def create_app(
         "/v1/documents/{document_id}/index",
         response_model=DocumentIndexResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_WRITE))],
         tags=["embeddings"],
     )
     def index_document(
@@ -667,6 +740,7 @@ def create_app(
     @app.get(
         "/v1/documents/{document_id}/embeddings",
         response_model=list[ChunkEmbeddingResponse],
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["embeddings"],
     )
     def list_document_embeddings(
@@ -682,6 +756,7 @@ def create_app(
         "/v1/documents/{document_id}/ingest",
         response_model=IngestionJobResponse,
         status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_WRITE))],
         tags=["ingestion"],
     )
     def ingest_document(
@@ -703,6 +778,7 @@ def create_app(
     @app.get(
         "/v1/documents/{document_id}/ingestion-jobs",
         response_model=list[IngestionJobResponse],
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["ingestion"],
     )
     def list_document_ingestion_jobs(
@@ -717,6 +793,7 @@ def create_app(
     @app.get(
         "/v1/ingestion-jobs/{job_id}",
         response_model=IngestionJobResponse,
+        dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))],
         tags=["ingestion"],
     )
     def get_ingestion_job(

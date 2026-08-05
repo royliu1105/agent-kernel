@@ -3,15 +3,22 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
-from fastapi import Request
-from kernel_identity import ApiKey, Principal, WorkspaceMembership
+from fastapi import HTTPException, Request
+from kernel_identity import (
+    ApiKey,
+    AuthorizationRequest,
+    Permission,
+    Principal,
+    WorkspaceAuthorizer,
+    WorkspaceMembership,
+)
 from kernel_storage import ApiKeyRepository, PrincipalRepository, WorkspaceMembershipRepository
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import JSONResponse, Response
-from starlette.status import HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 from starlette.types import ASGIApp
 
 AUTH_CONTEXT_STATE_KEY = "auth_context"
@@ -104,6 +111,30 @@ def get_auth_context(request: Request) -> AuthContext | None:
     if isinstance(context, AuthContext):
         return context
     return None
+
+
+def require_permission(permission: Permission) -> Callable[[Request], None]:
+    """Create a FastAPI dependency that enforces one workspace permission."""
+
+    def dependency(request: Request) -> None:
+        context = get_auth_context(request)
+        if context is None:
+            return
+
+        decision = WorkspaceAuthorizer(context.memberships).authorize(
+            AuthorizationRequest(
+                principal=context.principal,
+                workspace_id=context.api_key.workspace_id,
+                permission=permission,
+            )
+        )
+        if not decision.allowed:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail=f"Permission {permission.value!r} is required.",
+            )
+
+    return dependency
 
 
 def _unauthorized(message: str) -> JSONResponse:

@@ -87,6 +87,24 @@ Day 54 API authentication baseline:
 - Day 54 does not add browser sessions, OIDC, SSO, password login, or Web auth
   UI.
 
+Day 55 route authorization baseline:
+
+- API routes use FastAPI dependencies to require the permission needed for the
+  operation.
+- The authenticated API key workspace is treated as the current request
+  workspace.
+- `WorkspaceAuthorizer` evaluates the authenticated principal, memberships,
+  current workspace, and required permission.
+- Missing permissions return `403 Forbidden`.
+- Agent routes require `agent:read` or `agent:write`.
+- Run routes require `run:read` or `run:write`.
+- Approval routes require `approval:review`.
+- Memory routes require `memory:read` or `memory:write`.
+- Knowledge, document, ingestion, chunk, embedding, and retrieval routes require
+  `knowledge:read` or `knowledge:write`.
+- Day 55 does not retrofit existing resource tables with `workspace_id`.
+- Day 55 does not add object-level ownership checks.
+
 Risk levels:
 
 ```text
@@ -278,6 +296,7 @@ Beta security baseline:
 - API keys are persisted as hashes and non-secret prefixes only.
 - Revoked and expired API keys cannot authenticate.
 - Missing or invalid API keys are rejected when API key auth is enabled.
+- Authenticated principals without a required route permission receive `403`.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.
 - Tool result size limit is enforced.

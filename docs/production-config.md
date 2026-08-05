@@ -163,9 +163,13 @@ When enabled:
   rejected with `401 Unauthorized`.
 - Valid API keys load the principal, key, and workspace memberships into the
   request auth context.
+- Existing `/v1/*` routes enforce route-level permissions and return
+  `403 Forbidden` when the authenticated role lacks the required permission.
 
 Local quickstart flows keep API key authentication disabled by default. Route
-permission checks are added in later Beta slices.
+permission checks currently use the authenticated API key's workspace as the
+request workspace. Object-level workspace scoping is added in later Beta
+slices.
 
 ## Networking
 
