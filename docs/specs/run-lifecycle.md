@@ -158,6 +158,18 @@ Day 60 stuck-run recovery semantics:
 - Recovery does not automatically requeue expired running work because tool
   side effects must not be repeated blindly.
 
+Day 61 Redis queue adapter baseline:
+
+- `RunQueue` is the runtime port for queued run id coordination.
+- `InMemoryRunQueue` provides deterministic local and test behavior.
+- `RedisRunQueue` adapts a minimal redis-py-compatible client protocol.
+- The default Redis list key is `agent-kernel:runs:queued`.
+- Redis queue entries carry run ids only.
+- Workers must still verify persisted Postgres run status and lease state before
+  execution.
+- Redis is a coordination and wakeup layer, not the durable source of truth.
+- Day 61 does not wire Redis into API queueing or default worker polling.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

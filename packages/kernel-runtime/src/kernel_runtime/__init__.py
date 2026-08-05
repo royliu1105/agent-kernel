@@ -7,6 +7,13 @@ from kernel_runtime.execution import (
     RunNotFoundError,
 )
 from kernel_runtime.prompts import PromptRegistry, PromptVersion
+from kernel_runtime.queue import (
+    DEFAULT_RUN_QUEUE_NAME,
+    InMemoryRunQueue,
+    RedisQueueClient,
+    RedisRunQueue,
+    RunQueue,
+)
 from kernel_runtime.recovery import (
     StuckRunRecoveryBatchResult,
     StuckRunRecoveryResult,
@@ -26,9 +33,14 @@ __all__ = [
     "ModelRouter",
     "PromptRegistry",
     "PromptVersion",
+    "DEFAULT_RUN_QUEUE_NAME",
+    "InMemoryRunQueue",
+    "RedisQueueClient",
+    "RedisRunQueue",
     "RetryPolicy",
     "RunExecutionError",
     "RunExecutionService",
+    "RunQueue",
     "RunNotFoundError",
     "RunStateMachine",
     "RunTransition",

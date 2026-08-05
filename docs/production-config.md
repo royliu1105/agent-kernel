@@ -123,7 +123,10 @@ agent-kernel-worker --recover-stuck --limit 100
 Recovery marks expired `running` or `resuming` runs as failed instead of
 automatically requeueing them. This avoids blindly repeating side effects.
 The worker polling loop has not yet switched to lease-backed claiming.
-Redis-backed scheduling and advanced retry queues are later Beta slices.
+The runtime now includes a Redis queue adapter foundation using the default list
+key `agent-kernel:runs:queued`, but API queueing and worker polling do not use
+it by default yet. Redis-backed scheduling and advanced retry queues are later
+Beta slices.
 
 ## Web
 

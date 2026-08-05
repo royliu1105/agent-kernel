@@ -115,6 +115,16 @@ Day 60 stuck-run recovery baseline:
 - Recovery is explicit; normal worker polling still does not automatically run
   recovery before each pass.
 
+Day 61 Redis queue adapter baseline:
+
+- Redis queue integration starts as a runtime adapter, not as durable state.
+- `RunQueue` accepts queued run ids.
+- `RedisRunQueue` uses a Redis list with default key
+  `agent-kernel:runs:queued`.
+- Enqueued values are UUID strings; workers must validate the run in Postgres
+  before execution.
+- Day 61 does not add a Redis table, migration, or default worker wiring.
+
 ### Execution State
 
 Stored in Postgres, coordinated by Redis:

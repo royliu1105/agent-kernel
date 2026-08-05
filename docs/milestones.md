@@ -410,7 +410,7 @@ Checklist:
 - [ ] Provider-native function calling.
 - [ ] Durable model/tool/model execution loop.
 - [ ] Persisted tool-call records.
-- [ ] Redis-backed durable queue.
+- [~] Redis-backed durable queue.
 - [x] Worker leasing and stuck-run recovery.
 - [ ] OpenTelemetry exporter configuration.
 - [ ] Prometheus-compatible metrics endpoint.
@@ -433,7 +433,7 @@ Daily execution map:
 - [x] Day 58: Auth/RBAC docs and security test closure.
 - [x] Day 59: Worker lease model and storage foundation.
 - [x] Day 60: Stuck-run detection and recovery.
-- [ ] Day 61: Redis queue adapter foundation.
+- [x] Day 61: Redis queue adapter foundation.
 - [ ] Day 62: Durable retry visibility and worker restart tests.
 - [ ] Day 63: Durable execution closure.
 - [ ] Day 64: Provider-native tool-call adapter contract.

@@ -158,6 +158,10 @@ The worker uses persisted queued runs as the v0.1 durable queue. Beta recovery
 can explicitly fail expired leased runs with `worker_lease_expired` so operators
 can unblock stuck work without blindly repeating side effects.
 
+The runtime package also exposes `RunQueue`, `InMemoryRunQueue`, and
+`RedisRunQueue` for Beta queue coordination. The default worker path still
+validates queued work from Postgres.
+
 ## Web Surface
 
 The Agent Workbench includes:
