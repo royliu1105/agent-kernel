@@ -54,14 +54,26 @@ Redis is not the source of truth. Redis is used for temporary coordination:
 
 Stored in Postgres:
 
-- Users.
-- Projects.
+- Principals.
+- Workspaces.
+- Workspace memberships.
 - Agents.
 - Tools.
 - Model policies.
 - Prompt versions.
 - Permissions.
 - API keys.
+
+Day 53 identity storage baseline:
+
+- `principals` stores user and service actors.
+- `workspaces` stores the primary Beta resource boundary.
+- `workspace_memberships` stores principal role assignments per workspace.
+- `api_keys` stores only API key hashes, non-secret prefixes, status, and usage
+  timestamps.
+- Plaintext API keys are returned once at creation time and are never persisted.
+- Existing runtime resources are not workspace-scoped yet; that retrofit belongs
+  to later Beta slices.
 
 ### Execution State
 

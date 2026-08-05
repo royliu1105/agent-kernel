@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import builtins
 import math
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -31,12 +32,27 @@ from kernel_core import (
     ToolCallStatus,
     utc_now,
 )
+from kernel_identity import (
+    ApiKey,
+    ApiKeyCredential,
+    ApiKeyStatus,
+    Principal,
+    PrincipalType,
+    Workspace,
+    WorkspaceMembership,
+    WorkspaceRole,
+    WorkspaceStatus,
+    api_key_prefix,
+    generate_api_key,
+    hash_api_key,
+)
 from kernel_observability import ensure_trace_id
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from kernel_storage.models import (
     AgentRecord,
+    ApiKeyRecord,
     ApprovalRecord,
     ChunkEmbeddingRecord,
     DocumentChunkRecord,
@@ -44,9 +60,12 @@ from kernel_storage.models import (
     IngestionJobRecord,
     KnowledgeBaseRecord,
     MemoryItemRecord,
+    PrincipalRecord,
     RunEventRecord,
     RunRecord,
     ToolCallRecord,
+    WorkspaceMembershipRecord,
+    WorkspaceRecord,
 )
 
 
@@ -68,6 +87,201 @@ class DocumentChunkingError(ValueError):
 
 class MemoryNotFoundError(ValueError):
     """Raised when a memory item does not exist."""
+
+
+class PrincipalRepository:
+    """Persistence operations for authenticated principals."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        type: PrincipalType,
+        display_name: str,
+        disabled: bool = False,
+    ) -> Principal:
+        principal = Principal(type=type, display_name=display_name, disabled=disabled)
+        self._session.add(_principal_to_record(principal))
+        self._session.commit()
+        return principal
+
+    def get(self, principal_id: UUID) -> Principal | None:
+        record = self._session.get(PrincipalRecord, str(principal_id))
+        if record is None:
+            return None
+        return _principal_from_record(record)
+
+    def set_disabled(self, *, principal_id: UUID, disabled: bool) -> Principal | None:
+        record = self._session.get(PrincipalRecord, str(principal_id))
+        if record is None:
+            return None
+        record.disabled = disabled
+        self._session.commit()
+        return _principal_from_record(record)
+
+
+class WorkspaceRepository:
+    """Persistence operations for workspace boundaries."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        name: str,
+        slug: str,
+        status: WorkspaceStatus = WorkspaceStatus.ACTIVE,
+    ) -> Workspace:
+        workspace = Workspace(name=name, slug=slug, status=status)
+        self._session.add(_workspace_to_record(workspace))
+        self._session.commit()
+        return workspace
+
+    def get(self, workspace_id: UUID) -> Workspace | None:
+        record = self._session.get(WorkspaceRecord, str(workspace_id))
+        if record is None:
+            return None
+        return _workspace_from_record(record)
+
+    def get_by_slug(self, slug: str) -> Workspace | None:
+        record = self._session.scalar(select(WorkspaceRecord).where(WorkspaceRecord.slug == slug))
+        if record is None:
+            return None
+        return _workspace_from_record(record)
+
+
+class WorkspaceMembershipRepository:
+    """Persistence operations for workspace role assignments."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def assign(
+        self,
+        *,
+        principal_id: UUID,
+        workspace_id: UUID,
+        role: WorkspaceRole,
+    ) -> WorkspaceMembership | None:
+        if self._session.get(PrincipalRecord, str(principal_id)) is None:
+            return None
+        if self._session.get(WorkspaceRecord, str(workspace_id)) is None:
+            return None
+
+        record = self._session.get(
+            WorkspaceMembershipRecord,
+            (str(principal_id), str(workspace_id)),
+        )
+        if record is None:
+            membership = WorkspaceMembership(
+                principal_id=principal_id,
+                workspace_id=workspace_id,
+                role=role,
+            )
+            self._session.add(_membership_to_record(membership))
+            self._session.commit()
+            return membership
+
+        record.role = role.value
+        self._session.commit()
+        return _membership_from_record(record)
+
+    def get(self, *, principal_id: UUID, workspace_id: UUID) -> WorkspaceMembership | None:
+        record = self._session.get(
+            WorkspaceMembershipRecord,
+            (str(principal_id), str(workspace_id)),
+        )
+        if record is None:
+            return None
+        return _membership_from_record(record)
+
+    def list_for_principal(self, principal_id: UUID) -> list[WorkspaceMembership]:
+        statement = (
+            select(WorkspaceMembershipRecord)
+            .where(WorkspaceMembershipRecord.principal_id == str(principal_id))
+            .order_by(WorkspaceMembershipRecord.created_at)
+        )
+        return [_membership_from_record(record) for record in self._session.scalars(statement)]
+
+
+class ApiKeyRepository:
+    """Persistence operations for hashed API keys."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def issue(
+        self,
+        *,
+        workspace_id: UUID,
+        principal_id: UUID,
+        name: str,
+        plaintext_key: str | None = None,
+        expires_at: datetime | None = None,
+    ) -> ApiKeyCredential | None:
+        if self._session.get(PrincipalRecord, str(principal_id)) is None:
+            return None
+        if self._session.get(WorkspaceRecord, str(workspace_id)) is None:
+            return None
+        if (
+            self._session.get(
+                WorkspaceMembershipRecord,
+                (str(principal_id), str(workspace_id)),
+            )
+            is None
+        ):
+            return None
+
+        secret = plaintext_key or generate_api_key()
+        api_key = ApiKey(
+            workspace_id=workspace_id,
+            principal_id=principal_id,
+            name=name,
+            key_prefix=api_key_prefix(secret),
+            key_hash=hash_api_key(secret),
+            expires_at=expires_at,
+        )
+        self._session.add(_api_key_to_record(api_key))
+        self._session.commit()
+        return ApiKeyCredential(api_key=api_key, plaintext_key=secret)
+
+    def get(self, api_key_id: UUID) -> ApiKey | None:
+        record = self._session.get(ApiKeyRecord, str(api_key_id))
+        if record is None:
+            return None
+        return _api_key_from_record(record)
+
+    def authenticate(self, plaintext_key: str) -> ApiKey | None:
+        key_hash = hash_api_key(plaintext_key)
+        record = self._session.scalar(select(ApiKeyRecord).where(ApiKeyRecord.key_hash == key_hash))
+        if record is None:
+            return None
+        api_key = _api_key_from_record(record)
+        if api_key.status is not ApiKeyStatus.ACTIVE:
+            return None
+        now = utc_now()
+        expires_at = api_key.expires_at
+        if expires_at is not None and expires_at.tzinfo is None:
+            now = now.replace(tzinfo=None)
+        if expires_at is not None and expires_at <= now:
+            record.status = ApiKeyStatus.EXPIRED.value
+            self._session.commit()
+            return None
+
+        record.last_used_at = now
+        self._session.commit()
+        return _api_key_from_record(record)
+
+    def revoke(self, api_key_id: UUID) -> bool:
+        record = self._session.get(ApiKeyRecord, str(api_key_id))
+        if record is None:
+            return False
+        record.status = ApiKeyStatus.REVOKED.value
+        self._session.commit()
+        return True
 
 
 class AgentRepository:
@@ -1368,6 +1582,94 @@ def _cosine_similarity(left: list[float], right: list[float]) -> float:
     if left_norm == 0.0 or right_norm == 0.0:
         return 0.0
     return dot / (left_norm * right_norm)
+
+
+def _principal_to_record(principal: Principal) -> PrincipalRecord:
+    return PrincipalRecord(
+        id=str(principal.id),
+        type=principal.type.value,
+        display_name=principal.display_name,
+        disabled=principal.disabled,
+        created_at=principal.created_at,
+    )
+
+
+def _principal_from_record(record: PrincipalRecord) -> Principal:
+    return Principal(
+        id=UUID(record.id),
+        type=PrincipalType(record.type),
+        display_name=record.display_name,
+        disabled=record.disabled,
+        created_at=record.created_at,
+    )
+
+
+def _workspace_to_record(workspace: Workspace) -> WorkspaceRecord:
+    return WorkspaceRecord(
+        id=str(workspace.id),
+        name=workspace.name,
+        slug=workspace.slug,
+        status=workspace.status.value,
+        created_at=workspace.created_at,
+    )
+
+
+def _workspace_from_record(record: WorkspaceRecord) -> Workspace:
+    return Workspace(
+        id=UUID(record.id),
+        name=record.name,
+        slug=record.slug,
+        status=WorkspaceStatus(record.status),
+        created_at=record.created_at,
+    )
+
+
+def _membership_to_record(membership: WorkspaceMembership) -> WorkspaceMembershipRecord:
+    return WorkspaceMembershipRecord(
+        principal_id=str(membership.principal_id),
+        workspace_id=str(membership.workspace_id),
+        role=membership.role.value,
+        created_at=membership.created_at,
+    )
+
+
+def _membership_from_record(record: WorkspaceMembershipRecord) -> WorkspaceMembership:
+    return WorkspaceMembership(
+        principal_id=UUID(record.principal_id),
+        workspace_id=UUID(record.workspace_id),
+        role=WorkspaceRole(record.role),
+        created_at=record.created_at,
+    )
+
+
+def _api_key_to_record(api_key: ApiKey) -> ApiKeyRecord:
+    return ApiKeyRecord(
+        id=str(api_key.id),
+        workspace_id=str(api_key.workspace_id),
+        principal_id=str(api_key.principal_id),
+        name=api_key.name,
+        key_prefix=api_key.key_prefix,
+        key_hash=api_key.key_hash,
+        status=api_key.status.value,
+        created_at=api_key.created_at,
+        expires_at=api_key.expires_at,
+        last_used_at=api_key.last_used_at,
+    )
+
+
+def _api_key_from_record(record: ApiKeyRecord) -> ApiKey:
+    return ApiKey(
+        id=UUID(record.id),
+        workspace_id=UUID(record.workspace_id),
+        principal_id=UUID(record.principal_id),
+        name=record.name,
+        key_prefix=record.key_prefix,
+        key_hash=record.key_hash,
+        status=ApiKeyStatus(record.status),
+        created_at=record.created_at,
+        expires_at=record.expires_at,
+        last_used_at=record.last_used_at,
+    )
 
 
 def _ingestion_job_to_record(job: IngestionJob) -> IngestionJobRecord:

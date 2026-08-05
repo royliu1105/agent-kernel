@@ -402,6 +402,7 @@ Checklist:
 - [~] Authentication baseline.
 - [x] Authorization/RBAC domain baseline.
 - [x] Workspace scoping domain model.
+- [x] Identity persistence and API key storage foundation.
 - [ ] Provider-native function calling.
 - [ ] Durable model/tool/model execution loop.
 - [ ] Persisted tool-call records.

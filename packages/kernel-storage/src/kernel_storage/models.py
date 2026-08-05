@@ -20,10 +20,96 @@ from kernel_core import (
     ToolCallStatus,
     utc_now,
 )
+from kernel_identity import ApiKeyStatus, PrincipalType, WorkspaceRole, WorkspaceStatus
 from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kernel_storage.base import Base
+
+
+class PrincipalRecord(Base):
+    __tablename__ = "principals"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    type: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=PrincipalType.USER.value, index=True
+    )
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    disabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class WorkspaceRecord(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=WorkspaceStatus.ACTIVE.value, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class WorkspaceMembershipRecord(Base):
+    __tablename__ = "workspace_memberships"
+    __table_args__ = (
+        Index("ix_workspace_memberships_workspace_id_role", "workspace_id", "role"),
+    )
+
+    principal_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("principals.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    workspace_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=WorkspaceRole.VIEWER.value, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+
+class ApiKeyRecord(Base):
+    __tablename__ = "api_keys"
+    __table_args__ = (
+        Index("ix_api_keys_workspace_id_status", "workspace_id", "status"),
+        Index("ix_api_keys_principal_id_status", "principal_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    principal_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("principals.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=ApiKeyStatus.ACTIVE.value, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class AgentRecord(Base):

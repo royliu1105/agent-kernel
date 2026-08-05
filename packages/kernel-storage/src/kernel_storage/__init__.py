@@ -4,6 +4,7 @@ from kernel_storage.base import Base
 from kernel_storage.config import DEFAULT_DATABASE_URL, get_database_url
 from kernel_storage.repositories import (
     AgentRepository,
+    ApiKeyRepository,
     ApprovalDecisionError,
     ApprovalRepository,
     ChunkEmbeddingRepository,
@@ -16,13 +17,17 @@ from kernel_storage.repositories import (
     KnowledgeBaseRepository,
     MemoryNotFoundError,
     MemoryRepository,
+    PrincipalRepository,
     RunRepository,
     ToolCallRepository,
+    WorkspaceMembershipRepository,
+    WorkspaceRepository,
 )
 from kernel_storage.session import create_engine_for_url, create_session_factory
 
 __all__ = [
     "AgentRepository",
+    "ApiKeyRepository",
     "ApprovalDecisionError",
     "ApprovalRepository",
     "Base",
@@ -37,8 +42,11 @@ __all__ = [
     "KnowledgeBaseRepository",
     "MemoryNotFoundError",
     "MemoryRepository",
+    "PrincipalRepository",
     "RunRepository",
     "ToolCallRepository",
+    "WorkspaceMembershipRepository",
+    "WorkspaceRepository",
     "create_engine_for_url",
     "create_session_factory",
     "get_database_url",

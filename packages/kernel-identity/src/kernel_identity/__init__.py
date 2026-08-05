@@ -1,7 +1,11 @@
 """Identity, workspace, and RBAC primitives for Agent Kernel."""
 
 from kernel_identity.authorizer import ROLE_PERMISSIONS, WorkspaceAuthorizer
+from kernel_identity.keys import api_key_prefix, generate_api_key, hash_api_key, verify_api_key
 from kernel_identity.models import (
+    ApiKey,
+    ApiKeyCredential,
+    ApiKeyStatus,
     AuthorizationDecision,
     AuthorizationRequest,
     Permission,
@@ -15,6 +19,9 @@ from kernel_identity.models import (
 
 __all__ = [
     "ROLE_PERMISSIONS",
+    "ApiKey",
+    "ApiKeyCredential",
+    "ApiKeyStatus",
     "AuthorizationDecision",
     "AuthorizationRequest",
     "Permission",
@@ -25,4 +32,8 @@ __all__ = [
     "WorkspaceMembership",
     "WorkspaceRole",
     "WorkspaceStatus",
+    "api_key_prefix",
+    "generate_api_key",
+    "hash_api_key",
+    "verify_api_key",
 ]

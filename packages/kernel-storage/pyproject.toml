@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "alembic>=1.14.0",
   "kernel-core",
+  "kernel-identity",
   "kernel-observability",
   "psycopg[binary]>=3.2.0",
   "sqlalchemy>=2.0.0",

@@ -53,6 +53,23 @@ Day 52 identity baseline:
 - Day 52 does not add API auth middleware, browser sessions, OIDC, SSO, or
   route-level enforcement.
 
+Day 53 identity persistence baseline:
+
+- `ApiKey` stores only `key_prefix`, `key_hash`, lifecycle status, timestamps,
+  workspace id, and principal id.
+- `ApiKeyCredential` returns the plaintext key only at issue time.
+- API key hashes use SHA-256 over high-entropy generated secrets.
+- API key comparison uses constant-time digest comparison.
+- API key issuance requires the principal and workspace to exist and the
+  principal to be a member of that workspace.
+- API key authentication rejects revoked and expired keys.
+- Successful API key authentication updates `last_used_at`.
+- Principals, workspaces, memberships, and API keys are persisted in Postgres
+  through SQLAlchemy models and Alembic migration `0009_identity_tables`.
+- Day 53 does not add route-level API authentication middleware, browser
+  sessions, OIDC, SSO, password login, or user management UI.
+- Day 53 does not retrofit existing resource tables with `workspace_id`.
+
 Risk levels:
 
 ```text
@@ -214,6 +231,7 @@ Beta security baseline:
   on workspace-scoped resources.
 - Route-level authorization should be added after storage persistence exists for
   principals, workspaces, memberships, and API keys.
+- Plaintext API keys must never be persisted.
 
 ## Observability
 
@@ -240,6 +258,8 @@ Beta security baseline:
 - Viewer role is read-only.
 - Operator role can operate runs and approvals without workspace admin rights.
 - Disabled principals are denied.
+- API keys are persisted as hashes and non-secret prefixes only.
+- Revoked and expired API keys cannot authenticate.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.
 - Tool result size limit is enforced.

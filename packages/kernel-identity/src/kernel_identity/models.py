@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
@@ -20,6 +21,14 @@ class WorkspaceStatus(StrEnum):
 
     ACTIVE = "active"
     DISABLED = "disabled"
+
+
+class ApiKeyStatus(StrEnum):
+    """Lifecycle states for API keys."""
+
+    ACTIVE = "active"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
 
 
 class WorkspaceRole(StrEnum):
@@ -63,6 +72,7 @@ class Principal(IdentityModel):
     type: PrincipalType
     display_name: str = Field(min_length=1, max_length=255)
     disabled: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Workspace(IdentityModel):
@@ -72,6 +82,7 @@ class Workspace(IdentityModel):
     name: str = Field(min_length=1, max_length=255)
     slug: str = Field(min_length=1, max_length=255)
     status: WorkspaceStatus = WorkspaceStatus.ACTIVE
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class WorkspaceMembership(IdentityModel):
@@ -80,6 +91,33 @@ class WorkspaceMembership(IdentityModel):
     principal_id: UUID
     workspace_id: UUID
     role: WorkspaceRole
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class ApiKey(IdentityModel):
+    """Hashed API key record for a principal inside a workspace."""
+
+    id: UUID = Field(default_factory=uuid4)
+    workspace_id: UUID
+    principal_id: UUID
+    name: str = Field(min_length=1, max_length=255)
+    key_prefix: str = Field(min_length=1, max_length=64)
+    key_hash: str = Field(min_length=64, max_length=64)
+    status: ApiKeyStatus = ApiKeyStatus.ACTIVE
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    expires_at: datetime | None = None
+    last_used_at: datetime | None = None
+
+
+class ApiKeyCredential(IdentityModel):
+    """One-time API key issuance result.
+
+    The plaintext secret is returned only at creation time and must never be
+    persisted.
+    """
+
+    api_key: ApiKey
+    plaintext_key: str
 
 
 class AuthorizationRequest(IdentityModel):

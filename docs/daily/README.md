@@ -100,3 +100,4 @@ day-03.md
 - [Day 50: Public Alpha Release Notes and Announcement Draft](day-50.md)
 - [Day 51: Public Alpha Closure and Full Verification](day-51.md)
 - [Day 52: Beta Kickoff and Identity RBAC Foundation](day-52.md)
+- [Day 53: Identity Persistence and API Key Foundation](day-53.md)
