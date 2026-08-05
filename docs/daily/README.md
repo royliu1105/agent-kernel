@@ -115,3 +115,4 @@ day-03.md
 - [Day 65: OpenAI Native Tool-Call Parsing and Persistence](day-65.md)
 - [Day 66: Model/Tool/Model Execution Loop](day-66.md)
 - [Day 67: Provider-Native Tool-Call Evals and Regression Tests](day-67.md)
+- [Day 68: OpenAI Embeddings Backend](day-68.md)

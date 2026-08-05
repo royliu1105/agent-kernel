@@ -3,7 +3,13 @@ name = "kernel-rag"
 version = "0.1.0"
 description = "RAG package for Agent Kernel."
 requires-python = ">=3.12,<3.13"
-dependencies = ["kernel-core", "kernel-observability", "kernel-storage", "kernel-tools"]
+dependencies = [
+  "httpx>=0.27.0",
+  "kernel-core",
+  "kernel-observability",
+  "kernel-storage",
+  "kernel-tools",
+]
 
 [build-system]
 requires = ["hatchling"]

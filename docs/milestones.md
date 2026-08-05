@@ -177,7 +177,7 @@ Checklist:
 - [x] Chunker.
 - [x] Document chunk storage.
 - [x] Embedding interface.
-- [ ] OpenAI embeddings.
+- [x] OpenAI embeddings.
 - [x] Mock embeddings.
 - [x] Vector store foundation.
 - [ ] pgvector-native store.
@@ -415,7 +415,7 @@ Checklist:
 - [ ] OpenTelemetry exporter configuration.
 - [ ] Prometheus-compatible metrics endpoint.
 - [ ] S3/MinIO object storage backend.
-- [ ] OpenAI embeddings backend.
+- [x] OpenAI embeddings backend.
 - [ ] pgvector-native vector store.
 - [ ] Persisted eval runs.
 - [ ] Eval API.
@@ -440,7 +440,7 @@ Daily execution map:
 - [x] Day 65: OpenAI native tool-call parsing and persistence.
 - [x] Day 66: Model/tool/model execution loop.
 - [x] Day 67: Provider-native tool-call evals and regression tests.
-- [ ] Day 68: OpenAI embeddings backend.
+- [x] Day 68: OpenAI embeddings backend.
 - [ ] Day 69: pgvector-native vector store.
 - [ ] Day 70: S3/MinIO object storage backend.
 - [ ] Day 71: Production RAG/storage integration tests.

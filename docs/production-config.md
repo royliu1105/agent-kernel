@@ -45,10 +45,14 @@ Optional provider credentials:
 
 ```bash
 OPENAI_API_KEY=
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_EMBEDDING_DIMENSIONS=1536
 ```
 
 Use `mock:*` and `replay:*` providers for deterministic local and CI workflows.
 Use `openai:*` models only when `OPENAI_API_KEY` is configured.
+Mock embeddings remain the default RAG path. Wire `OpenAIEmbeddingProvider`
+explicitly when indexing or retrieving with real OpenAI embeddings.
 
 ## Storage
 
@@ -69,6 +73,18 @@ AGENT_KERNEL_OBJECT_STORE_ROOT=/data/objects
 
 Mount this path as durable storage in container deployments. S3/MinIO-compatible
 object storage is a later enhancement.
+
+Embedding storage:
+
+- Mock embeddings remain suitable for local development, CI, and deterministic
+  evals.
+- OpenAI embeddings are available through `OpenAIEmbeddingProvider`.
+- Keep the same embedding provider and model for indexing and retrieval.
+- Store `OPENAI_API_KEY` as a secret.
+- `OPENAI_EMBEDDING_MODEL` and `OPENAI_EMBEDDING_DIMENSIONS` should be pinned
+  per environment so retrieval quality does not drift accidentally.
+- pgvector-native storage is still a later Beta slice; current storage remains
+  JSON-vector based.
 
 ## Database Migrations
 

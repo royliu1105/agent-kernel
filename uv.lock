@@ -485,6 +485,7 @@ name = "kernel-rag"
 version = "0.1.0"
 source = { editable = "packages/kernel-rag" }
 dependencies = [
+    { name = "httpx" },
     { name = "kernel-core" },
     { name = "kernel-observability" },
     { name = "kernel-storage" },
@@ -493,6 +494,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },

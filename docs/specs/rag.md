@@ -114,6 +114,29 @@ Day 18 implements deterministic chunk embedding/indexing:
 
 Day 18 intentionally does not call OpenAI embeddings, use pgvector-native columns/indexes, expose retrieval, build citations, or expose `kb_search`.
 
+## Day 68 OpenAI Embeddings Backend
+
+Day 68 adds a real OpenAI embeddings provider behind the existing
+`EmbeddingProvider` interface:
+
+- `OpenAIEmbeddingProvider` calls the OpenAI `/v1/embeddings` endpoint.
+- Default model: `text-embedding-3-small`.
+- Default dimensions: `1536`.
+- Configuration helpers read:
+  - `OPENAI_API_KEY`
+  - `OPENAI_EMBEDDING_MODEL`
+  - `OPENAI_EMBEDDING_DIMENSIONS`
+- Empty input returns an empty vector list without network I/O.
+- Missing API keys, HTTP failures, malformed responses, count mismatches,
+  index mismatches, and dimension mismatches raise typed `OpenAIEmbeddingError`
+  failures.
+- Tests use injectable HTTP transport and do not perform live OpenAI calls.
+- `DocumentIndexingService` can persist vectors returned by
+  `OpenAIEmbeddingProvider`.
+
+Day 68 intentionally does not make OpenAI embeddings the default provider,
+does not add pgvector-native storage, and does not add live OpenAI calls to CI.
+
 ## Phase 3B Retrieval and Agent Integration Plan
 
 Phase 3B completes the RAG usage path:
@@ -186,7 +209,6 @@ Day 21 should not implement large benchmark suites, rerankers, production analyt
 
 The following are valuable but deferred beyond Phase 3:
 
-- OpenAI embeddings.
 - pgvector-native vector columns and indexes.
 - BM25 / keyword index.
 - Hybrid search.
@@ -296,7 +318,6 @@ Phase 3 establishes a tested RAG baseline:
 
 Phase 3 intentionally does not implement:
 
-- OpenAI embeddings.
 - pgvector-native vector columns or indexes.
 - Async ingestion/indexing worker.
 - BM25, hybrid search, RRF, query rewriting, or reranking.

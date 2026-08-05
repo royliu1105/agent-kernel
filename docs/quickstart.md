@@ -164,6 +164,19 @@ uv run agent-kernel document index <document-id>
 uv run agent-kernel kb search <knowledge-base-id> --query "What is Agent Kernel?"
 ```
 
+The quickstart uses deterministic mock embeddings by default. For real OpenAI
+embeddings, configure:
+
+```bash
+export OPENAI_API_KEY=...
+export OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+export OPENAI_EMBEDDING_DIMENSIONS=1536
+```
+
+Then wire `OpenAIEmbeddingProvider` where your application constructs the
+indexing and retrieval services. Keep the same embedding model and dimensions
+for both indexing and search.
+
 Create and inspect a scoped memory item:
 
 ```bash

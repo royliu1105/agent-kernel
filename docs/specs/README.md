@@ -57,7 +57,6 @@ Deferred beyond v0.1:
 - Automatic planning/tool choice.
 - Durable model/tool/model loop for provider-returned tool calls.
 - Async Redis-backed queue with distributed worker leases.
-- OpenAI embeddings.
 - pgvector-native vector index implementation.
 - Hybrid search, RRF, reranking, and query rewriting.
 - Semantic memory retrieval and automatic memory writes.
