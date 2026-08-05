@@ -7,6 +7,10 @@ from kernel_runtime.execution import (
     RunNotFoundError,
 )
 from kernel_runtime.prompts import PromptRegistry, PromptVersion
+from kernel_runtime.provider_tools import (
+    tool_metadata_to_llm_tool_definition,
+    tool_registry_to_llm_tool_definitions,
+)
 from kernel_runtime.queue import (
     DEFAULT_RUN_QUEUE_NAME,
     InMemoryRunQueue,
@@ -33,6 +37,8 @@ __all__ = [
     "ModelRouter",
     "PromptRegistry",
     "PromptVersion",
+    "tool_metadata_to_llm_tool_definition",
+    "tool_registry_to_llm_tool_definitions",
     "DEFAULT_RUN_QUEUE_NAME",
     "InMemoryRunQueue",
     "RedisQueueClient",

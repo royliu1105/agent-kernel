@@ -28,6 +28,10 @@ Provider types:
 - `LLMRequest`
 - `LLMResponse`
 - `LLMUsage`
+- `LLMToolDefinition`
+- `LLMToolCall`
+- `LLMToolChoice`
+- `LLMFinishReason`
 - `LLMProvider`
 - `LLMProviderError`
 - `ModelRouter`
@@ -95,6 +99,35 @@ Day 7 replay baseline:
 - Replay does not perform network I/O and does not require secrets.
 - Prompt-aware matching and fixture file formats are deferred until the eval runner exists.
 
+Day 64 provider-native tool-call contract:
+
+- `LLMToolDefinition` is the provider-facing view of a registered tool:
+  - `name`
+  - `description`
+  - `input_schema`
+- `LLMRequest.tools` carries zero or more provider-facing tool definitions.
+- `LLMRequest.tool_choice` can express `auto`, `none`, or `required` when a
+  provider supports native tool choice.
+- `LLMToolCall` is the provider-normalized tool call request shape:
+  - `id`
+  - `name`
+  - `arguments`
+  - `raw`
+- `LLMResponse.finish_reason` distinguishes normal text completion from
+  provider-native tool-call responses.
+- `LLMResponse.tool_calls` carries provider-normalized tool call requests.
+- `MockLLMProvider` can return deterministic native tool calls for runtime and
+  eval tests without network access.
+- `OpenAIProvider` serializes supplied tool definitions into Responses API
+  function tool payloads.
+- Runtime conversion from `ToolMetadata` and `ToolRegistry` to
+  `LLMToolDefinition` lives in `kernel_runtime.provider_tools` so provider
+  packages do not depend on the tool package.
+
+Day 64 explicitly does not parse OpenAI function-call output, persist
+provider-native tool calls, or run a model/tool/model loop. Those start in Day
+65 and Day 66.
+
 ## State Transitions
 
 Provider calls do not own run state. The runtime execution service owns run transitions and uses
@@ -144,6 +177,14 @@ run record.
 - Worker execution through the default router remains deterministic when using `mock:*`.
 - Replay provider returns fixture responses by model name.
 - Replay provider fails clearly for missing fixture responses.
+- Provider contract carries native tool definitions, tool choice, tool calls,
+  and finish reason.
+- Runtime adapter converts enabled tool metadata into provider-facing tool
+  definitions.
+- Runtime adapter filters disabled tools.
+- OpenAI provider serializes supplied tool definitions without making networked
+  tests.
+- Mock provider can return deterministic native tool calls.
 
 ## Manual Smoke
 

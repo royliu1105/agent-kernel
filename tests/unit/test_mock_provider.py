@@ -1,5 +1,13 @@
 import pytest
-from kernel_providers import LLMMessage, LLMProviderError, LLMRequest, MessageRole, MockLLMProvider
+from kernel_providers import (
+    LLMFinishReason,
+    LLMMessage,
+    LLMProviderError,
+    LLMRequest,
+    LLMToolCall,
+    MessageRole,
+    MockLLMProvider,
+)
 
 
 @pytest.mark.asyncio
@@ -37,3 +45,23 @@ async def test_mock_provider_can_fail_deterministically() -> None:
 
     assert error.value.error_type == "mock_failure"
     assert str(error.value) == "provider unavailable"
+
+
+@pytest.mark.asyncio
+async def test_mock_provider_can_return_deterministic_tool_calls() -> None:
+    tool_call = LLMToolCall(
+        id="call_001",
+        name="echo",
+        arguments={"message": "hello"},
+        raw={"provider": "mock"},
+    )
+    provider = MockLLMProvider(tool_calls=(tool_call,))
+    request = LLMRequest(
+        model="mock-small",
+        messages=(LLMMessage(role=MessageRole.USER, content="use a tool"),),
+    )
+
+    response = await provider.complete(request)
+
+    assert response.finish_reason is LLMFinishReason.TOOL_CALLS
+    assert response.tool_calls == (tool_call,)

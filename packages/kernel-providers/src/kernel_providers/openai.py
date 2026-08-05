@@ -8,7 +8,14 @@ from typing import Any
 
 import httpx
 
-from kernel_providers.base import LLMMessage, LLMProviderError, LLMRequest, LLMResponse, LLMUsage
+from kernel_providers.base import (
+    LLMMessage,
+    LLMProviderError,
+    LLMRequest,
+    LLMResponse,
+    LLMToolDefinition,
+    LLMUsage,
+)
 
 OPENAI_API_KEY_ENV = "OPENAI_API_KEY"
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
@@ -100,6 +107,10 @@ def _request_payload(request: LLMRequest) -> dict[str, Any]:
         payload["temperature"] = request.temperature
     if request.max_output_tokens is not None:
         payload["max_output_tokens"] = request.max_output_tokens
+    if request.tools:
+        payload["tools"] = [_tool_payload(tool) for tool in request.tools]
+    if request.tool_choice is not None:
+        payload["tool_choice"] = request.tool_choice.value
     return payload
 
 
@@ -107,6 +118,15 @@ def _message_payload(message: LLMMessage) -> dict[str, object]:
     return {
         "role": message.role.value,
         "content": [{"type": "input_text", "text": message.content}],
+    }
+
+
+def _tool_payload(tool: LLMToolDefinition) -> dict[str, object]:
+    return {
+        "type": "function",
+        "name": tool.name,
+        "description": tool.description,
+        "parameters": tool.input_schema,
     }
 
 

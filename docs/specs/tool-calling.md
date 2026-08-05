@@ -70,7 +70,7 @@ Day 8 execution contract:
 
 Deferred from Day 8:
 
-- Provider-native tool/function calling.
+- Provider-native tool/function calling execution.
 - Agent run loop integration.
 - Persisted `ToolCall` records.
 - Timeline events for tool calls.
@@ -135,6 +135,28 @@ Day 13 retry baseline:
   automatically retried.
 - Tool retry attempts append `tool_call_retrying` run events.
 - The final tool outcome is still persisted as `tool_call_completed` or `tool_call_failed`.
+
+Day 64 provider-native tool-call adapter contract:
+
+- Provider-facing tool definitions are represented by `LLMToolDefinition`.
+- Provider-native tool-call requests are represented by `LLMToolCall`.
+- Provider finish reasons are represented by `LLMFinishReason`.
+- Provider tool choice is represented by `LLMToolChoice`.
+- `tool_metadata_to_llm_tool_definition` converts internal `ToolMetadata` into
+  the provider-facing schema shape.
+- `tool_registry_to_llm_tool_definitions` exposes enabled registered tools to
+  providers and filters disabled tools.
+- OpenAI request serialization can include function tool definitions when the
+  runtime supplies tools.
+- Mock provider can return deterministic tool calls for later runtime loop
+  tests.
+
+Still deferred after Day 64:
+
+- Parsing OpenAI native function-call output.
+- Persisting provider-native tool calls.
+- Executing provider-native tool calls in the agent run loop.
+- Feeding tool results back into a second model call.
 
 ## State Transitions
 

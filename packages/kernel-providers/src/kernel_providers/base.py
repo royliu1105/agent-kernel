@@ -15,6 +15,21 @@ class MessageRole(StrEnum):
     TOOL = "tool"
 
 
+class LLMToolChoice(StrEnum):
+    AUTO = "auto"
+    NONE = "none"
+    REQUIRED = "required"
+
+
+class LLMFinishReason(StrEnum):
+    STOP = "stop"
+    TOOL_CALLS = "tool_calls"
+    LENGTH = "length"
+    CONTENT_FILTER = "content_filter"
+    ERROR = "error"
+    UNKNOWN = "unknown"
+
+
 class ProviderModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -26,11 +41,26 @@ class LLMMessage(ProviderModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class LLMToolDefinition(ProviderModel):
+    name: str
+    description: str
+    input_schema: dict[str, Any] = Field(default_factory=lambda: {"type": "object"})
+
+
+class LLMToolCall(ProviderModel):
+    id: str
+    name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    raw: dict[str, Any] = Field(default_factory=dict)
+
+
 class LLMRequest(ProviderModel):
     model: str
     messages: tuple[LLMMessage, ...]
     temperature: float = 0.0
     max_output_tokens: int | None = None
+    tools: tuple[LLMToolDefinition, ...] = ()
+    tool_choice: LLMToolChoice | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -45,6 +75,8 @@ class LLMResponse(ProviderModel):
     model: str
     text: str
     usage: LLMUsage = Field(default_factory=LLMUsage)
+    finish_reason: LLMFinishReason = LLMFinishReason.STOP
+    tool_calls: tuple[LLMToolCall, ...] = ()
     raw: dict[str, Any] = Field(default_factory=dict)
 
 

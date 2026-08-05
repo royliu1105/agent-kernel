@@ -436,7 +436,7 @@ Daily execution map:
 - [x] Day 61: Redis queue adapter foundation.
 - [x] Day 62: Durable retry visibility and worker restart tests.
 - [x] Day 63: Durable execution closure.
-- [ ] Day 64: Provider-native tool-call adapter contract.
+- [x] Day 64: Provider-native tool-call adapter contract.
 - [ ] Day 65: OpenAI native tool-call parsing and persistence.
 - [ ] Day 66: Model/tool/model execution loop.
 - [ ] Day 67: Provider-native tool-call evals and regression tests.

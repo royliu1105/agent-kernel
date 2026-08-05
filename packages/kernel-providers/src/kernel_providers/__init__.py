@@ -1,11 +1,15 @@
 """LLM provider interfaces and deterministic test providers."""
 
 from kernel_providers.base import (
+    LLMFinishReason,
     LLMMessage,
     LLMProvider,
     LLMProviderError,
     LLMRequest,
     LLMResponse,
+    LLMToolCall,
+    LLMToolChoice,
+    LLMToolDefinition,
     LLMUsage,
     MessageRole,
 )
@@ -14,11 +18,15 @@ from kernel_providers.openai import OPENAI_API_KEY_ENV, OpenAIProvider, get_open
 from kernel_providers.replay import ReplayLLMProvider
 
 __all__ = [
+    "LLMFinishReason",
     "LLMMessage",
     "LLMProvider",
     "LLMProviderError",
     "LLMRequest",
     "LLMResponse",
+    "LLMToolCall",
+    "LLMToolChoice",
+    "LLMToolDefinition",
     "LLMUsage",
     "MessageRole",
     "MockLLMProvider",

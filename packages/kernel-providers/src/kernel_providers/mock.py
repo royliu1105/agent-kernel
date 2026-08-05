@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from kernel_providers.base import LLMMessage, LLMProviderError, LLMRequest, LLMResponse, LLMUsage
+from kernel_providers.base import (
+    LLMFinishReason,
+    LLMMessage,
+    LLMProviderError,
+    LLMRequest,
+    LLMResponse,
+    LLMToolCall,
+    LLMUsage,
+)
 
 
 class MockLLMProvider:
@@ -15,9 +23,11 @@ class MockLLMProvider:
         *,
         response_prefix: str = "Mock response",
         fail_with: LLMProviderError | None = None,
+        tool_calls: tuple[LLMToolCall, ...] = (),
     ) -> None:
         self._response_prefix = response_prefix
         self._fail_with = fail_with
+        self._tool_calls = tool_calls
 
     @property
     def name(self) -> str:
@@ -38,6 +48,10 @@ class MockLLMProvider:
                 output_tokens=_estimate_tokens([text]),
                 estimated_cost=0.0,
             ),
+            finish_reason=(
+                LLMFinishReason.TOOL_CALLS if self._tool_calls else LLMFinishReason.STOP
+            ),
+            tool_calls=self._tool_calls,
             raw={"deterministic": True},
         )
 

@@ -6,6 +6,8 @@ from kernel_providers import (
     LLMMessage,
     LLMProviderError,
     LLMRequest,
+    LLMToolChoice,
+    LLMToolDefinition,
     MessageRole,
     OpenAIProvider,
     get_openai_api_key,
@@ -62,6 +64,66 @@ async def test_openai_provider_converts_request_and_response() -> None:
     assert response.text == "hello from openai"
     assert response.usage.input_tokens == 3
     assert response.usage.output_tokens == 4
+
+
+@pytest.mark.asyncio
+async def test_openai_provider_serializes_native_tool_definitions() -> None:
+    captured_payload: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured_payload
+        captured_payload = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "model": "gpt-4.1-mini",
+                "output_text": "",
+                "usage": {
+                    "input_tokens": 3,
+                    "output_tokens": 0,
+                },
+            },
+        )
+
+    provider = OpenAIProvider(
+        api_key="test-key",
+        base_url="https://api.test",
+        transport=httpx.MockTransport(handler),
+    )
+    await provider.complete(
+        LLMRequest(
+            model="gpt-4.1-mini",
+            messages=(LLMMessage(role=MessageRole.USER, content="search"),),
+            tools=(
+                LLMToolDefinition(
+                    name="kb_search",
+                    description="Search the knowledge base.",
+                    input_schema={
+                        "type": "object",
+                        "properties": {"query": {"type": "string"}},
+                        "required": ["query"],
+                        "additionalProperties": False,
+                    },
+                ),
+            ),
+            tool_choice=LLMToolChoice.AUTO,
+        )
+    )
+
+    assert captured_payload["tools"] == [
+        {
+            "type": "function",
+            "name": "kb_search",
+            "description": "Search the knowledge base.",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+        }
+    ]
+    assert captured_payload["tool_choice"] == "auto"
 
 
 @pytest.mark.asyncio

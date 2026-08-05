@@ -111,3 +111,4 @@ day-03.md
 - [Day 61: Redis Queue Adapter Foundation](day-61.md)
 - [Day 62: Durable Retry Visibility and Worker Restart Tests](day-62.md)
 - [Day 63: Durable Execution Closure](day-63.md)
+- [Day 64: Provider-Native Tool-Call Adapter Contract](day-64.md)
