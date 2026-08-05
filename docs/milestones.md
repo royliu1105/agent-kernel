@@ -435,7 +435,7 @@ Daily execution map:
 - [x] Day 60: Stuck-run detection and recovery.
 - [x] Day 61: Redis queue adapter foundation.
 - [x] Day 62: Durable retry visibility and worker restart tests.
-- [ ] Day 63: Durable execution closure.
+- [x] Day 63: Durable execution closure.
 - [ ] Day 64: Provider-native tool-call adapter contract.
 - [ ] Day 65: OpenAI native tool-call parsing and persistence.
 - [ ] Day 66: Model/tool/model execution loop.
@@ -451,7 +451,7 @@ Daily execution map:
 
 Acceptance:
 
-- [ ] Runtime execution survives worker restarts.
+- [x] Runtime execution survives worker restarts.
 - [ ] Tool calls and approvals are durable and inspectable.
 - [ ] Security boundaries are explicit and tested.
 - [ ] Telemetry can be exported to common production tools.

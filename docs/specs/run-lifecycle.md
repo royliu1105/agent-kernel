@@ -182,6 +182,21 @@ Day 62 durable retry and restart visibility baseline:
 - Day 62 does not add delayed retry scheduling, exponential backoff, a public
   retry API, or automatic Redis-backed worker polling.
 
+Day 63 durable execution closure baseline:
+
+- The worker operator entrypoint is covered by regression tests.
+- `agent-kernel-worker` without a mode prints a ready message and exits.
+- `agent-kernel-worker --once --limit N` can execute persisted queued runs
+  through the real CLI entrypoint.
+- `agent-kernel-worker --recover-stuck --limit N` can recover expired
+  `running` leases through the real CLI entrypoint.
+- Conflicting worker modes are rejected before execution.
+- The completed Day 59-63 scope is summarized in
+  [Durable Execution Summary](../durable-execution-summary.md).
+- Day 63 does not switch worker polling to Redis by default, add
+  provider-native function calling, or automatically requeue expired in-flight
+  work.
+
 Day 12 approval interrupt/resume semantics:
 
 - `RunExecutionService` supports explicit single-tool input under `input.tool`.

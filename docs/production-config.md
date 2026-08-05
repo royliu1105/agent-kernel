@@ -136,6 +136,11 @@ Durable retry and restart visibility:
   database session.
 - Regression coverage verifies a restarted worker does not re-execute a run
   failed by stuck-run recovery.
+- Regression coverage verifies the real worker CLI can execute queued runs once
+  and recover expired in-flight leases.
+- The completed worker leasing, recovery, retry visibility, queue adapter, and
+  operator command scope is summarized in
+  [Durable Execution Summary](durable-execution-summary.md).
 - Public manual retry APIs, delayed retry scheduling, and exponential backoff
   remain later hardening work.
 

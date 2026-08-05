@@ -276,7 +276,9 @@ make verify-web
 - `replay:*` models are for deterministic replay fixtures and fail clearly when
   no fixture is registered.
 - The worker currently uses persisted queued runs as the MVP queue.
-- Redis-backed scheduling and distributed worker leases are deferred.
+- Worker leases, stuck-run recovery, and the Redis queue adapter foundation are
+  available in the Beta baseline. Redis-backed worker polling is not enabled by
+  default.
 - Some Web areas remain fixture-backed previews until their backend list/detail
   APIs are complete.
 

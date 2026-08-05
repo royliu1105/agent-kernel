@@ -375,7 +375,7 @@ Day 59: Worker lease model and storage foundation
 Day 60: Stuck-run detection and recovery
 Day 61: Redis queue adapter foundation
 Day 62: Durable retry visibility and worker restart tests
-Day 63: Durable execution closure
+Day 63: Durable execution closure (complete under Day 59-63 scope)
 Day 64: Provider-native tool-call adapter contract
 Day 65: OpenAI native tool-call parsing and persistence
 Day 66: Model/tool/model execution loop
