@@ -32,6 +32,27 @@ Initial entities:
 - `User`
 - `Project`
 
+Day 52 identity baseline:
+
+- `kernel-identity` owns infrastructure-free identity, workspace, and RBAC
+  primitives.
+- `Principal` represents an authenticated actor and is either `user` or
+  `service`.
+- `Workspace` is the primary Beta resource boundary.
+- `WorkspaceMembership` assigns one built-in role to one principal in one
+  workspace.
+- Built-in roles are `owner`, `admin`, `operator`, and `viewer`.
+- Permissions are fine-grained strings such as `run:read`, `run:write`,
+  `approval:review`, `knowledge:write`, and `workspace:admin`.
+- `WorkspaceAuthorizer` makes deterministic authorization decisions from a
+  principal, workspace id, permission, and membership set.
+- Workspace membership is required before any workspace permission is granted.
+- Disabled principals are denied even if a membership exists.
+- Day 52 does not persist users, workspaces, memberships, API keys, or audit
+  events.
+- Day 52 does not add API auth middleware, browser sessions, OIDC, SSO, or
+  route-level enforcement.
+
 Risk levels:
 
 ```text
@@ -183,6 +204,17 @@ MVP requirements:
 - Audit log for approvals and tool calls.
 - No arbitrary shell tool in the default install.
 
+Beta security baseline:
+
+- Identity and workspace scope must be explicit before route-level
+  authorization is added.
+- Permission checks should return auditable decisions with principal id,
+  workspace id, permission, role, result, and reason.
+- Service principals must still be members of a workspace before they can act
+  on workspace-scoped resources.
+- Route-level authorization should be added after storage persistence exists for
+  principals, workspaces, memberships, and API keys.
+
 ## Observability
 
 - Policy evaluation span.
@@ -204,6 +236,10 @@ MVP requirements:
 - Policy decisions are visible in the run timeline.
 - Tool call success and failure are visible in the run timeline.
 - User without permission cannot approve.
+- Workspace membership is required for all workspace-scoped permissions.
+- Viewer role is read-only.
+- Operator role can operate runs and approvals without workspace admin rights.
+- Disabled principals are denied.
 - Duplicate approval is rejected.
 - Secrets are redacted from logs and traces.
 - Tool result size limit is enforced.

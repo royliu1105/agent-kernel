@@ -394,14 +394,14 @@ by other developers.
 Status:
 
 ```text
-[ ] Not started
+[~] In progress
 ```
 
 Checklist:
 
-- [ ] Authentication baseline.
-- [ ] Authorization/RBAC baseline.
-- [ ] Tenant or workspace scoping model.
+- [~] Authentication baseline.
+- [x] Authorization/RBAC domain baseline.
+- [x] Workspace scoping domain model.
 - [ ] Provider-native function calling.
 - [ ] Durable model/tool/model execution loop.
 - [ ] Persisted tool-call records.

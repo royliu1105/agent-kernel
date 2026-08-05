@@ -47,7 +47,7 @@ Specs should be short enough to stay useful. They are design assumptions that ev
 | [memory.md](memory.md) | Implemented foundation | Scoped memory CRUD, retrieval, explicit model context injection. |
 | [evals.md](evals.md) | Implemented foundation | Deterministic RAG eval dataset runner and CLI reports. |
 | [observability.md](observability.md) | Implemented foundation | Trace IDs, structured logs, metrics recorders, model/tool/retrieval metrics. |
-| [security-policy.md](security-policy.md) | Implemented foundation | Policy decisions, risk levels, approvals, auditability; auth/RBAC deferred. |
+| [security-policy.md](security-policy.md) | Beta identity foundation started | Policy decisions, risk levels, approvals, auditability; Day 52 adds identity, workspace, and RBAC primitives. |
 
 ## v0.1 Deferred Capability Summary
 

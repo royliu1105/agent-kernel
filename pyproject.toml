@@ -10,6 +10,7 @@ dependencies = [
   "agent-kernel-worker",
   "kernel-core",
   "kernel-evals",
+  "kernel-identity",
   "kernel-memory",
   "kernel-observability",
   "kernel-policy",
@@ -39,6 +40,7 @@ members = [
   "apps/cli",
   "apps/worker",
   "packages/kernel-core",
+  "packages/kernel-identity",
   "packages/kernel-runtime",
   "packages/kernel-providers",
   "packages/kernel-tools",
@@ -56,6 +58,7 @@ agent-kernel-cli = { workspace = true }
 agent-kernel-worker = { workspace = true }
 kernel-core = { workspace = true }
 kernel-evals = { workspace = true }
+kernel-identity = { workspace = true }
 kernel-memory = { workspace = true }
 kernel-observability = { workspace = true }
 kernel-policy = { workspace = true }
@@ -80,6 +83,7 @@ packages = [
   "agent_kernel_cli",
   "agent_kernel_worker",
   "kernel_core",
+  "kernel_identity",
   "kernel_runtime",
   "kernel_providers",
   "kernel_tools",

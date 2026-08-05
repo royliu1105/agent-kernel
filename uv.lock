@@ -10,6 +10,7 @@ members = [
     "agent-kernel-workspace",
     "kernel-core",
     "kernel-evals",
+    "kernel-identity",
     "kernel-memory",
     "kernel-observability",
     "kernel-policy",
@@ -97,6 +98,7 @@ dependencies = [
     { name = "agent-kernel-worker" },
     { name = "kernel-core" },
     { name = "kernel-evals" },
+    { name = "kernel-identity" },
     { name = "kernel-memory" },
     { name = "kernel-observability" },
     { name = "kernel-policy" },
@@ -124,6 +126,7 @@ requires-dist = [
     { name = "agent-kernel-worker", editable = "apps/worker" },
     { name = "kernel-core", editable = "packages/kernel-core" },
     { name = "kernel-evals", editable = "packages/kernel-evals" },
+    { name = "kernel-identity", editable = "packages/kernel-identity" },
     { name = "kernel-memory", editable = "packages/kernel-memory" },
     { name = "kernel-observability", editable = "packages/kernel-observability" },
     { name = "kernel-policy", editable = "packages/kernel-policy" },
@@ -403,6 +406,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "kernel-core", editable = "packages/kernel-core" }]
+
+[[package]]
+name = "kernel-identity"
+version = "0.1.0"
+source = { editable = "packages/kernel-identity" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.8.0" }]
 
 [[package]]
 name = "kernel-memory"

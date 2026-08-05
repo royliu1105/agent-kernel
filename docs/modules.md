@@ -4,6 +4,7 @@
 
 ```text
 packages/kernel-core
+packages/kernel-identity
 packages/kernel-runtime
 packages/kernel-providers
 packages/kernel-tools
@@ -49,6 +50,23 @@ Core interfaces:
 - `Tracer`
 
 This package must stay infrastructure-free.
+
+## kernel-identity
+
+Identity, workspace, and RBAC primitives:
+
+- Principal.
+- Workspace.
+- WorkspaceMembership.
+- Built-in workspace roles.
+- Fine-grained permissions.
+- Authorization requests.
+- Authorization decisions.
+- Workspace-scoped authorizer.
+
+This package must stay infrastructure-free. API authentication middleware,
+identity persistence, API keys, browser sessions, OIDC, and SSO are added in
+later Beta slices.
 
 ## kernel-runtime
 
