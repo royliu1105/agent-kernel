@@ -236,6 +236,26 @@ Must complete:
 - Create v1.0 release notes.
 - Run a full clean-machine release rehearsal.
 
+Daily execution map:
+
+```text
+Day 76: API/CLI contract audit and compatibility policy
+Day 77: Versioned configuration documentation
+Day 78: Upgrade and migration policy
+Day 79: Backup and restore guidance
+Day 80: Security hardening checklist
+Day 81: Release-blocking eval suite definition
+Day 82: Full release smoke test matrix
+Day 83: Load and soak test scenarios
+Day 84: Clean-machine release rehearsal plan
+Day 85: Clean-machine release rehearsal fixes
+Day 86: v1.0 docs consistency audit
+Day 87: Known limitations review and scope freeze
+Day 88: v1.0 release checklist
+Day 89: v1.0 release notes
+Day 90: v1.0 final verification and release readiness
+```
+
 Should complete if time allows:
 
 - Cross-browser Playwright matrix.

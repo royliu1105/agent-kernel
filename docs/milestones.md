@@ -478,12 +478,12 @@ Freeze the stable production contract and remove surprises before v1.0.
 Status:
 
 ```text
-[ ] Not started
+[~] In progress
 ```
 
 Checklist:
 
-- [ ] Public API and CLI compatibility policy.
+- [x] Public API and CLI compatibility policy.
 - [ ] Upgrade and migration policy.
 - [ ] Versioned configuration documentation.
 - [ ] Backup and restore guidance.
@@ -497,11 +497,29 @@ Checklist:
 
 Acceptance:
 
-- [ ] Stable API and CLI contract is documented.
+- [x] Stable API and CLI contract is documented.
 - [ ] Clean-machine release rehearsal passes.
 - [ ] Critical paths pass automated tests and evals.
 - [ ] Known limitations are acceptable for v1.0.
 - [ ] v1.0 docs match actual behavior.
+
+Daily execution map:
+
+- [x] Day 76: API/CLI contract audit and compatibility policy.
+- [ ] Day 77: Versioned configuration documentation.
+- [ ] Day 78: Upgrade and migration policy.
+- [ ] Day 79: Backup and restore guidance.
+- [ ] Day 80: Security hardening checklist.
+- [ ] Day 81: Release-blocking eval suite definition.
+- [ ] Day 82: Full release smoke test matrix.
+- [ ] Day 83: Load and soak test scenarios.
+- [ ] Day 84: Clean-machine release rehearsal plan.
+- [ ] Day 85: Clean-machine release rehearsal fixes.
+- [ ] Day 86: v1.0 docs consistency audit.
+- [ ] Day 87: Known limitations review and scope freeze.
+- [ ] Day 88: v1.0 release checklist.
+- [ ] Day 89: v1.0 release notes.
+- [ ] Day 90: v1.0 final verification and release readiness.
 
 ## Rule for Updating This File
 
