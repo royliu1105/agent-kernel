@@ -492,7 +492,7 @@ Checklist:
 - [x] Release-blocking eval suites.
 - [x] Full release smoke tests.
 - [x] v1.0 release checklist.
-- [ ] v1.0 release notes.
+- [x] v1.0 release notes.
 - [ ] Clean-machine release rehearsal.
 
 Acceptance:
@@ -518,7 +518,7 @@ Daily execution map:
 - [x] Day 86: v1.0 docs consistency audit.
 - [x] Day 87: Known limitations review and scope freeze.
 - [x] Day 88: v1.0 release checklist.
-- [ ] Day 89: v1.0 release notes.
+- [x] Day 89: v1.0 release notes.
 - [ ] Day 90: v1.0 final verification and release readiness.
 
 ## Rule for Updating This File

@@ -110,28 +110,28 @@ explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
 - [x] Clean-machine rehearsal runbook exists.
 - [x] Docs consistency audit exists.
 - [x] v1.0 scope freeze exists.
-- [ ] v1.0 release notes exist.
+- [x] v1.0 release notes exist.
 - [ ] README, docs index, roadmap, and quickstart match the final v1.0 state.
-- [ ] Known limitations in release notes match the scope freeze.
-- [ ] Upgrade notes in release notes match the migration policy.
+- [x] Known limitations in release notes match the scope freeze.
+- [x] Upgrade notes in release notes match the migration policy.
 
 ## Accepted v1.0 Limitations
 
 Before release, verify that these limitations are present in release notes:
 
-- [ ] API-key auth is disabled by default for local quickstart compatibility.
-- [ ] Browser login, OIDC, SSO, and password auth are not included.
-- [ ] Web Workbench is not a full administration console.
-- [ ] Public hosted SaaS tenant isolation is out of scope.
-- [ ] `/metrics` must be protected by external network or gateway controls.
-- [ ] Secrets manager integration is deployment-specific.
-- [ ] Remote sandbox execution is not implemented.
-- [ ] Browser session automation is not implemented.
-- [ ] Redis queue adapter exists, but database-backed polling remains default.
-- [ ] Stuck-run recovery is conservative.
-- [ ] Server-side eval jobs and LLM-as-judge are outside the stable v1.0
+- [x] API-key auth is disabled by default for local quickstart compatibility.
+- [x] Browser login, OIDC, SSO, and password auth are not included.
+- [x] Web Workbench is not a full administration console.
+- [x] Public hosted SaaS tenant isolation is out of scope.
+- [x] `/metrics` must be protected by external network or gateway controls.
+- [x] Secrets manager integration is deployment-specific.
+- [x] Remote sandbox execution is not implemented.
+- [x] Browser session automation is not implemented.
+- [x] Redis queue adapter exists, but database-backed polling remains default.
+- [x] Stuck-run recovery is conservative.
+- [x] Server-side eval jobs and LLM-as-judge are outside the stable v1.0
   surface.
-- [ ] OpenTelemetry collector, dashboards, retention, and alerts are operator
+- [x] OpenTelemetry collector, dashboards, retention, and alerts are operator
   responsibilities.
 
 ## Deferred Non-Blocking Scope
@@ -155,15 +155,15 @@ These items must not block v1.0:
 
 ## Release Notes
 
-- [ ] `docs/releases/v1.0.0.md` exists.
-- [ ] Completed capabilities are listed.
-- [ ] Stable public surfaces are listed.
-- [ ] Accepted limitations are listed.
-- [ ] Deferred scope is listed.
-- [ ] Verification commands and results are listed.
-- [ ] Upgrade notes are included.
-- [ ] Dependency audit status is included.
-- [ ] Security posture is included.
+- [x] `docs/releases/v1.0.0.md` exists.
+- [x] Completed capabilities are listed.
+- [x] Stable public surfaces are listed.
+- [x] Accepted limitations are listed.
+- [x] Deferred scope is listed.
+- [x] Verification commands and results are listed.
+- [x] Upgrade notes are included.
+- [x] Dependency audit status is included.
+- [x] Security posture is included.
 
 ## Tagging and Publication
 

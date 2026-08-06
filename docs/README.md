@@ -53,12 +53,13 @@ The plan is split into these documents:
 45. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
 46. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
 47. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
-48. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-49. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
-50. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-51. [ADR 0002](adr/0002-storage.md): storage decision.
-52. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-53. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+48. [v1.0.0 Release Notes](releases/v1.0.0.md): final-verification draft release notes, stable surfaces, limitations, upgrade notes, and security posture.
+49. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+50. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
+51. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+52. [ADR 0002](adr/0002-storage.md): storage decision.
+53. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+54. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 Repository-level release docs:
 
