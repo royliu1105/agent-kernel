@@ -18,6 +18,7 @@ from kernel_core import (
     Document,
     DocumentChunk,
     DocumentStatus,
+    EvalRun,
     IngestionJob,
     KnowledgeBase,
     MemoryItem,
@@ -61,6 +62,7 @@ from kernel_storage import (
     ChunkEmbeddingRepository,
     DocumentChunkRepository,
     DocumentRepository,
+    EvalRunRepository,
     IngestionJobRepository,
     KnowledgeBaseRepository,
     MemoryRepository,
@@ -90,6 +92,8 @@ from agent_kernel_api.schemas import (
     DocumentCreateRequest,
     DocumentIndexResponse,
     DocumentResponse,
+    EvalRunCreateRequest,
+    EvalRunResponse,
     IngestionJobResponse,
     KnowledgeBaseCreateRequest,
     KnowledgeBaseResponse,
@@ -598,6 +602,61 @@ def create_app(
         return _retrieval_response(response)
 
     @app.post(
+        "/v1/evals/runs",
+        response_model=EvalRunResponse,
+        status_code=status.HTTP_201_CREATED,
+        dependencies=[Depends(require_permission(Permission.EVAL_WRITE))],
+        tags=["evals"],
+    )
+    def create_eval_run(
+        request: EvalRunCreateRequest,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> EvalRunResponse:
+        try:
+            eval_run = EvalRunRepository(session).create_from_report(
+                name=request.name,
+                suite_type=request.suite_type,
+                report=request.report,
+                metadata=request.metadata,
+                error_type=request.error_type,
+                error_message=request.error_message,
+            )
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=str(error),
+            ) from error
+        return _eval_run_response(eval_run)
+
+    @app.get(
+        "/v1/evals/runs",
+        response_model=list[EvalRunResponse],
+        dependencies=[Depends(require_permission(Permission.EVAL_READ))],
+        tags=["evals"],
+    )
+    def list_eval_runs(
+        limit: Annotated[int, Query(ge=1, le=200)] = 100,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[EvalRunResponse]:
+        eval_runs = EvalRunRepository(session).list(limit=limit)
+        return [_eval_run_response(eval_run) for eval_run in eval_runs]
+
+    @app.get(
+        "/v1/evals/runs/{eval_run_id}",
+        response_model=EvalRunResponse,
+        dependencies=[Depends(require_permission(Permission.EVAL_READ))],
+        tags=["evals"],
+    )
+    def get_eval_run(
+        eval_run_id: UUID,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> EvalRunResponse:
+        eval_run = EvalRunRepository(session).get(eval_run_id)
+        if eval_run is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Eval run not found")
+        return _eval_run_response(eval_run)
+
+    @app.post(
         "/v1/knowledge-bases/{knowledge_base_id}/documents",
         response_model=DocumentResponse,
         status_code=status.HTTP_201_CREATED,
@@ -1016,6 +1075,27 @@ def _retrieval_response(response: RagRetrievalResponse) -> RetrievalResponseMode
             )
             for result in response.results
         ],
+    )
+
+
+def _eval_run_response(eval_run: EvalRun) -> EvalRunResponse:
+    return EvalRunResponse(
+        id=eval_run.id,
+        name=eval_run.name,
+        suite_type=eval_run.suite_type,
+        status=eval_run.status,
+        passed=eval_run.passed,
+        case_count=eval_run.case_count,
+        passed_count=eval_run.passed_count,
+        failed_count=eval_run.failed_count,
+        report=eval_run.report,
+        error_type=eval_run.error_type,
+        error_message=eval_run.error_message,
+        trace_id=eval_run.trace_id,
+        metadata=eval_run.metadata,
+        created_at=eval_run.created_at,
+        started_at=eval_run.started_at,
+        completed_at=eval_run.completed_at,
     )
 
 

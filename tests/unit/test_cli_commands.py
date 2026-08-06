@@ -268,6 +268,63 @@ def test_eval_report_cli_exits_nonzero_for_failing_dataset(tmp_path: Path) -> No
     assert payload["failed_count"] == 1
 
 
+def test_eval_report_cli_can_publish_report(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    dataset_path = tmp_path / "rag-eval.json"
+    dataset_path.write_text(
+        json.dumps(
+            {
+                "name": "rag-smoke",
+                "cases": [
+                    {
+                        "name": "deployment",
+                        "query": "alpha deployment rollback checklist",
+                        "top_k": 1,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    calls: list[tuple[str, str, dict[str, object] | None]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        api_url: str,
+        json_payload: dict[str, object] | None = None,
+    ) -> object:
+        assert api_url == "http://api.test"
+        calls.append((method, path, json_payload))
+        return {"id": "eval-run-1", "name": "rag-smoke", "passed": True}
+
+    monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
+
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "eval",
+            "report",
+            str(dataset_path),
+            "--publish",
+            "--api-url",
+            "http://api.test",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {"id": "eval-run-1", "name": "rag-smoke", "passed": True}
+    assert calls[0][0] == "POST"
+    assert calls[0][1] == "/v1/evals/runs"
+    assert calls[0][2] is not None
+    assert calls[0][2]["name"] == "rag-smoke"
+    assert calls[0][2]["suite_type"] == "rag"
+    assert calls[0][2]["metadata"] == {"dataset_path": str(dataset_path)}
+
+
 def test_approval_cli_uses_approval_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, str, dict[str, object] | None]] = []
 

@@ -755,8 +755,16 @@ def report_eval(
             help="Exit with code 1 when the eval report fails.",
         ),
     ] = True,
+    publish: Annotated[
+        bool,
+        typer.Option("--publish/--no-publish", help="Persist the eval report through the API."),
+    ] = False,
+    api_url: Annotated[
+        str,
+        typer.Option("--api-url", help="Agent Kernel API base URL."),
+    ] = DEFAULT_API_URL,
 ) -> None:
-    """Run a deterministic local RAG eval dataset and print the report."""
+    """Run a deterministic local RAG eval dataset and optionally persist the report."""
 
     try:
         dataset = load_rag_eval_dataset(dataset_path)
@@ -764,7 +772,21 @@ def report_eval(
         raise ClickException(str(error)) from error
 
     report = dataset.run(_cheap_rag_retrieve_for_cases(dataset.cases))
-    _echo_json(eval_report_to_dict(report))
+    report_payload = eval_report_to_dict(report)
+    output: object = report_payload
+    if publish:
+        output = _request_json(
+            "POST",
+            "/v1/evals/runs",
+            api_url=_resolve_api_url(api_url),
+            json_payload={
+                "name": report.name,
+                "suite_type": "rag",
+                "report": report_payload,
+                "metadata": {"dataset_path": str(dataset_path)},
+            },
+        )
+    _echo_json(output)
     if fail_on_failure and not report.passed:
         raise typer.Exit(code=1)
 

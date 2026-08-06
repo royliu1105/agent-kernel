@@ -10,6 +10,7 @@ from kernel_core import (
     AgentStatus,
     ApprovalStatus,
     DocumentStatus,
+    EvalRunStatus,
     IngestionJobStatus,
     KnowledgeBaseStatus,
     MemoryType,
@@ -200,6 +201,34 @@ class RetrievalResponseModel(ApiModel):
     query: str
     model: str
     results: list[RetrievalResultResponse]
+
+
+class EvalRunCreateRequest(ApiModel):
+    name: str = Field(min_length=1, max_length=255)
+    suite_type: str = Field(default="rag", min_length=1, max_length=255)
+    report: dict[str, Any]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    error_type: str | None = Field(default=None, max_length=255)
+    error_message: str | None = Field(default=None, max_length=4000)
+
+
+class EvalRunResponse(ApiModel):
+    id: UUID
+    name: str
+    suite_type: str
+    status: EvalRunStatus
+    passed: bool
+    case_count: int
+    passed_count: int
+    failed_count: int
+    report: dict[str, Any]
+    error_type: str | None
+    error_message: str | None
+    trace_id: str | None
+    metadata: dict[str, Any]
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
 
 
 class MemoryCreateRequest(ApiModel):

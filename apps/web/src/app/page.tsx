@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type {
   ApprovalSummary,
   EvalReportSummary,
+  LiveEvalRun,
   KnowledgeBaseSummary,
   LiveApproval,
   LiveKnowledgeBase,
@@ -112,6 +113,12 @@ type LiveRetrievalState = {
   error: string | null;
 };
 
+type LiveEvalRunState = {
+  status: "loading" | "loaded" | "error";
+  evalRuns: LiveEvalRun[];
+  error: string | null;
+};
+
 const initialRuntimeHealth: RuntimeHealth = {
   state: "checking",
   service: "agent-kernel-api",
@@ -144,6 +151,12 @@ const initialLiveKnowledgeBases: LiveKnowledgeBaseState = {
 const initialLiveRetrieval: LiveRetrievalState = {
   status: "idle",
   response: null,
+  error: null,
+};
+
+const initialLiveEvalRuns: LiveEvalRunState = {
+  status: "loading",
+  evalRuns: [],
   error: null,
 };
 
@@ -610,6 +623,50 @@ export default function Home() {
   const [liveRetrievalQuery, setLiveRetrievalQuery] = useState("");
   const [liveRetrieval, setLiveRetrieval] =
     useState<LiveRetrievalState>(initialLiveRetrieval);
+  const [liveEvalRuns, setLiveEvalRuns] = useState<LiveEvalRunState>(initialLiveEvalRuns);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLiveEvalRuns() {
+      try {
+        const response = await fetch("/api/agent-kernel/evals/runs", {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Eval run list returned HTTP ${response.status}`);
+        }
+
+        const evalRunsResponse = (await response.json()) as LiveEvalRun[];
+        if (!ignore) {
+          setLiveEvalRuns({
+            status: "loaded",
+            evalRuns: evalRunsResponse,
+            error: null,
+          });
+          if (evalRunsResponse.length > 0) {
+            setSelectedEvalName(evalRunsResponse[0].name);
+          }
+        }
+      } catch (error) {
+        if (!ignore) {
+          setLiveEvalRuns({
+            status: "error",
+            evalRuns: [],
+            error: error instanceof Error ? error.message : "Eval run list lookup failed",
+          });
+        }
+      }
+    }
+
+    void loadLiveEvalRuns();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -744,9 +801,21 @@ export default function Home() {
   const selectedDocuments = documentIngestions.filter(
     (document) => document.knowledgeBaseId === selectedKnowledgeBase.id,
   );
+  const liveEvalReports = liveEvalRuns.evalRuns.map(evalRunToSummary);
+  const displayedEvalReports =
+    liveEvalRuns.status === "loaded" && liveEvalReports.length > 0
+      ? liveEvalReports
+      : evalReports;
   const selectedEval =
-    evalReports.find((report) => report.name === selectedEvalName) ?? evalReports[0];
-  const selectedEvalCases = evalCases.filter((evalCase) => evalCase.reportName === selectedEval.name);
+    displayedEvalReports.find((report) => report.name === selectedEvalName) ??
+    displayedEvalReports[0];
+  const selectedLiveEvalRun = liveEvalRuns.evalRuns.find(
+    (evalRun) => evalRun.name === selectedEval.name,
+  );
+  const selectedEvalCases =
+    selectedLiveEvalRun !== undefined
+      ? liveEvalRunToCases(selectedLiveEvalRun)
+      : evalCases.filter((evalCase) => evalCase.reportName === selectedEval.name);
 
   const pendingApprovals = approvals.filter((approval) => approval.decision === null);
   const approvalHistory = useMemo(
@@ -765,7 +834,11 @@ export default function Home() {
       value: `${knowledgeBases.reduce((total, kb) => total + kb.indexedChunks, 0)}`,
       detail: `${knowledgeBases.length} knowledge bases`,
     },
-    { label: "Eval pass rate", value: "91%", detail: "10 of 11 cases" },
+    {
+      label: "Eval pass rate",
+      value: evalPassRate(displayedEvalReports),
+      detail: evalPassRateDetail(displayedEvalReports),
+    },
   ];
 
   function selectRun(runId: string) {
@@ -1004,9 +1077,9 @@ export default function Home() {
           <span className="signal-badge">Public Alpha</span>
           <strong>Live where it matters for first-run verification.</strong>
           <p>
-            Health, run lookup, approvals, knowledge bases, and retrieval search call the
-            backend API. Agent cards, list previews, document ingestion, and eval summaries
-            remain preview data until their live list endpoints are complete.
+            Health, run lookup, approvals, knowledge bases, retrieval search, and eval
+            reports call the backend API. Agent cards, list previews, and document
+            ingestion remain preview data until their live endpoints are complete.
           </p>
         </div>
         <code>API: {runtimeHealth.baseUrl}</code>
@@ -1102,10 +1175,13 @@ export default function Home() {
                 <p className="eyebrow">Reports</p>
                 <h2 id="eval-report-heading">Regression runs</h2>
               </div>
-              <span className="count-pill">{evalReports.length}</span>
+              <span className="count-pill">{displayedEvalReports.length}</span>
             </div>
+            {liveEvalRuns.status === "error" ? (
+              <LiveError message={liveEvalRuns.error} />
+            ) : null}
             <div className="eval-report-grid">
-              {evalReports.map((report) => (
+              {displayedEvalReports.map((report) => (
                 <button
                   className={report.name === selectedEval.name ? "eval-report-card selected" : "eval-report-card"}
                   key={report.name}
@@ -1728,10 +1804,10 @@ export default function Home() {
       <section className="panel" aria-labelledby="evals-heading">
         <div className="section-header compact">
           <h2 id="evals-heading">Eval reports</h2>
-          <span className="count-pill">{evalReports.length}</span>
+          <span className="count-pill">{displayedEvalReports.length}</span>
         </div>
         <div className="stack">
-          {evalReports.map((report) => (
+          {displayedEvalReports.map((report) => (
             <article className="eval-item" key={report.name}>
               <div>
                 <strong>{report.name}</strong>
@@ -1849,4 +1925,50 @@ function IngestionBadge({ status }: { status: DocumentIngestionSummary["status"]
 
 function CaseBadge({ status }: { status: EvalCaseSummary["status"] }) {
   return <span className={`case-badge ${status}`}>{status}</span>;
+}
+
+function evalRunToSummary(evalRun: LiveEvalRun): EvalReportSummary {
+  return {
+    name: evalRun.name,
+    passed: evalRun.passed,
+    passedCount: evalRun.passed_count,
+    failedCount: evalRun.failed_count,
+    caseCount: evalRun.case_count,
+  };
+}
+
+function liveEvalRunToCases(evalRun: LiveEvalRun): EvalCaseSummary[] {
+  const cases = Array.isArray(evalRun.report.cases) ? evalRun.report.cases : [];
+  return cases.map((evalCase, index) => {
+    const failedAssertion = evalCase.assertions.find((assertion) => !assertion.passed);
+    const firstAssertion = evalCase.assertions[0];
+    return {
+      id: `${evalRun.id}-${index}`,
+      reportName: evalRun.name,
+      status: evalCase.passed ? "passed" : "failed",
+      scenario: evalCase.name,
+      expected: firstAssertion?.name ?? "Assertions pass",
+      actual:
+        evalCase.error_message ??
+        failedAssertion?.message ??
+        firstAssertion?.message ??
+        "No assertion details",
+      latencyMs: 0,
+    };
+  });
+}
+
+function evalPassRate(reports: EvalReportSummary[]) {
+  const caseCount = reports.reduce((total, report) => total + report.caseCount, 0);
+  const passedCount = reports.reduce((total, report) => total + report.passedCount, 0);
+  if (caseCount === 0) {
+    return "n/a";
+  }
+  return `${Math.round((passedCount / caseCount) * 100)}%`;
+}
+
+function evalPassRateDetail(reports: EvalReportSummary[]) {
+  const caseCount = reports.reduce((total, report) => total + report.caseCount, 0);
+  const passedCount = reports.reduce((total, report) => total + report.passedCount, 0);
+  return `${passedCount} of ${caseCount} cases`;
 }

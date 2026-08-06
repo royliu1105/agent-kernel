@@ -17,6 +17,8 @@ from kernel_core import (
     Document,
     DocumentChunk,
     DocumentStatus,
+    EvalRun,
+    EvalRunStatus,
     IngestionJob,
     IngestionJobStatus,
     KnowledgeBase,
@@ -59,6 +61,7 @@ from kernel_storage.models import (
     ChunkEmbeddingRecord,
     DocumentChunkRecord,
     DocumentRecord,
+    EvalRunRecord,
     IngestionJobRecord,
     KnowledgeBaseRecord,
     MemoryItemRecord,
@@ -94,6 +97,10 @@ class VectorStoreConfigError(ValueError):
 
 class MemoryNotFoundError(ValueError):
     """Raised when a memory item does not exist."""
+
+
+class EvalRunNotFoundError(ValueError):
+    """Raised when an eval run does not exist."""
 
 
 class PrincipalRepository:
@@ -1493,6 +1500,77 @@ class ChunkEmbeddingRepository:
         return results
 
 
+class EvalRunRepository:
+    """Persistence operations for eval run reports."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create_from_report(
+        self,
+        *,
+        name: str,
+        suite_type: str,
+        report: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+        trace_id: str | None = None,
+        started_at: datetime | None = None,
+        completed_at: datetime | None = None,
+        error_type: str | None = None,
+        error_message: str | None = None,
+    ) -> EvalRun:
+        passed = bool(report.get("passed", False))
+        eval_run = EvalRun(
+            name=name,
+            suite_type=suite_type,
+            status=EvalRunStatus.SUCCEEDED if passed else EvalRunStatus.FAILED,
+            passed=passed,
+            case_count=_non_negative_int(report.get("case_count"), field_name="case_count"),
+            passed_count=_non_negative_int(
+                report.get("passed_count"),
+                field_name="passed_count",
+            ),
+            failed_count=_non_negative_int(
+                report.get("failed_count"),
+                field_name="failed_count",
+            ),
+            report=report,
+            error_type=error_type,
+            error_message=error_message,
+            trace_id=ensure_trace_id(trace_id),
+            metadata=metadata or {},
+            started_at=started_at,
+            completed_at=completed_at or utc_now(),
+        )
+        self._session.add(_eval_run_to_record(eval_run))
+        self._session.commit()
+        return eval_run
+
+    def get(self, eval_run_id: UUID) -> EvalRun | None:
+        record = self._session.get(EvalRunRecord, str(eval_run_id))
+        if record is None:
+            return None
+        return _eval_run_from_record(record)
+
+    def list(
+        self,
+        *,
+        suite_type: str | None = None,
+        status: EvalRunStatus | None = None,
+        limit: int = 100,
+    ) -> list[EvalRun]:
+        if limit < 1:
+            raise ValueError("limit must be at least 1.")
+
+        statement = select(EvalRunRecord)
+        if suite_type is not None:
+            statement = statement.where(EvalRunRecord.suite_type == suite_type)
+        if status is not None:
+            statement = statement.where(EvalRunRecord.status == status.value)
+        statement = statement.order_by(EvalRunRecord.created_at.desc()).limit(limit)
+        return [_eval_run_from_record(record) for record in self._session.scalars(statement)]
+
+
 class MemoryRepository:
     """Persistence operations for scoped memory items."""
 
@@ -2080,3 +2158,51 @@ def _ingestion_job_from_record(record: IngestionJobRecord) -> IngestionJob:
         started_at=record.started_at,
         completed_at=record.completed_at,
     )
+
+
+def _eval_run_to_record(eval_run: EvalRun) -> EvalRunRecord:
+    return EvalRunRecord(
+        id=str(eval_run.id),
+        name=eval_run.name,
+        suite_type=eval_run.suite_type,
+        status=eval_run.status.value,
+        passed=eval_run.passed,
+        case_count=eval_run.case_count,
+        passed_count=eval_run.passed_count,
+        failed_count=eval_run.failed_count,
+        report_payload=eval_run.report,
+        error_type=eval_run.error_type,
+        error_message=eval_run.error_message,
+        trace_id=eval_run.trace_id,
+        extra_metadata=eval_run.metadata,
+        created_at=eval_run.created_at,
+        started_at=eval_run.started_at,
+        completed_at=eval_run.completed_at,
+    )
+
+
+def _eval_run_from_record(record: EvalRunRecord) -> EvalRun:
+    return EvalRun(
+        id=UUID(record.id),
+        name=record.name,
+        suite_type=record.suite_type,
+        status=EvalRunStatus(record.status),
+        passed=record.passed,
+        case_count=record.case_count,
+        passed_count=record.passed_count,
+        failed_count=record.failed_count,
+        report=record.report_payload,
+        error_type=record.error_type,
+        error_message=record.error_message,
+        trace_id=record.trace_id,
+        metadata=record.extra_metadata,
+        created_at=record.created_at,
+        started_at=record.started_at,
+        completed_at=record.completed_at,
+    )
+
+
+def _non_negative_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or value < 0:
+        raise ValueError(f"Eval report field {field_name!r} must be a non-negative integer.")
+    return value

@@ -120,6 +120,11 @@ class IngestionJobStatus(StrEnum):
     FAILED = "failed"
 
 
+class EvalRunStatus(StrEnum):
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
 class MemoryType(StrEnum):
     SHORT_TERM = "short_term"
     TASK_CONTEXT = "task_context"
@@ -309,6 +314,25 @@ class IngestionJob(KernelModel):
     content_char_count: int | None = None
     error_type: str | None = None
     error_message: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class EvalRun(KernelModel):
+    id: UUID = Field(default_factory=uuid4)
+    name: str = Field(min_length=1, max_length=255)
+    suite_type: str = Field(min_length=1, max_length=255)
+    status: EvalRunStatus
+    passed: bool
+    case_count: int = Field(ge=0)
+    passed_count: int = Field(ge=0)
+    failed_count: int = Field(ge=0)
+    report: dict[str, Any]
+    error_type: str | None = None
+    error_message: str | None = None
+    trace_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     started_at: datetime | None = None

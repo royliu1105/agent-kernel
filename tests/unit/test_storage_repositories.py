@@ -1,11 +1,19 @@
 from datetime import timedelta
 from uuid import UUID
 
-from kernel_core import DocumentStatus, KnowledgeBaseStatus, RunEventType, RunStatus, utc_now
+from kernel_core import (
+    DocumentStatus,
+    EvalRunStatus,
+    KnowledgeBaseStatus,
+    RunEventType,
+    RunStatus,
+    utc_now,
+)
 from kernel_observability import TRACE_ID_PATTERN
 from kernel_storage import (
     AgentRepository,
     DocumentRepository,
+    EvalRunRepository,
     KnowledgeBaseRepository,
     RunRepository,
     WorkerLeaseRepository,
@@ -258,6 +266,61 @@ def test_worker_lease_repository_rejects_invalid_inputs(
 
     assert worker_id_error == "Lease worker_id must not be empty."
     assert ttl_error == "Lease ttl_seconds must be at least 1."
+
+
+def test_eval_run_repository_creates_lists_and_loads_report(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    report = {
+        "name": "rag-smoke",
+        "passed": True,
+        "passed_count": 1,
+        "failed_count": 0,
+        "case_count": 1,
+        "cases": [],
+    }
+    with sqlite_session_factory() as session:
+        repository = EvalRunRepository(session)
+        created = repository.create_from_report(
+            name="rag-smoke",
+            suite_type="rag",
+            report=report,
+            metadata={"dataset": "evals/rag-smoke.json"},
+            trace_id="a" * 32,
+        )
+
+        loaded = repository.get(created.id)
+        listed = repository.list(suite_type="rag", status=EvalRunStatus.SUCCEEDED)
+
+    assert created.status is EvalRunStatus.SUCCEEDED
+    assert created.passed is True
+    assert created.case_count == 1
+    assert created.trace_id == "a" * 32
+    assert loaded is not None
+    assert loaded.report == report
+    assert loaded.metadata == {"dataset": "evals/rag-smoke.json"}
+    assert [eval_run.id for eval_run in listed] == [created.id]
+
+
+def test_eval_run_repository_marks_failed_report(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    with sqlite_session_factory() as session:
+        created = EvalRunRepository(session).create_from_report(
+            name="tool-regression",
+            suite_type="tool_calls",
+            report={
+                "name": "tool-regression",
+                "passed": False,
+                "passed_count": 1,
+                "failed_count": 1,
+                "case_count": 2,
+                "cases": [],
+            },
+        )
+
+    assert created.status is EvalRunStatus.FAILED
+    assert created.failed_count == 1
 
 
 def test_run_repository_completes_run_with_output_and_usage(

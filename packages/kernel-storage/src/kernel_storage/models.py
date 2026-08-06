@@ -9,6 +9,7 @@ from kernel_core import (
     AgentStatus,
     ApprovalStatus,
     DocumentStatus,
+    EvalRunStatus,
     IngestionJobStatus,
     KnowledgeBaseStatus,
     MemoryType,
@@ -430,6 +431,37 @@ class IngestionJobRecord(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     document: Mapped[DocumentRecord] = relationship(back_populates="ingestion_jobs")
+
+
+class EvalRunRecord(Base):
+    __tablename__ = "eval_runs"
+    __table_args__ = (
+        Index("ix_eval_runs_suite_type_created_at", "suite_type", "created_at"),
+        Index("ix_eval_runs_status_created_at", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    suite_type: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=EvalRunStatus.SUCCEEDED.value, index=True
+    )
+    passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    case_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    passed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    report_payload: Mapped[dict[str, Any]] = mapped_column("report", JSON, nullable=False)
+    error_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class DocumentChunkRecord(Base):

@@ -121,3 +121,4 @@ day-03.md
 - [Day 71: Production RAG/Storage Integration Tests](day-71.md)
 - [Day 72: OpenTelemetry Exporter Configuration](day-72.md)
 - [Day 73: Prometheus-Compatible Metrics Endpoint](day-73.md)
+- [Day 74: Persisted Eval Runs, Eval API, and Live Web Views](day-74.md)

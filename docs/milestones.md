@@ -417,9 +417,9 @@ Checklist:
 - [x] S3/MinIO object storage backend.
 - [x] OpenAI embeddings backend.
 - [x] pgvector-native vector store.
-- [ ] Persisted eval runs.
-- [ ] Eval API.
-- [ ] Live Web Workbench integration for core operator workflows.
+- [x] Persisted eval runs.
+- [x] Eval API.
+- [x] Live Web Workbench integration for core operator workflows.
 - [ ] SQLite and Postgres migration tests.
 
 Daily execution map:
@@ -446,7 +446,7 @@ Daily execution map:
 - [x] Day 71: Production RAG/storage integration tests.
 - [x] Day 72: OpenTelemetry exporter configuration.
 - [x] Day 73: Prometheus-compatible metrics endpoint.
-- [ ] Day 74: Persisted eval runs, eval API, and live Web operator views.
+- [x] Day 74: Persisted eval runs, eval API, and live Web operator views.
 - [ ] Day 75: Beta closure, summary docs, and full verification.
 
 Acceptance:

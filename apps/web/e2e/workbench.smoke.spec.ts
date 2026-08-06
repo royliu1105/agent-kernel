@@ -47,6 +47,48 @@ test("operator can navigate core Workbench views", async ({ page }) => {
       });
     },
   );
+  await page.route("**/api/agent-kernel/evals/runs", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: [
+        {
+          id: "66666666-6666-4666-8666-666666666666",
+          name: "rag-smoke-live",
+          suite_type: "rag",
+          status: "succeeded",
+          passed: true,
+          case_count: 1,
+          passed_count: 1,
+          failed_count: 0,
+          report: {
+            name: "rag-smoke-live",
+            cases: [
+              {
+                name: "Return cited rollback guidance",
+                passed: true,
+                error_type: null,
+                error_message: null,
+                assertions: [
+                  {
+                    name: "citation_required",
+                    passed: true,
+                    message: "Citation returned from live eval run",
+                  },
+                ],
+              },
+            ],
+          },
+          error_type: null,
+          error_message: null,
+          trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          metadata: {},
+          created_at: "2026-08-06T00:00:00Z",
+          started_at: null,
+          completed_at: "2026-08-06T00:00:01Z",
+        },
+      ],
+    });
+  });
 
   await page.goto("/");
 
@@ -82,11 +124,9 @@ test("operator can navigate core Workbench views", async ({ page }) => {
   await page.getByRole("button", { name: "Evals" }).click();
   await expect(page.getByRole("heading", { name: "Evals" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Behavior cases" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /rag-smoke-live/ })).toBeVisible();
   await expect(page.getByText("Return cited rollback guidance")).toBeVisible();
-
-  await page.getByRole("button", { name: "tool-regression" }).click();
-  await expect(page.getByText("Replay lookup uses registered model")).toBeVisible();
-  await expect(page.getByText("Replay fixture missing")).toBeVisible();
+  await expect(page.getByText("Citation returned from live eval run")).toBeVisible();
 
   await page.getByRole("button", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();

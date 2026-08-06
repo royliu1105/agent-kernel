@@ -175,14 +175,32 @@ Day 67 intentionally does not implement persisted eval runs, eval API endpoints,
 eval Web views, LLM-as-judge, live-provider evals, or release-blocking eval
 suites. Those remain part of later Beta and v1.0 hardening.
 
+## Day 74 Persisted Eval Runs and API
+
+Day 74 adds the first durable eval platform boundary:
+
+- `EvalRun` domain model with status, pass/fail counts, full report JSON,
+  metadata, trace ID, and timestamps.
+- `eval_runs` storage table and repository.
+- `POST /v1/evals/runs` to persist an eval report.
+- `GET /v1/evals/runs` to list recent eval runs.
+- `GET /v1/evals/runs/{eval_run_id}` to inspect one eval run.
+- CLI `agent-kernel eval report <dataset.json> --publish` to run the existing
+  deterministic local RAG eval and publish the report through the API.
+- Web Workbench eval view loads persisted eval runs through a same-origin route
+  and renders live report summaries and case details when available.
+
+Day 74 intentionally does not execute arbitrary eval datasets on the server,
+upload dataset files, schedule eval jobs, run LLM-as-judge, execute live-provider
+evals by default, or enforce release-blocking eval suites.
+
 ## API / CLI
 
 Expected API:
 
 ```http
-POST /v1/evals/datasets
-GET  /v1/evals/datasets
 POST /v1/evals/runs
+GET  /v1/evals/runs
 GET  /v1/evals/runs/{eval_run_id}
 ```
 
@@ -190,6 +208,7 @@ Expected CLI:
 
 ```bash
 agent-kernel eval report evals/rag-smoke.json
+agent-kernel eval report evals/rag-smoke.json --publish
 ```
 
 ## Failure Modes

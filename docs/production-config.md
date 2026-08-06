@@ -291,6 +291,7 @@ When enabled:
   request auth context.
 - Existing `/v1/*` routes enforce route-level permissions and return
   `403 Forbidden` when the authenticated role lacks the required permission.
+- Eval report persistence routes use `eval:read` and `eval:write` permissions.
 
 Local quickstart flows keep API key authentication disabled by default. Route
 permission checks currently use the authenticated API key's workspace as the
@@ -308,6 +309,26 @@ Current object-level workspace scoping:
 
 See [Auth and RBAC](auth-rbac.md) for the full role, permission, object-scope,
 and security test matrix.
+
+## Evals
+
+Persisted eval reports are available through:
+
+```http
+POST /v1/evals/runs
+GET /v1/evals/runs
+GET /v1/evals/runs/{eval_run_id}
+```
+
+The API stores submitted report JSON plus summary counts, status, metadata,
+trace ID, and timestamps. Run deterministic local evals with:
+
+```bash
+agent-kernel eval report evals/rag-smoke.json --publish
+```
+
+Server-side dataset upload, arbitrary eval execution, LLM-as-judge, release
+blocking gates, and eval job queues are not enabled in the Beta baseline.
 
 ## Networking
 

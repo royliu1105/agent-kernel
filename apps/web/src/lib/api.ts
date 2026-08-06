@@ -106,6 +106,41 @@ export type EvalReportSummary = {
   caseCount: number;
 };
 
+export type LiveEvalRun = {
+  id: string;
+  name: string;
+  suite_type: string;
+  status: "succeeded" | "failed";
+  passed: boolean;
+  case_count: number;
+  passed_count: number;
+  failed_count: number;
+  report: {
+    name?: string;
+    cases?: LiveEvalCase[];
+    [key: string]: unknown;
+  };
+  error_type: string | null;
+  error_message: string | null;
+  trace_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type LiveEvalCase = {
+  name: string;
+  passed: boolean;
+  error_type: string | null;
+  error_message: string | null;
+  assertions: {
+    name: string;
+    passed: boolean;
+    message: string;
+  }[];
+};
+
 export type RuntimeHealthState = "checking" | "online" | "offline";
 
 export type RuntimeHealth = {
