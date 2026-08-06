@@ -236,10 +236,10 @@ Block a release if:
 - A migration requires data loss without release-note approval.
 - The target release cannot pass the documented smoke test matrix.
 
-## v1.0 RC Handoff
+## Backup and Restore Requirement
 
-Day 79 will add backup and restore guidance. Until then, the upgrade contract is
-simple:
+Backup and restore guidance lives in [Backup and Restore Guide](backup-restore.md).
+The upgrade contract is:
 
 ```text
 Do not run production migrations without a verified backup or restore point.

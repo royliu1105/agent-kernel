@@ -486,7 +486,7 @@ Checklist:
 - [x] Public API and CLI compatibility policy.
 - [x] Upgrade and migration policy.
 - [x] Versioned configuration documentation.
-- [ ] Backup and restore guidance.
+- [x] Backup and restore guidance.
 - [ ] Security hardening checklist.
 - [ ] Load and soak test scenarios.
 - [ ] Release-blocking eval suites.
@@ -508,7 +508,7 @@ Daily execution map:
 - [x] Day 76: API/CLI contract audit and compatibility policy.
 - [x] Day 77: Versioned configuration documentation.
 - [x] Day 78: Upgrade and migration policy.
-- [ ] Day 79: Backup and restore guidance.
+- [x] Day 79: Backup and restore guidance.
 - [ ] Day 80: Security hardening checklist.
 - [ ] Day 81: Release-blocking eval suite definition.
 - [ ] Day 82: Full release smoke test matrix.

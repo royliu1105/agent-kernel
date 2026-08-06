@@ -81,6 +81,10 @@ Recommended production storage:
 Postgres + pgvector image
 ```
 
+Backup and restore expectations for Postgres, SQLite local development, local
+object storage, and S3/MinIO-compatible object storage are defined in
+[Backup and Restore Guide](backup-restore.md).
+
 SQLite is supported for local development only. Do not use SQLite as the primary
 multi-user production database.
 
