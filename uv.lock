@@ -23,7 +23,7 @@ members = [
 
 [[package]]
 name = "agent-kernel-api"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "apps/api" }
 dependencies = [
     { name = "fastapi" },
@@ -52,7 +52,7 @@ requires-dist = [
 
 [[package]]
 name = "agent-kernel-cli"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "apps/cli" }
 dependencies = [
     { name = "httpx" },
@@ -71,7 +71,7 @@ requires-dist = [
 
 [[package]]
 name = "agent-kernel-worker"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "apps/worker" }
 dependencies = [
     { name = "kernel-core" },
@@ -96,7 +96,7 @@ requires-dist = [
 
 [[package]]
 name = "agent-kernel-workspace"
-version = "0.1.0"
+version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "agent-kernel-api" },
@@ -393,7 +393,7 @@ wheels = [
 
 [[package]]
 name = "kernel-core"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-core" }
 dependencies = [
     { name = "pydantic" },
@@ -404,7 +404,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.8.0" }]
 
 [[package]]
 name = "kernel-evals"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-evals" }
 dependencies = [
     { name = "kernel-core" },
@@ -415,7 +415,7 @@ requires-dist = [{ name = "kernel-core", editable = "packages/kernel-core" }]
 
 [[package]]
 name = "kernel-identity"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-identity" }
 dependencies = [
     { name = "pydantic" },
@@ -426,7 +426,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.8.0" }]
 
 [[package]]
 name = "kernel-memory"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-memory" }
 dependencies = [
     { name = "kernel-core" },
@@ -441,7 +441,7 @@ requires-dist = [
 
 [[package]]
 name = "kernel-observability"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-observability" }
 dependencies = [
     { name = "kernel-core" },
@@ -452,7 +452,7 @@ requires-dist = [{ name = "kernel-core", editable = "packages/kernel-core" }]
 
 [[package]]
 name = "kernel-policy"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-policy" }
 dependencies = [
     { name = "kernel-core" },
@@ -469,7 +469,7 @@ requires-dist = [
 
 [[package]]
 name = "kernel-providers"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-providers" }
 dependencies = [
     { name = "httpx" },
@@ -486,7 +486,7 @@ requires-dist = [
 
 [[package]]
 name = "kernel-rag"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-rag" }
 dependencies = [
     { name = "httpx" },
@@ -507,7 +507,7 @@ requires-dist = [
 
 [[package]]
 name = "kernel-runtime"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-runtime" }
 dependencies = [
     { name = "kernel-core" },
@@ -534,7 +534,7 @@ requires-dist = [
 
 [[package]]
 name = "kernel-storage"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-storage" }
 dependencies = [
     { name = "alembic" },
@@ -557,7 +557,7 @@ requires-dist = [
 
 [[package]]
 name = "kernel-tools"
-version = "0.1.0"
+version = "1.0.0"
 source = { editable = "packages/kernel-tools" }
 dependencies = [
     { name = "jsonschema" },

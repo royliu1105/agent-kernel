@@ -1,6 +1,6 @@
 [project]
 name = "agent-kernel-workspace"
-version = "0.1.0"
+version = "1.0.0"
 description = "Workspace root for Agent Kernel."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

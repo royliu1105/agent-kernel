@@ -123,7 +123,7 @@ def create_app(
     api_key_auth_enabled: bool | None = None,
 ) -> FastAPI:
     configure_opentelemetry()
-    app = FastAPI(title="Agent Kernel API", version="0.1.0")
+    app = FastAPI(title="Agent Kernel API", version="1.0.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
     auth_enabled = api_key_auth_enabled
     if auth_enabled is None:

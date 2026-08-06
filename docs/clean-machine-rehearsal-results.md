@@ -120,3 +120,54 @@ This means:
 Day 85 therefore marks the rehearsal fixes complete, but the v1.0 milestone
 acceptance item `Clean-machine release rehearsal passes` should remain open
 until a fresh full-stack restart is executed or explicitly waived.
+
+## Day 90 Follow-Up
+
+Day 90 fixed the remaining full-stack rehearsal blocker by making Docker
+Compose host ports configurable for Web, Postgres, and Redis in addition to the
+API process port.
+
+The following isolated host-port mapping was validated:
+
+```bash
+AGENT_KERNEL_API_PORT=8011 \
+AGENT_KERNEL_WEB_PORT=3011 \
+AGENT_KERNEL_POSTGRES_PORT=55432 \
+AGENT_KERNEL_REDIS_PORT=56379 \
+docker compose config
+```
+
+Day 90 then started an isolated Compose project:
+
+```bash
+AGENT_KERNEL_API_PORT=8011 \
+AGENT_KERNEL_WEB_PORT=3011 \
+AGENT_KERNEL_POSTGRES_PORT=55432 \
+AGENT_KERNEL_REDIS_PORT=56379 \
+docker compose -p agent-kernel-day90 up --build -d
+```
+
+Observed result:
+
+- Postgres became healthy on host port `55432`.
+- Redis became healthy on host port `56379`.
+- API became healthy on host port `8011`.
+- Web became healthy on host port `3011`.
+- Worker started successfully.
+- `curl http://127.0.0.1:8011/healthz` returned
+  `{"status":"ok","service":"agent-kernel-api"}`.
+- `curl -i http://127.0.0.1:8011/metrics` returned HTTP 200 with
+  Prometheus text content type.
+- `curl -I http://127.0.0.1:3011` returned HTTP 200.
+- A CLI-driven mock run was created, queued, executed by the container worker,
+  and completed with status `succeeded`.
+
+The temporary Day 90 stack was removed with:
+
+```bash
+docker compose -p agent-kernel-day90 down -v
+```
+
+This closes the Day 85 full-stack Docker restart limitation for the local
+release-candidate workspace. The final release commit should still be pushed
+and verified by GitHub CI before tagging.

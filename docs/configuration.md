@@ -143,6 +143,9 @@ only hashes.
 | --- | --- | --- | --- | --- | --- |
 | `AGENT_KERNEL_API_HOST` | API | `0.0.0.0` | Bind host for the API process | No | Use `127.0.0.1` for local-only binding. |
 | `AGENT_KERNEL_API_PORT` | API | `8000` | Bind port for the API process | No | Use another port when `8000` is occupied during rehearsal. |
+| `AGENT_KERNEL_WEB_PORT` | Docker Compose | `3000` | Published Web host port | No | Does not change the Web container port. Use another port when `3000` is occupied. |
+| `AGENT_KERNEL_POSTGRES_PORT` | Docker Compose | `5432` | Published Postgres host port | No | Does not change the internal Postgres service port used by API and worker. |
+| `AGENT_KERNEL_REDIS_PORT` | Docker Compose | `6379` | Published Redis host port | No | Does not change the internal Redis service port used by API and worker. |
 | `AGENT_KERNEL_API_URL` | CLI, Web server routes | `http://127.0.0.1:8000` | Internal API URL | Sometimes | Used by CLI and same-origin Web proxy routes. |
 | `NEXT_PUBLIC_AGENT_KERNEL_API_URL` | Web browser and Web server routes | `http://127.0.0.1:8000` | Public API URL or same-origin gateway | No | Exposed to browser bundles by Next.js. Do not put secrets here. |
 
@@ -174,6 +177,12 @@ Web:
 ```bash
 npm --workspace apps/web exec -- next start --hostname 0.0.0.0
 ```
+
+Docker Compose publishes Web, Postgres, and Redis to
+`AGENT_KERNEL_WEB_PORT`, `AGENT_KERNEL_POSTGRES_PORT`, and
+`AGENT_KERNEL_REDIS_PORT`. These variables affect host port bindings only; the
+service-to-service container network still uses ports `3000`, `5432`, and
+`6379`.
 
 Migrations:
 

@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: agent_kernel
       POSTGRES_PASSWORD: agent_kernel
     ports:
-      - "5432:5432"
+      - "${AGENT_KERNEL_POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${AGENT_KERNEL_REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -85,7 +85,7 @@ services:
       AGENT_KERNEL_API_URL: http://api:${AGENT_KERNEL_API_PORT:-8000}
       NEXT_PUBLIC_AGENT_KERNEL_API_URL: http://127.0.0.1:${AGENT_KERNEL_API_PORT:-8000}
     ports:
-      - "3000:3000"
+      - "${AGENT_KERNEL_WEB_PORT:-3000}:3000"
     depends_on:
       api:
         condition: service_healthy

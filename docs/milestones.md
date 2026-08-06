@@ -493,12 +493,12 @@ Checklist:
 - [x] Full release smoke tests.
 - [x] v1.0 release checklist.
 - [x] v1.0 release notes.
-- [ ] Clean-machine release rehearsal.
+- [x] Clean-machine release rehearsal.
 
 Acceptance:
 
 - [x] Stable API and CLI contract is documented.
-- [ ] Clean-machine release rehearsal passes.
+- [x] Clean-machine release rehearsal passes.
 - [x] Critical paths pass automated tests and evals.
 - [x] Known limitations are acceptable for v1.0.
 - [x] v1.0 docs match actual behavior.
@@ -519,7 +519,7 @@ Daily execution map:
 - [x] Day 87: Known limitations review and scope freeze.
 - [x] Day 88: v1.0 release checklist.
 - [x] Day 89: v1.0 release notes.
-- [ ] Day 90: v1.0 final verification and release readiness.
+- [x] Day 90: v1.0 final verification and release readiness.
 
 ## Rule for Updating This File
 

@@ -1,6 +1,6 @@
 [project]
 name = "agent-kernel-cli"
-version = "0.1.0"
+version = "1.0.0"
 description = "Command line interface for Agent Kernel."
 requires-python = ">=3.12,<3.13"
 dependencies = [

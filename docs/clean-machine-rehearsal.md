@@ -198,6 +198,17 @@ Validate configuration:
 docker compose config
 ```
 
+If another local Agent Kernel stack is already using the default ports, verify
+an isolated host-port mapping:
+
+```bash
+AGENT_KERNEL_API_PORT=8011 \
+AGENT_KERNEL_WEB_PORT=3011 \
+AGENT_KERNEL_POSTGRES_PORT=55432 \
+AGENT_KERNEL_REDIS_PORT=56379 \
+docker compose config
+```
+
 Start the full stack:
 
 ```bash

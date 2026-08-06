@@ -5,7 +5,7 @@ This checklist is the final gate for publishing Agent Kernel v1.0.
 Current status:
 
 ```text
-created on Day 88; not yet completed
+local verification complete; publication pending release commit, GitHub CI, tag, and GitHub Release
 ```
 
 Do not tag or publish v1.0 until every required item is checked, fixed, or
@@ -13,7 +13,7 @@ explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
 
 ## Release Identity
 
-- [ ] Final version string is confirmed.
+- [x] Final version string is confirmed.
 - [ ] Target commit SHA is recorded.
 - [ ] Release branch is up to date with the target branch.
 - [ ] Working tree is clean before tagging.
@@ -24,78 +24,78 @@ explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
 - [x] v1.0 scope freeze exists.
 - [x] Accepted v1.0 limitations are documented.
 - [x] Deferred beyond-v1.0 work is documented.
-- [ ] No new feature scope has been added after Day 87 without release-owner
+- [x] No new feature scope has been added after Day 87 without release-owner
   approval.
-- [ ] Any waiver names the waived item, evidence reviewed, risk owner, and
+- [x] Any waiver names the waived item, evidence reviewed, risk owner, and
   follow-up milestone.
 
 ## Required Python Gates
 
-- [ ] `uv sync --dev`
-- [ ] `uv run ruff check .`
-- [ ] `uv run mypy .`
-- [ ] `uv run pytest`
-- [ ] `uv run pytest tests/unit/test_migrations.py`
-- [ ] `uv run pytest tests/unit/test_docs_consistency.py`
+- [x] `uv sync --dev`
+- [x] `uv run ruff check .`
+- [x] `uv run mypy .`
+- [x] `uv run pytest`
+- [x] `uv run pytest tests/unit/test_migrations.py`
+- [x] `uv run pytest tests/unit/test_docs_consistency.py`
 
 ## Required Release Gates
 
-- [ ] `make release-eval`
-- [ ] `make release-smoke`
-- [ ] `make release-load-soak`
-- [ ] `docker compose config`
-- [ ] `AGENT_KERNEL_API_PORT=8011 docker compose config`
+- [x] `make release-eval`
+- [x] `make release-smoke`
+- [x] `make release-load-soak`
+- [x] `docker compose config`
+- [x] `AGENT_KERNEL_API_PORT=8011 AGENT_KERNEL_WEB_PORT=3011 AGENT_KERNEL_POSTGRES_PORT=55432 AGENT_KERNEL_REDIS_PORT=56379 docker compose config`
 - [ ] `git diff --check`
 
 ## Required Web Gates
 
-- [ ] `npm install`
-- [ ] `npm run lint`
-- [ ] `npm run build`
-- [ ] `npm run test:e2e`
+- [x] `npm install`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] `npm run test:e2e`
 
 ## Migration and Storage Gates
 
-- [ ] Fresh SQLite database upgrades to Alembic head.
-- [ ] Fresh PostgreSQL database upgrades to Alembic head.
-- [ ] pgvector extension path is validated on PostgreSQL.
-- [ ] Local object storage path is writable and survives container restart.
-- [ ] S3/MinIO configuration docs are reviewed against current behavior.
-- [ ] Backup and restore guide is reviewed against current migration behavior.
+- [x] Fresh SQLite database upgrades to Alembic head.
+- [x] Fresh PostgreSQL database upgrades to Alembic head.
+- [x] pgvector extension path is validated on PostgreSQL.
+- [x] Local object storage path is writable and survives container restart.
+- [x] S3/MinIO configuration docs are reviewed against current behavior.
+- [x] Backup and restore guide is reviewed against current migration behavior.
 
 ## Clean-Machine Rehearsal
 
-- [ ] Fresh checkout dependency install passes.
-- [ ] Fresh checkout Python gates pass.
-- [ ] Fresh checkout Web gates pass.
-- [ ] Fresh checkout release eval/smoke/load-soak gates pass.
-- [ ] Fresh full-stack Docker Compose restart passes.
-- [ ] If a fresh full-stack restart is not executed, a release-owner waiver is
-  recorded with evidence and follow-up.
+- [x] Fresh checkout dependency install passes.
+- [x] Fresh checkout Python gates pass.
+- [x] Fresh checkout Web gates pass.
+- [x] Fresh checkout release eval/smoke/load-soak gates pass.
+- [x] Fresh full-stack Docker Compose restart passes.
+- [x] No fresh full-stack restart waiver is needed because Day 90 executed the
+  restart with isolated host ports.
 
 ## Runtime Smoke
 
-- [ ] API `/healthz` returns healthy.
-- [ ] API `/metrics` returns Prometheus-compatible metrics.
-- [ ] Web Workbench loads.
-- [ ] Worker starts and can process a queued run.
-- [ ] Mock run lifecycle completes.
-- [ ] Tool call lifecycle completes.
-- [ ] Approval pause/resume lifecycle completes.
-- [ ] Knowledge base retrieval returns citations.
-- [ ] Memory write/read/retrieve lifecycle completes.
-- [ ] Eval report publish/list/read lifecycle completes.
+- [x] API `/healthz` returns healthy.
+- [x] API `/metrics` returns Prometheus-compatible metrics.
+- [x] Web Workbench loads.
+- [x] Worker starts and can process a queued run.
+- [x] Mock run lifecycle completes.
+- [x] Tool call lifecycle completes.
+- [x] Approval pause/resume lifecycle completes.
+- [x] Knowledge base retrieval returns citations.
+- [x] Memory write/read/retrieve lifecycle completes.
+- [x] Eval report publish/list/read lifecycle completes.
 
 ## Security and Dependency Review
 
-- [ ] `AGENT_KERNEL_API_KEY_AUTH_ENABLED=true` production posture is documented.
-- [ ] Stable `/v1/*` routes have authorization coverage.
-- [ ] `/metrics` protection requirement is documented.
-- [ ] Secrets are absent from committed files and examples.
-- [ ] Dependency audit is reviewed.
-- [ ] Accepted dependency advisories, if any, are listed in release notes.
-- [ ] SECURITY reporting instructions are current.
-- [ ] No silent security limitation remains.
+- [x] `AGENT_KERNEL_API_KEY_AUTH_ENABLED=true` production posture is documented.
+- [x] Stable `/v1/*` routes have authorization coverage.
+- [x] `/metrics` protection requirement is documented.
+- [x] Secrets are absent from committed files and examples.
+- [x] Dependency audit is reviewed.
+- [x] Accepted dependency advisories, if any, are listed in release notes.
+- [x] SECURITY reporting instructions are current.
+- [x] No silent security limitation remains.
 
 ## Documentation Review
 
@@ -111,7 +111,7 @@ explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
 - [x] Docs consistency audit exists.
 - [x] v1.0 scope freeze exists.
 - [x] v1.0 release notes exist.
-- [ ] README, docs index, roadmap, and quickstart match the final v1.0 state.
+- [x] README, docs index, roadmap, and quickstart match the final v1.0 state.
 - [x] Known limitations in release notes match the scope freeze.
 - [x] Upgrade notes in release notes match the migration policy.
 
