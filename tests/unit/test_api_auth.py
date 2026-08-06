@@ -32,6 +32,19 @@ def test_healthz_stays_public_when_api_key_auth_is_enabled(
     assert response.json() == {"status": "ok", "service": "agent-kernel-api"}
 
 
+def test_metrics_stays_public_when_api_key_auth_is_enabled(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    )
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+
+
 def test_api_key_auth_rejects_missing_key(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:

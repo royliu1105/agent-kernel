@@ -187,6 +187,17 @@ Expected response:
 {"status":"ok","service":"agent-kernel-api"}
 ```
 
+Prometheus scrape endpoint:
+
+```http
+GET /metrics
+```
+
+`/metrics` returns Prometheus text exposition format. The endpoint is intended
+for private network scraping by Prometheus or a compatible collector. Do not
+expose it directly to the public internet unless an upstream gateway applies
+appropriate access control.
+
 ## Worker
 
 Recommended worker command:
@@ -323,7 +334,10 @@ Recommended production log format:
 JSON logs with trace_id, run_id, agent_id, operation, status, latency, tokens, cost
 ```
 
-OpenTelemetry exporters and Prometheus endpoints are not implemented yet.
+OpenTelemetry trace exporter setup is available through the environment
+variables above. API process metrics are exposed through `/metrics` in
+Prometheus text format. Prometheus should scrape each API instance and aggregate
+across instances. Worker HTTP metrics exposure is not implemented yet.
 
 ## Security Posture
 

@@ -23,7 +23,7 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 from starlette.types import ASGIApp
 
 AUTH_CONTEXT_STATE_KEY = "auth_context"
-DEFAULT_AUTH_EXEMPT_PATHS = frozenset({"/healthz"})
+DEFAULT_AUTH_EXEMPT_PATHS = frozenset({"/healthz", "/metrics"})
 
 
 class AuthContext:

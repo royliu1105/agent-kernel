@@ -279,6 +279,24 @@ Day 72 intentionally does not add fine-grained span instrumentation around
 every runtime operation, OpenTelemetry metrics, Prometheus scraping, or Grafana
 dashboards. Those remain later observability hardening slices.
 
+## Day 73 Prometheus-Compatible Metrics Endpoint
+
+Day 73 exposes the existing metrics recorder through the API process:
+
+- `/metrics` returns Prometheus text exposition format.
+- Counters render as Prometheus counters.
+- Observations render as Prometheus summaries with `_count` and `_sum`.
+- The API-created `RunExecutionService` and `Retriever` share one process-local
+  metrics recorder with the endpoint.
+- `/metrics` remains scrapeable when API key authentication is enabled.
+- Metric labels remain low-cardinality and must not include raw prompts,
+  document chunks, credentials, tool arguments, or user-provided payloads.
+
+The endpoint is process-local. Production Prometheus should scrape every API
+instance and aggregate across instances. Worker HTTP metrics exposure,
+OpenTelemetry metrics export, persisted metric tables, Grafana dashboards, and
+alerting rules remain later hardening work.
+
 MVP metrics:
 
 ```text

@@ -13,6 +13,7 @@ from kernel_observability.metrics import (
     MetricsRecorder,
     NoOpMetricsRecorder,
     normalize_labels,
+    prometheus_text_from_points,
 )
 from kernel_observability.otel import (
     DEFAULT_OTEL_ENDPOINT,
@@ -73,5 +74,6 @@ __all__ = [
     "load_otel_config",
     "log_event",
     "normalize_labels",
+    "prometheus_text_from_points",
     "redact_log_fields",
 ]

@@ -9,6 +9,7 @@ from uuid import UUID
 
 import uvicorn
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from kernel_core import (
     Agent,
     Approval,
@@ -25,7 +26,7 @@ from kernel_core import (
     RunEvent,
 )
 from kernel_identity import Permission
-from kernel_observability import configure_opentelemetry
+from kernel_observability import InMemoryMetricsRecorder, configure_opentelemetry
 from kernel_rag import (
     DocumentChunkingService,
     DocumentIndexingService,
@@ -113,6 +114,7 @@ def create_app(
     chunking_service: DocumentChunkingService | None = None,
     indexing_service: DocumentIndexingService | None = None,
     retriever: Retriever | None = None,
+    metrics_recorder: InMemoryMetricsRecorder | None = None,
     api_key_auth_enabled: bool | None = None,
 ) -> FastAPI:
     configure_opentelemetry()
@@ -124,14 +126,16 @@ def create_app(
     if auth_enabled:
         app.add_middleware(ApiKeyAuthMiddleware, session_factory=factory)
 
+    process_metrics = metrics_recorder or InMemoryMetricsRecorder()
     runner = execution_service or RunExecutionService(
-        tool_registry=create_rag_tool_registry(session_factory=factory)
+        metrics_recorder=process_metrics,
+        tool_registry=create_rag_tool_registry(session_factory=factory),
     )
     store = object_store or create_object_store()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)
     indexer = indexing_service or DocumentIndexingService()
-    retrieval_service = retriever or Retriever()
+    retrieval_service = retriever or Retriever(metrics_recorder=process_metrics)
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -140,6 +144,13 @@ def create_app(
     @app.get("/healthz", tags=["health"])
     async def healthz() -> dict[str, str]:
         return {"status": "ok", "service": "agent-kernel-api"}
+
+    @app.get("/metrics", include_in_schema=False)
+    async def metrics() -> Response:
+        return Response(
+            content=process_metrics.prometheus_text(),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
 
     @app.post(
         "/v1/agents",

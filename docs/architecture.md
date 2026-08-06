@@ -50,7 +50,9 @@ Important current boundaries:
 - Web Workbench data is mostly fixture-backed.
 - Web approval decisions are local UI state.
 - Automatic model planning for tool choice is deferred.
-- OpenTelemetry exporters and Prometheus endpoints are deferred.
+- OpenTelemetry trace exporter configuration and API Prometheus metrics
+  exposition are available. Fine-grained runtime span instrumentation and
+  worker HTTP metrics exposure remain later hardening work.
 
 ## High-Level Flow
 

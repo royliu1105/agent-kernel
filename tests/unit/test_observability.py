@@ -23,6 +23,7 @@ from kernel_observability import (
     load_otel_config,
     log_event,
     normalize_labels,
+    prometheus_text_from_points,
     redact_log_fields,
 )
 from kernel_observability import otel as otel_module
@@ -217,6 +218,44 @@ def test_in_memory_metrics_recorder_tracks_counters_and_observations() -> None:
 
 def test_normalize_labels_returns_stable_sorted_label_key() -> None:
     assert normalize_labels({"b": "2", "a": "1"}) == (("a", "1"), ("b", "2"))
+
+
+def test_prometheus_text_from_points_renders_counters_and_observations() -> None:
+    recorder = InMemoryMetricsRecorder()
+    recorder.increment(
+        "tool_calls_total",
+        labels={"tool.name": "kb_search", "status": 'succeeded"ok'},
+    )
+    recorder.observe(
+        "tool_call_latency_ms",
+        10,
+        labels={"tool.name": "kb_search", "status": 'succeeded"ok'},
+    )
+    recorder.observe(
+        "tool_call_latency_ms",
+        15.5,
+        labels={"tool.name": "kb_search", "status": 'succeeded"ok'},
+    )
+
+    text = prometheus_text_from_points(
+        counter_points=recorder.counter_points(),
+        observation_points=recorder.observation_points(),
+    )
+
+    assert "# TYPE tool_calls_total counter" in text
+    assert (
+        'tool_calls_total{status="succeeded\\"ok",tool_name="kb_search"} 1'
+        in text
+    )
+    assert "# TYPE tool_call_latency_ms summary" in text
+    assert (
+        'tool_call_latency_ms_count{status="succeeded\\"ok",tool_name="kb_search"} 2'
+        in text
+    )
+    assert (
+        'tool_call_latency_ms_sum{status="succeeded\\"ok",tool_name="kb_search"} 25.5'
+        in text
+    )
 
 
 def test_load_otel_config_defaults_to_disabled() -> None:
