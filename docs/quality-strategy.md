@@ -149,3 +149,8 @@ Load tests, soak tests, browser e2e tests, clean-machine rehearsals, live
 provider tests, and infrastructure-backed pgvector/S3 checks remain separate
 release work because they have different runtime, credential, and flake
 profiles.
+
+Before v1.0 final release readiness, maintainers must also complete the
+[Clean-Machine Release Rehearsal](clean-machine-rehearsal.md). The rehearsal
+validates that the documented setup and release gates work from a fresh
+checkout without hidden local state.

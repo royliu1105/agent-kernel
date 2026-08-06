@@ -291,6 +291,9 @@ make verify
 make verify-web
 ```
 
+For v1.0 release candidate rehearsal from a fresh checkout, use the
+[Clean-Machine Release Rehearsal](clean-machine-rehearsal.md).
+
 ## Notes
 
 - Use `mock:*` models for normal local development.

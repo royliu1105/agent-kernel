@@ -513,7 +513,7 @@ Daily execution map:
 - [x] Day 81: Release-blocking eval suite definition.
 - [x] Day 82: Full release smoke test matrix.
 - [x] Day 83: Load and soak test scenarios.
-- [ ] Day 84: Clean-machine release rehearsal plan.
+- [x] Day 84: Clean-machine release rehearsal plan.
 - [ ] Day 85: Clean-machine release rehearsal fixes.
 - [ ] Day 86: v1.0 docs consistency audit.
 - [ ] Day 87: Known limitations review and scope freeze.
