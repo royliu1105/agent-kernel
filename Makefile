@@ -1,4 +1,4 @@
-.PHONY: setup test lint format typecheck cheap-eval release-eval release-smoke verify verify-web web-lint web-build web-e2e docker-config
+.PHONY: setup test lint format typecheck cheap-eval release-eval release-smoke release-load-soak verify verify-web web-lint web-build web-e2e docker-config
 
 setup:
 	uv sync
@@ -27,6 +27,9 @@ release-smoke: release-eval docker-config
 	uv run pytest tests/unit/test_api_health.py tests/unit/test_cli_commands.py tests/unit/test_worker_cli.py tests/unit/test_tools.py tests/unit/test_kb_search_tool.py tests/integration/test_api_run_lifecycle.py tests/integration/test_runtime_e2e.py tests/integration/test_api_approvals.py tests/integration/test_api_knowledge_base.py tests/integration/test_api_memory.py tests/integration/test_api_evals.py
 	npm run lint
 	npm run build
+
+release-load-soak:
+	uv run python scripts/release_load_soak.py --profile quick
 
 web-lint:
 	npm run lint

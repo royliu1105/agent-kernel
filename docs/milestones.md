@@ -488,7 +488,7 @@ Checklist:
 - [x] Versioned configuration documentation.
 - [x] Backup and restore guidance.
 - [x] Security hardening checklist.
-- [ ] Load and soak test scenarios.
+- [x] Load and soak test scenarios.
 - [x] Release-blocking eval suites.
 - [x] Full release smoke tests.
 - [ ] v1.0 release checklist.
@@ -512,7 +512,7 @@ Daily execution map:
 - [x] Day 80: Security hardening checklist.
 - [x] Day 81: Release-blocking eval suite definition.
 - [x] Day 82: Full release smoke test matrix.
-- [ ] Day 83: Load and soak test scenarios.
+- [x] Day 83: Load and soak test scenarios.
 - [ ] Day 84: Clean-machine release rehearsal plan.
 - [ ] Day 85: Clean-machine release rehearsal fixes.
 - [ ] Day 86: v1.0 docs consistency audit.

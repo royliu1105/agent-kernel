@@ -130,3 +130,4 @@ day-03.md
 - [Day 80: Security Hardening Checklist](day-80.md)
 - [Day 81: Release-Blocking Eval Suite Definition](day-81.md)
 - [Day 82: Full Release Smoke Test Matrix](day-82.md)
+- [Day 83: Load and Soak Test Scenarios](day-83.md)
