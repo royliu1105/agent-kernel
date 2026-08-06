@@ -232,3 +232,8 @@ security limitation:
 - Remove or demote the affected surface from stable scope.
 
 Silent security limitations are release blockers.
+
+Day 87 completed this review in [v1.0 Scope Freeze](v1-scope-freeze.md). The
+scope freeze classifies accepted self-hosted limitations, remaining release
+blockers, and features deferred beyond v1.0. Day 88-90 release work should use
+that document as the decision source instead of reopening product scope.
