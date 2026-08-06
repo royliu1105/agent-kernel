@@ -501,7 +501,7 @@ Acceptance:
 - [ ] Clean-machine release rehearsal passes.
 - [x] Critical paths pass automated tests and evals.
 - [ ] Known limitations are acceptable for v1.0.
-- [ ] v1.0 docs match actual behavior.
+- [x] v1.0 docs match actual behavior.
 
 Daily execution map:
 
@@ -515,7 +515,7 @@ Daily execution map:
 - [x] Day 83: Load and soak test scenarios.
 - [x] Day 84: Clean-machine release rehearsal plan.
 - [x] Day 85: Clean-machine release rehearsal fixes.
-- [ ] Day 86: v1.0 docs consistency audit.
+- [x] Day 86: v1.0 docs consistency audit.
 - [ ] Day 87: Known limitations review and scope freeze.
 - [ ] Day 88: v1.0 release checklist.
 - [ ] Day 89: v1.0 release notes.

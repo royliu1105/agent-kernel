@@ -36,26 +36,27 @@ The plan is split into these documents:
 28. [Load and Soak Scenarios](load-soak-scenarios.md): v1.0 RC load/soak profiles, thresholds, manual infrastructure scenarios, and failure handling.
 29. [Clean-Machine Release Rehearsal](clean-machine-rehearsal.md): v1.0 RC fresh-checkout rehearsal runbook, required gates, evidence capture, and failure classification.
 30. [Clean-Machine Rehearsal Results](clean-machine-rehearsal-results.md): v1.0 RC rehearsal evidence, fixes, passed gates, and remaining Docker restart limitation.
-31. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
-32. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
-33. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
-34. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
-35. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
-36. [Phase 6 Summary](phase-6-summary.md): completed v0.1 release-hardening work, verification, and remaining release blockers.
-37. [Product Interfaces](interfaces.md): current API, CLI, worker, and Web UI surface catalog.
-38. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-39. [Development Plan](development-plan.md): v0.1 plan and daily working method.
-40. [Milestones](milestones.md): day-by-day milestone map for v0.1, Public Alpha, Beta, and v1.0.
-41. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-42. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
-43. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
-44. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
-45. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-46. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
-47. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-48. [ADR 0002](adr/0002-storage.md): storage decision.
-49. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-50. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+31. [v1.0 Docs Consistency Audit](docs-consistency-audit.md): Day 86 docs drift audit, automated guards, and remaining release-doc follow-ups.
+32. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
+33. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
+34. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
+35. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
+36. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
+37. [Phase 6 Summary](phase-6-summary.md): completed v0.1 release-hardening work, verification, and remaining release blockers.
+38. [Product Interfaces](interfaces.md): current API, CLI, worker, and Web UI surface catalog.
+39. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
+40. [Development Plan](development-plan.md): v0.1 plan and daily working method.
+41. [Milestones](milestones.md): day-by-day milestone map for v0.1, Public Alpha, Beta, and v1.0.
+42. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
+43. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
+44. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
+45. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
+46. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
+47. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
+48. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
+49. [ADR 0002](adr/0002-storage.md): storage decision.
+50. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
+51. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
 
 Repository-level release docs:
 

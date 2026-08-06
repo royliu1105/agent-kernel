@@ -133,3 +133,4 @@ day-03.md
 - [Day 83: Load and Soak Test Scenarios](day-83.md)
 - [Day 84: Clean-Machine Release Rehearsal Plan](day-84.md)
 - [Day 85: Clean-Machine Release Rehearsal Fixes](day-85.md)
+- [Day 86: v1.0 Docs Consistency Audit](day-86.md)
