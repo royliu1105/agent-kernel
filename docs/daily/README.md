@@ -135,3 +135,4 @@ day-03.md
 - [Day 85: Clean-Machine Release Rehearsal Fixes](day-85.md)
 - [Day 86: v1.0 Docs Consistency Audit](day-86.md)
 - [Day 87: Known Limitations Review and Scope Freeze](day-87.md)
+- [Day 88: v1.0 Release Checklist](day-88.md)

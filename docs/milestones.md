@@ -491,7 +491,7 @@ Checklist:
 - [x] Load and soak test scenarios.
 - [x] Release-blocking eval suites.
 - [x] Full release smoke tests.
-- [ ] v1.0 release checklist.
+- [x] v1.0 release checklist.
 - [ ] v1.0 release notes.
 - [ ] Clean-machine release rehearsal.
 
@@ -517,7 +517,7 @@ Daily execution map:
 - [x] Day 85: Clean-machine release rehearsal fixes.
 - [x] Day 86: v1.0 docs consistency audit.
 - [x] Day 87: Known limitations review and scope freeze.
-- [ ] Day 88: v1.0 release checklist.
+- [x] Day 88: v1.0 release checklist.
 - [ ] Day 89: v1.0 release notes.
 - [ ] Day 90: v1.0 final verification and release readiness.
 

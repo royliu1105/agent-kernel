@@ -94,7 +94,8 @@ After Day 87, v1.0 scope changes must follow these rules:
 
 ## Day 88 Handoff
 
-Day 88 should turn this scope freeze into the final v1.0 release checklist.
+Day 88 turned this scope freeze into the
+[v1.0 Release Checklist](v1-release-checklist.md).
 
 The checklist should have separate sections for:
 
