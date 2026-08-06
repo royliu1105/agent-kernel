@@ -194,6 +194,38 @@ Day 74 intentionally does not execute arbitrary eval datasets on the server,
 upload dataset files, schedule eval jobs, run LLM-as-judge, execute live-provider
 evals by default, or enforce release-blocking eval suites.
 
+## Day 81 Release-Blocking Eval Gates
+
+Day 81 defines the first explicit v1.0 release candidate eval gate:
+
+- Maintainer command: `make release-eval`.
+- CI step: `Release Eval Gates`.
+- Existing deterministic RAG smoke dataset: `evals/rag-smoke.json`.
+- Release RAG dataset: `evals/release-rag-gate.json`.
+- Provider-native tool-call regression suite:
+  `tests/unit/test_tool_call_evals.py`.
+
+The release gate is intentionally deterministic and credential-free. It must
+not require OpenAI credentials, live provider calls, pgvector, Postgres, MinIO,
+uploaded documents, or external network access.
+
+Current release RAG cases cover:
+
+- Deployment rollback retrieval with citation source checks.
+- Backup/restore retrieval with multi-result citation checks.
+- Empty knowledge base behavior.
+- Missing knowledge base error behavior.
+
+Current provider-native tool-call cases cover:
+
+- Safe native tool execution through a model/tool/model loop.
+- Approval-required native tool pause behavior.
+- Unknown native tool safe failure behavior.
+
+Day 81 intentionally does not make live OpenAI evals, LLM-as-judge evals,
+pgvector quality evals, long-running evals, cost/latency comparisons, or human
+review default release blockers.
+
 ## API / CLI
 
 Expected API:
@@ -208,7 +240,9 @@ Expected CLI:
 
 ```bash
 agent-kernel eval report evals/rag-smoke.json
+agent-kernel eval report evals/release-rag-gate.json
 agent-kernel eval report evals/rag-smoke.json --publish
+make release-eval
 ```
 
 ## Failure Modes

@@ -1,4 +1,4 @@
-.PHONY: setup test lint format typecheck cheap-eval verify verify-web web-lint web-build web-e2e docker-config
+.PHONY: setup test lint format typecheck cheap-eval release-eval verify verify-web web-lint web-build web-e2e docker-config
 
 setup:
 	uv sync
@@ -19,6 +19,10 @@ typecheck:
 cheap-eval:
 	uv run agent-kernel eval report evals/rag-smoke.json
 
+release-eval: cheap-eval
+	uv run agent-kernel eval report evals/release-rag-gate.json
+	uv run pytest tests/unit/test_tool_call_evals.py
+
 web-lint:
 	npm run lint
 
@@ -31,6 +35,6 @@ web-e2e:
 docker-config:
 	docker compose config
 
-verify: lint typecheck test cheap-eval web-lint web-build docker-config
+verify: lint typecheck test release-eval web-lint web-build docker-config
 
 verify-web: web-lint web-build web-e2e

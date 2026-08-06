@@ -1,0 +1,40 @@
+{
+  "name": "release-rag-gate",
+  "cases": [
+    {
+      "name": "deployment-runbook-citation",
+      "query": "alpha deployment rollback checklist",
+      "top_k": 1,
+      "min_results": 1,
+      "max_results": 1,
+      "min_top_score": 1.0,
+      "top_result_must_contain": ["deployment", "rollback", "checklist"],
+      "citation_source_uri_must_contain": ["deploy.md"],
+      "all_results_require_citations": true
+    },
+    {
+      "name": "backup-restore-citation",
+      "query": "Postgres backup restore object storage verification",
+      "top_k": 2,
+      "min_results": 2,
+      "max_results": 2,
+      "min_top_score": 1.0,
+      "top_result_must_contain": ["Postgres", "restore", "object storage"],
+      "citation_source_uri_must_contain": ["backup-restore.md"],
+      "all_results_require_citations": true
+    },
+    {
+      "name": "empty-knowledge-base-safe",
+      "query": "empty knowledge base should return no release results",
+      "top_k": 1,
+      "min_results": 0,
+      "max_results": 0,
+      "expect_empty": true
+    },
+    {
+      "name": "missing-knowledge-base-safe-error",
+      "query": "missing knowledge base should fail predictably",
+      "expected_error_type": "KnowledgeBaseNotFoundError"
+    }
+  ]
+}

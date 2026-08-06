@@ -128,3 +128,4 @@ day-03.md
 - [Day 78: Upgrade and Migration Policy](day-78.md)
 - [Day 79: Backup and Restore Guidance](day-79.md)
 - [Day 80: Security Hardening Checklist](day-80.md)
+- [Day 81: Release-Blocking Eval Suite Definition](day-81.md)

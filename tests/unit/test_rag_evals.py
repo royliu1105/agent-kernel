@@ -311,6 +311,19 @@ def test_loaded_rag_eval_dataset_runs_with_retrieval_callable(
     assert report.passed_count == 1
 
 
+def test_release_rag_gate_dataset_is_valid() -> None:
+    dataset = load_rag_eval_dataset(Path("evals/release-rag-gate.json"))
+
+    assert dataset.name == "release-rag-gate"
+    assert len(dataset.cases) == 4
+    assert {case.name for case in dataset.cases} == {
+        "deployment-runbook-citation",
+        "backup-restore-citation",
+        "empty-knowledge-base-safe",
+        "missing-knowledge-base-safe-error",
+    }
+
+
 def test_eval_report_serializes_to_stable_dict(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
