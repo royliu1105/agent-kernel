@@ -485,7 +485,7 @@ Checklist:
 
 - [x] Public API and CLI compatibility policy.
 - [ ] Upgrade and migration policy.
-- [ ] Versioned configuration documentation.
+- [x] Versioned configuration documentation.
 - [ ] Backup and restore guidance.
 - [ ] Security hardening checklist.
 - [ ] Load and soak test scenarios.
@@ -506,7 +506,7 @@ Acceptance:
 Daily execution map:
 
 - [x] Day 76: API/CLI contract audit and compatibility policy.
-- [ ] Day 77: Versioned configuration documentation.
+- [x] Day 77: Versioned configuration documentation.
 - [ ] Day 78: Upgrade and migration policy.
 - [ ] Day 79: Backup and restore guidance.
 - [ ] Day 80: Security hardening checklist.

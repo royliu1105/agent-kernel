@@ -1,11 +1,15 @@
 # Production Configuration Guide
 
 This guide describes the production configuration expectations for Agent Kernel
-v0.1.
+v1.0 release candidate deployments.
 
-v0.1 is a self-hosted runtime foundation. It is deployable as separate API,
-worker, Web, Postgres, Redis, and object-storage components, but it is not yet a
+Agent Kernel is a self-hosted runtime. It is deployable as separate API,
+worker, Web, Postgres, Redis, and object-storage components, but it is not a
 fully managed cloud platform.
+
+The versioned environment-variable contract lives in
+[Versioned Configuration Reference](configuration.md). This file focuses on
+deployment expectations and operational guidance.
 
 ## Runtime Processes
 
@@ -23,7 +27,12 @@ Objects  - document upload and parsed artifact storage
 Run API and worker as separate processes. The API should not execute long-running
 agent loops directly.
 
-## Required Environment Variables
+## Environment Variables
+
+Use [Versioned Configuration Reference](configuration.md) as the source of
+truth for defaults, stability level, secret status, and change-control rules.
+
+Recommended production baseline:
 
 Core runtime:
 
@@ -248,9 +257,11 @@ Recommended Web command after build:
 npm --workspace apps/web exec -- next start --hostname 0.0.0.0
 ```
 
-The Web Workbench is an operator console. In v0.1, most Web data is
-fixture-backed and intended to show the product surface. Do not represent it as
-a fully live production console until live Web API integration is implemented.
+The Web Workbench is an operator console. Core run, approval, knowledge, eval,
+health, and retrieval workflows have live same-origin backend routes. Some
+dashboard summaries, agent catalog summaries, document detail views, memory
+detail views, and admin settings remain preview-backed rather than stable
+automation contracts.
 
 ## Secrets
 
@@ -274,7 +285,7 @@ At minimum, treat these as secrets:
 
 ## API Authentication
 
-Beta API key authentication can be enabled with:
+API key authentication can be enabled with:
 
 ```text
 AGENT_KERNEL_API_KEY_AUTH_ENABLED=true
@@ -295,8 +306,8 @@ When enabled:
 
 Local quickstart flows keep API key authentication disabled by default. Route
 permission checks currently use the authenticated API key's workspace as the
-request workspace. Object-level workspace scoping is added in later Beta
-slices.
+request workspace. Additional object-level scoping for every secondary resource
+is v1.0 RC hardening work.
 
 Current object-level workspace scoping:
 
@@ -305,7 +316,7 @@ Current object-level workspace scoping:
 - Approval list, detail, approve, reject, and resume approval prechecks are
   scoped through the related run workspace.
 - Knowledge, memory, document, tool-call, eval, and observability resources are
-  scoped in later Beta slices.
+  documented as v1.0 RC hardening review areas.
 
 See [Auth and RBAC](auth-rbac.md) for the full role, permission, object-scope,
 and security test matrix.
@@ -328,7 +339,7 @@ agent-kernel eval report evals/rag-smoke.json --publish
 ```
 
 Server-side dataset upload, arbitrary eval execution, LLM-as-judge, release
-blocking gates, and eval job queues are not enabled in the Beta baseline.
+blocking gates, and eval job queues are not enabled in the v1.0 RC baseline yet.
 
 ## Networking
 
@@ -346,8 +357,9 @@ Object store path: private mounted storage only
 
 ## Observability
 
-v0.1 includes trace IDs, structured logs, metrics recorders, and deterministic
-eval reports.
+Agent Kernel includes trace IDs, structured logs, metrics recorders,
+OpenTelemetry exporter configuration, Prometheus-compatible API metrics, and
+persisted deterministic eval reports.
 
 Recommended production log format:
 
@@ -362,7 +374,7 @@ across instances. Worker HTTP metrics exposure is not implemented yet.
 
 ## Security Posture
 
-Current v0.1 safety controls:
+Current safety controls:
 
 - Tool risk levels.
 - Policy decisions.
@@ -370,18 +382,22 @@ Current v0.1 safety controls:
 - Approval interrupt/resume.
 - Audit timeline for tool calls and decisions.
 - Sensitive structured-log field redaction.
+- API-key authentication.
+- Role-based route authorization.
+- Workspace-scoped agents, runs, and approval decisions.
 
-Not implemented yet:
+Not production-complete yet:
 
-- End-user authentication.
-- Role-based authorization.
-- Tenant isolation.
+- End-user browser login.
+- Public hosted SaaS tenant isolation.
 - Browser session management.
 - Remote sandbox execution.
 - Secrets manager integration.
+- Complete object-level scoping audit for every secondary resource.
 
-Do not deploy v0.1 as a public multi-tenant service without adding auth,
-authorization, tenant isolation, network controls, and secret management.
+Do not deploy Agent Kernel as a public multi-tenant service without adding
+end-user authentication, hosted-tenant isolation, network controls, and managed
+secret storage.
 
 ## Local Compose Baseline
 
