@@ -76,6 +76,12 @@ In one terminal:
 uv run agent-kernel-api
 ```
 
+If port `8000` is already in use, choose another port:
+
+```bash
+AGENT_KERNEL_API_HOST=127.0.0.1 AGENT_KERNEL_API_PORT=8011 uv run agent-kernel-api
+```
+
 Verify:
 
 ```bash

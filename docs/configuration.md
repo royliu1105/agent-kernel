@@ -141,6 +141,8 @@ only hashes.
 
 | Variable | Components | Default | Production | Secret | Notes |
 | --- | --- | --- | --- | --- | --- |
+| `AGENT_KERNEL_API_HOST` | API | `0.0.0.0` | Bind host for the API process | No | Use `127.0.0.1` for local-only binding. |
+| `AGENT_KERNEL_API_PORT` | API | `8000` | Bind port for the API process | No | Use another port when `8000` is occupied during rehearsal. |
 | `AGENT_KERNEL_API_URL` | CLI, Web server routes | `http://127.0.0.1:8000` | Internal API URL | Sometimes | Used by CLI and same-origin Web proxy routes. |
 | `NEXT_PUBLIC_AGENT_KERNEL_API_URL` | Web browser and Web server routes | `http://127.0.0.1:8000` | Public API URL or same-origin gateway | No | Exposed to browser bundles by Next.js. Do not put secrets here. |
 
@@ -158,6 +160,8 @@ API:
 ```bash
 agent-kernel-api
 ```
+
+The API binds to `AGENT_KERNEL_API_HOST` and `AGENT_KERNEL_API_PORT`.
 
 Worker:
 

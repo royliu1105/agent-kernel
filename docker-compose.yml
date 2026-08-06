@@ -34,12 +34,14 @@ services:
     environment:
       AGENT_KERNEL_ENV: ${AGENT_KERNEL_ENV:-development}
       AGENT_KERNEL_LOG_LEVEL: ${AGENT_KERNEL_LOG_LEVEL:-info}
+      AGENT_KERNEL_API_HOST: ${AGENT_KERNEL_API_HOST:-0.0.0.0}
+      AGENT_KERNEL_API_PORT: ${AGENT_KERNEL_API_PORT:-8000}
       DATABASE_URL: postgresql+psycopg://agent_kernel:agent_kernel@postgres:5432/agent_kernel
       REDIS_URL: redis://redis:6379/0
       AGENT_KERNEL_OBJECT_STORE_ROOT: /data/objects
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
-      - "8000:8000"
+      - "${AGENT_KERNEL_API_PORT:-8000}:${AGENT_KERNEL_API_PORT:-8000}"
     volumes:
       - object_data:/data/objects
     depends_on:
@@ -51,7 +53,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python -c \"from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/healthz', timeout=2).read()\"",
+          "python -c \"import os; from urllib.request import urlopen; urlopen('http://127.0.0.1:' + os.environ.get('AGENT_KERNEL_API_PORT', '8000') + '/healthz', timeout=2).read()\"",
         ]
       interval: 10s
       timeout: 5s
@@ -80,7 +82,8 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
-      NEXT_PUBLIC_AGENT_KERNEL_API_URL: http://127.0.0.1:8000
+      AGENT_KERNEL_API_URL: http://api:${AGENT_KERNEL_API_PORT:-8000}
+      NEXT_PUBLIC_AGENT_KERNEL_API_URL: http://127.0.0.1:${AGENT_KERNEL_API_PORT:-8000}
     ports:
       - "3000:3000"
     depends_on:

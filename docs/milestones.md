@@ -514,7 +514,7 @@ Daily execution map:
 - [x] Day 82: Full release smoke test matrix.
 - [x] Day 83: Load and soak test scenarios.
 - [x] Day 84: Clean-machine release rehearsal plan.
-- [ ] Day 85: Clean-machine release rehearsal fixes.
+- [x] Day 85: Clean-machine release rehearsal fixes.
 - [ ] Day 86: v1.0 docs consistency audit.
 - [ ] Day 87: Known limitations review and scope freeze.
 - [ ] Day 88: v1.0 release checklist.

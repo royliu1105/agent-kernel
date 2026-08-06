@@ -1,4 +1,5 @@
-from agent_kernel_api.main import create_app
+import pytest
+from agent_kernel_api.main import api_host_from_env, api_port_from_env, create_app
 from fastapi.testclient import TestClient
 from kernel_observability import InMemoryMetricsRecorder
 
@@ -43,3 +44,20 @@ def test_metrics_endpoint_exports_prometheus_text() -> None:
         'llm_model_call_latency_ms_sum{model="mock-default",provider="mock",'
         'status="succeeded"} 12'
     ) in response.text
+
+
+def test_api_host_from_env_defaults_and_trims() -> None:
+    assert api_host_from_env({}) == "0.0.0.0"
+    assert api_host_from_env({"AGENT_KERNEL_API_HOST": " 127.0.0.1 "}) == "127.0.0.1"
+    assert api_host_from_env({"AGENT_KERNEL_API_HOST": " "}) == "0.0.0.0"
+
+
+def test_api_port_from_env_defaults_and_parses() -> None:
+    assert api_port_from_env({}) == 8000
+    assert api_port_from_env({"AGENT_KERNEL_API_PORT": " 8011 "}) == 8011
+
+
+@pytest.mark.parametrize("value", ["not-a-port", "0", "65536"])
+def test_api_port_from_env_rejects_invalid_values(value: str) -> None:
+    with pytest.raises(ValueError, match="AGENT_KERNEL_API_PORT"):
+        api_port_from_env({"AGENT_KERNEL_API_PORT": value})

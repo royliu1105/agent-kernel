@@ -132,3 +132,4 @@ day-03.md
 - [Day 82: Full Release Smoke Test Matrix](day-82.md)
 - [Day 83: Load and Soak Test Scenarios](day-83.md)
 - [Day 84: Clean-Machine Release Rehearsal Plan](day-84.md)
+- [Day 85: Clean-Machine Release Rehearsal Fixes](day-85.md)

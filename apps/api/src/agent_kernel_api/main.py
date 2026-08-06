@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
+import os
+from collections.abc import Iterator, Mapping
 from typing import Annotated
 from uuid import UUID
 
@@ -944,7 +945,31 @@ app = create_app()
 
 
 def main() -> None:
-    uvicorn.run("agent_kernel_api.main:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(
+        "agent_kernel_api.main:app",
+        host=api_host_from_env(os.environ),
+        port=api_port_from_env(os.environ),
+        reload=False,
+    )
+
+
+def api_host_from_env(env: Mapping[str, str] | None = None) -> str:
+    values = env if env is not None else os.environ
+    host = values.get("AGENT_KERNEL_API_HOST", "0.0.0.0").strip()
+    return host or "0.0.0.0"
+
+
+def api_port_from_env(env: Mapping[str, str] | None = None) -> int:
+    values = env if env is not None else os.environ
+    raw_port = values.get("AGENT_KERNEL_API_PORT", "8000").strip()
+    try:
+        port = int(raw_port)
+    except ValueError as error:
+        raise ValueError("AGENT_KERNEL_API_PORT must be an integer.") from error
+
+    if port < 1 or port > 65535:
+        raise ValueError("AGENT_KERNEL_API_PORT must be between 1 and 65535.")
+    return port
 
 
 def _agent_response(agent: Agent) -> AgentResponse:

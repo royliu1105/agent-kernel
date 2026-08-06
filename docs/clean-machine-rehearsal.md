@@ -125,14 +125,34 @@ Run core local checks:
 
 ```bash
 uv run agent-kernel --version
-uv run agent-kernel-api --help
 uv run agent-kernel-worker --help
 ```
 
 Expected:
 
 - Migrations complete.
-- CLI, API, and worker command surfaces load.
+- CLI and worker command surfaces load.
+
+Start the API on a rehearsal-specific port to avoid collisions with an existing
+development server:
+
+```bash
+AGENT_KERNEL_API_HOST=127.0.0.1 AGENT_KERNEL_API_PORT=8011 uv run agent-kernel-api
+```
+
+In another terminal:
+
+```bash
+curl http://127.0.0.1:8011/healthz
+```
+
+Expected:
+
+```json
+{"status":"ok","service":"agent-kernel-api"}
+```
+
+Stop the foreground API with `Ctrl-C`.
 
 ## Release Gates
 
