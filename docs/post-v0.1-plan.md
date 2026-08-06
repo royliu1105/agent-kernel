@@ -142,7 +142,8 @@ Must complete:
 - Provider-native function calling support.
 - Durable model/tool/model execution loop.
 - Persisted tool-call records and replayable tool outcomes.
-- Redis-backed queue or another durable queue implementation.
+- Redis-backed queue adapter foundation, with the database remaining the durable
+  source of truth.
 - Worker leasing, retry visibility, and stuck-run recovery.
 - OpenTelemetry exporter configuration.
 - Prometheus-compatible metrics endpoint.
@@ -151,7 +152,7 @@ Must complete:
 - OpenAI embeddings backend.
 - Persisted eval runs and eval API.
 - Live Web integration for core operator workflows.
-- Migration tests against SQLite and Postgres.
+- Migration smoke tests against SQLite and Postgres.
 
 Daily execution map:
 

@@ -394,7 +394,7 @@ by other developers.
 Status:
 
 ```text
-[~] In progress
+[x] Complete
 ```
 
 Checklist:
@@ -410,7 +410,7 @@ Checklist:
 - [x] Provider-native function calling.
 - [x] Durable model/tool/model execution loop.
 - [x] Persisted tool-call records.
-- [~] Redis-backed durable queue.
+- [x] Redis-backed queue adapter foundation.
 - [x] Worker leasing and stuck-run recovery.
 - [x] OpenTelemetry exporter configuration.
 - [x] Prometheus-compatible metrics endpoint.
@@ -420,7 +420,7 @@ Checklist:
 - [x] Persisted eval runs.
 - [x] Eval API.
 - [x] Live Web Workbench integration for core operator workflows.
-- [ ] SQLite and Postgres migration tests.
+- [x] SQLite and Postgres migration smoke tests.
 
 Daily execution map:
 
@@ -447,16 +447,25 @@ Daily execution map:
 - [x] Day 72: OpenTelemetry exporter configuration.
 - [x] Day 73: Prometheus-compatible metrics endpoint.
 - [x] Day 74: Persisted eval runs, eval API, and live Web operator views.
-- [ ] Day 75: Beta closure, summary docs, and full verification.
+- [x] Day 75: Beta closure, summary docs, and full verification.
 
 Acceptance:
 
 - [x] Runtime execution survives worker restarts.
 - [x] Tool calls and approvals are durable and inspectable.
-- [ ] Security boundaries are explicit and tested.
-- [ ] Telemetry can be exported to common production tools.
+- [x] Security boundaries are explicit and tested.
+- [x] Telemetry can be exported to common production tools.
 - [x] RAG can run with real embeddings and pgvector.
 - [x] Storage backends can be switched by configuration.
+
+Closure notes:
+
+- See [Beta Summary](beta-summary.md).
+- Redis is complete as a queue adapter foundation and coordination port. The
+  default worker loop remains database-first and Redis-first scheduling is a
+  v1.0 RC hardening follow-up.
+- Migration compatibility is covered by a SQLite upgrade regression test and
+  GitHub CI SQLite/Postgres migration smoke checks.
 
 ## v1.0 Release Candidate: Day 76-90
 

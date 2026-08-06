@@ -122,3 +122,4 @@ day-03.md
 - [Day 72: OpenTelemetry Exporter Configuration](day-72.md)
 - [Day 73: Prometheus-Compatible Metrics Endpoint](day-73.md)
 - [Day 74: Persisted Eval Runs, Eval API, and Live Web Views](day-74.md)
+- [Day 75: Beta Closure, Summary Docs, and Full Verification](day-75.md)

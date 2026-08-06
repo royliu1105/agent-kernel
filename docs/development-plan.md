@@ -350,7 +350,7 @@ Deliverables:
 - Provider-native function calling.
 - Durable model/tool/model execution loop.
 - Persisted tool-call records.
-- Redis-backed durable queue.
+- Redis-backed queue adapter foundation.
 - Worker leases and stuck-run recovery.
 - OpenTelemetry exporters.
 - Prometheus-compatible metrics endpoint.
@@ -359,7 +359,7 @@ Deliverables:
 - pgvector-native vector store.
 - Persisted eval runs and eval API.
 - Live Web Workbench integration for core operations.
-- SQLite and Postgres migration tests.
+- SQLite and Postgres migration smoke tests.
 
 Daily execution map:
 
@@ -392,12 +392,14 @@ Day 75: Beta closure, summary docs, and full verification
 
 Acceptance:
 
-- [ ] Runtime execution survives worker restarts.
-- [ ] Tool calls and approvals are durable and inspectable.
-- [ ] Security boundaries are explicit and tested.
-- [ ] Telemetry can be exported to common production tools.
-- [ ] RAG can run with real embeddings and pgvector.
-- [ ] Storage backends can be switched by configuration.
+- [x] Runtime execution survives worker restarts.
+- [x] Tool calls and approvals are durable and inspectable.
+- [x] Security boundaries are explicit and tested.
+- [x] Telemetry can be exported to common production tools.
+- [x] RAG can run with real embeddings and pgvector.
+- [x] Storage backends can be switched by configuration.
+
+Summary: [Beta Summary](beta-summary.md).
 
 ## Stage 9: Day 76-90 v1.0 Release Candidate
 

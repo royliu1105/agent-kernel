@@ -9,6 +9,20 @@ on:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: agent_kernel
+          POSTGRES_USER: agent_kernel
+          POSTGRES_PASSWORD: agent_kernel
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U agent_kernel -d agent_kernel"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -16,6 +30,10 @@ jobs:
           version: "0.11.32"
       - name: Sync Python workspace
         run: uv sync --dev
+      - name: SQLite migration smoke
+        run: DATABASE_URL=sqlite:////tmp/agent-kernel-ci.db uv run alembic upgrade head
+      - name: Postgres migration smoke
+        run: DATABASE_URL=postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel uv run alembic upgrade head
       - name: Lint
         run: uv run ruff check .
       - name: Typecheck
