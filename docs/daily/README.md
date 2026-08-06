@@ -125,3 +125,4 @@ day-03.md
 - [Day 75: Beta Closure, Summary Docs, and Full Verification](day-75.md)
 - [Day 76: API/CLI Contract Audit and Compatibility Policy](day-76.md)
 - [Day 77: Versioned Configuration Documentation](day-77.md)
+- [Day 78: Upgrade and Migration Policy](day-78.md)

@@ -166,6 +166,10 @@ does not attach duplicate span processors.
 
 ## Database Migrations
 
+Upgrade sequencing, migration compatibility rules, and release-blocking
+migration checks are defined in
+[Upgrade and Migration Policy](upgrade-migration-policy.md).
+
 Run migrations before starting API and worker:
 
 ```bash
