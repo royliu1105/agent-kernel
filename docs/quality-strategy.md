@@ -121,3 +121,25 @@ npm run build
 ```
 
 Behavior evals should start cheap and deterministic, then later add scheduled real-model smoke evals.
+
+## Release Candidate Gates
+
+Before claiming v1.0 release-candidate readiness, maintainers should run:
+
+```bash
+make release-eval
+make release-smoke
+```
+
+`make release-eval` is the release-blocking behavior eval gate. It covers the
+deterministic RAG smoke dataset, the release RAG gate dataset, and
+provider-native tool-call regression cases.
+
+`make release-smoke` is the critical-path product smoke gate. It includes
+release evals, Docker Compose config validation, selected API/CLI/worker/RAG/
+memory/approval/tool/eval tests, and Web lint/build checks.
+
+Load tests, soak tests, browser e2e tests, clean-machine rehearsals, live
+provider tests, and infrastructure-backed pgvector/S3 checks remain separate
+release work because they have different runtime, credential, and flake
+profiles.

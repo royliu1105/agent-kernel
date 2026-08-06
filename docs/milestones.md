@@ -490,7 +490,7 @@ Checklist:
 - [x] Security hardening checklist.
 - [ ] Load and soak test scenarios.
 - [x] Release-blocking eval suites.
-- [ ] Full release smoke tests.
+- [x] Full release smoke tests.
 - [ ] v1.0 release checklist.
 - [ ] v1.0 release notes.
 - [ ] Clean-machine release rehearsal.
@@ -499,7 +499,7 @@ Acceptance:
 
 - [x] Stable API and CLI contract is documented.
 - [ ] Clean-machine release rehearsal passes.
-- [ ] Critical paths pass automated tests and evals.
+- [x] Critical paths pass automated tests and evals.
 - [ ] Known limitations are acceptable for v1.0.
 - [ ] v1.0 docs match actual behavior.
 
@@ -511,7 +511,7 @@ Daily execution map:
 - [x] Day 79: Backup and restore guidance.
 - [x] Day 80: Security hardening checklist.
 - [x] Day 81: Release-blocking eval suite definition.
-- [ ] Day 82: Full release smoke test matrix.
+- [x] Day 82: Full release smoke test matrix.
 - [ ] Day 83: Load and soak test scenarios.
 - [ ] Day 84: Clean-machine release rehearsal plan.
 - [ ] Day 85: Clean-machine release rehearsal fixes.
