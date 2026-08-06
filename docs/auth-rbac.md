@@ -1,11 +1,13 @@
 # Auth and RBAC
 
-This document is the Beta source of truth for Agent Kernel API authentication,
-workspace-scoped authorization, and current security test coverage.
+This document is the v1.0 release candidate source of truth for Agent Kernel
+API authentication, workspace-scoped authorization, and current security test
+coverage.
 
 ## Current Status
 
-Auth/RBAC is a Beta production-hardening track.
+Auth/RBAC is implemented as a v1.0 RC security baseline for self-hosted
+deployments.
 
 Implemented:
 
@@ -28,9 +30,9 @@ Still deferred:
 - User management Web UI.
 - Multi-workspace selector in Web.
 - Fine-grained custom roles.
-- Enterprise tenant isolation guarantees.
-- Workspace scoping for knowledge bases, documents, memory, tool calls, chunks,
-  embeddings, ingestion jobs, evals, and observability records.
+- Public hosted SaaS tenant isolation guarantees.
+- Final object-level scoping audit for knowledge bases, documents, memory, tool
+  calls, chunks, embeddings, ingestion jobs, evals, and observability records.
 
 ## Enable API Key Auth
 
@@ -111,7 +113,7 @@ Built-in roles:
 | Role | Intent |
 | --- | --- |
 | `owner` | Full workspace control. |
-| `admin` | Full workspace control for the Beta baseline. |
+| `admin` | Full workspace control for the current self-hosted baseline. |
 | `operator` | Operate agents, runs, approvals, tools, knowledge, memory, and evals without workspace admin rights. |
 | `viewer` | Read-only access to inspect workspace state. |
 
@@ -133,8 +135,8 @@ Current permissions:
 | `knowledge:write` | Knowledge, document, ingestion, chunk, and indexing write routes. |
 | `memory:read` | Memory read routes. |
 | `memory:write` | Memory create/delete routes. |
-| `eval:read` | Future eval read routes. |
-| `eval:write` | Future eval write routes. |
+| `eval:read` | Eval run read routes. |
+| `eval:write` | Eval run persistence routes. |
 
 ## Route Authorization
 
@@ -177,8 +179,8 @@ Current unscoped resources:
 - Eval records.
 - Observability records.
 
-These remain Beta follow-ups and should not be treated as production
-multi-tenant isolation yet.
+These remain v1.0 RC review areas and should not be treated as public hosted
+SaaS isolation yet.
 
 ## Approval Authorization
 
@@ -214,7 +216,7 @@ Auth and RBAC test anchors:
 | Approval API compatibility | `tests/integration/test_api_approvals.py` |
 | Resume API compatibility | `tests/integration/test_api_run_lifecycle.py` |
 
-Recommended Day 58 security closure command:
+Recommended security regression command:
 
 ```bash
 uv run pytest \
@@ -245,14 +247,19 @@ Do not:
 - Add new workspace-scoped resources without repository and API cross-workspace
   tests.
 
-## Next Hardening Steps
+## v1.0 RC Hardening Steps
 
-Upcoming Beta slices should:
+Upcoming v1.0 RC review should:
 
-- Scope knowledge bases and documents.
-- Scope memory records.
+- Decide whether to scope knowledge bases and documents before v1.0 final or
+  keep them listed as explicit limitations.
+- Decide whether to scope memory records before v1.0 final or keep them listed
+  as explicit limitations.
 - Decide whether tool calls need direct `workspace_id` or should stay derived
   through runs.
 - Add Web authentication or API key configuration for live Workbench calls.
 - Add audit export or persisted authorization-decision records if production
   operators need compliance-style review.
+
+See [Security Hardening Checklist](security-hardening.md) for the release-level
+security gates and operator checklist.

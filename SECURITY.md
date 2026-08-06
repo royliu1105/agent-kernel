@@ -2,10 +2,11 @@
 
 ## Supported Versions
 
-Agent Kernel is pre-v1.
+Agent Kernel is in the v1.0 release candidate hardening track.
 
-Security fixes target the current main branch until versioned releases are
-published.
+Security fixes target the current main branch and the latest published release
+line. Before v1.0 final, release candidates may still revise security
+boundaries when the change is documented in release notes.
 
 ## Reporting a Vulnerability
 
@@ -27,7 +28,7 @@ Do not include real secrets or customer data in the report.
 
 ## Current Security Posture
 
-Agent Kernel v0.1 includes:
+Agent Kernel currently includes:
 
 - Tool risk levels.
 - Policy decisions.
@@ -36,19 +37,26 @@ Agent Kernel v0.1 includes:
 - Tool-call and approval audit timeline.
 - Structured log redaction for sensitive fields.
 - Mock and replay providers for deterministic local testing.
+- API-key authentication for `/v1/*` routes when enabled.
+- Hashed API key storage.
+- Route-level RBAC permission checks.
+- Workspace-scoped agents, runs, and approval decisions.
+- OpenTelemetry trace configuration and Prometheus-compatible API metrics.
 
-Agent Kernel v0.1 does not yet include:
+Agent Kernel does not yet include:
 
-- End-user authentication.
-- Role-based authorization.
-- Tenant isolation.
+- End-user browser login, OIDC, or SSO.
+- Public hosted SaaS tenant isolation.
 - Browser session management.
 - Remote sandbox execution.
 - Secrets manager integration.
-- Production-grade network isolation guidance beyond local Compose.
+- Complete object-level scoping for every secondary resource.
 
-Do not deploy v0.1 as a public multi-tenant service without additional security
-controls.
+Do not deploy Agent Kernel as a public multi-tenant SaaS without additional
+tenant isolation, network controls, and managed secret storage.
+
+The v1.0 release candidate security checklist is documented in
+[docs/security-hardening.md](docs/security-hardening.md).
 
 ## Secret Handling
 
@@ -90,5 +98,5 @@ npm install reports 3 high severity vulnerabilities.
 Do not run force upgrades blindly. Review whether the fix is compatible with
 Next.js, React, and Playwright before applying.
 
-The current v0.1 review is documented in
+The current dependency-audit review is documented in
 [docs/dependency-audit.md](docs/dependency-audit.md).

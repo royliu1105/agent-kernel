@@ -382,6 +382,9 @@ across instances. Worker HTTP metrics exposure is not implemented yet.
 
 ## Security Posture
 
+Release-level security gates and operator checks are defined in
+[Security Hardening Checklist](security-hardening.md).
+
 Current safety controls:
 
 - Tool risk levels.
