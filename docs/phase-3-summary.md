@@ -1,5 +1,9 @@
 # Phase 3 Summary: RAG and Memory Foundation
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Phase 3 is complete as a production-grade foundation:

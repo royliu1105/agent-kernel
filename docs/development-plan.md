@@ -3,9 +3,10 @@
 ## Current Follow-Up
 
 The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) is the
-canonical plan for current implementation work. The P0-P5 batch is in final
-integration acceptance; per-package status, local verification and outstanding
-deployment/CI evidence live in that plan. Do not restart from P1.1.
+canonical plan for current implementation work. R1-R10 remediation passed scoped
+acceptance; the subsequent N1-N4 execution work has local verification. N5 owns
+the separate current-commit CI gate. Consult that plan for the latest results;
+do not substitute historical CI or restart from P1.1.
 
 The Day 1-90 schedule below is the historical delivery plan. Completed
 foundation items must not be read as proof of full object isolation,
@@ -19,7 +20,7 @@ The original v0.1 target is complete and published:
 Day 1-38: v0.1.0 foundation, release hardening, tag, CI verification, and GitHub Release
 ```
 
-The next target is Public Alpha and then v1.0:
+The following historical stages led to v1.0.0, published 2026-08-07:
 
 ```text
 Day 39-51: Public Alpha hardening
@@ -27,12 +28,12 @@ Day 52-75: Beta production hardening
 Day 76-90: v1.0 release candidate and final release work
 ```
 
-The v1.0 version should be stable, deployable, testable, recoverable,
-observable, evaluable, secure enough for serious self-hosted use, and
-documented with upgrade and operational guidance.
+The original v1.0 target was a stable, deployable, testable, recoverable,
+observable and evaluable runtime, secure enough for serious self-hosted use,
+with upgrade and operational guidance.
 
-See [Post-v0.1 Completion Plan](post-v0.1-plan.md) for the canonical
-post-v0.1 plan.
+See [Post-v0.1 Completion Plan](post-v0.1-plan.md) for the historical scope and
+[v1.0 Release Checklist](v1-release-checklist.md) for publication evidence.
 
 ## Development Method
 
@@ -414,6 +415,11 @@ Summary: [Beta Summary](beta-summary.md).
 
 ## Stage 9: Day 76-90 v1.0 Release Candidate
 
+Status: historical scope complete; v1.0.0 published 2026-08-07. The
+[release checklist](v1-release-checklist.md) separates verified publication from
+historical checks that cannot be reconstructed. Current branch hardening is
+unreleased and has its own acceptance gates.
+
 Goal: freeze the stable production contract and remove release surprises.
 
 Deliverables:
@@ -453,10 +459,11 @@ Day 90: v1.0 final verification and release readiness
 Acceptance:
 
 - [x] Stable API and CLI contract is documented.
-- [ ] Clean-machine release rehearsal passes.
-- [ ] Critical paths pass automated tests and evals.
-- [ ] Known limitations are acceptable for v1.0.
-- [ ] v1.0 docs match actual behavior.
+- [x] Clean-machine release rehearsal passed within the recorded Day 90 scope.
+- [x] Critical paths passed the recorded release tests and evals.
+- [x] Accepted release limitations are recorded in the scope freeze and notes.
+- [x] Publication status is reconciled with the actual v1.0.0 release; current
+  behavior and stronger guarantees are tracked separately.
 
 ## Daily Start Workflow
 

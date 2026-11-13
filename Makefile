@@ -22,6 +22,7 @@ cheap-eval:
 release-eval: cheap-eval
 	uv run agent-kernel eval report evals/release-rag-gate.json
 	uv run pytest tests/unit/test_tool_call_evals.py
+	uv run pytest -q tests/integration/test_bounded_native_execution.py tests/integration/test_runtime_backoff.py tests/integration/test_native_continuation_wire.py tests/integration/test_execution_budget_edges.py -k 'not postgres'
 	uv run python scripts/timeline_regression.py
 
 release-smoke: release-eval docker-config

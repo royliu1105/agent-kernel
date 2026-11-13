@@ -10,19 +10,25 @@ If local setup gets stuck, use [docs/troubleshooting.md](docs/troubleshooting.md
 
 Current release:
 
-- [Agent Kernel v0.1.0](https://github.com/royliu1105/agent-kernel/releases/tag/v0.1.0)
+- [Agent Kernel v1.0.0](https://github.com/royliu1105/agent-kernel/releases/tag/v1.0.0), published 2026-08-07.
 
-Post-v0.1 completion plan:
+Current development:
+
+- [Post-v1.0 capability hardening](docs/capability-hardening-plan.md) is the
+  canonical plan and acceptance record for current work.
+- `master` contains unreleased changes beyond the `v1.0.0` tag. Historical
+  release CI does not verify those changes; current evidence lives in the plan.
+- Review the [upgrade and migration policy](docs/upgrade-migration-policy.md)
+  before upgrading an existing deployment.
+
+Historical delivery:
 
 - [Public Alpha, Beta, and v1.0 plan](docs/post-v0.1-plan.md)
-
-Public Alpha:
-
-- [Public Alpha guide](docs/public-alpha.md)
-- [Public Alpha release notes draft](docs/releases/public-alpha.md)
+- [v1.0.0 release notes](docs/releases/v1.0.0.md)
+- [Public Alpha summary](docs/public-alpha-summary.md)
 - [Feedback templates](.github/ISSUE_TEMPLATE)
 
-Current v0.1 shape:
+Project shape:
 
 ```text
 Python API + CLI + worker + Postgres/SQLite storage + RAG/memory/tools/evals + Next.js Workbench
@@ -109,7 +115,7 @@ make verify-web
 
 ## Feedback
 
-Agent Kernel is in Public Alpha hardening after the `v0.1.0` release. Please
+Agent Kernel is in post-v1.0 capability hardening. Please
 use GitHub Issues for reproducible bugs, focused feature requests, or first-run
 feedback. Redact secrets, API keys, tokens, private documents, and private logs
 before sharing output.

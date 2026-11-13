@@ -2,6 +2,10 @@
 
 This checklist records the `v0.1.0` release status.
 
+Historical release record. For the subsequently published v1.0.0, see its
+[release checklist](v1-release-checklist.md). Current branch acceptance is tracked
+in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Repository State
 
 - [x] Working tree is clean before release tagging.
@@ -122,4 +126,4 @@ Post-release:
 
 - `v0.1.0` was published as a GitHub Release.
 - GitHub CI for the release commit was verified green.
-- The next canonical plan is [Post-v0.1 Completion Plan](post-v0.1-plan.md).
+- The historical next stage was [Post-v0.1 Completion Plan](post-v0.1-plan.md).

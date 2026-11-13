@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import builtins
 import math
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -586,6 +587,26 @@ class RunRepository:
         """Fail closed locally even if persisting lease invalidation is unavailable."""
         if self.lease_token is not None:
             self._session.info.setdefault("revoked_execution_tokens", set()).add(self.lease_token)
+
+    def load_execution_checkpoint(self, run_id: UUID) -> dict[str, Any] | None:
+        """Read sensitive internal state only under an active execution lease."""
+        if self.lease_token is None:
+            raise ExecutionOwnershipError("Checkpoint access requires an execution lease.")
+        record = _guard_run_write(self._session, run_id, self.lease_token)
+        if record is None:
+            raise ExecutionOwnershipError("Run no longer exists.")
+        payload = deepcopy(record.execution_checkpoint)
+        self._session.commit()
+        return payload
+
+    def save_execution_checkpoint(self, run_id: UUID, payload: dict[str, Any]) -> None:
+        if self.lease_token is None:
+            raise ExecutionOwnershipError("Checkpoint writes require an execution lease.")
+        record = _guard_run_write(self._session, run_id, self.lease_token)
+        if record is None:
+            raise ExecutionOwnershipError("Run no longer exists.")
+        record.execution_checkpoint = deepcopy(payload)
+        self._session.commit()
 
     def usage_summary(self, *, workspace_id: UUID | None = None) -> dict[str, Any]:
         statement = select(

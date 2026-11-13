@@ -1,5 +1,9 @@
 # Phase 2 Summary: Tools, Policy, Approval, Retry, and Fallback
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Phase 2 is complete.

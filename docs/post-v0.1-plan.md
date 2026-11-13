@@ -2,17 +2,21 @@
 
 Agent Kernel v0.1.0 is published as the first public runtime foundation.
 
-This document defines the completion path from v0.1.0 to Public Alpha, Beta,
-and v1.0. It is the source of truth for post-v0.1 scope. Daily plans should
-continue to live in `docs/daily/day-XX.md` and should be created just in time.
+This document records the historical Day 39-90 path from v0.1.0 through Public
+Alpha and Beta to v1.0. Original goals below describe that delivery scope, not
+acceptance of stronger guarantees added afterward. Current work and evidence
+belong to the [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
 
 ## Current Status
 
 ```text
 v0.1.0: Published
-Current track: Public Alpha hardening
-Next major target: v1.0 production-ready open-source release
+v1.0.0: Published 2026-08-07
+Day 39-90: Historical delivery completed within the recorded scope
+Current track: Post-v1.0 capability hardening (unreleased)
 ```
+
+Publication evidence is recorded in the [v1.0 release checklist](v1-release-checklist.md).
 
 v0.1.0 already includes:
 
@@ -27,7 +31,7 @@ v0.1.0 already includes:
 - Structured logs, trace IDs, metrics foundation, and deterministic evals.
 - Docker Compose stack, examples, release docs, and CI.
 
-v0.1.0 is not v1.0 because it still lacks the production contract expected from
+At the start of this plan, v0.1.0 lacked the production contract expected from
 a stable open-source runtime: stable APIs, complete live Web operations,
 identity and authorization, stronger durable execution, operational telemetry
 exporters, storage backends beyond local defaults, and real user feedback.
@@ -42,11 +46,10 @@ Day 52-75: Beta answers "Can serious teams pilot it safely?"
 Day 76-90: v1.0 RC answers "Can the project make stable commitments?"
 ```
 
-This scope is enough for v1.0. The project should not expand into a hosted SaaS,
-general no-code builder, or broad marketplace before v1.0. The remaining work
-should harden the runtime that already exists: usability, durability, security,
-observability, storage backends, real provider integrations, eval persistence,
-and live operator workflows.
+The original v1.0 scope excluded a hosted SaaS, general no-code builder, and
+broad marketplace. The planned work hardened the existing runtime: usability,
+durability, security, observability, storage backends, real provider integrations,
+eval persistence, and live operator workflows.
 
 ## Completion Philosophy
 
@@ -120,6 +123,9 @@ Exit criteria:
 Closure summary: [Public Alpha Summary](public-alpha-summary.md).
 
 ## Stage 2: Beta Production Hardening
+
+Status: historical scope complete; see [Beta Summary](beta-summary.md) for
+verification and limitations. This is not acceptance of later hardening work.
 
 Suggested days:
 
@@ -208,6 +214,9 @@ Exit criteria:
 - Storage backends can be switched by configuration.
 
 ## Stage 3: v1.0 Release Candidate
+
+Status: historical scope complete; v1.0.0 published 2026-08-07. See the
+[release checklist](v1-release-checklist.md) for publication evidence.
 
 Suggested days:
 
@@ -357,15 +366,15 @@ Mitigation:
 - Make auth, RBAC, tenant/workspace scoping, audit logs, and permission tests
   Beta blockers.
 
-## Next Daily Work
+## Historical Kickoff
 
-The next normal work item should be:
+The first work item in this historical plan was:
 
 ```text
 Day 39: Public Alpha kickoff
 ```
 
-Suggested Day 39 focus:
+Original Day 39 focus:
 
 - Update release status docs after v0.1.0 publication.
 - Create Public Alpha tracking structure.

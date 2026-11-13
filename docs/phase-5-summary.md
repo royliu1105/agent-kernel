@@ -1,5 +1,9 @@
 # Phase 5 Summary: Agent Workbench Web UI
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Phase 5 is complete as a production-grade Web UI foundation:

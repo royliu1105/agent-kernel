@@ -70,6 +70,7 @@ from kernel_runtime import (
     RunExecutionService,
     RunNotFoundError,
     RunStateMachine,
+    create_default_model_router,
 )
 from kernel_runtime.queue import QueueUnavailableError, RunQueue
 from kernel_runtime.redis_support import (
@@ -222,6 +223,7 @@ def create_app(
     app.add_middleware(HttpMetricsMiddleware, metrics=process_metrics)
 
     runner = execution_service or RunExecutionService(
+        router=create_default_model_router(),
         metrics_recorder=process_metrics,
         tool_registry=registry,
     )

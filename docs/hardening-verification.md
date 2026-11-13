@@ -1,5 +1,10 @@
 # Capability Hardening Verification
 
+This is the historical P0-P5/R1-R10 evidence record. Subsequent N1-N5 bounded
+execution, approval continuation and retry-backoff evidence is tracked separately
+in the [capability hardening plan](capability-hardening-plan.md). The older green
+CI below does not verify later changes.
+
 Date: 2026-11-13. This record covers the P0-P5 batch over baseline
 `4684931`. The [canonical plan](capability-hardening-plan.md) owns scope/status.
 This is not a new release announcement or production certification.

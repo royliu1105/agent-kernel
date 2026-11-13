@@ -20,9 +20,10 @@ from uuid import UUID, uuid4
 
 from kernel_core import ChunkEmbedding, DocumentChunk, DocumentStatus, RunEventType, RunStatus
 from kernel_observability import InMemoryMetricsRecorder
-from kernel_providers import MockLLMProvider
+from kernel_providers import LLMMessage, LLMRequest, MessageRole, MockLLMProvider
 from kernel_rag.object_store import LocalObjectStore
-from kernel_runtime import ModelRouter, QueuedRunWorker, RunExecutionService
+from kernel_runtime import ExecutionLimits, ModelRouter, QueuedRunWorker, RunExecutionService
+from kernel_runtime.native_state import NativeState
 from kernel_runtime.queue import QueueFullError, QueueUnavailableError
 from kernel_runtime.redis_support import RedisSettings, create_redis_client, create_run_queue
 from kernel_storage import (
@@ -34,6 +35,7 @@ from kernel_storage import (
     IngestionJobRepository,
     KnowledgeBaseRepository,
     RunRepository,
+    WorkerLeaseRepository,
     WorkspaceRepository,
     create_session_factory,
 )
@@ -272,6 +274,27 @@ def _seed_backup_fixture(engine: Engine, root: Path) -> UUID:
             provider="fixture",
             model="restore-model",
         )
+        lease = WorkerLeaseRepository(session).acquire(
+            run_id=run.id,
+            worker_id="backup-fixture",
+            expected_status=RunStatus.CREATED,
+        )
+        assert lease is not None
+        RunRepository(session, lease_token=lease.lease_token).save_execution_checkpoint(
+            run.id,
+            NativeState(
+                run_id=run.id,
+                limits=ExecutionLimits(max_model_calls=3),
+                model_ref="mock:restore-model",
+                provider_name="mock",
+                model_calls=1,
+                request=LLMRequest(
+                    model="restore-model",
+                    messages=(LLMMessage(role=MessageRole.USER, content="private backup fixture"),),
+                ),
+            ).serialized(),
+        )
+        WorkerLeaseRepository(session).release(lease_token=lease.lease_token)
         kb = KnowledgeBaseRepository(session, workspace_id=workspace.id).create(name="restore")
         stored = store.write_document(
             knowledge_base_id=kb.id, filename="source.md", content=content
@@ -359,6 +382,19 @@ def run_backup_drill(url: str, *, pg_container: str | None = None) -> dict[str, 
             _pg_tool("pg_restore", restored_url, dump=dump, container=pg_container)
             verify_manifest(restored, root / "restored-objects", saved)
             with create_session_factory(restored)() as session:
+                payloads = session.scalars(
+                    text(
+                        "SELECT execution_checkpoint FROM runs "
+                        "WHERE execution_checkpoint IS NOT NULL"
+                    )
+                ).all()
+                if len(payloads) != 1:
+                    raise DrillError("Restored execution checkpoint is missing.")
+                checkpoint = NativeState.model_validate(payloads[0])
+                if checkpoint.model_calls != 1 or checkpoint.request.messages[0].content != (
+                    "private backup fixture"
+                ):
+                    raise DrillError("Restored private continuation content changed.")
                 hits = ChunkEmbeddingRepository(
                     session, vector_store_mode="pgvector"
                 ).similarity_search(
@@ -381,6 +417,7 @@ def run_backup_drill(url: str, *, pg_container: str | None = None) -> dict[str, 
                 "tables_verified": len(saved["database"]),
                 "objects_verified": len(saved["objects"]),
                 "pgvector_retrieval_verified": True,
+                "execution_checkpoint_verified": True,
                 "corruption_detected": corruption_detected,
                 "dump_checksum": saved["dump_checksum"],
             }

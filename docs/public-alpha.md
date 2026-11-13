@@ -1,16 +1,22 @@
 # Public Alpha Guide
 
+Historical Day 39-51 guide. Public Alpha and Beta are no longer the current
+development stage: v1.0.0 is published. Use the
+[capability hardening plan](capability-hardening-plan.md) for current work and
+the [release checklist](v1-release-checklist.md) for publication evidence.
+Status observations below belong to the Alpha checkpoint.
+
 Agent Kernel completed the Day 39-51 Public Alpha hardening milestone after the
 published `v0.1.0` foundation.
 
 Public Alpha is not a new product direction. It is the phase where the existing
 runtime is made easier for early users to try, inspect, and critique.
 
-## Current Status
+## Historical Alpha Checkpoint
 
 ```text
-Current release: v0.1.0
-Current track: Public Alpha complete; Beta hardening next
+Release at this checkpoint: v0.1.0
+Track at this checkpoint: Public Alpha complete; Beta hardening next
 Primary goal: make first-run experience and feedback loops reliable
 ```
 

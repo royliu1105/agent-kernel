@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from enum import StrEnum
 from typing import Any, Protocol
 
@@ -83,8 +84,25 @@ class LLMResponse(ProviderModel):
 class LLMProviderError(RuntimeError):
     """Base error raised by provider implementations."""
 
-    def __init__(self, message: str, *, error_type: str = "provider_error") -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        error_type: str = "provider_error",
+        retry_after_seconds: float | None = None,
+    ) -> None:
         self.error_type = error_type
+        self.retry_after_seconds: float | None = None
+        if isinstance(retry_after_seconds, (int, float)) and not isinstance(
+            retry_after_seconds, bool
+        ):
+            try:
+                seconds = float(retry_after_seconds)
+            except OverflowError:
+                pass
+            else:
+                if math.isfinite(seconds) and seconds >= 0:
+                    self.retry_after_seconds = max(0.0, seconds)
         super().__init__(message)
 
 

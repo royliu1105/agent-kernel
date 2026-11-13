@@ -135,7 +135,8 @@ Day 65 OpenAI native tool-call parsing:
   `error_type = openai_invalid_tool_call`.
 - Responses containing function calls use `finish_reason = tool_calls`.
 
-Day 66 model/tool/model provider interaction:
+Day 66 historical model/tool/model provider interaction (superseded by the
+unreleased bounded-loop contract below):
 
 - Runtime model requests can include provider-facing tool definitions and
   `tool_choice = auto`.
@@ -148,6 +149,22 @@ Day 66 model/tool/model provider interaction:
 - The run completes from the follow-up provider response.
 - Multiple tool calls, nested loops, streaming tool calls, and approval resume
   into a follow-up provider call remain deferred.
+
+Current unreleased model/tool/model contract:
+
+- Preserve original messages, complete assistant native output/reasoning,
+  unique native call IDs and correlated results across bounded rounds.
+- Keep the same tool definitions and `auto` choice for subsequent requests.
+  Serial batches run in provider order; a valid terminal `stop` response with
+  no pending tool calls is required for success.
+- Persist budgets, batch position and private history before approval pause;
+  a new executor resumes the approved tool, remaining batch and model loop.
+- Pin the provider/model once native history exists. Follow-up retries never
+  replay successful tools or silently switch provider. Initial fallback remains
+  bounded by the run-wide model-attempt budget.
+- Parallel/streaming tools, automatic replay after uncertain external effects
+  and paid live-provider certification remain outside this change. Design and
+  verification: [bounded native execution](bounded-native-execution.md).
 
 Day 67 provider-native regression evals:
 

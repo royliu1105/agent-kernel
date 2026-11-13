@@ -1,5 +1,9 @@
 # Agent Kernel Public Alpha Release Notes
 
+Historical announcement draft for the Day 39-51 milestone, not the current
+release status. v1.0.0 has since been [published](v1.0.0.md). Current work is
+tracked in the [capability hardening plan](../capability-hardening-plan.md).
+
 Status:
 
 ```text

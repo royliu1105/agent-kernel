@@ -3,20 +3,19 @@
 ## Current Follow-Up
 
 Use the [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
-for current work and status. The P0-P5 batch has passed scoped integration acceptance,
-including workspace isolation, execution ownership, external tools, backend
-drills and regression gates. Local deployment/monitoring rehearsals and remote
-CI for implementation `6c9fa92` pass; evidence is linked in the canonical plan.
+for current work and status. R1-R10 remediation passed scoped acceptance for
+`d65e833` after the earlier blanket acceptance was withdrawn. Subsequent N1-N4
+bounded-execution work has local verification; N5 tracks its separate
+current-commit CI gate. Evidence and explicit limits live in the canonical plan.
 No new release is implied. The earlier release targets below are historical scope, not
 evidence that every production guarantee is already implemented.
 
 ## Historical Release Targets
 
-This roadmap separates the published v0.1.0 foundation from Public Alpha, Beta,
-and v1.0 completion work.
+Both v0.1.0 and v1.0.0 are published. Public Alpha, Beta and Day 76-90 below
+record the historical route to v1.0, not the current development stage.
 
-See [Post-v0.1 Completion Plan](docs/post-v0.1-plan.md) for the canonical
-post-v0.1 execution plan.
+See [Post-v0.1 Completion Plan](docs/post-v0.1-plan.md) for that historical scope.
 
 ## v0.1.0 Release
 
@@ -64,6 +63,8 @@ Completed release hardening:
 
 ## Public Alpha
 
+Status: historical scope complete; see [Public Alpha Summary](docs/public-alpha-summary.md).
+
 Goal:
 
 ```text
@@ -71,7 +72,7 @@ An early external user can try Agent Kernel, understand the project, report
 issues, and give useful feedback without maintainer hand-holding.
 ```
 
-Planned improvements:
+Original stage scope (historical):
 
 - Public feedback channels and issue templates.
 - README and quickstart polish for first external users.
@@ -86,6 +87,8 @@ Planned improvements:
 
 ## Beta
 
+Status: historical scope complete; see [Beta Summary](docs/beta-summary.md).
+
 Goal:
 
 ```text
@@ -93,7 +96,7 @@ Agent Kernel is credible for internal production pilots and serious extension
 by other developers.
 ```
 
-Planned improvements:
+Original stage scope (historical):
 
 - Authentication baseline.
 - Authorization/RBAC baseline.
@@ -113,13 +116,16 @@ Planned improvements:
 
 ## v1.0
 
+Status: v1.0.0 published 2026-08-07. See the
+[release checklist](docs/v1-release-checklist.md) for the tag, commit and CI evidence.
+
 Goal:
 
 ```text
 Stable self-hosted production-grade open-source AI Agent runtime.
 ```
 
-v1.0 must include:
+Original v1.0 delivery requirements (subject to the recorded release limitations):
 
 - Stable public API and CLI compatibility contract.
 - Durable execution across worker restarts.
@@ -135,7 +141,9 @@ v1.0 must include:
 
 ## Later Production Hardening
 
-Potential future work:
+Original beyond-v1.0 backlog, not a current pending-work checklist. Some retrieval
+and external-tool capabilities have since landed; use the canonical hardening
+plan for their implementation status, acceptance and remaining limits.
 
 - Hybrid retrieval with BM25.
 - RRF and reranking.

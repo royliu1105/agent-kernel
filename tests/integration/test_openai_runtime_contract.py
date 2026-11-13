@@ -191,8 +191,8 @@ async def test_native_tool_round_trip_uses_responses_wire_contract(
         assert result["tool_name"] == "contract_read"
         assert result["result"] == {"value": "fixture-result", "key": "alpha"}
         assert UUID(result["tool_call_id"])
-        assert "tools" not in payload
-        assert payload["tool_choice"] == "none"
+        assert payload["tools"] == requests[0]["tools"]
+        assert payload["tool_choice"] == "auto"
         if len(requests) - 1 <= failures:
             if failure_kind == "unauthorized":
                 return httpx.Response(401, json={"error": {"code": "invalid_api_key"}})

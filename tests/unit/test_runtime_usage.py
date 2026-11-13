@@ -19,8 +19,19 @@ class PaidNativeProvider(MockLLMProvider):
     def __init__(self, tool_name: str) -> None:
         super().__init__()
         self.tool_name = tool_name
+        self.calls = 0
 
     async def complete(self, request: LLMRequest) -> LLMResponse:
+        self.calls += 1
+        if self.calls > 1:
+            assert self.calls == 2
+            assert request.messages[-1].role.value == "tool"
+            return LLMResponse(
+                provider=self.name,
+                model=request.model,
+                text="approved result synthesized",
+                usage=LLMUsage(input_tokens=10, output_tokens=2, estimated_cost=0.25),
+            )
         return LLMResponse(
             provider=self.name,
             model=request.model,
@@ -79,14 +90,15 @@ async def test_usage_survives_native_failure_and_approval_resume(
             assert result.status is RunStatus.SUCCEEDED
         else:
             assert result.status is RunStatus.FAILED
+        response_count = 2 if tool_name == "echo" else 1
         assert repo.usage_summary() == {
             "run_count": 1,
-            "input_tokens": 10,
-            "output_tokens": 2,
-            "estimated_cost": 0.25,
+            "input_tokens": 10 * response_count,
+            "output_tokens": 2 * response_count,
+            "estimated_cost": 0.25 * response_count,
         }
         models = repo.usage_breakdown(group_by="model", run_id=run.id)
         assert len(models) == 1
         assert models[0]["provider"] == "mock"
-        assert models[0]["estimated_cost"] == 0.25
-        assert models[0]["input_tokens"] == 10
+        assert models[0]["estimated_cost"] == 0.25 * response_count
+        assert models[0]["input_tokens"] == 10 * response_count

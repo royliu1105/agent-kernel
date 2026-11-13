@@ -1,23 +1,36 @@
 # v1.0 Release Checklist
 
-This checklist is the final gate for publishing Agent Kernel v1.0.
+This checklist records the historical gates and publication of Agent Kernel v1.0.
 
 Current status:
 
 ```text
-local verification complete; publication pending release commit, GitHub CI, tag, and GitHub Release
+v1.0.0 published 2026-08-07; publication evidence reconciled 2026-11-14
 ```
 
-Do not tag or publish v1.0 until every required item is checked, fixed, or
-explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
+Verified against the existing GitHub release, annotated tag and Actions run:
+
+- Release commit: `46849314d9f7740729fa9b3535fe06e9554366b6`.
+- Annotated tag object: `e797623707c3e888989255c4b5f008fc8a7e1ac8` (`v1.0.0`).
+- [GitHub Release](https://github.com/royliu1105/agent-kernel/releases/tag/v1.0.0):
+  published `2026-08-07T11:29:59Z`; neither draft nor prerelease.
+- [Release commit CI](https://github.com/royliu1105/agent-kernel/actions/runs/31122498218): success.
+
+Local results below retain the recorded Day 90 scope. Unchecked historical items
+mean evidence was not reconstructed, not that publication is still pending.
+Publishing does not prove that every historical process check was performed.
+The original release rules and waivers are in [v1.0 Scope Freeze](v1-scope-freeze.md).
+Current unreleased work has separate gates in the
+[capability hardening plan](capability-hardening-plan.md). This correction neither
+creates a release nor retroactively adds new capabilities to the v1.0.0 tag.
 
 ## Release Identity
 
 - [x] Final version string is confirmed.
-- [ ] Target commit SHA is recorded.
-- [ ] Release branch is up to date with the target branch.
-- [ ] Working tree is clean before tagging.
-- [ ] GitHub CI is green on the release commit.
+- [x] Target commit SHA is recorded above and matches the annotated tag.
+- [ ] Release branch was up to date before tagging: historical evidence unavailable.
+- [ ] Working tree was clean before tagging: historical evidence unavailable.
+- [x] GitHub CI is green on the release commit (run linked above).
 
 ## Scope Freeze
 
@@ -45,7 +58,7 @@ explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
 - [x] `make release-load-soak`
 - [x] `docker compose config`
 - [x] `AGENT_KERNEL_API_PORT=8011 AGENT_KERNEL_WEB_PORT=3011 AGENT_KERNEL_POSTGRES_PORT=55432 AGENT_KERNEL_REDIS_PORT=56379 docker compose config`
-- [ ] `git diff --check`
+- [x] `git diff --check` was recorded as passed in [Day 90](daily/day-90.md).
 
 ## Required Web Gates
 
@@ -111,13 +124,16 @@ explicitly waived according to [v1.0 Scope Freeze](v1-scope-freeze.md).
 - [x] Docs consistency audit exists.
 - [x] v1.0 scope freeze exists.
 - [x] v1.0 release notes exist.
-- [x] README, docs index, roadmap, and quickstart match the final v1.0 state.
+- [x] README, docs index, roadmap and phase publication status were reconciled
+  on 2026-11-14; stale pre-publication text was found and corrected. Historical
+  release notes are distinguished from current quickstart/operator guidance.
 - [x] Known limitations in release notes match the scope freeze.
 - [x] Upgrade notes in release notes match the migration policy.
 
 ## Accepted v1.0 Limitations
 
-Before release, verify that these limitations are present in release notes:
+These are the limitations recorded for the published tag, not a list of current
+branch limitations. Some have since been addressed by unreleased hardening:
 
 - [x] API-key auth is disabled by default for local quickstart compatibility.
 - [x] Browser login, OIDC, SSO, and password auth are not included.
@@ -136,7 +152,7 @@ Before release, verify that these limitations are present in release notes:
 
 ## Deferred Non-Blocking Scope
 
-These items must not block v1.0:
+These items were explicitly outside the v1.0 release scope:
 
 - [x] Hosted multi-tenant SaaS.
 - [x] Multi-region managed cloud deployment.
@@ -167,12 +183,13 @@ These items must not block v1.0:
 
 ## Tagging and Publication
 
-- [ ] Create annotated tag `v1.0.0`.
-- [ ] Push release commit.
-- [ ] Push tag.
-- [ ] Confirm GitHub CI is green after push.
-- [ ] Create GitHub release from `docs/releases/v1.0.0.md`.
-- [ ] Verify release page renders expected notes.
+- [x] Annotated tag `v1.0.0` exists and resolves to the release commit.
+- [x] Release commit is present on GitHub.
+- [x] Tag is present on GitHub.
+- [x] GitHub CI for the pushed release commit succeeded.
+- [x] GitHub release exists with the v1.0 notes; API metadata and body verified.
+- [ ] Visual release-page rendering was not rechecked in this reconciliation;
+  API verification alone does not establish browser rendering.
 
 ## Post-Release
 
@@ -180,4 +197,4 @@ These items must not block v1.0:
 - [ ] Open any waiver follow-up issues.
 - [ ] Record first-user feedback channel.
 - [ ] Monitor dependency advisories after release.
-- [ ] Update roadmap with v1.x priorities.
+- [x] Roadmap points to the current post-v1.0 hardening plan and its acceptance gates.

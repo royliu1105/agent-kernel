@@ -6,8 +6,8 @@ coverage.
 
 ## Current Status
 
-Auth/RBAC is implemented as a v1.0 RC security baseline for self-hosted
-deployments.
+Auth/RBAC is implemented for self-hosted deployments. The current boundary
+includes post-v1.0 hardening; historical release notes describe older tags.
 
 Implemented:
 
@@ -21,8 +21,13 @@ Implemented:
 - Route-level permission checks.
 - Workspace-scoped agents and runs.
 - Workspace-scoped approval access and approval decisions.
-- Post-v1.0 P1.1 knowledge-base ownership and derived document/chunk/embedding/
+- Knowledge-base ownership and derived document/chunk/embedding/
   ingestion scope, including trusted Run scope in `kb_search`.
+- Workspace-owned memory and eval records, with legacy NULL-owned records hidden
+  from authenticated workspaces.
+- Run-derived tool calls, run events, and workspace-filtered usage APIs.
+- Separate conditional monitoring-token authorization for API metrics and an
+  opt-in private Worker metrics listener.
 
 Still deferred:
 
@@ -33,8 +38,6 @@ Still deferred:
 - Multi-workspace selector in Web.
 - Fine-grained custom roles.
 - Public hosted SaaS tenant isolation guarantees.
-- Final object-level scoping audit for memory, tool calls, evals and
-  observability records (P1.2/P1.3).
 
 ## Enable API Key Auth
 
@@ -80,7 +83,8 @@ Use HTTPS outside localhost and send credentials only to a trusted API URL.
 
 When auth is enabled:
 
-- `/healthz` stays public.
+- `/healthz` and `/readyz` stay public probe endpoints.
+- `/metrics` uses a separate monitoring-token check, not workspace-key auth.
 - Missing API keys return `401`.
 - Invalid, revoked, expired, or disabled-principal keys return `401`.
 - Valid keys load the principal, API key, workspace id, and memberships into the
@@ -96,7 +100,7 @@ Principal:
 
 Workspace:
 
-- Primary Beta resource boundary.
+- Primary self-hosted application resource boundary.
 - API keys are issued inside one workspace.
 - The API key workspace is the current request workspace.
 
@@ -204,10 +208,15 @@ Runtime memory retrieval uses the persisted Run workspace, not user/model input.
 API responses expose ownership for inspection, not as a client-selectable scope.
 
 Operational metrics are process-wide, low-cardinality and not tenant data APIs.
-Authenticated deployments require a separate monitoring token for `/metrics`;
-ordinary workspace keys cannot scrape it. Protect logs/traces at the deployment
-layer and do not give tenant users collector access. `/healthz` and sanitized
-dependency `/readyz` remain probe endpoints, not record-query interfaces.
+API `/metrics` requires `AGENT_KERNEL_MONITORING_TOKEN` whenever API-key auth is
+enabled or a token is configured. Auth enabled without a token fails closed
+with HTTP 401; only auth disabled with no token allows unauthenticated scraping.
+Use `Authorization: Bearer <monitoring-token>`, not an ordinary workspace key.
+Worker metrics are independently opt-in and require a token for non-loopback
+binds. See [Production Configuration](production-config.md#worker-metrics).
+Protect logs/traces at the deployment layer and do not give tenant users
+collector access. `/healthz` and sanitized dependency `/readyz` remain probe
+endpoints, not record-query interfaces.
 
 Optional `AGENT_KERNEL_RATE_LIMIT_REQUESTS` enables a shared Redis fixed window
 for authenticated requests per workspace, across keys and API replicas. Denied
@@ -277,6 +286,10 @@ Auth and RBAC test anchors:
 | CLI key transport | `tests/unit/test_cli_commands.py` |
 | SQLite upgrade and ownership assignment | `tests/unit/test_migrations.py` |
 | Real pgvector scope, fresh/legacy upgrade | `tests/integration/test_pgvector_workspace_scope.py` (opt-in locally; required in CI) |
+| Memory/eval isolation, legacy quarantine, and trusted runtime memory scope | `tests/integration/test_memory_eval_isolation.py` |
+| Run-derived tool/event isolation and workspace usage | `tests/integration/test_operational_scope.py` |
+| API monitoring-token separation | `tests/unit/test_api_auth.py` |
+| Worker monitoring-token validation and listener lifecycle | `tests/unit/test_observability_http.py` |
 
 Recommended security regression command:
 
@@ -287,8 +300,12 @@ uv run pytest \
   tests/unit/test_api_auth.py \
   tests/unit/test_storage_repositories.py \
   tests/unit/test_approval_repository.py \
+  tests/unit/test_observability_http.py \
   tests/integration/test_api_approvals.py \
-  tests/integration/test_api_run_lifecycle.py
+  tests/integration/test_api_run_lifecycle.py \
+  tests/integration/test_knowledge_workspace_isolation.py \
+  tests/integration/test_memory_eval_isolation.py \
+  tests/integration/test_operational_scope.py
 ```
 
 ## Production Guidance
@@ -303,7 +320,7 @@ Do:
 
 Do not:
 
-- Deploy as a public multi-tenant SaaS on the current Beta baseline.
+- Treat these self-hosted controls as public multi-tenant SaaS certification.
 - Store plaintext API keys.
 - Add broad write routes without permission checks.
 - Add new workspace-scoped resources without repository and API cross-workspace
@@ -313,10 +330,10 @@ Do not:
 
 Follow the [capability hardening plan](capability-hardening-plan.md):
 
-- Finish P1.1 verification before claiming knowledge isolation accepted.
-- Scope memory and eval records in P1.2.
-- Decide whether tool calls need direct `workspace_id` or should stay derived
-  through runs.
+- Keep knowledge, memory, eval, and Run-derived resource isolation regressions
+  passing, including PostgreSQL/pgvector checks in CI.
+- Review new resources and mutation paths for authenticated scope before reads,
+  writes, object-store access, or provider calls.
 - Add Web authentication or API key configuration for live Workbench calls.
 - Add audit export or persisted authorization-decision records if production
   operators need compliance-style review.

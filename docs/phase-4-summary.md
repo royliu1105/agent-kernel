@@ -1,5 +1,9 @@
 # Phase 4 Summary: Observability and Evals
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Phase 4 is complete as a production-grade foundation:

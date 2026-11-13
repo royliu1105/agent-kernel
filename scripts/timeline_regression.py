@@ -143,19 +143,17 @@ class _FixtureProvider:
         )
         _require(request.messages[0].content == "timeline fixture", "task content changed")
         _require(request.model == "small", "routed model changed")
+        _require(request.tool_choice is LLMToolChoice.AUTO, "tool choice changed")
+        _require(len(request.tools) == 1, "tool definitions missing")
+        _require(request.tools[0].name == "fixture_read", "tool name changed")
+        _require(
+            request.tools[0].input_schema == {"type": "object", "additionalProperties": False},
+            "tool schema changed",
+        )
         if not followup:
-            _require(request.tool_choice is LLMToolChoice.AUTO, "initial tool choice changed")
-            _require(len(request.tools) == 1, "initial tool definitions missing")
-            _require(request.tools[0].name == "fixture_read", "initial tool name changed")
-            _require(
-                request.tools[0].input_schema == {"type": "object", "additionalProperties": False},
-                "initial tool schema changed",
-            )
             return
 
         _require(self.calls == 2, "unexpected model call after tool result")
-        _require(not request.tools, "follow-up must not expose more tools")
-        _require(request.tool_choice is LLMToolChoice.NONE, "follow-up tool choice changed")
         assistant, result = request.messages[1:]
         _require(assistant.content == "", "assistant content changed")
         _require(

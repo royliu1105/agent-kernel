@@ -1,5 +1,9 @@
 # Public Alpha Summary: Day 39-51
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Public Alpha is complete as an early-user hardening milestone:

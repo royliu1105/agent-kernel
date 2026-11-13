@@ -2,6 +2,11 @@
 
 This directory tracks daily execution plans.
 
+Day 1-90 files are historical delivery records through the published v1.0.0
+release. Current post-v1.0 work uses the
+[capability hardening plan](../capability-hardening-plan.md), with separate
+implementation and verification gates; do not restart at an old daily prompt.
+
 Use daily plans for short-lived implementation checklists. Use [Milestones](../milestones.md) for phase-level progress and [Development Plan](../development-plan.md) for the overall delivery method.
 
 ## Rules

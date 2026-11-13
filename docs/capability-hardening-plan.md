@@ -2,7 +2,8 @@
 
 ## Status and Authority
 
-Status: **scoped remediation accepted; unreleased (2026-11-13)**.
+Status: **R1-R10 scoped remediation accepted; N1-N4 locally verified,
+N5 remote gate pending; unreleased (2026-11-14)**.
 Reopened after independent audit; the previous blanket
 acceptance was withdrawn. Historical implementation commit
 `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51` passed
@@ -16,6 +17,98 @@ Acceptance applies only to the documented self-hosted scope and explicit limits;
 it is not production certification or evidence that deferred capabilities exist.
 Retain the Python backend and TypeScript Web stack. This is not a new release.
 
+## Active Follow-Up: Bounded Agent Execution
+
+Authorized after the scoped R1-R10 closure: first correct current operator docs,
+then implement bounded multi-round execution, persisted approval continuation and
+retry backoff. Historical acceptance of `d65e833` does not accept this new work.
+Follow-up authorization (2026-11-14): correct README, historical phase status
+and v1.0 publication records, then commit this batch, push to `origin/master`
+and track/fix its CI. This does not authorize paid provider calls, a new tag or
+a release. Keep N5 pending until the pushed implementation's own CI passes.
+
+| ID | Required delivery | Implementation | Verification |
+| --- | --- | --- | --- |
+| N1 | Reconcile current production/security guides with actual monitoring auth, Worker metrics, object scope and embedding selection; preserve versioned release history. | Implemented | Local docs/configuration regressions passed; historical release records preserved |
+| N2 | Bounded native model/tool rounds and serial multi-call batches; validate call IDs/history, enforce configured budgets, record usage and preserve lease fencing. | Implemented | Local round/batch/budget/ID/timeout/usage regressions passed |
+| N3 | Internal durable checkpoint, migration and approval continuation after reopening storage/new executor; repeated approvals, rejection, missing/invalid state, cross-workspace access and concurrent resume covered. | Implemented | SQLite/PostgreSQL migrations, concurrent/repeated resume and Worker-to-default-API wire/scope contracts passed |
+| N4 | Cancellable capped exponential backoff with jitter and safe Retry-After parsing; apply only to eligible provider/read-only tool retries without write replay or unsafe model fallback. | Implemented | Delay/parser/runtime cancellation/lease contracts passed; fallback cooldown bypass repaired and regression-tested |
+| N5 | Focused regressions, SQLite/PostgreSQL migrations/ownership, full local gates, evals and disposable deployment checks; separately record remote CI when authorized. | Local gates complete; remote pending | 1078 main + 1 restore + 4 deployment Python tests passed, zero skips in these runs; eval/Web gates passed. No new remote CI |
+
+Design/acceptance contract: [bounded native execution](specs/bounded-native-execution.md).
+Update each row only after its evidence exists. Real-provider quality, deployment
+capacity, S3 restore and a new release remain separate gates, not silently completed.
+
+### N1-N5 Local Verification (2026-11-13)
+
+At this local checkpoint, the follow-up was uncommitted on `d00af5f`; the evidence
+does not come from the historical R1-R10 CI run. The results below establish
+local verification only. The subsequent commit/push authorization above does
+not itself establish a green current CI or authorize release acceptance.
+
+| Gate | Result |
+| --- | --- |
+| `ruff check .` / `mypy .` | Passed; 218 typechecked source files |
+| Changed/new Python format checks / `git diff --check` | Passed; 30 Python files checked |
+| Main Python suite with disposable PostgreSQL, Redis and promtool | 1078 passed, zero skipped; only the separately executed restore/deployment files excluded |
+| Guarded real PostgreSQL backup/restore | 1 passed; nonempty private checkpoint, usage rows, vectors and matching local objects preserved |
+| Final rebuilt Compose HTTP + monitoring contracts | 4 passed; API/Worker/Redis/PG, MCP approval, scrape/auth, Grafana, alert firing/clearing and Worker restart |
+| Container Alembic revision | `0019_execution_checkpoint (head)` |
+| `make release-eval` | RAG 3/3 + 4/4, tool eval tests 2/2, continuation/backoff/wire/deadline 71/71 SQLite cases, timelines 7/7 |
+| PostgreSQL continuation cases omitted by the cheap eval subset | 13 intentionally deselected there; executed successfully by the full backend suite, not silently skipped |
+| Web typecheck / production build / Playwright | Passed / passed / 2 passed; no Web source changes |
+| Remote CI / paid provider smoke at this checkpoint | Not executed at the 2026-11-13 local checkpoint; CI was subsequently authorized on 2026-11-14, paid smoke remains outside scope |
+
+All disposable containers, the Compose network/test volumes and the temporary
+monitoring token file were removed after verification. Existing unrelated
+containers and repository source data were not deleted; built images remain.
+
+The optional whole-repository format probe also found six pre-existing,
+unmodified files that would be reformatted. They were left untouched to avoid
+unrelated churn; full Ruff lint passes, and all files changed in this work pass
+format checking. This is not a claim that the whole repository is format-clean.
+
+Regression anchors: `test_bounded_native_execution.py`,
+`test_execution_checkpoint_storage.py`, `test_native_continuation_wire.py`,
+`test_runtime_backoff.py`, `test_execution_budget_edges.py`,
+`test_execution_limits.py`, `test_retry_delay.py`, `test_provider_retry_after.py`
+and the expanded CLI/docs/restore tests. Independent review reproduced and then
+verified fixes for cancellation-resistant deadline waits, cooldown bypass during
+initial fallback and lost usage at the active-time boundary. Entry-point review
+also fixed the default API's missing model router and CLI resume's 10-second wait.
+
+Explicit remaining boundaries:
+
+- Native batches are serial, not parallel/streaming or an atomic external transaction.
+- Approval resume is a bounded synchronous HTTP segment; approval alone does not
+  enqueue it. Background queued resume remains separate work.
+- Unknown effects after a crash/timeout require review, never automatic write replay.
+- In-process cancellation cannot force-kill arbitrary adapter code; late results
+  are discarded and the run/lease ends, but process isolation remains necessary
+  for untrusted adapters.
+- Observed usage/cost ceilings are not guaranteed billing caps; the built-in
+  OpenAI adapter reports zero estimated cost without a pricing implementation.
+- Paid live-model quality, production capacity, S3 restore and new release work
+  retain their separate validation/authorization requirements.
+
+### Publication-Status Reconciliation (2026-11-14)
+
+- Verified the existing v1.0.0 release metadata/body, annotated tag target and
+  successful release-commit CI. Evidence is in the
+  [v1.0 checklist](v1-release-checklist.md); no tag or release was changed.
+- Corrected README, roadmap, plan/index status and historical phase banners.
+  Historical test counts/limitations remain snapshots; unreconstructed
+  pre-tag process checks are explicitly unchecked, not invented.
+- Added 26 publication/status regressions: docs consistency now passes 55
+  cases. The focused docs/limits/backoff/provider/CLI/migration run passed 268
+  cases; these overlap the earlier suite and are not an additional full run.
+- Reran Ruff, mypy (218 source files), `git diff --check` and `make release-eval`:
+  all passed. The cheap eval subset still intentionally deselects 13 PostgreSQL
+  cases; backend/deployment evidence remains the separate local record above
+  until the new remote CI gate runs.
+- Commit/push and exact-commit CI tracking are authorized; remote acceptance
+  is still pending and must be recorded only after successful completion.
+
 Batch execution authorization (2026-11-13): the maintainer requested continuous
 implementation of the remaining 13 packages and approved parallel sub-agents.
 Local gates were checked per increment; remote CI did not stop unrelated
@@ -24,8 +117,9 @@ of the reopened work.
 This supersedes instructions below to wait for P1.1 CI before starting P1.2.
 Historical follow-up authorization on 2026-11-13 permitted the first batch's
 commit, push to `origin/master`, and CI tracking/fixes. The maintainer separately
-authorized commit/push and CI tracking for the current remediation after the
-local gates passed. No new tag or release is authorized.
+authorized commit/push and CI tracking for the R1-R10 remediation ending at
+`d65e833`, after its local gates passed. N1-N5 has its own 2026-11-14 authorization
+recorded above. No new tag or release is authorized.
 Parent agent owns isolation,
 execution reliability, integration and final verification; delegated work owns
 observability, external tools, backend drills and regression tooling separately.

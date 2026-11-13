@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 from collections.abc import Mapping
 from copy import deepcopy
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
+from time import time
 from typing import Any
 
 import httpx
@@ -25,6 +30,17 @@ from kernel_providers.base import (
 
 OPENAI_API_KEY_ENV = "OPENAI_API_KEY"
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+
+_HTTP_DAY = r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)"
+_HTTP_MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
+_HTTP_TIME = r"[0-9]{2}:[0-9]{2}:[0-9]{2}"
+_HTTP_DATE = re.compile(
+    rf"(?:{_HTTP_DAY}, [0-9]{{2}} {_HTTP_MONTH} (?P<year>[0-9]{{4}}) {_HTTP_TIME} GMT"
+    rf"|(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), "
+    rf"[0-9]{{2}}-{_HTTP_MONTH}-[0-9]{{2}} {_HTTP_TIME} GMT"
+    rf"|{_HTTP_DAY} {_HTTP_MONTH} (?:[0-9]{{2}}| [0-9]) {_HTTP_TIME} "
+    rf"(?P<asctime_year>[0-9]{{4}}))"
+)
 
 
 def get_openai_api_key(env: Mapping[str, str] | None = None) -> str | None:
@@ -87,6 +103,7 @@ class OpenAIProvider:
             raise LLMProviderError(
                 f"OpenAI API returned {error.response.status_code}.",
                 error_type=_status_error_type(error.response),
+                retry_after_seconds=_retry_after_seconds(error.response),
             ) from error
         except httpx.TimeoutException as error:
             raise LLMProviderError(
@@ -287,6 +304,39 @@ def _valid_text_parts(value: object, fields: dict[str, str]) -> bool:
         and isinstance(part.get(fields[part["type"]]), str)
         for part in value
     )
+
+
+def _retry_after_seconds(response: httpx.Response) -> float | None:
+    values = response.headers.get_list("retry-after")
+    if len(values) != 1:
+        return None
+    value = values[0].strip(" \t")
+    if value.isascii() and value.isdecimal():
+        seconds = float(value)
+        return seconds if math.isfinite(seconds) else None
+    # The email parser alone also accepts non-HTTP dates and trailing garbage.
+    match = _HTTP_DATE.fullmatch(value)
+    if match is None:
+        return None
+    try:
+        now = datetime.fromtimestamp(time(), UTC)
+        date = parsedate_to_datetime(value)
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=UTC)
+        year = match.group("year") or match.group("asctime_year")
+        if year is not None:
+            # email.utils applies its two-digit pivot even to years like 0000.
+            date = date.replace(year=int(year))
+        else:
+            # HTTP's obsolete two-digit years use a rolling 50-year future limit.
+            limit = now.year + 50
+            target_year = limit - (limit - date.year % 100) % 100
+            if target_year == limit and date.timetuple()[1:6] > now.timetuple()[1:6]:
+                target_year -= 100
+            date = date.replace(year=target_year)
+        return max(0.0, (date - now).total_seconds())
+    except (OverflowError, OSError, TypeError, ValueError):
+        return None
 
 
 def _status_error_type(response: httpx.Response) -> str:

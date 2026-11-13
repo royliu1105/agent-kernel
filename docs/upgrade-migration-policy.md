@@ -2,7 +2,7 @@
 
 ## Post-v1.0 Hardening Upgrade
 
-Unreleased head: `0018_usage_attribution`. Stop API writers and all workers,
+Unreleased head: `0019_execution_checkpoint`. Stop API writers and all workers,
 take a verified backup, then run `uv run alembic upgrade head` before deploying
 the new application. Do not mix old workers (without fencing) with new workers.
 
@@ -14,6 +14,18 @@ the new application. Do not mix old workers (without fencing) with new workers.
   usage ledger. Historical totals become `unknown` model/provider rows; historical
   principals stay null, never inferred from input JSON. Downgrade drops detailed
   attribution, preserving Run totals; back up before any downgrade.
+- `0019_execution_checkpoint`: nullable private native continuation JSON on
+  Runs. Existing records are retained with no invented history. Legacy native
+  approvals without a checkpoint fail closed on resume; inspect effects and
+  create a deliberately reviewed new run. Explicit-tool approvals are unchanged.
+  Downgrade irreversibly drops continuation history; do not downgrade with
+  pending native approvals. Stop all writers, back up and prefer a verified
+  restore. Do not mix pre-checkpoint and new executors during this upgrade.
+
+Checkpoints contain task, tool results and provider reasoning payloads. Protect
+database backups accordingly; they are private storage, not Run API fields or
+log/metric payloads. Current continuation requires the original provider route
+and tool contracts. Changing either can deliberately prevent a pending resume.
 
 Real embeddings now require explicit `AGENT_KERNEL_EMBEDDING_PROVIDER=openai`
 on both API and Worker. Default mock behavior is preserved. Switching provider,

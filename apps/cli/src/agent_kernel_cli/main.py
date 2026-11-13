@@ -203,6 +203,15 @@ def resume_run(
         UUID | None,
         typer.Option("--approval-id", help="Approval ID to resume from."),
     ] = None,
+    timeout_seconds: Annotated[
+        int,
+        typer.Option(
+            "--timeout-seconds",
+            min=1,
+            max=86460,
+            help="HTTP wait timeout; does not change server execution limits.",
+        ),
+    ] = 330,
     api_url: Annotated[
         str,
         typer.Option("--api-url", help="Agent Kernel API base URL."),
@@ -218,6 +227,7 @@ def resume_run(
         f"/v1/runs/{run_id}/resume",
         api_url=_resolve_api_url(api_url),
         json_payload=payload,
+        timeout_seconds=timeout_seconds,
     )
     _echo_json(response)
 
@@ -877,10 +887,11 @@ def _request_json(
     *,
     api_url: str,
     json_payload: dict[str, object] | None = None,
+    timeout_seconds: float = 10.0,
 ) -> object:
     url = f"{api_url}{path}"
     try:
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=timeout_seconds) as client:
             _authenticate_client(client)
             response = client.request(method, url, json=json_payload)
             response.raise_for_status()

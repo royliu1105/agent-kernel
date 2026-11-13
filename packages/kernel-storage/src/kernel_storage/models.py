@@ -163,6 +163,7 @@ class RunRecord(Base):
         "input", JSON, nullable=False, default=dict
     )
     output_payload: Mapped[dict[str, Any] | None] = mapped_column("output", JSON, nullable=True)
+    execution_checkpoint: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     error_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     error_message: Mapped[str | None] = mapped_column(String(4000), nullable=True)

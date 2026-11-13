@@ -6,6 +6,7 @@ from kernel_runtime.execution import (
     RunExecutionService,
     RunNotFoundError,
 )
+from kernel_runtime.native_state import ExecutionLimits
 from kernel_runtime.prompts import PromptRegistry, PromptVersion
 from kernel_runtime.provider_tool_calls import persist_provider_tool_calls
 from kernel_runtime.provider_tools import (
@@ -24,7 +25,13 @@ from kernel_runtime.recovery import (
     StuckRunRecoveryResult,
     StuckRunRecoveryService,
 )
-from kernel_runtime.router import ModelRoute, ModelRouter, UnknownModelRouteError
+from kernel_runtime.retry import RetryDelayPolicy
+from kernel_runtime.router import (
+    ModelRoute,
+    ModelRouter,
+    UnknownModelRouteError,
+    create_default_model_router,
+)
 from kernel_runtime.state_machine import (
     InvalidRunTransitionError,
     RunStateMachine,
@@ -36,6 +43,7 @@ __all__ = [
     "InvalidRunTransitionError",
     "ModelRoute",
     "ModelRouter",
+    "create_default_model_router",
     "PromptRegistry",
     "PromptVersion",
     "tool_metadata_to_llm_tool_definition",
@@ -46,6 +54,8 @@ __all__ = [
     "RedisQueueClient",
     "RedisRunQueue",
     "RetryPolicy",
+    "ExecutionLimits",
+    "RetryDelayPolicy",
     "RunExecutionError",
     "RunExecutionService",
     "RunQueue",

@@ -488,8 +488,8 @@ async def test_execution_service_completes_provider_native_tool_loop(
     assert provider.call_count == 2
     assert provider.requests[0].tools[0].name == "echo"
     assert provider.requests[0].tool_choice is LLMToolChoice.AUTO
-    assert provider.requests[1].tools == ()
-    assert provider.requests[1].tool_choice is LLMToolChoice.NONE
+    assert provider.requests[1].tools == provider.requests[0].tools
+    assert provider.requests[1].tool_choice is LLMToolChoice.AUTO
     assert provider.requests[1].messages[-1].role is MessageRole.TOOL
     assert provider.requests[1].messages[-1].name == "echo"
     assert "native hello" in provider.requests[1].messages[-1].content

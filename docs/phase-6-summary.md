@@ -1,5 +1,9 @@
 # Phase 6 Summary: v0.1 Release Hardening
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Phase 6 is complete as a v0.1 published release foundation:

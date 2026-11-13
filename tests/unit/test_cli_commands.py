@@ -209,8 +209,12 @@ def test_run_queue_and_cancel_cli_use_transition_endpoints(
     ]
 
 
-def test_run_resume_cli_uses_resume_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[tuple[str, str, dict[str, object] | None]] = []
+@pytest.mark.parametrize("wait_seconds", [None, 600])
+def test_run_resume_cli_uses_resume_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    wait_seconds: int | None,
+) -> None:
+    calls: list[tuple[str, str, dict[str, object] | None, float]] = []
 
     def fake_request_json(
         method: str,
@@ -218,24 +222,64 @@ def test_run_resume_cli_uses_resume_endpoint(monkeypatch: pytest.MonkeyPatch) ->
         *,
         api_url: str,
         json_payload: dict[str, object] | None = None,
+        timeout_seconds: float = 10,
     ) -> object:
-        calls.append((method, path, json_payload))
+        calls.append((method, path, json_payload, timeout_seconds))
         return {"id": path.split("/")[3], "status": "succeeded"}
 
     monkeypatch.setattr(cli_main, "_request_json", fake_request_json)
     run_id = "00000000-0000-0000-0000-000000000005"
     approval_id = "00000000-0000-0000-0000-000000000006"
+    options = [] if wait_seconds is None else ["--timeout-seconds", str(wait_seconds)]
 
     result = CliRunner().invoke(
         cli_main.app,
-        ["run", "resume", run_id, "--approval-id", approval_id],
+        ["run", "resume", run_id, "--approval-id", approval_id, *options],
     )
 
     assert result.exit_code == 0
     assert calls == [
-        ("POST", f"/v1/runs/{run_id}/resume", {"approval_id": approval_id}),
+        ("POST", f"/v1/runs/{run_id}/resume", {"approval_id": approval_id}, wait_seconds or 330),
     ]
     assert '"status": "succeeded"' in result.output
+
+
+@pytest.mark.parametrize("timeout", ["0", "-1", "86461", "nan"])
+def test_resume_cli_rejects_invalid_wait_timeout(timeout: str) -> None:
+    result = CliRunner().invoke(
+        cli_main.app,
+        [
+            "run",
+            "resume",
+            "00000000-0000-0000-0000-000000000005",
+            "--timeout-seconds",
+            timeout,
+        ],
+    )
+    assert result.exit_code == 2
+
+
+def test_json_client_receives_configured_wait_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[float] = []
+    original_client = httpx.Client
+
+    def client(*, timeout: float) -> httpx.Client:
+        calls.append(timeout)
+        return original_client(
+            timeout=timeout,
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(200, json={"status": "succeeded"})
+            ),
+        )
+
+    monkeypatch.setattr(httpx, "Client", client)
+    assert cli_main._request_json(
+        "POST",
+        "/v1/runs/fixture/resume",
+        api_url="http://testserver",
+        timeout_seconds=600,
+    ) == {"status": "succeeded"}
+    assert calls == [600]
 
 
 def test_eval_report_cli_runs_local_json_dataset(tmp_path: Path) -> None:

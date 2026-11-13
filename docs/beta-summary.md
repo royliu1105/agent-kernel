@@ -1,5 +1,9 @@
 # Beta Summary: Day 52-75
 
+Historical phase snapshot: capabilities, limitations and next steps below refer
+to this phase's completion, not current `master`. Current status and acceptance
+live in the [capability hardening plan](capability-hardening-plan.md).
+
 ## Status
 
 Beta production hardening is complete under the Day 52-75 scope:

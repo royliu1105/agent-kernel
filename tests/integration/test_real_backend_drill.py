@@ -26,4 +26,5 @@ def test_postgresql_backup_restore_and_matching_object_manifest() -> None:
     assert report["passed"]
     assert report["objects_verified"] == 2
     assert report["pgvector_retrieval_verified"]
+    assert report["execution_checkpoint_verified"]
     assert report["corruption_detected"]

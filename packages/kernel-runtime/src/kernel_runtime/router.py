@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from kernel_providers import LLMProvider
+from kernel_providers import LLMProvider, MockLLMProvider, OpenAIProvider, ReplayLLMProvider
 
 
 class UnknownModelRouteError(ValueError):
@@ -31,6 +31,13 @@ class ModelRouter:
         if provider is None:
             raise UnknownModelRouteError(f"No provider registered for {provider_name!r}.")
         return ModelRoute(provider_name=provider_name, model=model, provider=provider)
+
+
+def create_default_model_router() -> ModelRouter:
+    """Keep Worker execution and API approval continuation on the same routes."""
+    return ModelRouter(
+        {"mock": MockLLMProvider(), "openai": OpenAIProvider(), "replay": ReplayLLMProvider()}
+    )
 
 
 def _split_model_ref(model_ref: str) -> tuple[str, str]:

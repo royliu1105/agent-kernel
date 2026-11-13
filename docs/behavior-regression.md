@@ -196,7 +196,7 @@ on success, initial only on follow-up failure. The model-usage ledger row count
 and Run/output totals are cross-checked. Failed HTTP attempts have unknown usage;
 the absence of a usage response is not evidence that the provider charged zero.
 
-Explicit limits of this repair:
+Historical limits of the R3 repair (not the current N2-N4 implementation):
 
 - Runtime still has no backoff/jitter or `Retry-After` delay support. Bounded
   attempts are not a claim of production throttling compliance; runtime policy
@@ -206,6 +206,16 @@ Explicit limits of this repair:
   are not added or certified by these contracts.
 - No paid request or live-provider compatibility test was performed. HTTP
   fixtures test the documented contract, not remote service availability.
+
+The unreleased N2-N4 follow-up adds bounded rounds/serial batches, private
+approval continuation, and capped jittered delays with safe `Retry-After`.
+Its new integration tests exercise repeated approval after a new executor,
+budget persistence, invalid state, concurrent ownership, cancellation and
+no-write-retry. Existing single-call wire/timeline cases remain strict about
+history and actual tool results, but subsequent requests keep the same tools
+with `auto` choice. Historical R3 evidence does not accept these additions;
+current evidence/status is tracked separately in
+[N1-N5](capability-hardening-plan.md#active-follow-up-bounded-agent-execution).
 
 ## Optional Live Provider Smoke
 

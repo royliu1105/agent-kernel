@@ -1,5 +1,10 @@
 # Day 90: v1.0 Final Verification and Release Readiness
 
+Historical delivery record. Publication follow-up, reconciled 2026-11-14:
+v1.0.0 was published on 2026-08-07 for `4684931`, with successful release-commit
+CI. See the [v1.0 release checklist](../v1-release-checklist.md) for exact evidence
+and unreconstructed process checks. The results below retain their Day 90 scope.
+
 Goal:
 
 Run the final v1.0 release readiness checks, update release evidence, and decide
@@ -61,5 +66,6 @@ Notes:
 
 - Day 90 can prepare the repository for v1.0 publication, but tagging and
   GitHub Release creation remain explicit user decisions.
-- Local release verification passed. Publication still needs the Day 90 commit,
-  push, final GitHub CI success, tag, and GitHub Release.
+- Local release verification passed. The original pre-publication follow-up
+  (commit, push, CI, tag and GitHub Release) subsequently completed; the verified
+  publication record is linked above. This does not accept later branch changes.

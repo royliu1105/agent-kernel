@@ -21,7 +21,7 @@ from sqlalchemy.engine.reflection import Inspector
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_DIR = REPO_ROOT / "packages" / "kernel-storage" / "src" / "kernel_storage" / "migrations"
 ALEMBIC_INI = REPO_ROOT / "alembic.ini"
-LATEST_REVISION = "0018_usage_attribution"
+LATEST_REVISION = "0019_execution_checkpoint"
 
 
 def test_sqlite_migrations_upgrade_to_head(

@@ -15,15 +15,14 @@ from kernel_observability import (
     configure_opentelemetry,
     configure_safe_logging,
 )
-from kernel_providers import MockLLMProvider, OpenAIProvider, ReplayLLMProvider
 from kernel_rag import create_rag_tool_registry
 from kernel_runtime import (
-    ModelRouter,
     QueuedRunWorker,
     RunExecutionService,
     StuckRunRecoveryBatchResult,
     StuckRunRecoveryService,
     WorkerBatchResult,
+    create_default_model_router,
 )
 from kernel_runtime.queue import RunQueue
 from kernel_runtime.redis_support import RedisSettings, create_redis_client, create_run_queue
@@ -116,15 +115,8 @@ def _create_worker(
     run_queue: RunQueue | None = None,
     metrics: MetricsRecorder | None = None,
 ) -> QueuedRunWorker:
-    router = ModelRouter(
-        {
-            "mock": MockLLMProvider(),
-            "openai": OpenAIProvider(),
-            "replay": ReplayLLMProvider(),
-        }
-    )
     execution_service = RunExecutionService(
-        router=router,
+        router=create_default_model_router(),
         tool_registry=registry
         or create_rag_tool_registry(session_factory=session_factory, metrics_recorder=metrics),
         metrics_recorder=metrics,

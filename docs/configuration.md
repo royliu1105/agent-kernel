@@ -42,6 +42,37 @@ credentials from the Web browser. Deployment secrets must not be committed.
 This document defines the Agent Kernel v1.0 release candidate configuration
 contract.
 
+## Native Execution Bounds (Unreleased)
+
+Set these trusted server variables consistently on API, CLI and Worker. Run
+input cannot override them. Checkpoints retain the original bounds; resume
+applies the stricter of saved/current settings. Invalid values fail validation.
+
+| Variable | Default | Bound |
+| --- | --- | --- |
+| `AGENT_KERNEL_MAX_MODEL_CALLS` | `8` | Physical attempts across rounds, retries and initial fallback; 1..256. |
+| `AGENT_KERNEL_MAX_TOOL_CALLS` | `16` | Physical tool attempts across all batches/retries/resumes; 0..1024. |
+| `AGENT_KERNEL_MAX_ACTIVE_SECONDS` | `300` | Active wall time including retry sleep, excluding human approval wait; >0..86400. |
+| `AGENT_KERNEL_MAX_HISTORY_BYTES` | `1048576` | Serialized private checkpoint bytes, including model history/results; 64..16777216. |
+| `AGENT_KERNEL_MAX_TOTAL_TOKENS` | `64000` | Observed cumulative input + output tokens; 1..64000000. |
+| `AGENT_KERNEL_MAX_OUTPUT_TOKENS` | `4096` | Per-request output cap, further limited by remaining token allowance; 1..1000000. |
+| `AGENT_KERNEL_MAX_ESTIMATED_COST` | empty | Optional positive finite provider-reported cost ceiling. |
+
+Token/cost limits stop further work once reported usage reaches the threshold;
+they cannot predict unreported billing or guarantee a hard monetary cap. A
+response may cross a threshold, which fails the run before further tools/models.
+The built-in OpenAI adapter currently reports `estimated_cost=0`; this setting
+therefore does not enforce actual OpenAI spending. Use call/token/time limits
+and provider-side budgets; a priced adapter is required for nonzero cost checks.
+The history limit rejects oversized state, it does not summarize/truncate it.
+Timeout/cancellation is cooperative; arbitrary in-process code is not a sandbox.
+
+`RetryDelayPolicy` is a trusted Python configuration (default base 0.25s, cap
+30s, full jitter), not a run-input API. Valid `Retry-After` is a minimum delay;
+a hint above the cap fails closed instead of retrying earlier. There is no
+persisted delayed scheduler or automatic restart of uncertain in-flight writes.
+See [bounded execution](specs/bounded-native-execution.md) for acceptance status.
+
 The configuration contract version is:
 
 ```text

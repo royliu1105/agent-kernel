@@ -1,5 +1,26 @@
 # Feature Spec: Approval and Resume
 
+## Current Unreleased Native Continuation
+
+The Day 12 explicit-tool scope below is historical. Native approvals now use
+private `0019_execution_checkpoint` state to retain the original task, provider
+history, serial batch cursor and run-wide budgets. Resume executes the approved
+call once, continues pending calls and asks the same model for the next step;
+another risky call pauses again. The existing explicit-tool path stays tool-only.
+
+Rejection, missing/invalid legacy history, changed tool contracts and mismatched
+approval IDs do not authorize more work. Lease fencing covers checkpoint writes
+and concurrent resumes. A crash during a possibly side-effecting operation still
+requires review, not automatic replay. Checkpoints are excluded from public Run
+schemas; existing workspace/role checks still govern approval and resume APIs.
+The HTTP resume endpoint returns the bounded segment result synchronously.
+Approval decisions alone do not auto-enqueue a continuation. CLI resume defaults
+to a 330-second HTTP timeout with `--timeout-seconds` override; align gateways
+with server execution bounds and inspect state after ambiguous transport failure.
+Moving resume segments into a durable background queue is separate work.
+See [bounded native execution](bounded-native-execution.md) and N3 in the
+[canonical plan](../capability-hardening-plan.md) for verification status.
+
 ## Goal
 
 Support human-in-the-loop approval for risky actions, including pausing a run, recording a decision, and resuming or stopping safely.

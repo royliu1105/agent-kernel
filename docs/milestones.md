@@ -2,13 +2,14 @@
 
 ## Current Capability Hardening
 
-Status: the authorized P0-P5 batch passed scoped integration acceptance.
-Local backend contracts, container/monitoring fault rehearsals and remote
-Python/Web/Compose CI pass for implementation `6c9fa92`. See the canonical plan
-rather than treating this batch as a newly published release.
+Status: R1-R10 remediation passed scoped acceptance for implementation `d65e833`.
+The earlier blanket acceptance based on `6c9fa92` was withdrawn after audit.
+Subsequent N1-N4 bounded-execution work has local verification; N5 tracks its
+separate current-commit CI gate. See the canonical plan for the latest evidence.
+These changes are unreleased; v1.0.0 remains the published release.
 
 The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) owns the
-P0-P5 scope, execution order, task statuses and acceptance criteria. Update
+P0-P5 scope, R1-R10 remediation, N1-N5 follow-up and acceptance criteria. Update
 that checklist as work proceeds; update this summary at workstream boundaries.
 
 The completed foundation tasks below reflect their original delivery scope.
@@ -18,7 +19,7 @@ implementation and acceptance evidence for those stronger guarantees.
 
 ## Timeline
 
-The short-term delivery plan is:
+The historical delivery sequence was:
 
 ```text
 Day 1-38: v0.1.0 published release
@@ -494,8 +495,11 @@ Freeze the stable production contract and remove surprises before v1.0.
 Status:
 
 ```text
-[~] In progress
+[x] Historical scope complete; v1.0.0 published 2026-08-07
 ```
+
+Publication evidence: [v1.0 Release Checklist](v1-release-checklist.md).
+The checks below record Day 76-90 scope, not acceptance of current branch changes.
 
 Checklist:
 

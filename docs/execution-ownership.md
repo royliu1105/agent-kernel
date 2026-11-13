@@ -39,6 +39,14 @@ the same decision returns the original reviewer/note/timestamp without a second
 event. An opposing decision returns a conflict. Concurrent resume requests have
 one lease winner and execute the persisted tool arguments once.
 
+Unreleased native approval continuation adds private, versioned
+`runs.execution_checkpoint` state (migration `0019_execution_checkpoint`).
+Both reads and writes require the active lease. The saved model history, batch
+cursor and budgets allow a new executor to continue without replaying earlier
+tools. The original provider route and tool contracts must still match; legacy
+native approvals with no checkpoint fail closed. Explicit-tool approvals retain
+their tool-only behavior. See [bounded execution](specs/bounded-native-execution.md).
+
 Database fencing is **not exactly-once external side effects**. Cancellation or
 process death cannot undo an already accepted remote request. The stable
 persisted `tool_call_id` is available as downstream idempotency context; use an
@@ -60,6 +68,10 @@ unrelated process without a successful database write; its lease token and
 expiry rules still apply.
 Cancellation cannot forcibly terminate arbitrary Python code; a non-cooperative
 tool still needs process-level termination or an external execution sandbox.
+For bounded native calls, the runtime stops waiting at its active deadline and
+discards cancellation-resistant late adapter results. It fails/fences the run
+without keeping its heartbeat alive; this does not stop a remote side effect or
+force-kill that adapter code. Such abandoned responses have unknown billing.
 
 ## Queue and Session Boundaries
 

@@ -4,9 +4,11 @@ This directory contains the canonical planning baseline for Agent Kernel. Treat 
 
 Current follow-up work is tracked in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
-The P0-P5 batch passed scoped acceptance; implementation, local proof and green
-remote CI for `6c9fa92` are tracked in that plan. Release authorization remains
-separate; this batch has not been published as a new release.
+R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier
+blanket acceptance was withdrawn. Subsequent N1-N4 execution work has local
+verification; N5 tracks the separate current-commit CI gate in that plan.
+These changes are unreleased. The published baseline is
+[v1.0.0](releases/v1.0.0.md), not a new release of this work.
 The Day 1-90 documents below
 record the earlier delivery scope; their completion does not imply that the
 new isolation, worker ownership or external-tool guarantees are implemented.
@@ -16,6 +18,7 @@ new isolation, worker ownership or external-tool guarantees are implemented.
 Current hardening operator guides:
 
 - [Execution Ownership and Recovery](execution-ownership.md)
+- [Bounded Native Execution](specs/bounded-native-execution.md)
 - [Observability Operations](observability-operations.md)
 - [External Tools](external-tools.md)
 - [Backend Operations](backend-operations.md)
@@ -40,12 +43,12 @@ The plan is split into these documents:
 14. [Troubleshooting](troubleshooting.md): local setup, Docker, uv, npm, port, worker, and release-verification failure modes.
 15. [Agent Kernel v0.1](v0.1.md): v0.1 product snapshot, capability matrix, readiness, and next steps.
 16. [Public Alpha Guide](public-alpha.md): early-user trial path, feedback workflow, and live Web API priorities.
-17. [Post-v0.1 Completion Plan](post-v0.1-plan.md): Public Alpha, Beta, and v1.0 completion plan.
+17. [Post-v0.1 Completion Plan](post-v0.1-plan.md): historical Public Alpha, Beta, and v1.0 delivery scope.
 18. [Public Alpha Summary](public-alpha-summary.md): completed Day 39-51 hardening work, verification scope, limitations, and Beta entry point.
 19. [Durable Execution Summary](durable-execution-summary.md): historical Day 59-63 scope. Current guarantees: [Execution Ownership](execution-ownership.md).
 20. [Beta Summary](beta-summary.md): completed Day 52-75 production hardening work, verification scope, limitations, and v1.0 RC handoff.
 21. [API and CLI Compatibility Policy](api-cli-compatibility.md): v1.0 RC stability levels, public contract, preview surfaces, and deprecation rules.
-22. [Versioned Configuration Reference](configuration.md): v1.0 RC environment-variable contract, defaults, secret status, and change-control rules.
+22. [Versioned Configuration Reference](configuration.md): released configuration baseline plus unreleased additions, defaults, secrets, and change-control rules.
 23. [Upgrade and Migration Policy](upgrade-migration-policy.md): v1.0 RC upgrade sequence, Alembic rules, migration test expectations, and rollback boundaries.
 24. [Backup and Restore Guide](backup-restore.md): v1.0 RC backup scope, Postgres/object-store restore steps, validation, retention, and security expectations.
 25. [Security Hardening Checklist](security-hardening.md): v1.0 RC release gates, operator checklist, known limitations, and incident-response baseline.
@@ -53,10 +56,10 @@ The plan is split into these documents:
 27. [Release Smoke Tests](release-smoke-tests.md): v1.0 RC critical-path smoke matrix and `make release-smoke` command contract.
 28. [Load and Soak Scenarios](load-soak-scenarios.md): v1.0 RC load/soak profiles, thresholds, manual infrastructure scenarios, and failure handling.
 29. [Clean-Machine Release Rehearsal](clean-machine-rehearsal.md): v1.0 RC fresh-checkout rehearsal runbook, required gates, evidence capture, and failure classification.
-30. [Clean-Machine Rehearsal Results](clean-machine-rehearsal-results.md): v1.0 RC rehearsal evidence, fixes, passed gates, and remaining Docker restart limitation.
+30. [Clean-Machine Rehearsal Results](clean-machine-rehearsal-results.md): historical Day 85 rehearsal; the later Day 90 Docker restart evidence is in the release notes.
 31. [v1.0 Docs Consistency Audit](docs-consistency-audit.md): Day 86 docs drift audit, automated guards, and remaining release-doc follow-ups.
 32. [v1.0 Scope Freeze](v1-scope-freeze.md): Day 87 release blockers, accepted limitations, deferred scope, and v1.0 change rules.
-33. [v1.0 Release Checklist](v1-release-checklist.md): Day 88 final release gate covering verification, security, docs, limitations, and publication.
+33. [v1.0 Release Checklist](v1-release-checklist.md): historical release gates and reconciled publication evidence, including checks that cannot be reconstructed.
 34. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
 35. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
 36. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
@@ -71,7 +74,7 @@ The plan is split into these documents:
 45. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
 46. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
 47. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
-48. [v1.0.0 Release Notes](releases/v1.0.0.md): final-verification draft release notes, stable surfaces, limitations, upgrade notes, and security posture.
+48. [v1.0.0 Release Notes](releases/v1.0.0.md): published release scope, historical verification, limitations, upgrade notes, and security posture.
 49. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
 50. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
 51. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
@@ -83,18 +86,18 @@ Repository-level release docs:
 
 - [CONTRIBUTING](../CONTRIBUTING.md): contribution workflow and quality gates.
 - [SECURITY](../SECURITY.md): vulnerability reporting and security posture.
-- [ROADMAP](../ROADMAP.md): v0.1, Public Alpha, and later production hardening.
+- [ROADMAP](../ROADMAP.md): historical release delivery and current post-v1.0 hardening.
 - [Examples](../examples/README.md): runnable local example workflows.
 
 ## Current Baseline
 
-Agent Kernel is planned as:
+Agent Kernel uses:
 
 ```text
 Monorepo + Modular Monolith + Worker + Pluggable Interfaces
 ```
 
-The first implementation target is:
+The historical delivery sequence was:
 
 ```text
 Day 1-38: v0.1.0 published release
