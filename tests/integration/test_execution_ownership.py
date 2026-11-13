@@ -27,7 +27,7 @@ from kernel_storage import (
 from kernel_storage.base import Base
 from kernel_storage.models import WorkerLeaseRecord
 from kernel_tools import ToolMetadata, ToolRegistry
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -50,7 +50,8 @@ def ownership_db(request: pytest.FixtureRequest, tmp_path: Any) -> Iterator[sess
     with admin.begin() as connection:
         connection.execute(text(f'CREATE SCHEMA "{schema}"'))
     engine = create_engine(
-        make_url(url).update_query_dict({"options": f"-csearch_path={schema},public"})
+        # No public fallback: create_all must not discover another schema's tables.
+        make_url(url).update_query_dict({"options": f"-csearch_path={schema}"})
     )
     try:
         Base.metadata.create_all(engine)
@@ -60,6 +61,18 @@ def ownership_db(request: pytest.FixtureRequest, tmp_path: Any) -> Iterator[sess
         with admin.begin() as connection:
             connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         admin.dispose()
+
+
+def test_ownership_tables_belong_to_current_schema(ownership_db: sessionmaker[Session]) -> None:
+    with ownership_db() as session:
+        engine = session.get_bind()
+        inspector = inspect(engine)
+        schema = (
+            session.scalar(text("SELECT current_schema()"))
+            if engine.dialect.name == "postgresql"
+            else None
+        )
+        assert set(Base.metadata.tables) <= set(inspector.get_table_names(schema=schema))
 
 
 def _queued(factory: sessionmaker[Session], payload: dict[str, Any] | None = None) -> UUID:

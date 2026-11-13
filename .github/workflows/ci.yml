@@ -53,8 +53,10 @@ jobs:
         env:
           AGENT_KERNEL_TEST_POSTGRES_URL: postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel
           AGENT_KERNEL_TEST_REDIS_URL: redis://127.0.0.1:6379/15
+          AGENT_KERNEL_ALLOW_BACKEND_DRILL: "1"
           AGENT_KERNEL_TEST_PROMTOOL: "1"
-        run: uv run pytest
+        # The restore contract runs below against its own guarded database/container.
+        run: uv run pytest --ignore=tests/integration/test_real_backend_drill.py
       - name: Start Disposable Restore Database
         run: |
           docker run --detach --rm --name agent-kernel-drill-ci \

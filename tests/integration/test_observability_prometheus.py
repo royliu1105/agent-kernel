@@ -23,6 +23,9 @@ def _promtool(*args: str, input_text: str | None = None, mount: Path | None = No
         "--rm",
         "--network",
         "none",
+        # Linux bind mounts preserve pytest's private directory ownership.
+        "--user",
+        f"{os.getuid()}:{os.getgid()}",
         "-i",
         "-v",
         f"{CONFIG}:/etc/prometheus:ro",

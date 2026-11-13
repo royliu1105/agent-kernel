@@ -127,7 +127,7 @@ not thirteen independent claims of production readiness.
 The authoritative command/results and open-gate checklist are in
 [hardening verification](hardening-verification.md). A missing remote CI run or
 failed image download is not a passed gate. No paid live-model test was enabled.
-Final local full-suite result: **564 passed, no skips**, with real PostgreSQL,
+Final local full-suite result: **566 passed, no skips**, with real PostgreSQL,
 Redis, restore, native promtool, container HTTP and monitoring deployment checks
 enabled. Ruff, mypy (194 files), release evals, Web type/build/browser checks and
 updated dependency audits passed. Clean application images and live Grafana

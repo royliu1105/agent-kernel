@@ -35,7 +35,7 @@ Final local results after MCP/certifi/Next.js updates:
 
 | Gate | Evidence |
 | --- | --- |
-| Full pytest with PostgreSQL, Redis, restore opt-in, promtool, HTTP and monitoring deployment opt-ins | **564 passed, no skips**. One existing Starlette/httpx deprecation warning. |
+| Full pytest with PostgreSQL, Redis, restore opt-in, promtool, HTTP and monitoring deployment opt-ins | **566 passed, no skips** after CI fixture corrections, with public schema already migrated. One existing Starlette/httpx deprecation warning. |
 | Ruff lint | Passed across the repository. |
 | mypy | Passed, 194 source files. |
 | `make release-eval` | RAG smoke 3/3, release RAG 4/4, tool eval tests 2/2, runtime timelines 7/7. |
@@ -153,6 +153,16 @@ green Compose job does not satisfy this gate.
 
 ## Open Gates and Limits
 
+- First remote attempt: [run 43361454998](https://github.com/royliu1105/agent-kernel/actions/runs/43361454998)
+  for `ced4a4b22f642ac824b2d2312a8e6464bab6d753` passed Web and the full Compose
+  rehearsal, but Python reported nine failures across three test/CI setup issues.
+  Ownership fixtures allowed `public` search-path fallback, so `create_all`
+  reused migrated public tables; fixtures now use only their own schema and
+  assert physical table ownership. The native promtool container now uses the
+  host UID/GID to read private pytest bind mounts on Linux. CI explicitly opts
+  into the disposable Redis drill and runs the PostgreSQL restore contract in
+  its separate guarded step. None of these fixes weakens runtime permissions or
+  drill safety checks. The corrected SHA still requires a green remote run.
 - Earlier PyPI/Grafana download failures were resolved by retrying the official
   sources, without changing proxy/VPN settings, adding mirrors or bypassing TLS.
   Both application and Grafana deployment gates now pass locally.
