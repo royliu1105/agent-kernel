@@ -4,9 +4,9 @@ This directory contains the canonical planning baseline for Agent Kernel. Treat 
 
 Current follow-up work is tracked in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
-The P0-P5 batch is in final acceptance; implementation and local evidence are
-tracked in that plan. Local container/monitoring gates now pass; current remote
-CI and any later release authorization remain separate.
+The P0-P5 batch passed scoped acceptance; implementation, local proof and green
+remote CI for `6c9fa92` are tracked in that plan. Release authorization remains
+separate; this batch has not been published as a new release.
 The Day 1-90 documents below
 record the earlier delivery scope; their completion does not imply that the
 new isolation, worker ownership or external-tool guarantees are implemented.

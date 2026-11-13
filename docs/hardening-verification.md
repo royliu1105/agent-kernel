@@ -15,13 +15,39 @@ This is not a new release announcement or production certification.
 - [x] Final full-suite, lint/type, Web and dependency-audit results recorded below.
 - [x] Clean application image build/start and the HTTP rehearsal against it.
 - [x] Actual Grafana container load and monitoring-stack scrape rehearsal.
-- [ ] Green remote CI for the eventual committed SHA.
+- [x] Green remote CI for implementation `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51`.
 - [ ] Maintainer review of compatibility/security limitations before release.
 
-The local implementation/deployment gates have evidence. P5.2 still awaits the
-actual committed SHA's remote CI result. Commit/push and CI tracking were
-explicitly authorized by the maintainer on 2026-11-13; no release was authorized.
-Live-provider execution is optional and was not enabled.
+The local implementation/deployment and remote CI gates have evidence. P5.2 is
+closed within the canonical plan's scoped guarantees. Commit/push and CI tracking
+were explicitly authorized by the maintainer on 2026-11-13; no release was
+authorized. Live-provider execution is optional and was not enabled. The
+unchecked release review above is a future publication gate, not an unreported
+implementation task.
+
+## Remote Acceptance
+
+Verified implementation: `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51`, following
+the main hardening commit `ced4a4b22f642ac824b2d2312a8e6464bab6d753`.
+[CI run 43362548617](https://github.com/royliu1105/agent-kernel/actions/runs/43362548617)
+completed successfully on 2026-11-13:
+
+| Job | Evidence |
+| --- | --- |
+| Python | SQLite/PostgreSQL migrations, Ruff, mypy; 561 tests passed and 4 deployment tests explicitly skipped for the separate Compose job; independent guarded restore test passed; all release eval gates passed. |
+| Web | Typecheck, production build and 2 Chromium smoke tests passed. |
+| Compose | Fresh image build/start; HTTP business rehearsal and all 3 live monitoring tests passed; disposable deployment removed. |
+
+Thus the four Python deployment skips are exercised in Compose, not waived.
+The PostgreSQL restore test is deliberately excluded from the main invocation
+and run separately against the labelled disposable test database. The two CI
+fixture regressions are covered with a pre-migrated public schema and native
+Linux container permissions. Existing action-runtime deprecation notices and
+the Starlette/httpx warning are non-failing maintenance items, not hidden tests.
+
+The follow-up closure commit changes documentation only. This record names the
+verified implementation SHA so it remains stable instead of trying to embed a
+commit's own hash in itself; the closure commit also runs the same CI workflow.
 
 ## Local Environment and Evidence
 
@@ -64,8 +90,11 @@ files were not mechanically rewritten. The existing CI gate uses `ruff check`,
 which passes. This distinction is not a claim that global format-check passed.
 After formatting and documentation finalization, 36 affected documentation,
 runtime, recovery, Worker CLI and retrieval tests passed again; mypy and diff
-checks also passed. All temporary API/Worker/MCP processes and the three test
-containers were stopped after verification. No application database was changed.
+checks also passed. Earlier temporary API/Worker/MCP processes and test
+containers were stopped after their verification. After final acceptance, the
+separate `agent-kernel-hardening` Compose project and its temporary volumes,
+the labelled restore container and random monitoring credentials were removed.
+User-owned containers and application databases were not changed.
 
 The first HTTP rehearsal used separate host API/Worker processes. The follow-up
 used rebuilt application images, fresh Compose volumes, PostgreSQL/Redis and the
@@ -162,13 +191,14 @@ green Compose job does not satisfy this gate.
   host UID/GID to read private pytest bind mounts on Linux. CI explicitly opts
   into the disposable Redis drill and runs the PostgreSQL restore contract in
   its separate guarded step. None of these fixes weakens runtime permissions or
-  drill safety checks. The corrected SHA still requires a green remote run.
+  drill safety checks. The corrected SHA passed the green run recorded above.
 - Earlier PyPI/Grafana download failures were resolved by retrying the official
   sources, without changing proxy/VPN settings, adding mirrors or bypassing TLS.
   Both application and Grafana deployment gates now pass locally.
-- Remote CI evidence is pending the authorized commit/push. The previously
-  green [run 31122498218](https://github.com/royliu1105/agent-kernel/actions/runs/31122498218)
-  covers baseline `4684931` only, not this batch. No tag/release is authorized.
+- The previously green
+  [run 31122498218](https://github.com/royliu1105/agent-kernel/actions/runs/31122498218)
+  covers baseline `4684931` only. Batch acceptance uses the implementation run
+  above, not that historical evidence. No tag/release is authorized.
 - No paid provider request, measured live-model cost baseline, production
   throughput/RPO/RTO, S3 restore or exactly-once external effects are claimed.
 - Workspace-scoped APIs are for reviewed self-hosted deployment, not an audited

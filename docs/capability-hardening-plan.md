@@ -2,14 +2,17 @@
 
 ## Status and Authority
 
-Status: the authorized P0-P5 implementation batch has reached final integration
-acceptance. Per-package implementation, local proof and remaining external gates
-are separated below. Retain the Python backend and TypeScript Web stack.
+Status: the authorized P0-P5 implementation batch is accepted within the scoped
+guarantees below. Implementation commit `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51`
+passed [remote CI 43362548617](https://github.com/royliu1105/agent-kernel/actions/runs/43362548617)
+on 2026-11-13, including Python, Web and the live Compose rehearsal. Per-package
+evidence and explicit deferrals are recorded below. Retain the Python backend
+and TypeScript Web stack. This is not a new release.
 
 Batch execution authorization (2026-11-13): the maintainer requested continuous
 implementation of the remaining 13 packages and approved parallel sub-agents.
-Local gates are checked per increment; pending remote CI does not stop unrelated
-implementation in this batch, but remains a final acceptance/release gate.
+Local gates were checked per increment; remote CI did not stop unrelated
+implementation in this batch and has now passed the final acceptance gate.
 This supersedes instructions below to wait for P1.1 CI before starting P1.2.
 Follow-up authorization on 2026-11-13 permits commit, push to `origin/master`,
 and tracking/fixing the resulting CI. It does not authorize a tag or release.
@@ -72,20 +75,20 @@ by the stable IDs below. Only the active task needs a detailed execution plan.
 
 | Order | ID | Work package | Status |
 | --- | --- | --- | --- |
-| 1 | P1.1 | Knowledge/RAG workspace isolation, including `kb_search`. | Implemented and locally verified; remote CI pending |
-| 2 | P1.2 | Memory and eval ownership, repository/API isolation. | Implemented; local contracts pass; remote CI pending |
-| 3 | P1.3 | Tool/audit/operational scope review, scoped summaries, rate-limit contract and enforcement. | Implemented; shared Redis/API and isolation contracts pass; remote CI pending |
-| 4 | P2.1 | Atomic run claims, execution lease lifecycle, fencing or equivalent stale-owner protection. | Implemented; PostgreSQL/SQLite concurrency and cancellation contracts pass; remote CI pending |
-| 5 | P2.2 | Approval decision/resume concurrency, crash recovery, side-effect replay boundaries. | Implemented; local concurrency/recovery contracts pass; remote CI pending |
-| 6 | P0.1 | Readiness, metrics inventory/aggregation, log/trace redaction, cost attribution. | Implemented; local readiness/OTel/metrics contracts pass; remote CI pending |
-| 7 | P0.2 | Grafana dashboard, Prometheus scrape/alert templates, operator instructions. | Implemented; native checks, live Grafana/scrape and fault/recovery rehearsal passed; remote CI pending |
-| 8 | P3.1 | External-tool contract, metadata sanitizer, MCP stdio and fixture server. | Implemented and integrated into API/Worker; local contracts pass; remote CI pending |
-| 9 | P3.2 | MCP Streamable HTTP, resources/prompts with policy checks. | Implemented; local real-transport fixture contracts pass; remote CI pending |
-| 10 | P3.3 | OpenAPI tool generation, fixture and per-tool retry/idempotency policy. | Implemented; local security/HTTP contracts pass; remote CI pending |
-| 11 | P4.1 | Consolidate pgvector contracts and Redis queue/rate-limit/coordination integration. | Implemented; real PostgreSQL/Redis contracts pass; remote CI pending |
-| 12 | P4.2 | Backup/restore and queue drills; documented Semantic Cache benefit assessment. | Local restore/queue drills passed; cache remains explicitly deferred; remote CI pending |
-| 13 | P5.1 | Golden approval/tool/retry/fallback/recovery timelines and failure explanations. | Implemented and wired to release-eval/CI; local timeline gate passed; remote CI pending |
-| 14 | P5.2 | Opt-in live provider smoke, non-blocking cost/latency reports, full closure. | Tooling and local deployment gates passed; closure awaits authorized commit/push and remote CI |
+| 1 | P1.1 | Knowledge/RAG workspace isolation, including `kb_search`. | Accepted; local and remote isolation/migration gates passed |
+| 2 | P1.2 | Memory and eval ownership, repository/API isolation. | Accepted; local and remote contracts passed |
+| 3 | P1.3 | Tool/audit/operational scope review, scoped summaries, rate-limit contract and enforcement. | Accepted; shared Redis/API and isolation contracts passed |
+| 4 | P2.1 | Atomic run claims, execution lease lifecycle, fencing or equivalent stale-owner protection. | Accepted; PostgreSQL/SQLite concurrency and cancellation contracts passed |
+| 5 | P2.2 | Approval decision/resume concurrency, crash recovery, side-effect replay boundaries. | Accepted; concurrency/recovery contracts passed |
+| 6 | P0.1 | Readiness, metrics inventory/aggregation, log/trace redaction, cost attribution. | Accepted; readiness/OTel/metrics contracts passed; cost estimates are not billing |
+| 7 | P0.2 | Grafana dashboard, Prometheus scrape/alert templates, operator instructions. | Accepted; native checks, live Grafana/scrape and local fault/recovery rehearsal passed |
+| 8 | P3.1 | External-tool contract, metadata sanitizer, MCP stdio and fixture server. | Accepted; API/Worker integration and local/remote contracts passed |
+| 9 | P3.2 | MCP Streamable HTTP, resources/prompts with policy checks. | Accepted; real-transport fixture contracts passed |
+| 10 | P3.3 | OpenAPI tool generation, fixture and per-tool retry/idempotency policy. | Accepted; security/HTTP contracts passed |
+| 11 | P4.1 | Consolidate pgvector contracts and Redis queue/rate-limit/coordination integration. | Accepted; real PostgreSQL/Redis contracts passed |
+| 12 | P4.2 | Backup/restore and queue drills; documented Semantic Cache benefit assessment. | Accepted; local/remote drills passed; cache implementation remains explicitly deferred |
+| 13 | P5.1 | Golden approval/tool/retry/fallback/recovery timelines and failure explanations. | Accepted; actual-runtime timeline gate passed locally and in CI |
+| 14 | P5.2 | Opt-in live provider smoke, non-blocking cost/latency reports, full closure. | Accepted; tooling, local deployment and remote CI passed; paid live request not enabled |
 
 P1.3 must state whether limits are process-local or shared. If a shared guarantee
 is required, bring the Redis work forward; do not mark a multi-instance limit
@@ -94,8 +97,9 @@ serialization in P2 and record its required behavior or explicit deferral.
 
 ## Batch Implementation Record
 
-Date: 2026-11-13. Changes remain unreleased; commit/push was authorized after
-the local deployment gates passed, with the resulting CI evidence still pending.
+Date: 2026-11-13. Changes remain unreleased; the authorized commit/push and remote
+CI verification are complete. Implementation is in `ced4a4b`, followed by CI
+fixture corrections in `6c9fa92`; the latter is the verified implementation SHA.
 The thirteen remaining work packages were implemented as one coordinated batch,
 not thirteen independent claims of production readiness.
 
@@ -133,8 +137,9 @@ enabled. Ruff, mypy (194 files), release evals, Web type/build/browser checks an
 updated dependency audits passed. Clean application images and live Grafana
 passed on retry, including real alert firing/clearing and automatic Worker
 process recovery after database outage. The Worker now has Compose restart
-supervision. Only the current remote CI gate remains for batch closure; a
-separate maintainer review is still required before any release.
+supervision. Remote Python, Web and Compose gates passed for the implementation
+SHA linked above, closing P5.2. A separate maintainer compatibility/security
+review and explicit authorization are still required before any release.
 
 ## Completed Increment Record: P1.1 Knowledge and RAG Isolation
 
@@ -186,8 +191,8 @@ Acceptance checklist:
   and PostgreSQL; real pgvector retrieval tests verify workspace isolation.
 - [x] Existing quickstart, RAG, approval and runtime regressions still pass.
 - [x] Relevant local lint/type checks pass; commands/results recorded below.
-- [ ] Remote CI passes for the committed changes; attach that run before
-  marking P1.1 accepted.
+- [x] Remote CI passes for the committed changes: run `43362548617` for
+  `6c9fa92`, linked above; P1.1 is accepted with the full batch.
 
 Use the existing auth, RAG integration, retrieval, `kb_search`, runtime worker,
 provider-tool and migration suites as starting points. New tests should prove
@@ -195,8 +200,9 @@ denial and side-effect prevention, not merely the presence of `workspace_id`.
 
 ## P1.1 Implementation and Verification Record
 
-Date: 2026-11-13. This is unreleased work on the current branch; no automatic
-commit, push, tag or release was performed.
+Date: 2026-11-13. Historical increment checkpoint: no commit/push had yet been
+performed at that point. The subsequent authorized batch commit/push and CI are
+recorded above; no tag or release was performed.
 
 Implemented:
 
@@ -241,8 +247,9 @@ Environment and remaining acceptance evidence:
 - CI now supplies `AGENT_KERNEL_TEST_POSTGRES_URL` so the two real-backend
   contracts run rather than skip. It tests random disposable schemas, isolated
   Alembic history, native vector retrieval and fresh/legacy migrations.
-- The changed branch has not been pushed; remote CI for this change is not
-  verified. Do not substitute a prior green run or the local skips for this gate.
+- At this earlier checkpoint, the changed branch had not been pushed. The
+  subsequent green batch CI linked above now supplies the missing evidence;
+  historical baseline CI and local skips were not substituted for that gate.
 - At this earlier checkpoint, P1.2 and operational scoping had not started.
   The later batch authorization above superseded the sequential CI wait; those
   implementations and their current acceptance evidence are recorded above.
@@ -297,17 +304,16 @@ Closure means every required item has evidence and every deferred item has a
 reason/trigger. Internal pilot readiness still requires a workload-specific
 trial; it does not establish long-term operational maturity.
 
-Next execution prompt:
+Next handoff prompt:
 
 ```text
-Continue final acceptance from docs/capability-hardening-plan.md and
+Read the completed acceptance record in docs/capability-hardening-plan.md and
 docs/hardening-verification.md. Preserve the Python backend and TypeScript Web.
 Do not restart implementation from P1.1 or treat the Day 1-90 records as proof.
-Check git status, the current SHA and the remaining unchecked gates. Local
-container and Grafana fault/recovery rehearsals now pass; do not repeat them
-as if still download-blocked or change the user's VPN/proxy settings. The
-maintainer authorized commit/push to origin/master and CI tracking for this
-batch. Verify CI for that actual committed SHA, fix failures, attach evidence,
-and only then close P5.2. Live provider smoke is
-optional and requires explicit credentials/budget. No tag or publication.
+Check git status and any changes since verified implementation 6c9fa92 and
+green CI 43362548617. P0-P5 is closed within its documented scope, not certified
+for every workload. Scope the next real-workload pilot or release review with
+the maintainer. Keep deferred items explicit. Live provider smoke is optional
+and requires explicit credentials/budget. Do not change VPN/proxy settings,
+create a tag or publish a release without new authorization.
 ```

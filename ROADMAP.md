@@ -3,10 +3,11 @@
 ## Current Follow-Up
 
 Use the [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
-for current work and status. The P0-P5 batch has reached integration acceptance,
+for current work and status. The P0-P5 batch has passed scoped integration acceptance,
 including workspace isolation, execution ownership, external tools, backend
-drills and regression gates. Local deployment/monitoring rehearsals pass; remote
-CI remains an explicit gate. The earlier release targets below are historical scope, not
+drills and regression gates. Local deployment/monitoring rehearsals and remote
+CI for implementation `6c9fa92` pass; evidence is linked in the canonical plan.
+No new release is implied. The earlier release targets below are historical scope, not
 evidence that every production guarantee is already implemented.
 
 ## Historical Release Targets
