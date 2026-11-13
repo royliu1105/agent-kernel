@@ -12,11 +12,11 @@ their evidence, but do not establish acceptance of the remediation. See R1-R10
 in the canonical plan. Record new commands/results separately; never relabel
 historical results as tests of changed code.
 
-- [ ] Resolve R1-R10 and individually record behavioral regression evidence.
+- [x] Resolve R1-R10 and individually record behavioral regression evidence.
 - [x] Reconcile all thirteen packages with the original requirements; record implemented scope and explicit limits below.
 - [x] Run full local gates on the repaired code, including real backends/deployment (746 passed, no skips).
-- [ ] Record green remote CI for the repaired implementation SHA.
-- [ ] Final requirement-by-requirement acceptance review.
+- [x] Record green remote CI for the repaired implementation SHA (`d65e833`, run 43375236175).
+- [x] Final requirement-by-requirement acceptance review within the documented self-hosted scope.
 
 ### Historical Gates (Before Audit)
 
@@ -33,20 +33,22 @@ historical results as tests of changed code.
 - [ ] Maintainer review of compatibility/security limitations before release.
 
 The historical local implementation/deployment and remote CI gates have evidence.
-P5.2 is reopened, not accepted. Commit/push and CI tracking
-were explicitly authorized by the maintainer on 2026-11-13; no release was
-authorized. Live-provider execution is optional and was not enabled. The
-unchecked release review is separate from the newly reopened implementation work.
+P5.2 was reopened by the audit; the current remediation and scope review below
+now establish its scoped acceptance. Commit/push and CI tracking were explicitly
+authorized by the maintainer; no release was authorized. Live-provider execution
+is optional and was not enabled. The unchecked release review remains separate
+from implementation acceptance.
 
 ## Remediation Verification
 
 Baseline: `1efc174`. Repairs are implemented and the final local full gate passed.
-No repaired SHA has remote verification yet. Completion of R10/final acceptance
-remains unchecked; earlier green CI is not evidence for these changes. The
+Implementation `d65e833af7f59583c6830a8d1a710e00b02ffc1e` also passed remote CI
+43375236175. The separate requirement review below accepts the documented scope;
+earlier green CI is not evidence for these changes. The
 maintainer has authorized committing/pushing this remediation to `origin/master`
 and tracking its CI. No tag or release is authorized.
 
-| Item | New evidence | Remaining gate |
+| Item | New evidence | Additional gate, now verified |
 | --- | --- | --- |
 | R1 | `test_observability_logging_entrypoints.py` exercises configured Uvicorn DB exceptions, Worker top-level exceptions, startup and malformed SDK notifications; raw SQL/prompt/secret sentinels absent. MCP diagnostic tests also assert raw LogRecords are sanitized before plain handlers. | Remote |
 | R2 | `test_external_mcp_failures.py` exercises actual SDK transport: redirects send once, HTTP failures preserve caller, later calls reconnect, catalog drift fails closed, pending/canceled calls are not replayed. | Remote |
@@ -108,10 +110,66 @@ Cleanup was verified after the local gates: the disposable
 `agent-kernel-remediation` Compose project and its volumes, dedicated
 `agent-kernel-drill-remediation-pg` / `agent-kernel-drill-remediation-redis`
 containers, and temporary monitoring-token file were removed. No user-owned
-application database or volume was removed. Remote CI and final acceptance
-are still pending.
+application database or volume was removed. Remote CI and the separate final
+scope review passed as recorded below; release approval remains separate.
 The changed-file pre-commit checks passed (YAML, EOF/whitespace, Ruff lint and
 format). TOML and the unchanged Compose override had no matching files.
+
+## Remediation Remote Verification
+
+Implementation: `d65e833af7f59583c6830a8d1a710e00b02ffc1e`.
+[CI run 43375236175](https://github.com/royliu1105/agent-kernel/actions/runs/43375236175)
+completed successfully on 2026-11-13. No CI-only repair or waived assertion was
+needed for this implementation.
+
+| Job | Verified result |
+| --- | --- |
+| Python | SQLite/PostgreSQL migrations through 0018, Ruff, mypy (207 files), main suite **741 passed / 4 skipped**, independent guarded PostgreSQL restore **1 passed**, release eval gates 3/3 + 4/4 + 2/2 + timelines 7/7. |
+| Web | Typecheck, production build and **2 Chromium tests passed**. |
+| Compose | Built and started the application and monitoring stack; HTTP deployment **1 passed**, monitoring deployment **3 passed**, temporary deployment removed successfully. |
+
+The four main-suite skips are exactly the HTTP deployment test and three
+monitoring deployment tests exercised by Compose. The restore test is excluded
+from the main invocation and executed in its own guarded step. Thus the workflow
+exercises the same 746 pytest cases as the no-skip local run across separate
+jobs/steps; no deployment test is waived. Protocol fixtures remain fixtures:
+green CI does not mean a paid provider call or a live quality/cost benchmark ran.
+Existing Action Node-runtime deprecations and runner-image notices are maintenance
+items, not failed gates. No tag or GitHub release was created.
+
+The evidence-update commit changes documentation only. This record identifies
+the tested implementation SHA; it does not try to embed its own commit hash.
+
+## Final Scope Review
+
+Date: 2026-11-13. Reviewed implementation: `d65e833`. A separate read-only review
+compared the maintainer's original capability plan, the canonical package mapping,
+implementation paths and behavioral test assertions. No required-scope blocker
+was found. The reviewer did not rerun the suite; local results and verified CI
+logs above are the execution evidence. Acceptance means the documented
+self-hosted contracts are implemented and verified, not an independent security
+certification, production SLA or authorization to release.
+
+| Package | Accepted behavior and evidence | Limit retained |
+| --- | --- | --- |
+| P1.2 | Memory/eval ownership, foreign source-run denial, legacy quarantine and trusted runtime scope: [isolation tests](../tests/integration/test_memory_eval_isolation.py). | Auth-disabled local operation is not a multi-tenant boundary. |
+| P1.3 | Scoped tool/audit/usage views and atomic workspace/principal/key quotas: [API admission](../tests/integration/test_shared_admission_api.py), [real Redis](../tests/integration/test_real_redis_contract.py), [usage](../tests/integration/test_usage_attribution.py). | Standalone Redis fixed-window admission, not Redis Cluster or billing. |
+| P2.1 | Claims, lease renewal, stale-owner fences, nonblocking retrieval deadlines: [ownership](../tests/integration/test_execution_ownership.py), [deadline regressions](../tests/integration/test_rag_execution_deadlines.py). | Timed-out read-only threads may finish; late run writes remain fenced. |
+| P2.2 | Idempotent approval decisions, exclusive resume, conservative crash recovery: [ownership/concurrency](../tests/integration/test_execution_ownership.py), [cancellation](../tests/integration/test_execution_cancellation.py). | No exactly-once external effects or blind uncertain-write replay. |
+| P0.1 | Configured readiness, low-cardinality metrics, entry-point privacy and authorized attribution: [logging](../tests/integration/test_observability_logging_entrypoints.py), [signals](../tests/integration/test_observability_operational_signals.py), [usage migration](../tests/integration/test_usage_migration.py). | Provider readiness validates configuration; legacy usage has unknown attribution. |
+| P0.2 | 24 dashboard panels and 15 alerts including queue/approval/cost: [native rules/queries](../tests/integration/test_observability_prometheus.py), [deployed monitoring](../tests/integration/test_monitoring_deployment.py). | Templates require workload-specific thresholds and receivers. |
+| P3.1 | Governed stdio tools, metadata/SDK-log sanitization, lifecycle/deadline contracts: [MCP](../tests/integration/test_external_mcp.py), [failures](../tests/integration/test_external_mcp_failures.py). | Operator-approved processes, not an OS sandbox. |
+| P3.2 | Streamable HTTP tools/resources/prompts with policy, approval, audit, cancellation and single-send recovery: same MCP suites plus [bootstrap](../tests/integration/test_external_bootstrap.py). | No arbitrary endpoints, OAuth flow or automatic failed-write replay. |
+| P3.3 | Reviewed OpenAPI bindings, per-tool policy/timeouts/retry eligibility and idempotency identity: [OpenAPI contracts](../tests/integration/test_external_openapi.py). | Remote service must enforce its own idempotency contract. |
+| P4.1 | Native vector dimensions/migrations/scoped retrieval, Redis hints/admission and DB-authoritative execution: [pgvector](../tests/integration/test_real_pgvector_backend_contract.py), [real Redis](../tests/integration/test_real_redis_contract.py). | Vector/model changes require reindexing; queue hints are not execution truth. |
+| P4.2 | Matched PostgreSQL/local-object/usage restore, corruption detection and actual queue failure fallback: [guarded restore](../tests/integration/test_real_backend_drill.py), [drill implementation](../scripts/backend_drill.py), [cache assessment](backend-operations.md#semantic-cache-assessment). | Cache implementation deferred without fabricated savings; no S3 restore or production RPO/RTO claim. |
+| P5.1 | Seven runtime goldens, persisted ordering/correlation and mutation failures, actual OpenAI adapter wire contracts: [timelines](../tests/integration/test_timeline_regression.py), [adapter/runtime](../tests/integration/test_openai_runtime_contract.py). | Protocol fixtures do not prove upstream compatibility or model quality. |
+| P5.2 | Bounded opt-in live smoke, nonblocking comparable cost/latency reports and full credential-free gates: [smoke](../scripts/live_provider_smoke.py), [release gate contract](release-eval-gates.md). | Paid smoke was not enabled; no measured live cost/quality baseline. |
+
+P1.1 predates these 13 packages and remains covered by the full regression gate.
+Semantic Cache, Milvus, SQLite-to-Postgres data tooling, same-session ordering,
+enterprise identity and public SaaS isolation retain their documented deferrals
+or exclusions. Acceptance does not include those capabilities.
 
 ## Historical Remote Verification
 

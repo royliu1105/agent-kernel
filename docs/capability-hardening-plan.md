@@ -2,14 +2,18 @@
 
 ## Status and Authority
 
-Status: **remediation locally verified; remote acceptance pending (2026-11-13)**.
-Reopened after independent audit. The previous blanket
-acceptance is withdrawn. Historical implementation commit
+Status: **scoped remediation accepted; unreleased (2026-11-13)**.
+Reopened after independent audit; the previous blanket
+acceptance was withdrawn. Historical implementation commit
 `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51` passed
 [CI 43362548617](https://github.com/royliu1105/agent-kernel/actions/runs/43362548617),
 but those tests did not establish every original requirement. Confirmed security,
-integration and scope gaps below now have repairs and local evidence. The current
-remediation has no remote CI evidence yet and is not marked Accepted.
+integration and scope gaps below now have repairs, local verification and green
+[CI 43375236175](https://github.com/royliu1105/agent-kernel/actions/runs/43375236175)
+for implementation `d65e833af7f59583c6830a8d1a710e00b02ffc1e`. A separate
+requirement-by-requirement scope review found no remaining required blocker.
+Acceptance applies only to the documented self-hosted scope and explicit limits;
+it is not production certification or evidence that deferred capabilities exist.
 Retain the Python backend and TypeScript Web stack. This is not a new release.
 
 Batch execution authorization (2026-11-13): the maintainer requested continuous
@@ -82,19 +86,23 @@ by the stable IDs below. Only the active task needs a detailed execution plan.
 | Order | ID | Work package | Status |
 | --- | --- | --- | --- |
 | 1 | P1.1 | Knowledge/RAG workspace isolation, including `kb_search`. | Accepted; local and remote isolation/migration gates passed |
-| 2 | P1.2 | Memory and eval ownership, repository/API isolation. | Scoped contracts rechecked; retain regression gate |
-| 3 | P1.3 | Tool/audit/operational scope review, scoped summaries, rate-limit contract and enforcement. | Implemented; three quota dimensions locally verified; remote pending |
-| 4 | P2.1 | Atomic run claims, execution lease lifecycle, fencing or equivalent stale-owner protection. | Implemented; blocking-tool integration repaired and locally verified; remote pending |
-| 5 | P2.2 | Approval decision/resume concurrency, crash recovery, side-effect replay boundaries. | Scoped contracts rechecked; not exactly-once external effects |
-| 6 | P0.1 | Readiness, metrics inventory/aggregation, log/trace redaction, cost attribution. | Implemented; entry-point privacy, configured backends and attribution locally verified; remote pending |
-| 7 | P0.2 | Grafana dashboard, Prometheus scrape/alert templates, operator instructions. | Implemented; 24 panels/15 rules, native and live deployment checks passed; remote pending |
-| 8 | P3.1 | External-tool contract, metadata sanitizer, MCP stdio and fixture server. | Implemented; SDK logging and independent deadlines locally verified; remote pending |
-| 9 | P3.2 | MCP Streamable HTTP, resources/prompts with policy checks. | Implemented; single-send/failure/cancellation/reconnect contracts locally verified; remote pending |
-| 10 | P3.3 | OpenAPI tool generation, fixture and per-tool retry/idempotency policy. | Implemented; independent binding approval/denial and audit locally verified; remote pending |
-| 11 | P4.1 | Consolidate pgvector contracts and Redis queue/rate-limit/coordination integration. | Scoped contracts rechecked; retain real-backend regression gate |
-| 12 | P4.2 | Backup/restore and queue drills; documented Semantic Cache benefit assessment. | Implemented; actual queue fallback and DB/object/usage restore locally verified; remote pending |
-| 13 | P5.1 | Golden approval/tool/retry/fallback/recovery timelines and failure explanations. | Implemented; wire-contract, reasoning, retry and timeline mutation tests passed; remote pending |
-| 14 | P5.2 | Opt-in live provider smoke, non-blocking cost/latency reports, full closure. | Local full gate passed; remote verification and final acceptance remain open |
+| 2 | P1.2 | Memory and eval ownership, repository/API isolation. | Accepted within scope; local/current-CI ownership contracts passed |
+| 3 | P1.3 | Tool/audit/operational scope review, scoped summaries, rate-limit contract and enforcement. | Accepted within scope; three quota dimensions and authorized summaries verified |
+| 4 | P2.1 | Atomic run claims, execution lease lifecycle, fencing or equivalent stale-owner protection. | Accepted within scope; ownership and blocking-tool integration verified |
+| 5 | P2.2 | Approval decision/resume concurrency, crash recovery, side-effect replay boundaries. | Accepted within scope; not exactly-once external effects |
+| 6 | P0.1 | Readiness, metrics inventory/aggregation, log/trace redaction, cost attribution. | Accepted within scope; entry-point privacy, configured backends and attribution verified |
+| 7 | P0.2 | Grafana dashboard, Prometheus scrape/alert templates, operator instructions. | Accepted within scope; 24 panels/15 rules and actual deployment verified |
+| 8 | P3.1 | External-tool contract, metadata sanitizer, MCP stdio and fixture server. | Accepted within scope; SDK logging and independent deadlines verified |
+| 9 | P3.2 | MCP Streamable HTTP, resources/prompts with policy checks. | Accepted within scope; single-send/failure/cancellation/reconnect contracts verified |
+| 10 | P3.3 | OpenAPI tool generation, fixture and per-tool retry/idempotency policy. | Accepted within scope; binding approval/denial, retry policy and audit verified |
+| 11 | P4.1 | Consolidate pgvector contracts and Redis queue/rate-limit/coordination integration. | Accepted within scope; real-backend and runtime integration gates passed |
+| 12 | P4.2 | Backup/restore and queue drills; documented Semantic Cache benefit assessment. | Accepted within scope; queue fallback and DB/local-object/usage restore verified; cache implementation deferred |
+| 13 | P5.1 | Golden approval/tool/retry/fallback/recovery timelines and failure explanations. | Accepted within scope; wire-contract, reasoning, retry and timeline mutations verified |
+| 14 | P5.2 | Opt-in live provider smoke, non-blocking cost/latency reports, full closure. | Accepted within scope; local/current-CI gates and scope review passed; paid live smoke not executed |
+
+The 13 remaining packages are orders 2-14; P1.1 was completed earlier and its
+regressions remain part of the full gate. See the per-package evidence and
+limitations in [final scope review](hardening-verification.md#final-scope-review).
 
 P1.3 must state whether limits are process-local or shared. If a shared guarantee
 is required, bring the Redis work forward; do not mark a multi-instance limit
@@ -109,16 +117,16 @@ gaps, and verify each item. No new tag/release is authorized.
 
 | Fix | Priority / packages | Required behavior and regression evidence | Current state |
 | --- | --- | --- | --- |
-| R1 | High / P0.1, P3.1 | Install safe logging at API/Worker entry points; SQL exceptions and MCP SDK malformed responses must not disclose prompts, parameters, results or secrets. Test actual configured log paths. | Implemented; default Uvicorn/Worker subprocess and SDK diagnostic regressions passed locally; remote pending |
-| R2 | High / P3.2 | No hidden redirect resend of external writes; HTTP failures are bounded tool failures, not owner/lifespan cancellation. Test actual SDK transport and later calls after failure. | Implemented; SDK transport, queue cancellation and reconnect regressions passed locally; remote pending |
-| R3 | High / P5.1 | Serialize native OpenAI tool calls/results with call IDs; map transient errors into bounded retry/fallback; contract fixtures reject invalid wire requests. Existing adapter defects, not introduced by the batch. | Implemented; real-adapter wire/reasoning/follow-up retry and mutation tests passed locally; remote pending |
-| R4 | Medium / P2.1 | Built-in retrieval cannot block event-loop timeouts/lease heartbeat; timed-out work cannot persist late run effects. Test real tool/runtime integration. | Implemented; three reproductions failed before repair and passed afterward; included in full local gate; remote pending |
-| R5 | Medium / P1.3 | Independently configured workspace, principal and API-key shared quotas; isolation, atomic admission, Retry-After and backend-failure contracts. | Implemented; real Redis/API, malformed counter and no-partial-charge contracts passed; remote pending |
-| R6 | Medium / P0.1 | Configured pgvector/provider/local storage readiness; retrieval errors and kb_search instrumentation; API/runtime/eval metrics; authorized workspace/run/user/model cost attribution. | Implemented; 0018 migration, scoped ledger/API and explicit real embedding composition verified locally; remote pending |
-| R7 | Medium / P0.2 | Export and validate queue backlog/wait, approval wait and cost alert signals; native Prometheus rules/queries and documented operational limits. | Implemented; 24 panels, 15 alerts, native firing cases and actual Grafana/Prometheus checks passed; remote pending |
-| R8 | Medium / P3.1, P3.3 | Discovery timeout must not cap configured tool timeout; independent per-tool approval setting passes policy/audit in API and Worker. | Implemented; stdio/HTTP tools/resources/prompts and OpenAPI policy regressions passed; remote pending |
-| R9 | Medium / P4.2 | Real Redis fault drill must attach the faulty queue, observe fallback and complete via DB polling; retain guarded restore and explicit cache deferral. | Locally verified: one actual Worker Redis failure, three recovered runs; DB/object and usage-ledger restore passed; remote pending |
-| R10 | Closure / P5.1, P5.2 | Strengthen provider/timeline assertions, update all gate instructions, rerun full local/backend/deployment checks; record current remote CI separately. | Full local gate 746 passed, no skips; lint/types/Web/evals/deployment passed. Remote CI and final acceptance pending |
+| R1 | High / P0.1, P3.1 | Install safe logging at API/Worker entry points; SQL exceptions and MCP SDK malformed responses must not disclose prompts, parameters, results or secrets. Test actual configured log paths. | Verified locally and in current CI; default Uvicorn/Worker and SDK diagnostic regressions passed |
+| R2 | High / P3.2 | No hidden redirect resend of external writes; HTTP failures are bounded tool failures, not owner/lifespan cancellation. Test actual SDK transport and later calls after failure. | Verified locally and in current CI; SDK transport, queue cancellation and reconnect regressions passed |
+| R3 | High / P5.1 | Serialize native OpenAI tool calls/results with call IDs; map transient errors into bounded retry/fallback; contract fixtures reject invalid wire requests. Existing adapter defects, not introduced by the batch. | Verified locally and in current CI; actual-adapter wire/reasoning/retry and mutation tests passed |
+| R4 | Medium / P2.1 | Built-in retrieval cannot block event-loop timeouts/lease heartbeat; timed-out work cannot persist late run effects. Test real tool/runtime integration. | Verified locally and in current CI; three reproductions failed before repair and passed afterward |
+| R5 | Medium / P1.3 | Independently configured workspace, principal and API-key shared quotas; isolation, atomic admission, Retry-After and backend-failure contracts. | Verified locally and in current CI; real Redis/API, malformed-counter and no-partial-charge contracts passed |
+| R6 | Medium / P0.1 | Configured pgvector/provider/local storage readiness; retrieval errors and kb_search instrumentation; API/runtime/eval metrics; authorized workspace/run/user/model cost attribution. | Verified locally and in current CI; 0018 migration, scoped ledger/API and real embedding composition passed |
+| R7 | Medium / P0.2 | Export and validate queue backlog/wait, approval wait and cost alert signals; native Prometheus rules/queries and documented operational limits. | Verified locally and in current CI; 24 panels, 15 alerts, native firing and live deployment checks passed |
+| R8 | Medium / P3.1, P3.3 | Discovery timeout must not cap configured tool timeout; independent per-tool approval setting passes policy/audit in API and Worker. | Verified locally and in current CI; stdio/HTTP tools/resources/prompts and OpenAPI policy regressions passed |
+| R9 | Medium / P4.2 | Real Redis fault drill must attach the faulty queue, observe fallback and complete via DB polling; retain guarded restore and explicit cache deferral. | Verified locally and in current CI; actual queue failure, three recovered runs and DB/local-object/usage restore passed |
+| R10 | Closure / P5.1, P5.2 | Strengthen provider/timeline assertions, update all gate instructions, rerun full local/backend/deployment checks; record current remote CI separately. | Local 746 passed/no skips; current CI reconciles all 746 cases; lint/types/Web/evals/deployment and final scope review passed |
 
 Initial audit evidence: 99 focused isolation/ownership/migration tests passed
 against fresh real PostgreSQL. Additional probes reproduced default-log secret
@@ -354,16 +362,15 @@ trial; it does not establish long-term operational maturity.
 Next handoff prompt:
 
 ```text
-Read the reopened remediation ledger in docs/capability-hardening-plan.md and
+Read the remediation ledger in docs/capability-hardening-plan.md and
 docs/hardening-verification.md. Preserve the Python backend and TypeScript Web.
 Do not restart implementation from P1.1 or treat the Day 1-90 records as proof.
-Check git status and the per-fix evidence. R1-R9 repairs and local gates are
-implemented; do not repeat them blindly or infer remote acceptance from local
-tests. Historical CI 43362548617 does not verify this remediation. Commit/push
-and CI tracking are authorized for this remediation. Track the repaired SHA,
-fix failures, then
-perform final requirement-by-requirement acceptance. Keep deferred items explicit.
-Live provider smoke is optional
-and requires explicit credentials/budget. Do not change VPN/proxy settings,
-create a tag or publish a release without new authorization.
+Check git status and the per-fix evidence. R1-R10 are accepted within documented
+scope for implementation d65e833, verified by CI 43375236175 and final scope
+review. Do not restart completed work or infer that deferred capabilities exist.
+Keep local, remote and live-provider evidence distinct. Any code changes after
+the verified implementation need their own regression evidence. Choose the next
+scope with the maintainer; live provider smoke needs explicit credentials/budget.
+Do not change VPN/proxy settings, create a tag or publish a release without new
+authorization. Scope acceptance is not release approval or production certification.
 ```
