@@ -1,7 +1,7 @@
 # Bounded Native Execution
 
-Status: implemented and locally verified (2026-11-13); remote CI/release acceptance
-pending. Canonical progress and evidence are N1-N5
+Status: accepted within scope after local and remote verification (2026-11-14),
+implementation `cb25484`; unreleased. Canonical progress and exact CI evidence are N1-N5
 in [capability hardening](../capability-hardening-plan.md).
 
 ## Scope

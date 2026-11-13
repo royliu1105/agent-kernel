@@ -4,8 +4,8 @@
 
 Status: R1-R10 remediation passed scoped acceptance for implementation `d65e833`.
 The earlier blanket acceptance based on `6c9fa92` was withdrawn after audit.
-Subsequent N1-N4 bounded-execution work has local verification; N5 tracks its
-separate current-commit CI gate. See the canonical plan for the latest evidence.
+Subsequent N1-N5 bounded-execution work passed local and exact-commit remote
+verification for `cb25484`. See the canonical plan for evidence and explicit limits.
 These changes are unreleased; v1.0.0 remains the published release.
 
 The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) owns the

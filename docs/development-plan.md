@@ -4,9 +4,9 @@
 
 The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) is the
 canonical plan for current implementation work. R1-R10 remediation passed scoped
-acceptance; the subsequent N1-N4 execution work has local verification. N5 owns
-the separate current-commit CI gate. Consult that plan for the latest results;
-do not substitute historical CI or restart from P1.1.
+acceptance; the subsequent N1-N5 execution work passed local and exact-commit
+remote verification for `cb25484`. Consult that plan for evidence and explicit
+limits; do not substitute historical CI or restart from P1.1. This is unreleased.
 
 The Day 1-90 schedule below is the historical delivery plan. Completed
 foundation items must not be read as proof of full object isolation,

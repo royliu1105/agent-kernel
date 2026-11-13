@@ -5,8 +5,9 @@ This directory contains the canonical planning baseline for Agent Kernel. Treat 
 Current follow-up work is tracked in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
 R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier
-blanket acceptance was withdrawn. Subsequent N1-N4 execution work has local
-verification; N5 tracks the separate current-commit CI gate in that plan.
+blanket acceptance was withdrawn. Subsequent N1-N5 execution work passed local
+and exact-commit remote verification for `cb25484`; evidence and explicit limits
+are recorded in that plan.
 These changes are unreleased. The published baseline is
 [v1.0.0](releases/v1.0.0.md), not a new release of this work.
 The Day 1-90 documents below

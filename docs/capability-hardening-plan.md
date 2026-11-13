@@ -2,8 +2,8 @@
 
 ## Status and Authority
 
-Status: **R1-R10 scoped remediation accepted; N1-N4 locally verified,
-N5 remote gate pending; unreleased (2026-11-14)**.
+Status: **R1-R10 remediation and N1-N5 bounded-execution follow-up accepted
+within documented scope; locally and remotely verified; unreleased (2026-11-14)**.
 Reopened after independent audit; the previous blanket
 acceptance was withdrawn. Historical implementation commit
 `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51` passed
@@ -25,15 +25,16 @@ retry backoff. Historical acceptance of `d65e833` does not accept this new work.
 Follow-up authorization (2026-11-14): correct README, historical phase status
 and v1.0 publication records, then commit this batch, push to `origin/master`
 and track/fix its CI. This does not authorize paid provider calls, a new tag or
-a release. Keep N5 pending until the pushed implementation's own CI passes.
+a release. N5 was kept pending until the pushed implementation's own CI passed;
+its exact-commit evidence is recorded below.
 
 | ID | Required delivery | Implementation | Verification |
 | --- | --- | --- | --- |
-| N1 | Reconcile current production/security guides with actual monitoring auth, Worker metrics, object scope and embedding selection; preserve versioned release history. | Implemented | Local docs/configuration regressions passed; historical release records preserved |
-| N2 | Bounded native model/tool rounds and serial multi-call batches; validate call IDs/history, enforce configured budgets, record usage and preserve lease fencing. | Implemented | Local round/batch/budget/ID/timeout/usage regressions passed |
-| N3 | Internal durable checkpoint, migration and approval continuation after reopening storage/new executor; repeated approvals, rejection, missing/invalid state, cross-workspace access and concurrent resume covered. | Implemented | SQLite/PostgreSQL migrations, concurrent/repeated resume and Worker-to-default-API wire/scope contracts passed |
-| N4 | Cancellable capped exponential backoff with jitter and safe Retry-After parsing; apply only to eligible provider/read-only tool retries without write replay or unsafe model fallback. | Implemented | Delay/parser/runtime cancellation/lease contracts passed; fallback cooldown bypass repaired and regression-tested |
-| N5 | Focused regressions, SQLite/PostgreSQL migrations/ownership, full local gates, evals and disposable deployment checks; separately record remote CI when authorized. | Local gates complete; remote pending | 1078 main + 1 restore + 4 deployment Python tests passed, zero skips in these runs; eval/Web gates passed. No new remote CI |
+| N1 | Reconcile current production/security guides with actual monitoring auth, Worker metrics, object scope and embedding selection; preserve versioned release history. | Accepted within scope | Local and remote docs/configuration regressions passed; historical release records preserved |
+| N2 | Bounded native model/tool rounds and serial multi-call batches; validate call IDs/history, enforce configured budgets, record usage and preserve lease fencing. | Accepted within scope | Local and remote round/batch/budget/ID/timeout/usage regressions passed |
+| N3 | Internal durable checkpoint, migration and approval continuation after reopening storage/new executor; repeated approvals, rejection, missing/invalid state, cross-workspace access and concurrent resume covered. | Accepted within scope | Local and remote SQLite/PostgreSQL migrations, concurrent/repeated resume and Worker-to-default-API wire/scope contracts passed |
+| N4 | Cancellable capped exponential backoff with jitter and safe Retry-After parsing; apply only to eligible provider/read-only tool retries without write replay or unsafe model fallback. | Accepted within scope | Local and remote delay/parser/runtime cancellation/lease contracts passed; fallback cooldown bypass repaired and regression-tested |
+| N5 | Focused regressions, SQLite/PostgreSQL migrations/ownership, full local gates, evals and disposable deployment checks; separately record remote CI when authorized. | Accepted within scope | Local evidence below; CI 43466834113 for cb25484 passed all three jobs, including 1104 main + 1 restore + 4 separately executed deployment cases |
 
 Design/acceptance contract: [bounded native execution](specs/bounded-native-execution.md).
 Update each row only after its evidence exists. Real-provider quality, deployment
@@ -106,8 +107,40 @@ Explicit remaining boundaries:
   all passed. The cheap eval subset still intentionally deselects 13 PostgreSQL
   cases; backend/deployment evidence remains the separate local record above
   until the new remote CI gate runs.
-- Commit/push and exact-commit CI tracking are authorized; remote acceptance
-  is still pending and must be recorded only after successful completion.
+- At the pre-push checkpoint, remote acceptance was still pending. The completed
+  exact-commit verification is recorded separately below.
+
+### N1-N5 Remote Acceptance (2026-11-14)
+
+Implementation: `cb25484d3a6671da135b55e6cbae60542f90e33f`, pushed to
+`origin/master`. [CI 43466834113](https://github.com/royliu1105/agent-kernel/actions/runs/43466834113)
+completed successfully; Python, Web and Compose all passed on the first run,
+without CI-only repairs, weakened assertions or waived failures.
+
+| Remote gate | Verified result |
+| --- | --- |
+| Python lint/types and fresh SQLite/PostgreSQL migrations | Passed |
+| Main Python suite with PostgreSQL, Redis and promtool | 1104 passed, 4 deployment cases skipped here and executed in Compose below |
+| Guarded PostgreSQL backup/restore | 1 passed, including the private execution checkpoint |
+| Compose HTTP / monitoring deployment | 1 passed / 3 passed; temporary deployment removed |
+| Release eval | RAG 3/3 + 4/4, tool eval 2/2, bounded execution 71 passed with 13 PostgreSQL cases intentionally deselected in this cheap subset, timelines 7/7 |
+| Web install, typecheck, build and Chromium smoke | Passed; 2 Playwright cases passed |
+
+The main suite's four skips are exactly `test_self_hosted_hardening.py` (1)
+and `test_monitoring_deployment.py` (3), not missing acceptance: the Compose job
+ran all four against its actual deployment. Across the separate Python gates,
+1109 distinct cases passed. Cheap-eval reruns are not added to this total.
+The 26-case increase over the earlier 1083-case local record is the added
+publication/status regression coverage.
+
+N1-N5 is accepted only within the documented execution/security boundaries.
+The serial batch, synchronous resume, unknown external-effect, cancellation,
+billing, paid-provider and deployment-capacity limits above still apply.
+GitHub reported non-blocking Action Node.js runtime and runner-image notices;
+upgrading those dependencies is separate maintenance, not a bypass of this gate.
+No tag, release, paid model call or production-capacity certification was made.
+The documentation-only evidence commit following this implementation must also
+pass its own CI; it does not alter the verified implementation's source code.
 
 Batch execution authorization (2026-11-13): the maintainer requested continuous
 implementation of the remaining 13 packages and approved parallel sub-agents.

@@ -4,9 +4,9 @@
 
 Use the [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
 for current work and status. R1-R10 remediation passed scoped acceptance for
-`d65e833` after the earlier blanket acceptance was withdrawn. Subsequent N1-N4
-bounded-execution work has local verification; N5 tracks its separate
-current-commit CI gate. Evidence and explicit limits live in the canonical plan.
+`d65e833` after the earlier blanket acceptance was withdrawn. Subsequent N1-N5
+bounded-execution work passed local and exact-commit remote verification for
+`cb25484`. Evidence and explicit limits live in the canonical plan.
 No new release is implied. The earlier release targets below are historical scope, not
 evidence that every production guarantee is already implemented.
 
