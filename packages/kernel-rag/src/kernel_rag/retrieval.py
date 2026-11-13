@@ -111,7 +111,7 @@ class Retriever:
                 embedding_repository=embedding_repository,
                 top_k=top_k,
             )
-        except RetrievalError as error:
+        except Exception as error:
             latency_ms = timer.elapsed_ms()
             self._record_retrieval_failure_metrics(
                 error_type=type(error).__name__,

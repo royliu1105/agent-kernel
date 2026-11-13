@@ -159,6 +159,10 @@ class _GuardedTransport(httpx.AsyncBaseTransport):
             extensions=core_response.extensions,
         )
         try:
+            # The MCP SDK follows 307/308 itself, regardless of HTTPX's setting.
+            # Reject at the transport boundary before the SDK can resend a write.
+            if 300 <= response.status_code < 400:
+                raise ExternalToolError("External HTTP redirects are not accepted.")
             length = int(response.headers.get("content-length", "0"))
             if length < 0 or length > self._endpoint.max_response_bytes:
                 raise ExternalToolError("External HTTP response exceeds the configured limit.")

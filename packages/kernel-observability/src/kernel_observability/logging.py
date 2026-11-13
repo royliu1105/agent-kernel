@@ -15,6 +15,53 @@ LogScalar = str | int | float | bool
 LogFieldValue = LogScalar | None
 
 
+def uvicorn_log_config() -> dict[str, Any]:
+    """Prevent Uvicorn from reinstalling raw access/exception formatters."""
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {"safe": {"()": JsonLogFormatter}},
+        "handlers": {
+            "safe": {
+                "class": "logging.StreamHandler",
+                "formatter": "safe",
+                "stream": "ext://sys.stderr",
+            }
+        },
+        "root": {"handlers": ["safe"], "level": "INFO"},
+        "loggers": {
+            name: {"handlers": [], "level": "INFO", "propagate": True}
+            for name in ("uvicorn", "uvicorn.error", "uvicorn.access")
+        },
+    }
+
+
+def configure_safe_logging() -> None:
+    """Install fail-closed formatting for application and SDK logging sinks.
+
+    Preserve embedding applications' destinations, but never preserve a raw
+    formatter: SDK warnings can contain whole provider responses or SQL binds.
+    Call before client creation and again at the process entry point.
+    """
+    root = logging.getLogger()
+    if not root.handlers:
+        root.addHandler(logging.StreamHandler())
+    formatter = JsonLogFormatter()
+    loggers = [root] + [
+        logger
+        for logger in logging.Logger.manager.loggerDict.values()
+        if isinstance(logger, logging.Logger)
+    ]
+    for logger in loggers:
+        for handler in logger.handlers:
+            handler.setFormatter(formatter)
+    if logging.lastResort is not None:
+        logging.lastResort.setFormatter(formatter)
+    root.setLevel(logging.INFO)
+    logging.captureWarnings(True)
+    logging.raiseExceptions = False
+
+
 def build_log_fields(
     context: ObservabilityContext,
     *,

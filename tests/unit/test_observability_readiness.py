@@ -1,5 +1,6 @@
 import asyncio
 import json
+from pathlib import Path
 from threading import Event
 
 import pytest
@@ -26,6 +27,9 @@ async def test_readiness_checks_real_database_and_disabled_dependencies(
                 "database": {"required": True, "status": "ok"},
                 "redis": {"required": False, "status": "disabled"},
                 "s3": {"required": False, "status": "disabled"},
+                "pgvector": {"required": False, "status": "disabled"},
+                "local_storage": {"required": True, "status": "ok"},
+                "openai": {"required": False, "status": "disabled"},
             },
         }
     finally:
@@ -173,3 +177,139 @@ def test_invalid_dependency_modes_fail_at_startup(
         )
     with pytest.raises(ValueError, match="database"):
         ReadinessChecker((DependencyCheck("database", "optional", lambda: True),))
+
+
+@pytest.mark.asyncio
+async def test_selected_pgvector_fails_on_sqlite(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    checker = create_readiness_checker(
+        sqlite_session_factory, env={"AGENT_KERNEL_VECTOR_STORE": "pgvector"}
+    )
+    try:
+        result = await checker.check()
+        assert result.status_code == 503
+        assert result.to_dict()["dependencies"]["pgvector"] == {  # type: ignore[index]
+            "required": True,
+            "status": "failed",
+            "error": "unavailable",
+        }
+    finally:
+        checker.close()
+
+
+@pytest.mark.asyncio
+async def test_local_store_read_write_probe_and_invalid_root(
+    sqlite_session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    for root, expected in ((tmp_path / "objects", 200), (Path("/dev/null"), 503)):
+        checker = create_readiness_checker(
+            sqlite_session_factory, env={"AGENT_KERNEL_OBJECT_STORE_ROOT": str(root)}
+        )
+        try:
+            result = await checker.check()
+            assert result.status_code == expected
+            assert str(root) not in json.dumps(result.to_dict())
+        finally:
+            checker.close()
+    assert list((tmp_path / "objects").iterdir()) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "configuration",
+    [
+        {},
+        {"OPENAI_API_KEY": "sk-PRIVATE_SENTINEL", "OPENAI_EMBEDDING_DIMENSIONS": "invalid"},
+        {"OPENAI_API_KEY": "bad\nkey"},
+    ],
+)
+async def test_required_provider_checks_configuration_without_billing(
+    sqlite_session_factory: sessionmaker[Session], configuration: dict[str, str]
+) -> None:
+    checker = create_readiness_checker(
+        sqlite_session_factory,
+        env={"AGENT_KERNEL_READINESS_OPENAI": "required", **configuration},
+    )
+    try:
+        result = await checker.check()
+        assert result.status_code == 503
+        assert "PRIVATE_SENTINEL" not in json.dumps(result.to_dict())
+    finally:
+        checker.close()
+
+
+@pytest.mark.asyncio
+async def test_valid_required_provider_does_not_call_network(
+    sqlite_session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Readiness must not invoke a paid model")
+
+    monkeypatch.setattr("httpx.Client.send", forbidden)
+    checker = create_readiness_checker(
+        sqlite_session_factory,
+        env={
+            "AGENT_KERNEL_READINESS_OPENAI": "required",
+            "OPENAI_API_KEY": "sk-test-only",
+            "OPENAI_EMBEDDING_DIMENSIONS": "1536",
+        },
+    )
+    try:
+        assert (await checker.check()).status_code == 200
+    finally:
+        checker.close()
+
+
+@pytest.mark.asyncio
+async def test_selected_openai_embeddings_require_provider_readiness(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    checker = create_readiness_checker(
+        sqlite_session_factory,
+        env={
+            "AGENT_KERNEL_EMBEDDING_PROVIDER": "openai",
+        },
+    )
+    try:
+        result = await checker.check()
+        assert result.status_code == 503
+        provider = next(check for check in result.dependencies if check.name == "openai")
+        assert provider.required and provider.status == "failed"
+    finally:
+        checker.close()
+    for mode in ("optional", "disabled"):
+        with pytest.raises(ValueError, match="must be required"):
+            create_readiness_checker(
+                sqlite_session_factory,
+                env={
+                    "AGENT_KERNEL_EMBEDDING_PROVIDER": "openai",
+                    "AGENT_KERNEL_READINESS_OPENAI": mode,
+                },
+            )
+    with pytest.raises(ValueError, match="embedding provider"):
+        create_readiness_checker(
+            sqlite_session_factory,
+            env={
+                "AGENT_KERNEL_EMBEDDING_PROVIDER": "unknown",
+            },
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "setting",
+    ["AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS", "AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS"],
+)
+async def test_principal_and_key_limiters_make_redis_required(
+    sqlite_session_factory: sessionmaker[Session],
+    setting: str,
+) -> None:
+    checker = create_readiness_checker(sqlite_session_factory, env={setting: "10"})
+    try:
+        result = await checker.check()
+        assert result.status_code == 503
+        redis = next(check for check in result.dependencies if check.name == "redis")
+        assert redis.required and redis.error == "not_configured"
+    finally:
+        checker.close()

@@ -15,6 +15,7 @@ from kernel_storage import (
     DocumentRepository,
     KnowledgeBaseRepository,
 )
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -94,9 +95,7 @@ def test_retriever_returns_ranked_chunks_with_citations(
     metric_labels = {"model": MockEmbeddingProvider.model, "status": "succeeded"}
     assert metrics_recorder.counter_value("rag_retrievals_total", labels=metric_labels) == 1
     assert len(metrics_recorder.observations("rag_retrieval_latency_ms", labels=metric_labels)) == 1
-    assert metrics_recorder.observations("rag_retrieval_result_count", labels=metric_labels) == (
-        1,
-    )
+    assert metrics_recorder.observations("rag_retrieval_result_count", labels=metric_labels) == (1,)
 
 
 def test_retriever_returns_empty_results_for_empty_knowledge_base(
@@ -139,3 +138,45 @@ def test_retriever_raises_for_missing_knowledge_base(
     assert metrics_recorder.counter_value("rag_retrievals_total", labels=metric_labels) == 1
     assert metrics_recorder.counter_value("rag_retrieval_failure_total", labels=metric_labels) == 1
     assert len(metrics_recorder.observations("rag_retrieval_latency_ms", labels=metric_labels)) == 1
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        RuntimeError("private-provider-body"),
+        OperationalError("private-sql", {}, Exception("secret")),
+    ],
+)
+def test_all_backend_failures_are_counted_without_sensitive_labels(
+    sqlite_session_factory: sessionmaker[Session],
+    monkeypatch: pytest.MonkeyPatch,
+    error: Exception,
+) -> None:
+    recorder = InMemoryMetricsRecorder()
+    retriever = Retriever(metrics_recorder=recorder)
+
+    def fail(*args: object, **kwargs: object) -> list[list[float]]:
+        raise error
+
+    monkeypatch.setattr(retriever.embedding_provider, "embed_texts", fail)
+    with sqlite_session_factory() as session:
+        kb = KnowledgeBaseRepository(session).create(name="failure")
+        with pytest.raises(type(error)):
+            retriever.retrieve(
+                knowledge_base_id=kb.id,
+                query="private-query",
+                knowledge_base_repository=KnowledgeBaseRepository(session),
+                document_repository=DocumentRepository(session),
+                chunk_repository=DocumentChunkRepository(session),
+                embedding_repository=ChunkEmbeddingRepository(session),
+            )
+    labels = {
+        "model": MockEmbeddingProvider.model,
+        "status": "failed",
+        "error_type": type(error).__name__,
+    }
+    assert recorder.counter_value("rag_retrieval_failure_total", labels=labels) == 1
+    assert len(recorder.observations("rag_retrieval_latency_ms", labels=labels)) == 1
+    assert (
+        "private" not in recorder.prometheus_text() and "secret" not in recorder.prometheus_text()
+    )

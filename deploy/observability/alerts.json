@@ -4,6 +4,72 @@
       "name": "agent-kernel",
       "rules": [
         {
+          "alert": "AgentKernelApiErrors",
+          "expr": "(sum by (job) (rate(api_requests_total{status_class=\"5xx\"}[5m])) / sum by (job) (rate(api_requests_total[5m])) > 0.05) and (sum by (job) (increase(api_requests_total[5m])) >= 20)",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "API server error ratio exceeds 5 percent."
+          }
+        },
+        {
+          "alert": "AgentKernelRunFailures",
+          "expr": "(sum by (job) (rate(agent_run_segments_total{outcome=~\"failed|error\"}[5m])) / sum by (job) (rate(agent_run_segments_total{outcome=~\"succeeded|failed|error\"}[5m])) > 0.2) and (sum by (job) (increase(agent_run_segments_total{outcome=~\"succeeded|failed|error\"}[5m])) >= 20)",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Terminal execution segment failure ratio exceeds 20 percent."
+          }
+        },
+        {
+          "alert": "AgentKernelQueueBacklog",
+          "expr": "max by (job) (agent_kernel_queue_backlog{job=\"agent-kernel-api\"}) > 100",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Durable queue backlog exceeds 100 runs."
+          }
+        },
+        {
+          "alert": "AgentKernelQueueWait",
+          "expr": "max by (job) (agent_kernel_queue_oldest_wait_seconds{job=\"agent-kernel-api\"}) > 120",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Oldest queued run has waited more than 120 seconds."
+          }
+        },
+        {
+          "alert": "AgentKernelApprovalWait",
+          "expr": "max by (job) (agent_kernel_approval_oldest_wait_seconds{job=\"agent-kernel-api\"}) > 3600",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Oldest unresolved approval has waited more than one hour."
+          }
+        },
+        {
+          "alert": "AgentKernelEstimatedCost",
+          "expr": "sum(increase(llm_estimated_cost_total{job=~\"agent-kernel-(api|worker)\"}[1h])) > 10",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Reported estimated model spend exceeds 10 USD in one hour."
+          }
+        },
+        {
           "alert": "AgentKernelTargetDown",
           "expr": "up{job=~\"agent-kernel-(api|worker)\"} == 0",
           "for": "2m",

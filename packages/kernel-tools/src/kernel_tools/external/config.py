@@ -11,7 +11,15 @@ from uuid import UUID
 from kernel_core import RiskLevel
 from pydantic import Field, SecretStr, model_validator
 
-from kernel_tools.models import ToolModel
+from kernel_tools.models import ToolMetadata, ToolModel
+
+ExternalPolicyDecision = Literal["allow", "deny", "require_approval"]
+
+
+class ExternalToolMetadata(ToolMetadata):
+    """Trusted binding policy, never derived from remote metadata."""
+
+    policy_decision: ExternalPolicyDecision | None = None
 
 
 class ExternalToolContract(ToolModel):
@@ -23,6 +31,7 @@ class ExternalToolContract(ToolModel):
     read_only: bool = False
     idempotent: bool = False
     retry_safe: bool = False
+    policy_decision: ExternalPolicyDecision | None = None
     timeout_ms: int = Field(default=10_000, ge=1, le=300_000)
 
     @model_validator(mode="after")

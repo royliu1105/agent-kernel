@@ -8,11 +8,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from kernel_runtime.queue import QueueFullError, QueueUnavailableError
 from kernel_runtime.redis_support import (
+    RateLimitDecision,
     RateLimitUnavailableError,
     RedisSettings,
     RedisWorkspaceRateLimiter,
@@ -140,7 +141,101 @@ def test_real_client_connection_failure_has_bounded_fail_closed_semantics() -> N
             client.close()
 
 
+def test_multi_scope_quotas_are_atomic_independent_and_do_not_charge_denials() -> None:
+    config = settings()
+    clients = [create_redis_client(config), create_redis_client(config)]
+    limiters = [
+        RedisWorkspaceRateLimiter(client=c, prefix=config.rate_limit_prefix) for c in clients
+    ]
+    workspace, other, principal, second_principal, key, key2, key3 = (uuid4() for _ in range(7))
+
+    def check(
+        index: int, *, ws: UUID = workspace, user: UUID = principal, token: UUID = key
+    ) -> RateLimitDecision:
+        return limiters[index % 2].check_scopes(
+            ws,
+            principal_id=user,
+            api_key_id=token,
+            workspace_limit=5,
+            principal_limit=3,
+            api_key_limit=2,
+            window_seconds=60,
+        )
+
+    try:
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            decisions = list(pool.map(check, range(32)))
+        assert sum(d.allowed for d in decisions) == 2
+        workspace_key = f"{config.rate_limit_prefix}:{workspace}:5:60"
+        principal_key = f"{config.rate_limit_prefix}:{workspace}:principal:{principal}:3:60"
+        assert clients[0].get(workspace_key) == clients[0].get(principal_key) == b"2"
+        assert check(0, token=key2).allowed  # Another key, same principal has one remaining.
+        assert not check(1, token=key2).allowed
+        assert check(0, user=second_principal, token=key3).allowed
+        assert check(1, user=second_principal, token=key3).allowed
+        assert not check(0, user=uuid4(), token=uuid4()).allowed  # Workspace exhausted.
+        assert check(1, ws=other).allowed  # Quotas never cross the workspace boundary.
+        assert all(1 <= d.retry_after_seconds <= 60 for d in decisions if not d.allowed)
+    finally:
+        keys = list(clients[0].scan_iter(match=f"{config.rate_limit_prefix}:*"))
+        if keys:
+            clients[0].delete(*keys)
+        for client in clients:
+            client.close()
+
+
+def test_invalid_secondary_bucket_does_not_partially_charge_workspace() -> None:
+    config = settings()
+    client = create_redis_client(config)
+    workspace, principal, key = uuid4(), uuid4(), uuid4()
+    workspace_key = f"{config.rate_limit_prefix}:{workspace}:10:60"
+    key_bucket = f"{config.rate_limit_prefix}:{workspace}:api-key:{key}:2:60"
+    try:
+        client.rpush(key_bucket, "wrongtype")
+        with pytest.raises(RateLimitUnavailableError):
+            RedisWorkspaceRateLimiter(client=client, prefix=config.rate_limit_prefix).check_scopes(
+                workspace,
+                principal_id=principal,
+                api_key_id=key,
+                workspace_limit=10,
+                api_key_limit=2,
+                window_seconds=60,
+            )
+        assert client.exists(workspace_key) == 0
+    finally:
+        client.delete(workspace_key, key_bucket)
+        client.close()
+
+
+@pytest.mark.parametrize("malformed", ["1e0", "01", "1.0", "+1", "-0", "99999999999999999999"])
+def test_noncanonical_counter_does_not_charge_any_other_bucket(malformed: str) -> None:
+    config = settings()
+    client = create_redis_client(config)
+    workspace, principal, token = uuid4(), uuid4(), uuid4()
+    workspace_key = f"{config.rate_limit_prefix}:{workspace}:10:60"
+    principal_key = f"{config.rate_limit_prefix}:{workspace}:principal:{principal}:10:60"
+    token_key = f"{config.rate_limit_prefix}:{workspace}:api-key:{token}:2:60"
+    try:
+        client.set(token_key, malformed, ex=60)
+        with pytest.raises(RateLimitUnavailableError):
+            RedisWorkspaceRateLimiter(client=client, prefix=config.rate_limit_prefix).check_scopes(
+                workspace,
+                principal_id=principal,
+                api_key_id=token,
+                workspace_limit=10,
+                principal_limit=10,
+                api_key_limit=2,
+                window_seconds=60,
+            )
+        assert client.exists(workspace_key, principal_key) == 0
+        assert client.get(token_key) == malformed.encode()
+    finally:
+        client.delete(workspace_key, principal_key, token_key)
+        client.close()
+
+
 @pytest.mark.asyncio
 async def test_real_queue_drill_recovers_rejected_and_lost_hints() -> None:
     report = await run_queue_drill(settings().url)
     assert report["passed"] and report["runs_recovered"] == 3
+    assert report["worker_queue_fallbacks"] == 1

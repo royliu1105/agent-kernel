@@ -6,7 +6,21 @@ This is not a new release announcement or production certification.
 
 ## Acceptance Checklist
 
-- [x] Implement all thirteen remaining packages with tests and operator docs.
+**Reopened 2026-11-13:** the audit at `1efc174` found reproducible defects and
+unfulfilled original requirements. The checked historical gates below retain
+their evidence, but do not establish acceptance of the remediation. See R1-R10
+in the canonical plan. Record new commands/results separately; never relabel
+historical results as tests of changed code.
+
+- [ ] Resolve R1-R10 and individually record behavioral regression evidence.
+- [x] Reconcile all thirteen packages with the original requirements; record implemented scope and explicit limits below.
+- [x] Run full local gates on the repaired code, including real backends/deployment (746 passed, no skips).
+- [ ] Record green remote CI for the repaired implementation SHA.
+- [ ] Final requirement-by-requirement acceptance review.
+
+### Historical Gates (Before Audit)
+
+- [ ] Implement all thirteen remaining packages with tests and operator docs (previous blanket acceptance withdrawn).
 - [x] Real PostgreSQL/SQLite claim, approval/resume and stale-owner contracts.
 - [x] Real Redis admission/queue and native pgvector contracts.
 - [x] Disposable database/object restore drill and queue-loss drill.
@@ -18,14 +32,88 @@ This is not a new release announcement or production certification.
 - [x] Green remote CI for implementation `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51`.
 - [ ] Maintainer review of compatibility/security limitations before release.
 
-The local implementation/deployment and remote CI gates have evidence. P5.2 is
-closed within the canonical plan's scoped guarantees. Commit/push and CI tracking
+The historical local implementation/deployment and remote CI gates have evidence.
+P5.2 is reopened, not accepted. Commit/push and CI tracking
 were explicitly authorized by the maintainer on 2026-11-13; no release was
 authorized. Live-provider execution is optional and was not enabled. The
-unchecked release review above is a future publication gate, not an unreported
-implementation task.
+unchecked release review is separate from the newly reopened implementation work.
 
-## Remote Acceptance
+## Remediation Verification
+
+Baseline: `1efc174`. Repairs are implemented and the final local full gate passed.
+No repaired SHA has remote verification yet. Completion of R10/final acceptance
+remains unchecked; earlier green CI is not evidence for these changes. The
+maintainer has authorized committing/pushing this remediation to `origin/master`
+and tracking its CI. No tag or release is authorized.
+
+| Item | New evidence | Remaining gate |
+| --- | --- | --- |
+| R1 | `test_observability_logging_entrypoints.py` exercises configured Uvicorn DB exceptions, Worker top-level exceptions, startup and malformed SDK notifications; raw SQL/prompt/secret sentinels absent. MCP diagnostic tests also assert raw LogRecords are sanitized before plain handlers. | Remote |
+| R2 | `test_external_mcp_failures.py` exercises actual SDK transport: redirects send once, HTTP failures preserve caller, later calls reconnect, catalog drift fails closed, pending/canceled calls are not replayed. | Remote |
+| R3 | `test_openai_runtime_contract.py` uses the actual adapter/runtime with HTTP-only fixtures. Correct call IDs/output/reasoning, transient and permanent classification, bounded synthesis retries, exactly one tool execution, usage and zero unsafe fallback calls verified. | Remote |
+| R4 | Three new deadline/heartbeat/late-result tests first failed on baseline, passed after offloading and are included in the full suite. Read-only worker threads may finish after timeout but cannot complete the failed Run. | Remote |
+| R5 | Real multi-client Redis and dual-API quota tests passed. Independent review found canonical-number parsing could cause partial charging; six malformed-counter cases now assert no other bucket is charged. TTL-zero denial also fixed. | Remote |
+| R6 | `test_usage_attribution.py`, `test_usage_migration.py`, readiness/operational-signal and `test_embedding_bootstrap.py` verify trusted principal/model attribution, cross-workspace denial, fresh/legacy SQLite/PostgreSQL migration, selected real embedding adapter and retryable embedding failure. | Remote |
+| R7 | Native Prometheus exposition/rules/query tests passed, including firing cases for all 15 rules. Actual scrape and Grafana provisioning passed for 24 panels; upper/lower browser screenshots inspected, no page errors. | Remote |
+| R8 | Actual stdio/HTTP tool/resource/prompt deadlines plus runtime approval/denial/audit and OpenAPI binding policy tests passed. Central and binding policy compose conservatively. | Remote |
+| R9 | Actual faulty Redis queue attached to Worker: one observed dequeue failure and three successful DB-polled runs. Real pg_dump/restore, matching objects, corruption detection and native vector retrieval passed. Fixture extended to include nonempty model usage, then restore test passed again. | Remote |
+| R10 local | Full final `pytest`: **746 passed, no skips** with PostgreSQL, Redis, restore, promtool, HTTP and monitoring enabled. Ruff, mypy (207 files), release eval (3/3 + 4/4 + 2/2 + timelines 7/7), Web types/build and Chromium (2/2) passed. Quick synthetic burst: 25 succeeded, 0 failed/remaining. | Remote CI, final acceptance |
+
+Final application images (after the limiter follow-up): API
+`sha256:c0b56b54a8f9c517877e86542382bdd747252da01aee51a75ad4b207ca567e06`,
+Worker `sha256:09bf3d1258f71cca270188acc2ef1a8dbb0c2a28e1a429b508e40de15b110008`.
+New disposable project: `agent-kernel-remediation`; dedicated test PostgreSQL
+and Redis used loopback ports 55488 and 56488. No application database was used.
+Build cache was used; this is not a cold-cache benchmark.
+
+Final full-gate environment (synthetic Grafana password supplied privately):
+
+```bash
+AGENT_KERNEL_TEST_POSTGRES_URL=postgresql+psycopg://agent_kernel:drill-only@127.0.0.1:55488/agent_kernel_test \
+AGENT_KERNEL_TEST_REDIS_URL=redis://127.0.0.1:56488/15 \
+AGENT_KERNEL_ALLOW_BACKEND_DRILL=1 \
+AGENT_KERNEL_TEST_PG_TOOLS_CONTAINER=agent-kernel-drill-remediation-pg \
+AGENT_KERNEL_TEST_PROMTOOL=1 \
+AGENT_KERNEL_TEST_DEPLOYMENT_URL=http://127.0.0.1:28080 \
+AGENT_KERNEL_TEST_MONITORING=1 \
+AGENT_KERNEL_TEST_COMPOSE_PROJECT=agent-kernel-remediation \
+AGENT_KERNEL_TEST_GRAFANA_PASSWORD="$AGENT_KERNEL_GRAFANA_ADMIN_PASSWORD" \
+uv run pytest -q --tb=short
+```
+
+Runtime boundaries retained: no paid model request was made; HTTP fixtures prove
+protocol behavior, not upstream availability or model quality. Provider readiness
+validates configuration, not credentials with the vendor. Costs are estimates,
+including unknown legacy attribution, not billing. Native tool follow-up retries
+stay on the same provider/model and never replay tools; cross-provider follow-up
+fallback and a general reasoning/tool loop are not claimed. Existing single-tool
+loop and approval-resume boundaries remain documented in behavior-regression.md.
+No dependency lockfile changed and no new online vulnerability audit is claimed.
+
+The first real Redis attempt was blocked by the execution sandbox's loopback
+network policy, not skipped or counted as passed; the same tests passed with
+authorized access to disposable containers. A first PostgreSQL migration fixture
+incorrectly found public's Alembic version table; it was corrected to create an
+isolated version table and assert physical table ownership before inserting data.
+Only the dedicated test database was involved.
+
+An intermediate integration run reported seven failures (693 passed, four
+deployment skips): follow-up retry count expectations, native-history wire
+assertions, and plain-handler logging tests under globally configured logging.
+Those assertions were reconciled with the intended behavior without removing
+privacy, side-effect-count or protocol checks. Subsequent local runs progressed
+to 740 and finally 746 passing tests with all deployment opt-ins enabled.
+
+Cleanup was verified after the local gates: the disposable
+`agent-kernel-remediation` Compose project and its volumes, dedicated
+`agent-kernel-drill-remediation-pg` / `agent-kernel-drill-remediation-redis`
+containers, and temporary monitoring-token file were removed. No user-owned
+application database or volume was removed. Remote CI and final acceptance
+are still pending.
+The changed-file pre-commit checks passed (YAML, EOF/whitespace, Ruff lint and
+format). TOML and the unchanged Compose override had no matching files.
+
+## Historical Remote Verification
 
 Verified implementation: `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51`, following
 the main hardening commit `ced4a4b22f642ac824b2d2312a8e6464bab6d753`.
@@ -49,7 +137,7 @@ The follow-up closure commit changes documentation only. This record names the
 verified implementation SHA so it remains stable instead of trying to embed a
 commit's own hash in itself; the closure commit also runs the same CI workflow.
 
-## Local Environment and Evidence
+## Historical Local Environment and Evidence
 
 Backend checks use disposable loopback-only Redis 7 and pgvector PostgreSQL 16
 containers, not the project's application database. PostgreSQL tests create
@@ -57,7 +145,8 @@ random schemas; restore tests additionally require a dedicated labelled
 `agent-kernel-drill-*` container and test database. Redis tests delete only their
 generated keys, never FLUSHDB. See [backend operations](backend-operations.md).
 
-Final local results after MCP/certifi/Next.js updates:
+Pre-audit local results after MCP/certifi/Next.js updates (not evidence for the
+current remediation):
 
 | Gate | Evidence |
 | --- | --- |

@@ -164,6 +164,7 @@ class Run(KernelModel):
     id: UUID = Field(default_factory=uuid4)
     agent_id: UUID
     workspace_id: UUID | None = None
+    principal_id: UUID | None = None
     status: RunStatus = RunStatus.CREATED
     input: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] | None = None

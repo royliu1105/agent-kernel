@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Mapping
+from copy import deepcopy
 from typing import Any
 
 import httpx
+from pydantic import ValidationError
 
 from kernel_providers.base import (
     LLMFinishReason,
@@ -18,6 +20,7 @@ from kernel_providers.base import (
     LLMToolCall,
     LLMToolDefinition,
     LLMUsage,
+    MessageRole,
 )
 
 OPENAI_API_KEY_ENV = "OPENAI_API_KEY"
@@ -83,22 +86,45 @@ class OpenAIProvider:
         except httpx.HTTPStatusError as error:
             raise LLMProviderError(
                 f"OpenAI API returned {error.response.status_code}.",
-                error_type="openai_status_error",
+                error_type=_status_error_type(error.response),
+            ) from error
+        except httpx.TimeoutException as error:
+            raise LLMProviderError(
+                "OpenAI API request timed out.",
+                error_type="provider_timeout",
+            ) from error
+        except (httpx.NetworkError, httpx.RemoteProtocolError) as error:
+            raise LLMProviderError(
+                "OpenAI API is unavailable.",
+                error_type="provider_unavailable",
             ) from error
         except httpx.RequestError as error:
             raise LLMProviderError(
-                f"OpenAI API request failed: {error}",
+                "OpenAI API request failed.",
                 error_type="openai_request_error",
             ) from error
 
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError as error:
+            raise LLMProviderError(
+                "OpenAI API returned invalid JSON.", error_type="openai_invalid_response"
+            ) from error
+        if not isinstance(data, dict):
+            raise LLMProviderError(
+                "OpenAI API response must be an object.", error_type="openai_invalid_response"
+            )
+        tool_calls = _extract_tool_calls(data)
+        if tool_calls:
+            # Validate replayable native history before runtime can execute a tool.
+            _native_output_payload(data.get("output"), tool_calls)
         return LLMResponse(
             provider=self.name,
             model=str(data.get("model", request.model)),
             text=_extract_text(data),
             usage=_extract_usage(data),
             finish_reason=_extract_finish_reason(data),
-            tool_calls=_extract_tool_calls(data),
+            tool_calls=tool_calls,
             raw=data,
         )
 
@@ -106,7 +132,7 @@ class OpenAIProvider:
 def _request_payload(request: LLMRequest) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "model": request.model,
-        "input": [_message_payload(message) for message in request.messages],
+        "input": _input_payload(request.messages),
     }
     if request.temperature != 0.0:
         payload["temperature"] = request.temperature
@@ -119,11 +145,170 @@ def _request_payload(request: LLMRequest) -> dict[str, Any]:
     return payload
 
 
-def _message_payload(message: LLMMessage) -> dict[str, object]:
-    return {
-        "role": message.role.value,
-        "content": [{"type": "input_text", "text": message.content}],
-    }
+def _input_payload(messages: tuple[LLMMessage, ...]) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    pending: set[str] = set()
+    seen: set[str] = set()
+    for message in messages:
+        if message.role is MessageRole.TOOL:
+            call_id = message.metadata.get("provider_tool_call_id")
+            if not isinstance(call_id, str) or call_id not in pending:
+                raise LLMProviderError(
+                    "OpenAI tool result requires a matching pending provider call ID.",
+                    error_type="openai_invalid_tool_history",
+                )
+            items.append(
+                {"type": "function_call_output", "call_id": call_id, "output": message.content}
+            )
+            pending.remove(call_id)
+            continue
+
+        raw_calls = message.metadata.get("tool_calls", [])
+        if not isinstance(raw_calls, list) or (
+            raw_calls and message.role is not MessageRole.ASSISTANT
+        ):
+            raise LLMProviderError(
+                "OpenAI function call history must be an assistant tool_calls list.",
+                error_type="openai_invalid_tool_history",
+            )
+        if pending:
+            raise LLMProviderError(
+                "OpenAI function calls require results before the next message.",
+                error_type="openai_invalid_tool_history",
+            )
+        calls: list[LLMToolCall] = []
+        for raw_call in raw_calls:
+            try:
+                call = LLMToolCall.model_validate(raw_call)
+            except ValidationError as error:
+                raise LLMProviderError(
+                    "OpenAI function call history is invalid.",
+                    error_type="openai_invalid_tool_history",
+                ) from error
+            if not call.id.strip() or not call.name.strip() or call.id in seen:
+                raise LLMProviderError(
+                    "OpenAI function call history requires unique non-empty IDs and names.",
+                    error_type="openai_invalid_tool_history",
+                )
+            calls.append(call)
+            pending.add(call.id)
+            seen.add(call.id)
+        native_output = message.metadata.get("provider_response_output")
+        if native_output is not None:
+            if (
+                message.role is not MessageRole.ASSISTANT
+                or message.metadata.get("provider_name") != "openai"
+            ):
+                raise LLMProviderError(
+                    "OpenAI native history must come from an OpenAI assistant response.",
+                    error_type="openai_invalid_tool_history",
+                )
+            items.extend(_native_output_payload(native_output, tuple(calls)))
+            continue
+        # An empty assistant message is only a carrier for normalized tool metadata.
+        if message.content or not calls:
+            items.append(
+                {
+                    "role": message.role.value,
+                    "content": [{"type": "input_text", "text": message.content}],
+                }
+            )
+        items.extend(
+            {
+                "type": "function_call",
+                "call_id": call.id,
+                "name": call.name,
+                "arguments": json.dumps(call.arguments, sort_keys=True),
+            }
+            for call in calls
+        )
+    if pending:
+        raise LLMProviderError(
+            "OpenAI function call history is missing tool results.",
+            error_type="openai_invalid_tool_history",
+        )
+    return items
+
+
+def _native_output_payload(output: object, calls: tuple[LLMToolCall, ...]) -> list[dict[str, Any]]:
+    """Replay provider-native items in order, without synthesizing reasoning."""
+    invalid = LLMProviderError(
+        "OpenAI native output cannot be safely replayed as tool-call history.",
+        error_type="openai_invalid_tool_history",
+    )
+    if not isinstance(output, list) or not output:
+        raise invalid
+    replay: list[dict[str, Any]] = []
+    native_calls: list[LLMToolCall] = []
+    for item in output:
+        if not isinstance(item, dict) or item.get("status", "completed") != "completed":
+            raise invalid
+        kind = item.get("type")
+        if kind == "function_call":
+            if not isinstance(item.get("arguments"), str):
+                raise invalid
+            native_calls.append(_tool_call_from_output_item(item))
+        elif kind == "reasoning":
+            if _string_value(item, "id") is None or not _valid_text_parts(
+                item.get("summary"), {"summary_text": "text"}
+            ):
+                raise invalid
+            if "content" in item and not _valid_text_parts(
+                item["content"], {"reasoning_text": "text"}
+            ):
+                raise invalid
+            if item.get("encrypted_content") is not None and not isinstance(
+                item["encrypted_content"], str
+            ):
+                raise invalid
+        elif kind == "message":
+            if item.get("role") != "assistant" or not _valid_text_parts(
+                item.get("content"), {"output_text": "text", "refusal": "refusal"}
+            ):
+                raise invalid
+        else:
+            # Built-in/custom output types need their own validated continuation.
+            raise invalid
+        replay.append(deepcopy(item))
+    if [(c.id, c.name, c.arguments) for c in native_calls] != [
+        (c.id, c.name, c.arguments) for c in calls
+    ]:
+        raise invalid
+    return replay
+
+
+def _valid_text_parts(value: object, fields: dict[str, str]) -> bool:
+    if not isinstance(value, list):
+        return False
+    return all(
+        isinstance(part, dict)
+        and isinstance(part.get("type"), str)
+        and part["type"] in fields
+        and isinstance(part.get(fields[part["type"]]), str)
+        for part in value
+    )
+
+
+def _status_error_type(response: httpx.Response) -> str:
+    if response.status_code == 429:
+        # Billing exhaustion is not transient throttling; retrying spends attempts
+        # without a chance of recovery and must not silently select a fallback.
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        error = data.get("error") if isinstance(data, dict) else None
+        permanent = {"insufficient_quota", "credit_balance_exhausted", "billing_hard_limit_reached"}
+        if isinstance(error, dict) and any(
+            isinstance(error.get(key), str) and error[key] in permanent for key in ("code", "type")
+        ):
+            return "openai_quota_exhausted"
+        return "rate_limit"
+    if response.status_code in (408, 504):
+        return "provider_timeout"
+    if response.status_code == 409 or 500 <= response.status_code < 600:
+        return "provider_unavailable"
+    return "openai_status_error"
 
 
 def _tool_payload(tool: LLMToolDefinition) -> dict[str, object]:
@@ -144,13 +329,13 @@ def _extract_text(data: dict[str, Any]) -> str:
     output = data.get("output")
     if isinstance(output, list):
         for item in output:
-            if not isinstance(item, dict):
+            if not isinstance(item, dict) or item.get("type") != "message":
                 continue
             content = item.get("content")
             if not isinstance(content, list):
                 continue
             for content_item in content:
-                if not isinstance(content_item, dict):
+                if not isinstance(content_item, dict) or content_item.get("type") != "output_text":
                     continue
                 text = content_item.get("text")
                 if isinstance(text, str):
@@ -211,19 +396,18 @@ def _has_tool_calls(data: dict[str, Any]) -> bool:
         if not isinstance(content, list):
             continue
         if any(
-            isinstance(value, dict) and value.get("type") == "function_call"
-            for value in content
+            isinstance(value, dict) and value.get("type") == "function_call" for value in content
         ):
             return True
     return False
 
 
 def _tool_call_from_output_item(item: dict[str, Any]) -> LLMToolCall:
-    call_id = _string_value(item, "call_id") or _string_value(item, "id")
+    call_id = _string_value(item, "call_id")
     name = _string_value(item, "name")
     if call_id is None or name is None:
         raise LLMProviderError(
-            "OpenAI function call output is missing call_id/id or name.",
+            "OpenAI function call output is missing call_id or name.",
             error_type="openai_invalid_tool_call",
         )
 
@@ -261,7 +445,7 @@ def _tool_arguments_from_output_item(item: dict[str, Any]) -> dict[str, Any]:
 
 def _string_value(values: dict[str, Any], key: str) -> str | None:
     value = values.get(key)
-    if isinstance(value, str) and value != "":
+    if isinstance(value, str) and value.strip() != "":
         return value
     return None
 

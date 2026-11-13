@@ -13,6 +13,7 @@ from agent_kernel_api.main import create_app
 from fastapi.testclient import TestClient
 from kernel_rag import LocalObjectStore
 from kernel_runtime.redis_support import RedisSettings, create_redis_client
+from kernel_storage import ApiKeyRepository
 from kernel_storage.models import AgentRecord
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -38,6 +39,7 @@ def shared_admission(
     sqlite_session_factory: sessionmaker[Session],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
 ) -> Iterator[SharedAdmission]:
     url = os.environ.get("AGENT_KERNEL_TEST_REDIS_URL")
     if not url:
@@ -51,6 +53,8 @@ def shared_admission(
     monkeypatch.setenv("REDIS_URL", url)
     monkeypatch.setenv("AGENT_KERNEL_RUN_QUEUE_BACKEND", "database")
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "0")
+    monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS", "0")
+    monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS", "0")
     store = LocalObjectStore(root_path=tmp_path)
     issued_a, workspace_a = _client(sqlite_session_factory, store)
     issued_b, workspace_b = _client(sqlite_session_factory, store)
@@ -60,6 +64,9 @@ def shared_admission(
 
     # Configure real composition only after identity setup; no limiter is injected.
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "2")
+    extra_limits = getattr(request, "param", {})
+    for name, value in extra_limits.items():
+        monkeypatch.setenv(name, str(value))
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS", str(window))
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_PREFIX", prefix)
     admin = create_redis_client(RedisSettings(url=url))
@@ -96,7 +103,9 @@ def shared_admission(
             )
     finally:
         try:
-            admin.delete(key_a, key_b)
+            keys = list(admin.scan_iter(match=f"{prefix}:*"))
+            if keys:
+                admin.delete(*keys)
         finally:
             admin.close()
 
@@ -166,3 +175,41 @@ def test_wrongtype_limiter_key_fails_closed_without_write_or_cross_workspace_out
 
     assert cluster.first.get("/v1/usage", headers=cluster.headers_a).status_code == 200
     assert cluster.redis.get(cluster.key_a) == b"1"
+
+
+@pytest.mark.parametrize(
+    "shared_admission,second_key_status",
+    [
+        ({"AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS": 1}, 429),
+        ({"AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS": 1}, 200),
+    ],
+    indirect=["shared_admission"],
+)
+def test_real_api_principal_and_key_quotas_use_authenticated_ids(
+    shared_admission: SharedAdmission,
+    sqlite_session_factory: sessionmaker[Session],
+    second_key_status: int,
+) -> None:
+    cluster = shared_admission
+    with sqlite_session_factory() as session:
+        keys = ApiKeyRepository(session)
+        key = keys.authenticate(cluster.headers_a["authorization"].removeprefix("Bearer "))
+        assert key is not None
+        alternate = keys.issue(
+            workspace_id=cluster.workspace_a, principal_id=key.principal_id, name="second key"
+        )
+        assert alternate is not None
+    assert cluster.first.get("/v1/usage", headers=cluster.headers_a).status_code == 200
+    denied = cluster.second.get(
+        f"/v1/usage?principal_id={uuid4()}&api_key_id={uuid4()}", headers=cluster.headers_a
+    )
+    assert denied.status_code == 429 and int(denied.headers["Retry-After"]) > 0
+    second = cluster.second.get(
+        "/v1/usage",
+        headers={
+            "Authorization": f"Bearer {alternate.plaintext_key}",
+        },
+    )
+    assert second.status_code == second_key_status
+    assert cluster.redis.get(cluster.key_a) == (b"1" if second_key_status == 429 else b"2")
+    assert cluster.second.get("/v1/usage", headers=cluster.headers_b).status_code == 200

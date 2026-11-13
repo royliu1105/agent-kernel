@@ -10,7 +10,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 
 from kernel_tools.errors import ToolError
-from kernel_tools.external.config import ExternalAccess, ExternalToolContract
+from kernel_tools.external.config import ExternalAccess, ExternalToolContract, ExternalToolMetadata
 from kernel_tools.models import ToolExecutionContext, ToolMetadata
 
 
@@ -146,13 +146,14 @@ def sanitize_schema(
 
 
 def metadata_for(contract: ExternalToolContract, schema: dict[str, Any]) -> ToolMetadata:
-    return ToolMetadata(
+    return ExternalToolMetadata(
         name=contract.name,
         description=contract.description,
         input_schema=schema,
         risk_level=contract.risk_level,
         timeout_ms=contract.timeout_ms,
         retry_safe=contract.retry_safe,
+        policy_decision=contract.policy_decision,
     )
 
 

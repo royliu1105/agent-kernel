@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from kernel_core import ChunkEmbedding, DocumentChunk, DocumentStatus, RunEventType, RunStatus
+from kernel_observability import InMemoryMetricsRecorder
 from kernel_providers import MockLLMProvider
 from kernel_rag.object_store import LocalObjectStore
 from kernel_runtime import ModelRouter, QueuedRunWorker, RunExecutionService
@@ -260,6 +261,17 @@ def _seed_backup_fixture(engine: Engine, root: Path) -> UUID:
     content = b"Recovery fixture: a document and its matching parsed bytes.\n"
     with create_session_factory(engine)() as session:
         workspace = WorkspaceRepository(session).create(name="drill", slug="drill")
+        agent = AgentRepository(session).create(name="restore usage", workspace_id=workspace.id)
+        runs = RunRepository(session)
+        run = runs.create(agent_id=agent.id, workspace_id=workspace.id, input_payload={})
+        runs.record_usage(
+            run.id,
+            input_tokens=12,
+            output_tokens=3,
+            estimated_cost=0.125,
+            provider="fixture",
+            model="restore-model",
+        )
         kb = KnowledgeBaseRepository(session, workspace_id=workspace.id).create(name="restore")
         stored = store.write_document(
             knowledge_base_id=kb.id, filename="source.md", content=content
@@ -430,13 +442,21 @@ async def run_queue_drill(url: str) -> dict[str, Any]:
                 outage_detected = True
             else:
                 raise DrillError("Queue failure was not surfaced.")
+            metrics = InMemoryMetricsRecorder()
             worker = QueuedRunWorker(
                 session_factory=sessions,
+                run_queue=queue,
+                metrics_recorder=metrics,
                 execution_service=RunExecutionService(
                     router=ModelRouter({"mock": MockLLMProvider()})
                 ),
             )
             await worker.run_once(limit=10)
+            fallback_count = metrics.counter_value(
+                "run_queue_errors_total", labels={"operation": "dequeue"}
+            )
+            if fallback_count != 1:
+                raise DrillError("Worker did not observe the injected Redis fault.")
             with sessions() as session:
                 runs = [RunRepository(session).get(run_id) for run_id in run_ids]
                 if any(run is None or run.status is not RunStatus.SUCCEEDED for run in runs):
@@ -447,6 +467,7 @@ async def run_queue_drill(url: str) -> dict[str, Any]:
                 "runs_recovered": len(run_ids),
                 "queue_full_detected": full_detected,
                 "queue_error_detected": outage_detected,
+                "worker_queue_fallbacks": int(fallback_count),
                 "malformed_hints": queue.malformed_items,
                 "durable_store": "sqlite-test-fixture",
             }

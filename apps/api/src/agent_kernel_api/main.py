@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import secrets
 from collections.abc import AsyncIterator, Iterator, Mapping
 from contextlib import asynccontextmanager
-from typing import Annotated
+from datetime import UTC, datetime
+from typing import Annotated, Literal
 from uuid import UUID
 
 import uvicorn
@@ -22,18 +24,24 @@ from kernel_core import (
     DocumentChunk,
     DocumentStatus,
     EvalRun,
+    EvalRunStatus,
     IngestionJob,
     KnowledgeBase,
     MemoryItem,
     MemoryType,
     Run,
     RunEvent,
+    RunEventType,
+    RunStatus,
 )
 from kernel_identity import Permission
 from kernel_observability import (
     AggregatingMetricsRecorder,
     ExposableMetricsRecorder,
+    HttpMetricsMiddleware,
     configure_opentelemetry,
+    configure_safe_logging,
+    uvicorn_log_config,
 )
 from kernel_rag import (
     DocumentChunkingService,
@@ -46,6 +54,7 @@ from kernel_rag import (
     ObjectStore,
     ObjectTooLargeError,
     Retriever,
+    create_embedding_provider,
     create_object_store,
     create_rag_tool_registry,
 )
@@ -87,8 +96,10 @@ from kernel_storage import (
     create_engine_for_url,
     create_session_factory,
 )
+from kernel_storage.models import ApprovalRecord, EvalRunRecord, RunEventRecord, RunRecord
 from kernel_tools.external.config import external_tools_config_from_env
 from kernel_tools.external.loader import load_external_tools
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from agent_kernel_api.auth import (
@@ -143,6 +154,7 @@ def create_app(
     rate_limiter: RedisWorkspaceRateLimiter | None = None,
     readiness_checker: ReadinessChecker | None = None,
 ) -> FastAPI:
+    configure_safe_logging()
     configure_opentelemetry()
     factory = session_factory or create_session_factory(create_engine_for_url())
     auth_enabled = api_key_auth_enabled
@@ -150,18 +162,22 @@ def create_app(
         auth_enabled = api_key_auth_enabled_from_env()
     redis_settings = RedisSettings.from_env()
     rate_limit = int(os.getenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "0"))
+    principal_rate_limit = int(os.getenv("AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS", "0"))
+    api_key_rate_limit = int(os.getenv("AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS", "0"))
     rate_window = int(os.getenv("AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS", "60"))
-    if not 0 <= rate_limit <= 1_000_000 or not 1 <= rate_window <= 86400:
-        raise ValueError("Invalid workspace rate-limit bounds.")
-    if rate_limit and not auth_enabled:
-        raise ValueError("Workspace rate limiting requires API key authentication.")
+    rates = (rate_limit, principal_rate_limit, api_key_rate_limit)
+    if any(not 0 <= rate <= 1_000_000 for rate in rates) or not 1 <= rate_window <= 86400:
+        raise ValueError("Invalid rate-limit bounds.")
+    rate_limiting_enabled = any(rates)
+    if rate_limiting_enabled and not auth_enabled:
+        raise ValueError("Rate limiting requires API key authentication.")
     needs_redis = (run_queue is None and redis_settings.queue_backend == "redis") or (
-        rate_limit > 0 and rate_limiter is None
+        rate_limiting_enabled and rate_limiter is None
     )
     redis_client = create_redis_client(redis_settings) if needs_redis else None
     queue = run_queue or create_run_queue(redis_settings, client=redis_client)
     limiter = rate_limiter
-    if rate_limit and limiter is None:
+    if rate_limiting_enabled and limiter is None:
         assert redis_client is not None
         limiter = RedisWorkspaceRateLimiter(
             client=redis_client,
@@ -171,7 +187,15 @@ def create_app(
         factory,
         redis_probe=redis_client.ping if redis_client is not None else None,
     )
-    registry = create_rag_tool_registry(session_factory=factory)
+    process_metrics = metrics_recorder or AggregatingMetricsRecorder()
+    retrieval_service = retriever or Retriever(
+        embedding_provider=create_embedding_provider(), metrics_recorder=process_metrics
+    )
+    registry = create_rag_tool_registry(
+        session_factory=factory,
+        metrics_recorder=process_metrics,
+        retriever=retrieval_service,
+    )
     external_config = external_tools_config_from_env()
 
     @asynccontextmanager
@@ -191,10 +215,12 @@ def create_app(
             session_factory=factory,
             rate_limiter=limiter,
             rate_limit=rate_limit,
+            principal_rate_limit=principal_rate_limit,
+            api_key_rate_limit=api_key_rate_limit,
             rate_window_seconds=rate_window,
         )
+    app.add_middleware(HttpMetricsMiddleware, metrics=process_metrics)
 
-    process_metrics = metrics_recorder or AggregatingMetricsRecorder()
     runner = execution_service or RunExecutionService(
         metrics_recorder=process_metrics,
         tool_registry=registry,
@@ -202,8 +228,9 @@ def create_app(
     store = object_store or create_object_store()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)
-    indexer = indexing_service or DocumentIndexingService()
-    retrieval_service = retriever or Retriever(metrics_recorder=process_metrics)
+    indexer = indexing_service or DocumentIndexingService(
+        embedding_provider=retrieval_service.embedding_provider
+    )
 
     @app.exception_handler(ExecutionOwnershipError)
     @app.exception_handler(RunConflictError)
@@ -224,14 +251,21 @@ def create_app(
         return JSONResponse(status_code=result.status_code, content=result.to_dict())
 
     @app.get("/metrics", include_in_schema=False)
-    async def metrics(request: Request) -> Response:
+    def metrics(request: Request) -> Response:
         token = os.getenv("AGENT_KERNEL_MONITORING_TOKEN", "")
         if auth_enabled or token:
             supplied = request.headers.get("authorization", "").removeprefix("Bearer ")
             if not token or not secrets.compare_digest(token.encode(), supplied.encode()):
                 raise HTTPException(status_code=401, detail="Monitoring authentication required.")
+        try:
+            snapshot = _operational_metrics(factory)
+        except Exception:
+            logging.getLogger(__name__).exception("Operational metrics snapshot failed")
+            raise HTTPException(
+                status_code=503, detail="Operational metrics unavailable."
+            ) from None
         return Response(
-            content=process_metrics.prometheus_text(),
+            content=process_metrics.prometheus_text() + snapshot,
             media_type="text/plain; version=0.0.4; charset=utf-8",
         )
 
@@ -247,6 +281,29 @@ def create_app(
         return RunRepository(session).usage_summary(
             workspace_id=current_workspace_id(http_request),
         )
+
+    @app.get(
+        "/v1/usage/breakdown",
+        dependencies=[Depends(require_permission(Permission.RUN_READ))],
+        tags=["runs"],
+    )
+    def usage_breakdown(
+        http_request: Request,
+        group_by: Literal["workspace", "run", "principal", "model"] = "model",
+        run_id: UUID | None = None,
+        limit: int = Query(default=100, ge=1, le=1000),
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> dict[str, object]:
+        return {
+            "group_by": group_by,
+            "items": RunRepository(session).usage_breakdown(
+                group_by=group_by,
+                workspace_id=current_workspace_id(http_request),
+                run_id=run_id,
+                limit=limit,
+            ),
+            "estimated": True,
+        }
 
     @app.post(
         "/v1/agents",
@@ -306,6 +363,7 @@ def create_app(
         run = RunRepository(session).create(
             agent_id=agent_id,
             workspace_id=workspace_id,
+            principal_id=current_principal_id(http_request),
             input_payload=request.input,
         )
         return _run_response(run)
@@ -1133,16 +1191,118 @@ def create_app(
     return app
 
 
-app = create_app()
+def _operational_metrics(factory: sessionmaker[Session]) -> str:
+    """Read durable, deployment-wide state for the monitoring endpoint.
+
+    These are gauges, not counters: retention/deletion can lower persisted totals.
+    No payload columns, tenant selectors, identifiers or unbounded labels are read.
+    """
+    lines: list[str] = []
+    now = datetime.now(UTC)
+
+    def gauge(name: str, help_text: str, value: float) -> None:
+        lines.extend((f"# HELP {name} {help_text}", f"# TYPE {name} gauge", f"{name} {value}"))
+
+    def age(value: datetime | None) -> float:
+        if value is None:
+            return 0
+        return max(0, (now - value.replace(tzinfo=value.tzinfo or UTC)).total_seconds())
+
+    with factory() as session:
+        for name, column, allowed in (
+            ("agent_kernel_runs", RunRecord.status, tuple(status.value for status in RunStatus)),
+            (
+                "agent_kernel_evals",
+                EvalRunRecord.status,
+                tuple(status.value for status in EvalRunStatus),
+            ),
+            (
+                "agent_kernel_approvals",
+                ApprovalRecord.status,
+                tuple(status.value for status in ApprovalStatus),
+            ),
+            (
+                "agent_kernel_run_events",
+                RunEventRecord.type,
+                tuple(event.value for event in RunEventType if event.value.startswith("run_")),
+            ),
+        ):
+            counts = {
+                state: count
+                for state, count in session.execute(
+                    select(column, func.count()).where(column.in_(allowed)).group_by(column)
+                ).all()
+            }
+            lines.extend(
+                (f"# HELP {name} Persisted records by lifecycle state.", f"# TYPE {name} gauge")
+            )
+            for state in allowed:
+                lines.append(f'{name}{{state="{state}"}} {counts.get(state, 0)}')
+
+        latest_queue = (
+            select(
+                RunEventRecord.run_id.label("run_id"),
+                func.max(RunEventRecord.created_at).label("queued_at"),
+            )
+            .where(RunEventRecord.type == RunEventType.RUN_QUEUED.value)
+            .group_by(RunEventRecord.run_id)
+            .subquery()
+        )
+        backlog, oldest_queue = session.execute(
+            select(
+                func.count(RunRecord.id),
+                func.min(func.coalesce(latest_queue.c.queued_at, RunRecord.created_at)),
+            )
+            .outerjoin(latest_queue, RunRecord.id == latest_queue.c.run_id)
+            .where(RunRecord.status == RunStatus.QUEUED.value)
+        ).one()
+        oldest_approval = session.scalar(
+            select(func.min(ApprovalRecord.requested_at)).where(
+                ApprovalRecord.status == ApprovalStatus.REQUESTED.value
+            )
+        )
+        gauge("agent_kernel_queue_backlog", "Durable queued runs, not Redis hint count.", backlog)
+        gauge(
+            "agent_kernel_queue_oldest_wait_seconds",
+            "Oldest queued run age since its latest queue event.",
+            age(oldest_queue),
+        )
+        gauge(
+            "agent_kernel_approval_oldest_wait_seconds",
+            "Oldest unresolved approval age.",
+            age(oldest_approval),
+        )
+        gauge(
+            "agent_kernel_operational_snapshot_unixtime",
+            "Time of successful persisted-state snapshot.",
+            now.timestamp(),
+        )
+    return "\n".join(lines) + "\n"
+
+
+try:
+    app = create_app()
+except Exception:
+    # Console-script imports run before main(); do not leak configuration/client
+    # exceptions through Python's raw top-level traceback during that import.
+    configure_safe_logging()
+    logging.getLogger(__name__).exception("API application initialization failed")
+    raise SystemExit(1) from None
 
 
 def main() -> None:
-    uvicorn.run(
-        "agent_kernel_api.main:app",
-        host=api_host_from_env(os.environ),
-        port=api_port_from_env(os.environ),
-        reload=False,
-    )
+    configure_safe_logging()
+    try:
+        uvicorn.run(
+            "agent_kernel_api.main:app",
+            host=api_host_from_env(os.environ),
+            port=api_port_from_env(os.environ),
+            reload=False,
+            log_config=uvicorn_log_config(),
+        )
+    except Exception:
+        logging.getLogger(__name__).exception("API startup failed")
+        raise SystemExit(1) from None
 
 
 def api_host_from_env(env: Mapping[str, str] | None = None) -> str:
@@ -1185,6 +1345,7 @@ def _run_response(run: Run) -> RunResponse:
         id=run.id,
         agent_id=run.agent_id,
         workspace_id=run.workspace_id,
+        principal_id=run.principal_id,
         status=run.status,
         input=run.input,
         output=run.output,

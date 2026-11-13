@@ -9,7 +9,10 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
+from kernel_core import RiskLevel, RunEventType, RunStatus
 from kernel_policy import PolicyAwareToolExecutor, ToolApprovalRequiredError
+from kernel_runtime import RunExecutionService
+from kernel_storage import AgentRepository, ApprovalRepository, RunRepository, ToolCallRepository
 from kernel_tools import ToolExecutionContext, ToolExecutor, ToolRegistry, ToolRequest
 from kernel_tools.errors import ToolTimeoutError, ToolValidationError
 from kernel_tools.external import (
@@ -25,6 +28,7 @@ from kernel_tools.external import (
 )
 from kernel_tools.external.http import create_http_client
 from pydantic import SecretStr
+from sqlalchemy.orm import Session, sessionmaker
 
 SPEC = Path(__file__).parents[2] / "examples" / "external-tools" / "openapi.json"
 
@@ -278,6 +282,100 @@ async def test_openapi_rejects_claiming_write_is_read_only() -> None:
     with pytest.raises(ExternalConfigurationError):
         async with load_external_tools(ToolRegistry(), ExternalToolsConfig(openapi=(api,))):
             pytest.fail("Mutating method must not be marked read-only")
+
+
+@pytest.mark.asyncio
+async def test_openapi_read_only_binding_requires_independent_persisted_approval(
+    http_fixture: tuple[str, list[dict[str, Any]]],
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    url, requests = http_fixture
+    base = configuration(url).openapi[0]
+    binding = base.bindings[0].model_copy(
+        update={
+            "contract": ExternalToolContract(
+                name="get_item",
+                read_only=True,
+                risk_level=RiskLevel.READ_ONLY,
+                policy_decision="require_approval",
+            )
+        }
+    )
+    denied_binding = binding.model_copy(
+        update={
+            "contract": ExternalToolContract(
+                name="denied_item",
+                read_only=True,
+                risk_level=RiskLevel.READ_ONLY,
+                policy_decision="deny",
+            )
+        }
+    )
+    api = base.model_copy(update={"bindings": (binding, denied_binding)})
+    registry = ToolRegistry()
+    async with load_external_tools(registry, ExternalToolsConfig(openapi=(api,))):
+        with sqlite_session_factory() as session:
+            agent = AgentRepository(session).create(name="external-openapi-policy")
+            repository = RunRepository(session)
+            service = RunExecutionService(tool_registry=registry)
+            denied_run = repository.create(
+                agent_id=agent.id,
+                input_payload={
+                    "tool": {
+                        "name": "denied_item",
+                        "arguments": {"path": {"item_id": "denied"}},
+                    }
+                },
+            )
+            repository.apply_transition(
+                run_id=denied_run.id,
+                status=RunStatus.QUEUED,
+                event_type=RunEventType.RUN_QUEUED,
+                payload={},
+            )
+            denied = await service.execute(run_id=denied_run.id, repository=repository)
+            assert denied.error_type == "tool_denied"
+            assert requests == []
+            assert any(
+                event.type is RunEventType.POLICY_EVALUATED and event.payload["decision"] == "deny"
+                for event in repository.list_events(denied_run.id)
+            )
+            run = repository.create(
+                agent_id=agent.id,
+                input_payload={
+                    "tool": {
+                        "name": "get_item",
+                        "arguments": {"path": {"item_id": "approved"}},
+                    }
+                },
+            )
+            repository.apply_transition(
+                run_id=run.id,
+                status=RunStatus.QUEUED,
+                event_type=RunEventType.RUN_QUEUED,
+                payload={},
+            )
+            waiting = await service.execute(run_id=run.id, repository=repository)
+            assert waiting.status is RunStatus.WAITING_APPROVAL
+            assert requests == []
+            approvals = ApprovalRepository(session)
+            approvals.approve(approval_id=approvals.list_for_run(run.id)[0].id)
+            completed = await service.resume(
+                run_id=run.id,
+                repository=repository,
+                approval_repository=approvals,
+                tool_call_repository=ToolCallRepository(session),
+            )
+            assert completed.status is RunStatus.SUCCEEDED
+            assert len(requests) == 1
+            assert requests[0]["path"] == "/v1/items/approved"
+            events = repository.list_events(run.id)
+            assert any(
+                event.type is RunEventType.POLICY_EVALUATED
+                and event.payload["decision"] == "require_approval"
+                for event in events
+            )
+            assert sum(event.type is RunEventType.TOOL_CALL_COMPLETED for event in events) == 1
 
 
 @pytest.mark.asyncio

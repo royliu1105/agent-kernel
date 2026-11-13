@@ -11,6 +11,8 @@ from kernel_policy import (
     ToolPolicyEvaluator,
 )
 from kernel_tools import EchoTool, ToolMetadata, ToolRegistry, ToolRequest
+from kernel_tools.external import ExternalToolContract
+from kernel_tools.external.security import metadata_for
 
 
 def test_default_policy_allows_read_only_tool() -> None:
@@ -67,6 +69,44 @@ def test_tool_name_policy_overrides_risk_default() -> None:
 
     assert decision.decision is PolicyDecisionType.REQUIRE_APPROVAL
     assert "Explicit tool policy" in decision.reason
+
+
+@pytest.mark.parametrize("configured", list(PolicyDecisionType))
+def test_external_binding_policy_is_independent_of_risk(configured: PolicyDecisionType) -> None:
+    metadata = metadata_for(
+        ExternalToolContract(
+            name="reviewed",
+            read_only=True,
+            risk_level=RiskLevel.READ_ONLY,
+            policy_decision=configured.value,
+        ),
+        {"type": "object"},
+    )
+    decision = ToolPolicyEvaluator().evaluate(metadata)
+    assert decision.decision is configured
+    assert decision.risk_level is RiskLevel.READ_ONLY
+
+
+@pytest.mark.parametrize("binding", list(PolicyDecisionType))
+@pytest.mark.parametrize("central", list(PolicyDecisionType))
+def test_explicit_external_and_central_policy_choose_stricter_decision(
+    binding: PolicyDecisionType,
+    central: PolicyDecisionType,
+) -> None:
+    metadata = metadata_for(
+        ExternalToolContract(
+            name="reviewed",
+            policy_decision=binding.value,
+        ),
+        {"type": "object"},
+    )
+    evaluator = ToolPolicyEvaluator(ToolPolicy(tool_decisions={"reviewed": central}))
+    rank = {
+        PolicyDecisionType.ALLOW: 0,
+        PolicyDecisionType.REQUIRE_APPROVAL: 1,
+        PolicyDecisionType.DENY: 2,
+    }
+    assert evaluator.evaluate(metadata).decision is max((binding, central), key=rank.__getitem__)
 
 
 @pytest.mark.asyncio

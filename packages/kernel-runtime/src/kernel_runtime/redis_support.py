@@ -153,6 +153,31 @@ end
 return {1, tonumber(ARGV[1]) - count, ttl}
 """
 
+_MULTI_RATE_LIMIT = """
+local retry = 0
+local remaining = 1000000
+local ttl = tonumber(ARGV[#KEYS + 1])
+for i, key in ipairs(KEYS) do
+    local raw = redis.call('GET', key)
+    if raw and raw ~= '0' and not string.match(raw, '^[1-9][0-9]*$') then
+        return redis.error_reply('invalid limiter state')
+    end
+    local count = tonumber(raw or '0')
+    local expires = redis.call('PTTL', key)
+    if not count or count < 0 or count > 1000000 or (count > 0 and expires < 0) then
+        return redis.error_reply('invalid limiter state')
+    end
+    if count >= tonumber(ARGV[i]) then retry = math.max(retry, math.max(1, expires)) end
+end
+if retry > 0 then return {0, 0, retry} end
+for i, key in ipairs(KEYS) do
+    local count = redis.call('INCR', key)
+    if count == 1 then redis.call('PEXPIRE', key, ttl) end
+    remaining = math.min(remaining, tonumber(ARGV[i]) - count)
+end
+return {1, remaining, ttl}
+"""
+
 
 class RedisWorkspaceRateLimiter:
     """Fixed window beginning at the first admitted request, shared by all replicas.
@@ -183,6 +208,62 @@ class RedisWorkspaceRateLimiter:
                 raise ValueError("Invalid limiter response")
         except Exception:
             raise RateLimitUnavailableError("Workspace rate limit backend unavailable.") from None
+        return RateLimitDecision(
+            allowed=bool(admitted),
+            remaining=remaining,
+            retry_after_seconds=0 if admitted else max(1, math.ceil(ttl / 1000)),
+        )
+
+    def check_scopes(
+        self,
+        workspace_id: UUID,
+        *,
+        principal_id: UUID,
+        api_key_id: UUID,
+        workspace_limit: int = 0,
+        principal_limit: int = 0,
+        api_key_limit: int = 0,
+        window_seconds: int = 60,
+    ) -> RateLimitDecision:
+        """Atomically admit all enabled quotas; principal/key quotas are workspace-local.
+
+        No bucket is charged on denial or invalid state. Uses standalone Redis;
+        the existing deployment contract does not support Redis Cluster sharding.
+        """
+        if not all(isinstance(item, UUID) for item in (workspace_id, principal_id, api_key_id)):
+            raise TypeError("Admission identities must be trusted UUIDs.")
+        limits = (workspace_limit, principal_limit, api_key_limit)
+        if (
+            not any(limits)
+            or any(not 0 <= value <= 1_000_000 for value in limits)
+            or not 1 <= window_seconds <= 86_400
+        ):
+            raise ValueError("Admission quotas/window are outside configured bounds.")
+        scopes = (
+            str(workspace_id),
+            f"{workspace_id}:principal:{principal_id}",
+            f"{workspace_id}:api-key:{api_key_id}",
+        )
+        enabled = [
+            (f"{self._prefix}:{scope}:{limit}:{window_seconds}", limit)
+            for scope, limit in zip(scopes, limits, strict=True)
+            if limit
+        ]
+        try:
+            raw = self._client.eval(
+                _MULTI_RATE_LIMIT,
+                len(enabled),
+                *(key for key, _ in enabled),
+                *(limit for _, limit in enabled),
+                window_seconds * 1000,
+            )
+            if not isinstance(raw, (list, tuple)) or len(raw) != 3:
+                raise ValueError("Invalid limiter response")
+            admitted, remaining, ttl = (int(value) for value in raw)
+            if admitted not in (0, 1) or not 0 <= remaining < min(v for _, v in enabled) or ttl < 0:
+                raise ValueError("Invalid limiter response")
+        except Exception:
+            raise RateLimitUnavailableError("Request admission backend unavailable.") from None
         return RateLimitDecision(
             allowed=bool(admitted),
             remaining=remaining,

@@ -214,7 +214,25 @@ for authenticated requests per workspace, across keys and API replicas. Denied
 requests return 429 with `Retry-After`; unavailable Redis returns 503. Limits do
 not replace role checks, tool approvals, an ingress limit on unauthenticated
 traffic, or token/cost budgets. Default zero disables this policy explicitly.
-Auth-disabled mode cannot enable workspace limiting.
+Auth-disabled mode cannot enable any admission limit.
+
+`AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS` and
+`AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS` independently enable per-principal and
+per-key quotas. Principal quotas are workspace-local, shared across the user's
+keys, not global across unrelated tenants. All enabled buckets use the same
+window and one atomic Redis operation: a denial or invalid bucket charges none
+of them. Changing a quota starts its new policy bucket. This deployment supports
+standalone Redis, not Redis Cluster multi-key scripting. Quotas do not protect
+against Redis failover losing recently admitted counters.
+
+`GET /v1/usage/breakdown?group_by=workspace|run|principal|model` requires
+`run:read` and always applies the authenticated workspace. Optional `run_id`
+narrows that scope, never expands it; `limit` bounds groups (1..1000, default100).
+Run initiators come from authenticated principals, never model/user input JSON.
+Model attribution uses persisted per-response usage, including charged responses
+before tool failure/approval. These are estimates, not provider invoices; failed
+requests with no usage response have unknown billable cost. Local and legacy
+initiators remain null, and migrated historical model usage is `unknown`.
 
 External tools additionally require an operator-owned workspace allowlist and
 run through the same policy, approval and persisted audit path. These self-hosted

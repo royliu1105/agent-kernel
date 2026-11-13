@@ -30,10 +30,21 @@ def test_dashboard_provisioning_and_metric_inventory() -> None:
         "llm_tokens_total",
         "llm_estimated_cost_total",
         "run_queue_errors_total",
+        "api_requests_total",
+        "api_request_duration_seconds",
+        "agent_run_segments_total",
     ):
         assert metric in names and metric in expressions
     for panel in dashboard["panels"]:
         assert panel["datasource"]["uid"] == "agent-kernel-prometheus"
+    for metric in (
+        "agent_kernel_queue_backlog",
+        "agent_kernel_queue_oldest_wait_seconds",
+        "agent_kernel_approval_oldest_wait_seconds",
+        "agent_kernel_runs",
+        "agent_kernel_evals",
+    ):
+        assert metric in expressions
 
 
 def test_scraping_uses_dedicated_secret_and_alerts_have_firing_tests() -> None:

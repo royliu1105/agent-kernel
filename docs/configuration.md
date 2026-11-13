@@ -15,6 +15,8 @@ and local SQLite/mock defaults are unchanged.
 | `AGENT_KERNEL_REDIS_CONNECT_TIMEOUT_SECONDS` | `1` | Bounded connect timeout, seconds. |
 | `AGENT_KERNEL_REDIS_MAX_CONNECTIONS` | `20` | Redis pool limit. |
 | `AGENT_KERNEL_RATE_LIMIT_REQUESTS` | `0` | Zero disables; positive enables shared per-workspace admission. Requires auth and Redis. |
+| `AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS` | `0` | Shared per-principal quota within each workspace, across that principal's keys. |
+| `AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS` | `0` | Shared per-API-key quota within each workspace. All enabled quotas are charged atomically. |
 | `AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS` | `60` | Fixed window from first admission, 1..86400 seconds. |
 | `AGENT_KERNEL_RATE_LIMIT_PREFIX` | `agent-kernel:rate-limit` | Shared policy namespace across replicas. |
 | `AGENT_KERNEL_MONITORING_TOKEN` | empty | Secret, separate from workspace keys; required for authenticated API metrics and non-loopback Worker metrics. Use at least 32 random ASCII characters. |
@@ -127,6 +129,7 @@ them through platform secret storage.
 | Variable | Components | Default | Production | Secret | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `AGENT_KERNEL_VECTOR_STORE` | API, worker | `auto` | `auto` or `pgvector` | No | Accepted values: `auto`, `json`, `pgvector`. |
+| `AGENT_KERNEL_EMBEDDING_PROVIDER` | API, worker | `mock` | Explicit `openai` for real embeddings | No | Same selection for indexing, retrieval and `kb_search`; an API key alone never enables paid embeddings. |
 | `OPENAI_API_KEY` | API, worker, CLI workflows | Empty | Required for `openai:*` models or OpenAI embeddings | Yes | Mock and replay providers do not require this. |
 | `OPENAI_EMBEDDING_MODEL` | API, worker | `text-embedding-3-small` | Pin per environment | No | Keep indexing and retrieval on the same model. |
 | `OPENAI_EMBEDDING_DIMENSIONS` | API, worker | `1536` | Pin per environment | No | Must match the embedding model and pgvector index strategy. |

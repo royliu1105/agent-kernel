@@ -1,5 +1,21 @@
 # Feature Spec: Observability
 
+## Current Implementation Boundary
+
+The Day sections below are historical scope records, not current acceptance.
+See [Observability Operations](../observability-operations.md) for the active
+metric inventory, default logging installation, readiness probes, deployment
+and exact verification limits. The post-audit remediation adds default safe
+Uvicorn/Worker/SDK logging, configured pgvector/local/OpenAI readiness checks,
+HTTP and execution-segment metrics, durable run/eval/approval/queue gauges,
+and queue/wait/cost alert templates. These changes require integrated
+reverification; this spec does not declare R1/R6/R7 accepted.
+
+The implementation uses standard-library JSON logging, not structlog. Process
+metrics are bounded counters/histograms, while durable summaries are gauges.
+IDs such as agent/project/workspace/run are not Prometheus labels. Authenticated
+deployments require a separate monitoring token for `/metrics`.
+
 ## Goal
 
 Agent Kernel must make every agent run inspectable, debuggable, measurable, and cost-aware from v0.1.

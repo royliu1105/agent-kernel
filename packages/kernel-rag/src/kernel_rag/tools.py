@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 from uuid import UUID
 
 from kernel_core import RiskLevel
+from kernel_observability import MetricsRecorder
 from kernel_storage import (
     ChunkEmbeddingRepository,
     DocumentChunkRepository,
@@ -21,6 +23,7 @@ from kernel_tools import (
 )
 from sqlalchemy.orm import Session, sessionmaker
 
+from kernel_rag.embeddings import create_embedding_provider
 from kernel_rag.retrieval import Retriever
 
 
@@ -32,9 +35,12 @@ class KnowledgeBaseSearchTool:
         *,
         session_factory: sessionmaker[Session],
         retriever: Retriever | None = None,
+        metrics_recorder: MetricsRecorder | None = None,
     ) -> None:
         self._session_factory = session_factory
-        self._retriever = retriever or Retriever()
+        self._retriever = retriever or Retriever(
+            metrics_recorder=metrics_recorder, embedding_provider=create_embedding_provider()
+        )
 
     @property
     def metadata(self) -> ToolMetadata:
@@ -72,6 +78,13 @@ class KnowledgeBaseSearchTool:
         return await self.execute_with_context(arguments, context=ToolExecutionContext())
 
     async def execute_with_context(
+        self, arguments: dict[str, Any], *, context: ToolExecutionContext
+    ) -> dict[str, Any]:
+        # Own the sync Session inside the thread. Cancellation discards the result;
+        # this read-only operation may finish, but cannot persist runtime effects.
+        return await asyncio.to_thread(self._search, arguments, context=context)
+
+    def _search(
         self, arguments: dict[str, Any], *, context: ToolExecutionContext
     ) -> dict[str, Any]:
         knowledge_base_id = UUID(arguments["knowledge_base_id"])
@@ -127,9 +140,18 @@ class KnowledgeBaseSearchTool:
         }
 
 
-def create_rag_tool_registry(*, session_factory: sessionmaker[Session]) -> ToolRegistry:
+def create_rag_tool_registry(
+    *,
+    session_factory: sessionmaker[Session],
+    metrics_recorder: MetricsRecorder | None = None,
+    retriever: Retriever | None = None,
+) -> ToolRegistry:
     """Return default tools plus RAG-backed tools."""
 
     registry = create_default_tool_registry()
-    registry.register(KnowledgeBaseSearchTool(session_factory=session_factory))
+    registry.register(
+        KnowledgeBaseSearchTool(
+            session_factory=session_factory, metrics_recorder=metrics_recorder, retriever=retriever
+        )
+    )
     return registry

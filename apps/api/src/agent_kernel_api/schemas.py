@@ -55,6 +55,7 @@ class RunResponse(ApiModel):
     id: UUID
     agent_id: UUID
     workspace_id: UUID | None
+    principal_id: UUID | None = None
     status: RunStatus
     input: dict[str, Any]
     output: dict[str, Any] | None

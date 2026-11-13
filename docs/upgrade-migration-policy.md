@@ -2,7 +2,7 @@
 
 ## Post-v1.0 Hardening Upgrade
 
-Unreleased head: `0017_unique_active_lease`. Stop API writers and all workers,
+Unreleased head: `0018_usage_attribution`. Stop API writers and all workers,
 take a verified backup, then run `uv run alembic upgrade head` before deploying
 the new application. Do not mix old workers (without fencing) with new workers.
 
@@ -10,6 +10,15 @@ the new application. Do not mix old workers (without fencing) with new workers.
 - `0016_scope_memory_evals`: nullable ownership on memory and evaluation records.
 - `0017_unique_active_lease`: one unreleased lease per run, including expired
   leases until explicitly released/recovered/replaced.
+- `0018_usage_attribution`: nullable trusted Run initiator and per-model response
+  usage ledger. Historical totals become `unknown` model/provider rows; historical
+  principals stay null, never inferred from input JSON. Downgrade drops detailed
+  attribution, preserving Run totals; back up before any downgrade.
+
+Real embeddings now require explicit `AGENT_KERNEL_EMBEDDING_PROVIDER=openai`
+on both API and Worker. Default mock behavior is preserved. Switching provider,
+model or dimensions does not convert existing vectors: reindex the affected
+documents before querying with the new configuration. Queries filter by model.
 
 Before `0017`, run this read-only preflight:
 

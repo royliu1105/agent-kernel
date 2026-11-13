@@ -9,6 +9,8 @@ from collections.abc import Callable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass
+from pathlib import Path
+from tempfile import TemporaryFile
 from threading import Lock
 from time import monotonic
 from typing import Any, Literal
@@ -22,7 +24,7 @@ Probe = Callable[[], object]
 
 @dataclass(frozen=True)
 class DependencyCheck:
-    name: Literal["database", "redis", "s3"]
+    name: Literal["database", "redis", "s3", "pgvector", "local_storage", "openai"]
     mode: Mode
     probe: Probe | None = None
 
@@ -83,14 +85,14 @@ class ReadinessChecker:
             raise ValueError("Readiness timeout/cache outside allowed range.")
         if (
             len({check.name for check in checks}) != len(checks)
-            or len(checks) > 3
+            or len(checks) > 6
             or not any(c.name == "database" and c.mode == "required" for c in checks)
         ):
             raise ValueError("Readiness requires one required database and unique dependencies.")
         self._checks = checks
         self._timeout = timeout_seconds
         self._cache = cache_seconds
-        self._pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="readiness")
+        self._pool = ThreadPoolExecutor(max_workers=len(checks), thread_name_prefix="readiness")
         self._inflight: dict[str, tuple[float, Future[DependencyResult]]] = {}
         self._lock = Lock()
         self._closed = False
@@ -192,9 +194,42 @@ def create_readiness_checker(
     """
     values = dict(os.environ if env is None else env)
     redis_url = values.get("REDIS_URL", "").strip()
-    uses_s3 = values.get("AGENT_KERNEL_OBJECT_STORE_BACKEND", "local").strip().lower() == "s3"
+    backend = values.get("AGENT_KERNEL_OBJECT_STORE_BACKEND", "local").strip().lower() or "local"
+    if backend not in {"local", "s3"}:
+        raise ValueError("Unsupported object storage backend.")
+    uses_s3 = backend == "s3"
+    vector_mode = values.get("AGENT_KERNEL_VECTOR_STORE", "auto").strip().lower() or "auto"
+    if vector_mode not in {"auto", "json", "pgvector"}:
+        raise ValueError("Unsupported vector storage mode.")
+    with session_factory() as session:
+        is_postgres = session.get_bind().dialect.name == "postgresql"
+    uses_pgvector = vector_mode == "pgvector" or (vector_mode == "auto" and is_postgres)
+    embedding_provider = (
+        values.get("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock").strip().lower() or "mock"
+    )
+    if embedding_provider not in {"mock", "openai"}:
+        raise ValueError("Unsupported embedding provider.")
+    requires_openai = embedding_provider == "openai"
+    openai_mode = _mode(
+        values,
+        "OPENAI",
+        "required"
+        if requires_openai
+        else "optional"
+        if values.get("OPENAI_API_KEY")
+        else "disabled",
+    )
+    if requires_openai and openai_mode != "required":
+        raise ValueError("OpenAI readiness must be required when OpenAI embeddings are selected.")
     bucket = values.get("AGENT_KERNEL_S3_BUCKET", "").strip()
-    limiter_enabled = int(values.get("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "0")) > 0
+    limiter_enabled = any(
+        int(values.get(name, "0")) > 0
+        for name in (
+            "AGENT_KERNEL_RATE_LIMIT_REQUESTS",
+            "AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS",
+            "AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS",
+        )
+    )
     redis_mode = _mode(
         values, "REDIS", "required" if limiter_enabled else "optional" if redis_url else "disabled"
     )
@@ -209,6 +244,38 @@ def create_readiness_checker(
         with session_factory() as session:
             session.execute(text("SELECT 1"))
             session.execute(text("SELECT id FROM runs LIMIT 0"))
+
+    def pgvector_check() -> None:
+        if not is_postgres:
+            raise ValueError("pgvector requires PostgreSQL")
+        with session_factory() as session:
+            # Exercise the installed type/operator and migrated column, without
+            # reading or writing any tenant vectors.
+            session.execute(text("SELECT '[1,0]'::vector <=> '[1,0]'::vector"))
+            session.execute(text("SELECT vector_pg::vector FROM chunk_embeddings LIMIT 0"))
+
+    def local_check() -> None:
+        root = Path(values.get("AGENT_KERNEL_OBJECT_STORE_ROOT", ".agent-kernel/objects"))
+        root.mkdir(mode=0o700, parents=True, exist_ok=True)
+        with TemporaryFile(dir=root) as probe:
+            probe.write(b"readiness")
+            probe.flush()
+            probe.seek(0)
+            if probe.read() != b"readiness":
+                raise OSError("Local object storage probe failed")
+
+    def openai_check() -> None:
+        key = values.get("OPENAI_API_KEY", "")
+        if not key or not all(33 <= ord(character) <= 126 for character in key):
+            raise ValueError("Provider credential missing or malformed")
+        dimensions = int(values.get("OPENAI_EMBEDDING_DIMENSIONS", "1536") or "1536")
+        model = values.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+        if (
+            dimensions <= 0
+            or not model
+            or not all(33 <= ord(character) <= 126 for character in model)
+        ):
+            raise ValueError("Provider model configuration invalid")
 
     def redis_check() -> object:
         if "redis" not in clients:
@@ -262,6 +329,11 @@ def create_readiness_checker(
                 s3_mode,
                 s3_probe or (s3_check if bucket else None),
             ),
+            DependencyCheck(
+                "pgvector", "required" if uses_pgvector else "disabled", pgvector_check
+            ),
+            DependencyCheck("local_storage", "disabled" if uses_s3 else "required", local_check),
+            DependencyCheck("openai", openai_mode, openai_check),
         ),
         timeout_seconds=timeout_seconds,
         cache_seconds=cache_seconds,

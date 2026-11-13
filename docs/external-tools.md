@@ -31,11 +31,11 @@ workspace uploads, or an unauthenticated API.
 `load_external_tools` and `register_external_tools` are aliases returning an
 async context manager. `LoadedExternalTools.tool_names` contains registered
 local aliases, not raw sessions. Each API process/worker owns its own sessions.
-Enter and exit the context in the same task because the SDK owns AnyIO cancel
-scopes. Tool calls can run on other tasks in that event loop. Stop intake and
+Each MCP connection has a dedicated owner task that enters/exits the SDK's
+AnyIO cancel scopes. Transport failures must not cancel the API/worker lifespan.
+Tool calls can run on other tasks in that event loop. Stop intake and
 drain/cancel active runs before closing; closed handles reject further calls.
-`AsyncExitStack.enter_async_context(...)` works in a single top-level worker
-task. Never construct a session using one `asyncio.run` and use/close it in another.
+Never construct a session using one `asyncio.run` and use/close it in another.
 
 Dependencies are declared by `kernel-tools`: official `mcp>=1.30.0,<2`,
 `httpx>=0.28.1,<0.29`, and `httpcore>=1.0.9,<1.1`. The pin targets the tested SDK
@@ -47,12 +47,22 @@ parent integration change, not by an adapter silently updating them.
 ## Trusted Configuration and Policy
 
 Each binding has a local `contract` with a stable `name`, optional operator
-description, `risk_level`, `read_only`, `idempotent`, `retry_safe`, and
-`timeout_ms`. Remote MCP annotations, OpenAPI vendor extensions, descriptions,
+description, `risk_level`, `read_only`, `idempotent`, `retry_safe`,
+`policy_decision`, and `timeout_ms`. Remote MCP annotations, OpenAPI vendor extensions, descriptions,
 server URLs and authentication hints cannot set these fields.
 
 - Default risk is `network`, which requires approval under the default policy.
   `read_only=true` does not itself remove approval.
+- Optional `policy_decision` is `allow`, `deny`, or `require_approval`. Omission
+  retains the existing risk defaults. This is independent of risk: an operator
+  can require approval for a read-only resource or prompt without lying about
+  its risk. The normal `ToolPolicyEvaluator` reads trusted binding metadata, so
+  the existing API/Worker execution and persisted approval/audit paths apply.
+  An explicit central tool-name decision and binding decision compose using
+  the stricter result (`deny` > `require_approval` > `allow`). An explicit
+  binding `allow` overrides risk defaults only, not a central explicit denial
+  or approval requirement. Treat it as a reviewed privilege grant. It does not
+  override workspace access, schema validation, timeout, or retry vetoes.
 - `read_only` is a reviewed semantic claim, not a server-supplied annotation.
   `RiskLevel.READ_ONLY` is rejected without that claim.
 - Automatic retry eligibility requires both `read_only=true` and
@@ -95,6 +105,37 @@ environment and explicit `stdio.env` values reach the child. Stderr is not
 forwarded into application logs. SDK lifecycle closes and reaps the subprocess.
 This is **not an OS sandbox**: approved executables can access host files/network.
 Use a restricted service account or a container with resource and egress limits.
+
+`discovery_timeout_ms` bounds connection initialization plus catalog discovery.
+It is not installed as the session-wide read timeout. Each tool/resource/prompt
+uses its own `contract.timeout_ms`, covering reconnect, local queue wait and RPC.
+HTTP endpoint timeouts separately bound network I/O and can be shorter. Calls on
+one MCP connection are serialized with at most 64 queued invocations; overflow
+fails without dispatch. This deliberately trades per-server concurrency for a
+bounded failure/ownership boundary. Separate configured servers have independent
+owners. Timeout/cancellation does not prove that a remote write was rolled back.
+
+All HTTP redirects are rejected in the guarded transport, before the SDK can
+follow a 307/308 and resend a POST. Setting HTTPX `follow_redirects=False` alone
+is insufficient for SDK 1.30.0. Configure the exact canonical MCP endpoint,
+including its trailing slash. HTTP failure tears down only that connection;
+its in-flight/queued calls fail without replay. A later explicit invocation can
+reconnect and rediscover, but the selected sanitized input/output contracts must
+match the startup snapshot. A changed catalog fails before operation dispatch
+and requires operator review/restart. Never treat reconnect as permission to
+retry an ambiguous external write.
+
+The SDK logs raw initialization results, malformed notifications and exception
+details, including via Python's root logger. A scoped diagnostic filter is
+installed before transport startup on SDK loggers and configured handlers. SDK
+owner/child tasks replace diagnostic payloads with a fixed message and remove
+exception/stack text **before formatting**; unrelated application tasks retain
+their logs. Lazy HTTP transport loggers are covered by root-handler filters.
+This is defense in depth alongside central API/Worker logging configuration,
+not a replacement for it. Configure logging before loading external tools;
+hot replacement of handlers during active sessions is not supported. Operational
+failure information remains in normal bounded tool errors and persisted events,
+not raw SDK message bodies. Child stderr remains discarded.
 
 Catalogs have entry/page/time bounds. Remote descriptions, titles, defaults and
 examples are removed from exposed schemas. Input schemas support bounded
@@ -155,7 +196,8 @@ operator-approved values) looks like:
     "access": {"workspace_ids": ["11111111-1111-4111-8111-111111111111"]},
     "bindings": [
       {"operation_id": "get_item", "contract": {
-        "name": "get_item", "read_only": true, "idempotent": true
+        "name": "get_item", "read_only": true, "idempotent": true,
+        "risk_level": "read_only", "policy_decision": "require_approval"
       }},
       {"operation_id": "create_item", "idempotency_header": "Idempotency-Key",
        "contract": {"name": "create_item", "idempotent": true}}
@@ -200,10 +242,29 @@ worker bootstrap: API-created run, worker queue execution, persisted approval,
 then API resume executing the real MCP subprocess operation exactly once in
 that successful test path (not an exactly-once guarantee under failure).
 
+Reopened R1/R2/R8 regression coverage additionally includes:
+
+- `test_external_mcp_failures.py`: the actual SDK plus guarded transport with
+  only the HTTPCore peer replaced. 307/308/500 are tested for tools, resources and
+  prompts: one send, owner survival, and a subsequent successful explicit call.
+  Changed reconnect catalogs fail before a second dispatch. Separate discovery
+  and invocation deadlines, timeout classification, and subsequent calls are
+  checked. Malformed initialization and notifications exercise SDK diagnostic
+  paths with plain log capture, for HTTP and a real stdio subprocess.
+- `test_external_mcp.py`: real stdio and loopback HTTP tests persist denial,
+  approval, resume and audit events for all three binding kinds. Server-side
+  counters establish zero invocation before approval and one after resume.
+- `test_external_bootstrap.py`: the API-created/Worker-executed/read-only-risk
+  binding still waits for its independently configured approval before API
+  resume. No separate API/Worker policy loader is required.
+
+These are local regression contracts, not blanket acceptance of the reopened
+hardening plan or evidence of remote CI/release verification.
+
 Run the focused suite together with existing tool/context regressions:
 
 ```bash
-uv run pytest -q tests/unit/test_external_metadata.py tests/unit/test_external_http_transport.py tests/integration/test_external_mcp.py tests/integration/test_external_openapi.py tests/integration/test_external_bootstrap.py tests/unit/test_tools.py tests/unit/test_policy.py tests/unit/test_kb_search_tool.py
+uv run pytest -q tests/unit/test_external_metadata.py tests/unit/test_external_http_transport.py tests/integration/test_external_mcp.py tests/integration/test_external_mcp_failures.py tests/integration/test_external_openapi.py tests/integration/test_external_bootstrap.py tests/unit/test_tools.py tests/unit/test_policy.py tests/unit/test_kb_search_tool.py
 ```
 
 The SDK's stdio framing can allocate a remote frame before application-level

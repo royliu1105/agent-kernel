@@ -172,6 +172,24 @@ class OpenAIEmbeddingProvider:
         )
 
 
+def create_embedding_provider(env: Mapping[str, str] | None = None) -> EmbeddingProvider:
+    """Explicit opt-in; the presence of an API key never enables paid indexing."""
+    values = os.environ if env is None else env
+    backend = values.get("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock").strip().lower()
+    if backend == "mock":
+        return MockEmbeddingProvider()
+    if backend != "openai":
+        raise ValueError("Embedding provider must be mock or openai.")
+    key = values.get(OPENAI_API_KEY_ENV, "")
+    if not key or not key.isascii() or any(c.isspace() for c in key):
+        raise ValueError("OpenAI embedding credentials are missing or malformed.")
+    return OpenAIEmbeddingProvider(
+        api_key=key,
+        model=get_openai_embedding_model(values),
+        dimensions=get_openai_embedding_dimensions(values),
+    )
+
+
 class DocumentIndexingError(RuntimeError):
     """Raised when a document cannot be indexed."""
 
@@ -211,7 +229,13 @@ class DocumentIndexingService:
             raise DocumentNotIndexableError(f"Document {document_id} has no chunks to index.")
 
         document_repository.update_status(document_id=document_id, status=DocumentStatus.EMBEDDING)
-        vectors = self._embedding_provider.embed_texts([chunk.content for chunk in chunks])
+        try:
+            vectors = self._embedding_provider.embed_texts([chunk.content for chunk in chunks])
+        except Exception:
+            # No vectors have been replaced. Preserve the last usable state so a
+            # transient provider failure does not strand the document in EMBEDDING.
+            document_repository.update_status(document_id=document_id, status=document.status)
+            raise
         embeddings = [
             ChunkEmbedding(
                 document_id=document_id,

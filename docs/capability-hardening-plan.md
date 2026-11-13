@@ -2,20 +2,26 @@
 
 ## Status and Authority
 
-Status: the authorized P0-P5 implementation batch is accepted within the scoped
-guarantees below. Implementation commit `6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51`
-passed [remote CI 43362548617](https://github.com/royliu1105/agent-kernel/actions/runs/43362548617)
-on 2026-11-13, including Python, Web and the live Compose rehearsal. Per-package
-evidence and explicit deferrals are recorded below. Retain the Python backend
-and TypeScript Web stack. This is not a new release.
+Status: **remediation locally verified; remote acceptance pending (2026-11-13)**.
+Reopened after independent audit. The previous blanket
+acceptance is withdrawn. Historical implementation commit
+`6c9fa92ddc0660c1cfe40453d5f42ad0ed791c51` passed
+[CI 43362548617](https://github.com/royliu1105/agent-kernel/actions/runs/43362548617),
+but those tests did not establish every original requirement. Confirmed security,
+integration and scope gaps below now have repairs and local evidence. The current
+remediation has no remote CI evidence yet and is not marked Accepted.
+Retain the Python backend and TypeScript Web stack. This is not a new release.
 
 Batch execution authorization (2026-11-13): the maintainer requested continuous
 implementation of the remaining 13 packages and approved parallel sub-agents.
 Local gates were checked per increment; remote CI did not stop unrelated
-implementation in this batch and has now passed the final acceptance gate.
+implementation in this batch. Its historical green run is not final acceptance
+of the reopened work.
 This supersedes instructions below to wait for P1.1 CI before starting P1.2.
-Follow-up authorization on 2026-11-13 permits commit, push to `origin/master`,
-and tracking/fixing the resulting CI. It does not authorize a tag or release.
+Historical follow-up authorization on 2026-11-13 permitted the first batch's
+commit, push to `origin/master`, and CI tracking/fixes. The maintainer separately
+authorized commit/push and CI tracking for the current remediation after the
+local gates passed. No new tag or release is authorized.
 Parent agent owns isolation,
 execution reliability, integration and final verification; delegated work owns
 observability, external tools, backend drills and regression tooling separately.
@@ -76,26 +82,64 @@ by the stable IDs below. Only the active task needs a detailed execution plan.
 | Order | ID | Work package | Status |
 | --- | --- | --- | --- |
 | 1 | P1.1 | Knowledge/RAG workspace isolation, including `kb_search`. | Accepted; local and remote isolation/migration gates passed |
-| 2 | P1.2 | Memory and eval ownership, repository/API isolation. | Accepted; local and remote contracts passed |
-| 3 | P1.3 | Tool/audit/operational scope review, scoped summaries, rate-limit contract and enforcement. | Accepted; shared Redis/API and isolation contracts passed |
-| 4 | P2.1 | Atomic run claims, execution lease lifecycle, fencing or equivalent stale-owner protection. | Accepted; PostgreSQL/SQLite concurrency and cancellation contracts passed |
-| 5 | P2.2 | Approval decision/resume concurrency, crash recovery, side-effect replay boundaries. | Accepted; concurrency/recovery contracts passed |
-| 6 | P0.1 | Readiness, metrics inventory/aggregation, log/trace redaction, cost attribution. | Accepted; readiness/OTel/metrics contracts passed; cost estimates are not billing |
-| 7 | P0.2 | Grafana dashboard, Prometheus scrape/alert templates, operator instructions. | Accepted; native checks, live Grafana/scrape and local fault/recovery rehearsal passed |
-| 8 | P3.1 | External-tool contract, metadata sanitizer, MCP stdio and fixture server. | Accepted; API/Worker integration and local/remote contracts passed |
-| 9 | P3.2 | MCP Streamable HTTP, resources/prompts with policy checks. | Accepted; real-transport fixture contracts passed |
-| 10 | P3.3 | OpenAPI tool generation, fixture and per-tool retry/idempotency policy. | Accepted; security/HTTP contracts passed |
-| 11 | P4.1 | Consolidate pgvector contracts and Redis queue/rate-limit/coordination integration. | Accepted; real PostgreSQL/Redis contracts passed |
-| 12 | P4.2 | Backup/restore and queue drills; documented Semantic Cache benefit assessment. | Accepted; local/remote drills passed; cache implementation remains explicitly deferred |
-| 13 | P5.1 | Golden approval/tool/retry/fallback/recovery timelines and failure explanations. | Accepted; actual-runtime timeline gate passed locally and in CI |
-| 14 | P5.2 | Opt-in live provider smoke, non-blocking cost/latency reports, full closure. | Accepted; tooling, local deployment and remote CI passed; paid live request not enabled |
+| 2 | P1.2 | Memory and eval ownership, repository/API isolation. | Scoped contracts rechecked; retain regression gate |
+| 3 | P1.3 | Tool/audit/operational scope review, scoped summaries, rate-limit contract and enforcement. | Implemented; three quota dimensions locally verified; remote pending |
+| 4 | P2.1 | Atomic run claims, execution lease lifecycle, fencing or equivalent stale-owner protection. | Implemented; blocking-tool integration repaired and locally verified; remote pending |
+| 5 | P2.2 | Approval decision/resume concurrency, crash recovery, side-effect replay boundaries. | Scoped contracts rechecked; not exactly-once external effects |
+| 6 | P0.1 | Readiness, metrics inventory/aggregation, log/trace redaction, cost attribution. | Implemented; entry-point privacy, configured backends and attribution locally verified; remote pending |
+| 7 | P0.2 | Grafana dashboard, Prometheus scrape/alert templates, operator instructions. | Implemented; 24 panels/15 rules, native and live deployment checks passed; remote pending |
+| 8 | P3.1 | External-tool contract, metadata sanitizer, MCP stdio and fixture server. | Implemented; SDK logging and independent deadlines locally verified; remote pending |
+| 9 | P3.2 | MCP Streamable HTTP, resources/prompts with policy checks. | Implemented; single-send/failure/cancellation/reconnect contracts locally verified; remote pending |
+| 10 | P3.3 | OpenAPI tool generation, fixture and per-tool retry/idempotency policy. | Implemented; independent binding approval/denial and audit locally verified; remote pending |
+| 11 | P4.1 | Consolidate pgvector contracts and Redis queue/rate-limit/coordination integration. | Scoped contracts rechecked; retain real-backend regression gate |
+| 12 | P4.2 | Backup/restore and queue drills; documented Semantic Cache benefit assessment. | Implemented; actual queue fallback and DB/object/usage restore locally verified; remote pending |
+| 13 | P5.1 | Golden approval/tool/retry/fallback/recovery timelines and failure explanations. | Implemented; wire-contract, reasoning, retry and timeline mutation tests passed; remote pending |
+| 14 | P5.2 | Opt-in live provider smoke, non-blocking cost/latency reports, full closure. | Local full gate passed; remote verification and final acceptance remain open |
 
 P1.3 must state whether limits are process-local or shared. If a shared guarantee
 is required, bring the Redis work forward; do not mark a multi-instance limit
 complete based on an in-process implementation. Evaluate same-session
 serialization in P2 and record its required behavior or explicit deferral.
 
+## Reopened Remediation Ledger
+
+Audit baseline: `1efc174`. Priority denotes repair order, not package numbering.
+User authorization: update status first, implement repairs, fill original scope
+gaps, and verify each item. No new tag/release is authorized.
+
+| Fix | Priority / packages | Required behavior and regression evidence | Current state |
+| --- | --- | --- | --- |
+| R1 | High / P0.1, P3.1 | Install safe logging at API/Worker entry points; SQL exceptions and MCP SDK malformed responses must not disclose prompts, parameters, results or secrets. Test actual configured log paths. | Implemented; default Uvicorn/Worker subprocess and SDK diagnostic regressions passed locally; remote pending |
+| R2 | High / P3.2 | No hidden redirect resend of external writes; HTTP failures are bounded tool failures, not owner/lifespan cancellation. Test actual SDK transport and later calls after failure. | Implemented; SDK transport, queue cancellation and reconnect regressions passed locally; remote pending |
+| R3 | High / P5.1 | Serialize native OpenAI tool calls/results with call IDs; map transient errors into bounded retry/fallback; contract fixtures reject invalid wire requests. Existing adapter defects, not introduced by the batch. | Implemented; real-adapter wire/reasoning/follow-up retry and mutation tests passed locally; remote pending |
+| R4 | Medium / P2.1 | Built-in retrieval cannot block event-loop timeouts/lease heartbeat; timed-out work cannot persist late run effects. Test real tool/runtime integration. | Implemented; three reproductions failed before repair and passed afterward; included in full local gate; remote pending |
+| R5 | Medium / P1.3 | Independently configured workspace, principal and API-key shared quotas; isolation, atomic admission, Retry-After and backend-failure contracts. | Implemented; real Redis/API, malformed counter and no-partial-charge contracts passed; remote pending |
+| R6 | Medium / P0.1 | Configured pgvector/provider/local storage readiness; retrieval errors and kb_search instrumentation; API/runtime/eval metrics; authorized workspace/run/user/model cost attribution. | Implemented; 0018 migration, scoped ledger/API and explicit real embedding composition verified locally; remote pending |
+| R7 | Medium / P0.2 | Export and validate queue backlog/wait, approval wait and cost alert signals; native Prometheus rules/queries and documented operational limits. | Implemented; 24 panels, 15 alerts, native firing cases and actual Grafana/Prometheus checks passed; remote pending |
+| R8 | Medium / P3.1, P3.3 | Discovery timeout must not cap configured tool timeout; independent per-tool approval setting passes policy/audit in API and Worker. | Implemented; stdio/HTTP tools/resources/prompts and OpenAPI policy regressions passed; remote pending |
+| R9 | Medium / P4.2 | Real Redis fault drill must attach the faulty queue, observe fallback and complete via DB polling; retain guarded restore and explicit cache deferral. | Locally verified: one actual Worker Redis failure, three recovered runs; DB/object and usage-ledger restore passed; remote pending |
+| R10 | Closure / P5.1, P5.2 | Strengthen provider/timeline assertions, update all gate instructions, rerun full local/backend/deployment checks; record current remote CI separately. | Full local gate 746 passed, no skips; lint/types/Web/evals/deployment passed. Remote CI and final acceptance pending |
+
+Initial audit evidence: 99 focused isolation/ownership/migration tests passed
+against fresh real PostgreSQL. Additional probes reproduced default-log secret
+leakage, MCP 307/308 duplicate sends, HTTP 500 lifespan cancellation and blocking
+kb_search deadlines/heartbeat. Passing existing tests did not negate these bugs.
+No remediation is accepted solely because it has been implemented.
+
+Additional integration finding within R6: the existing real embedding adapter
+was not selected by API/Worker composition. Explicit
+`AGENT_KERNEL_EMBEDDING_PROVIDER=mock|openai` now wires indexing, retrieval and
+`kb_search` consistently; default remains credential-free mock. A failing
+embedding request restores the document's prior indexable state. Tests mock only
+the HTTP transport, not the selected adapter. No paid request was executed.
+
+Evidence map and exact limitations are maintained in
+[hardening verification](hardening-verification.md#remediation-verification).
+
 ## Batch Implementation Record
+
+Historical evidence below describes the first implementation, not acceptance of
+the audited gaps. The current remediation ledger takes precedence.
 
 Date: 2026-11-13. Changes remain unreleased; the authorized commit/push and remote
 CI verification are complete. Implementation is in `ced4a4b`, followed by CI
@@ -138,7 +182,7 @@ updated dependency audits passed. Clean application images and live Grafana
 passed on retry, including real alert firing/clearing and automatic Worker
 process recovery after database outage. The Worker now has Compose restart
 supervision. Remote Python, Web and Compose gates passed for the implementation
-SHA linked above, closing P5.2. A separate maintainer compatibility/security
+SHA linked above. The subsequent audit reopened P5.2. A separate maintainer compatibility/security
 review and explicit authorization are still required before any release.
 
 ## Completed Increment Record: P1.1 Knowledge and RAG Isolation
@@ -291,8 +335,11 @@ lightweight. Monitor endpoints must not become public by default.
    operator/upgrade documentation in the same task.
 3. Record changed files, commands/results, limitations and the next ID when
    handing off. Mark a task blocked or partial when required evidence is absent.
-4. Mark completion only after the acceptance checks pass. An adapter without
-   execution-path integration is a foundation, not a completed capability.
+4. Track implementation, focused local verification, full local verification,
+   and remote verification separately. Mark acceptance only after every required
+   check has evidence for the current code. A historical green SHA does not
+   accept later changes. An adapter without execution-path integration is a
+   foundation, not a completed capability.
 5. Keep status here; update milestone summaries only when a workstream changes.
    Historical daily records are not new acceptance evidence.
 6. Before release, run the full gates and a clean self-hosted rehearsal of
@@ -307,13 +354,16 @@ trial; it does not establish long-term operational maturity.
 Next handoff prompt:
 
 ```text
-Read the completed acceptance record in docs/capability-hardening-plan.md and
+Read the reopened remediation ledger in docs/capability-hardening-plan.md and
 docs/hardening-verification.md. Preserve the Python backend and TypeScript Web.
 Do not restart implementation from P1.1 or treat the Day 1-90 records as proof.
-Check git status and any changes since verified implementation 6c9fa92 and
-green CI 43362548617. P0-P5 is closed within its documented scope, not certified
-for every workload. Scope the next real-workload pilot or release review with
-the maintainer. Keep deferred items explicit. Live provider smoke is optional
+Check git status and the per-fix evidence. R1-R9 repairs and local gates are
+implemented; do not repeat them blindly or infer remote acceptance from local
+tests. Historical CI 43362548617 does not verify this remediation. Commit/push
+and CI tracking are authorized for this remediation. Track the repaired SHA,
+fix failures, then
+perform final requirement-by-requirement acceptance. Keep deferred items explicit.
+Live provider smoke is optional
 and requires explicit credentials/budget. Do not change VPN/proxy settings,
 create a tag or publish a release without new authorization.
 ```

@@ -6,7 +6,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from agent_kernel_api.main import _operational_metrics
 from kernel_observability import AggregatingMetricsRecorder
+from sqlalchemy.orm import Session, sessionmaker
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "deploy" / "observability"
@@ -41,13 +43,27 @@ def _promtool(*args: str, input_text: str | None = None, mount: Path | None = No
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_promtool_validates_production_exposition() -> None:
+def test_promtool_validates_production_exposition(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
     recorder = AggregatingMetricsRecorder()
     for name in ("echo", "kb_search"):
         recorder.increment("tool_calls_total", labels={"tool_name": name, "status": "succeeded"})
         recorder.observe("tool_call_latency_ms", 15, labels={"tool_name": name})
     recorder.increment("llm_estimated_cost_total", value=0.001)
-    _promtool("check", "metrics", input_text=recorder.prometheus_text())
+    recorder.increment(
+        "api_requests_total",
+        labels={"method": "GET", "status_class": "2xx", "route_group": "health"},
+    )
+    recorder.observe("api_request_latency_ms", 5)
+    recorder.increment(
+        "agent_run_segments_total", labels={"execution_mode": "execute", "outcome": "succeeded"}
+    )
+    _promtool(
+        "check",
+        "metrics",
+        input_text=recorder.prometheus_text() + _operational_metrics(sqlite_session_factory),
+    )
 
 
 def test_promtool_validates_scrape_configuration_and_alert_scenarios() -> None:

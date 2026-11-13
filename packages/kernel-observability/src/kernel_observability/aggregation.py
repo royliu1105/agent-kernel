@@ -51,6 +51,42 @@ _TOOL_LABELS = ("tool_name", "status", "error_type")
 _RAG_LABELS = ("model", "status", "error_type")
 METRIC_DEFINITIONS = (
     MetricDefinition(
+        "agent_run_segments_started_total",
+        "counter",
+        "Claimed execution segments.",
+        ("execution_mode",),
+    ),
+    MetricDefinition(
+        "agent_run_segments_total",
+        "counter",
+        "Finished execution segments, including interruptions.",
+        ("execution_mode", "outcome"),
+    ),
+    MetricDefinition(
+        "agent_run_segment_latency_ms",
+        "histogram",
+        "Execution segment duration in seconds.",
+        ("execution_mode", "outcome"),
+        LATENCY_BUCKETS_MS,
+        "agent_run_segment_duration_seconds",
+        0.001,
+    ),
+    MetricDefinition(
+        "api_requests_total",
+        "counter",
+        "Completed API requests.",
+        ("route_group", "method", "status_class"),
+    ),
+    MetricDefinition(
+        "api_request_latency_ms",
+        "histogram",
+        "API request duration in seconds.",
+        ("route_group", "method", "status_class"),
+        LATENCY_BUCKETS_MS,
+        "api_request_duration_seconds",
+        0.001,
+    ),
+    MetricDefinition(
         "run_queue_errors_total", "counter", "Redis queue operation failures.", ("operation",)
     ),
     MetricDefinition(

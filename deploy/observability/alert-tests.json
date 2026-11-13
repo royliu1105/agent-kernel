@@ -8,6 +8,273 @@
       "interval": "1m",
       "input_series": [
         {
+          "series": "agent_kernel_queue_backlog{job=\"agent-kernel-api\",instance=\"api:8000\"}",
+          "values": "101+0x9 0+0x10"
+        },
+        {
+          "series": "agent_kernel_queue_backlog{job=\"agent-kernel-api\",instance=\"api-2:8000\"}",
+          "values": "101+0x9 0+0x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelQueueBacklog",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "6m",
+          "alertname": "AgentKernelQueueBacklog",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Durable queue backlog exceeds 100 runs."
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "11m",
+          "alertname": "AgentKernelQueueBacklog",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "agent_kernel_queue_oldest_wait_seconds{job=\"agent-kernel-api\",instance=\"api:8000\"}",
+          "values": "121+0x9 0+0x10"
+        },
+        {
+          "series": "agent_kernel_queue_oldest_wait_seconds{job=\"agent-kernel-api\",instance=\"api-2:8000\"}",
+          "values": "121+0x9 0+0x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelQueueWait",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "6m",
+          "alertname": "AgentKernelQueueWait",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Oldest queued run has waited more than 120 seconds."
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "11m",
+          "alertname": "AgentKernelQueueWait",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "agent_kernel_approval_oldest_wait_seconds{job=\"agent-kernel-api\",instance=\"api:8000\"}",
+          "values": "3601+0x9 0+0x10"
+        },
+        {
+          "series": "agent_kernel_approval_oldest_wait_seconds{job=\"agent-kernel-api\",instance=\"api-2:8000\"}",
+          "values": "3601+0x9 0+0x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelApprovalWait",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "6m",
+          "alertname": "AgentKernelApprovalWait",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Oldest unresolved approval has waited more than one hour."
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "11m",
+          "alertname": "AgentKernelApprovalWait",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "api_requests_total{job=\"agent-kernel-api\",status_class=\"5xx\"}",
+          "values": "0+10x20 200+0x10"
+        },
+        {
+          "series": "api_requests_total{job=\"agent-kernel-api\",status_class=\"2xx\"}",
+          "values": "0+10x31"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "3m",
+          "alertname": "AgentKernelApiErrors",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "10m",
+          "alertname": "AgentKernelApiErrors",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "API server error ratio exceeds 5 percent."
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "30m",
+          "alertname": "AgentKernelApiErrors",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "api_requests_total{job=\"agent-kernel-api\",status_class=\"5xx\"}",
+          "values": "0+1x30"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelApiErrors",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "agent_run_segments_total{job=\"agent-kernel-api\",outcome=\"failed\"}",
+          "values": "0+10x20 200+0x10"
+        },
+        {
+          "series": "agent_run_segments_total{job=\"agent-kernel-api\",outcome=\"succeeded\"}",
+          "values": "0+10x31"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "3m",
+          "alertname": "AgentKernelRunFailures",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "10m",
+          "alertname": "AgentKernelRunFailures",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Terminal execution segment failure ratio exceeds 20 percent."
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "30m",
+          "alertname": "AgentKernelRunFailures",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "agent_run_segments_total{job=\"agent-kernel-api\",outcome=\"failed\"}",
+          "values": "0+1x30"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelRunFailures",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "llm_estimated_cost_total{job=\"agent-kernel-worker\",model=\"mock\",provider=\"mock\"}",
+          "values": "0+2x20 40+0x85"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelEstimatedCost",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelEstimatedCost",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning"
+              },
+              "exp_annotations": {
+                "summary": "Reported estimated model spend exceeds 10 USD in one hour."
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "100m",
+          "alertname": "AgentKernelEstimatedCost",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
           "series": "up{job=\"agent-kernel-api\",instance=\"api:8000\"}",
           "values": "0+0x10"
         }

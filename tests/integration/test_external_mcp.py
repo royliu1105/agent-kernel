@@ -10,7 +10,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from kernel_core import RiskLevel
+from kernel_core import RiskLevel, RunEventType, RunStatus, ToolCallStatus
 from kernel_policy import (
     PolicyAwareToolExecutor,
     PolicyDecisionType,
@@ -19,6 +19,8 @@ from kernel_policy import (
     ToolPolicy,
     ToolPolicyEvaluator,
 )
+from kernel_runtime import RunExecutionService
+from kernel_storage import AgentRepository, ApprovalRepository, RunRepository, ToolCallRepository
 from kernel_tools import (
     EchoTool,
     ToolExecutionContext,
@@ -40,6 +42,8 @@ from kernel_tools.external import (
     StdioEndpoint,
     load_external_tools,
 )
+from kernel_tools.external.config import ExternalPolicyDecision
+from sqlalchemy.orm import Session, sessionmaker
 
 SERVER = Path(__file__).parents[1] / "fixtures" / "external_mcp_server.py"
 
@@ -236,3 +240,120 @@ async def test_mcp_empty_configuration_preserves_registry() -> None:
     async with load_external_tools(registry, ExternalToolsConfig()) as loaded:
         assert loaded.tool_names == ()
         await asyncio.sleep(0)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("transport", ["stdio", "http"])
+@pytest.mark.parametrize("kind", ["tool", "resource", "prompt"])
+async def test_mcp_binding_policy_has_persisted_approval_denial_and_audit(
+    sqlite_session_factory: sessionmaker[Session],
+    request: pytest.FixtureRequest,
+    transport: str,
+    kind: str,
+) -> None:
+    url = request.getfixturevalue("mcp_http_url") if transport == "http" else None
+    base = config(http_url=url).mcp[0]
+    selected = next(binding for binding in base.bindings if binding.kind == kind)
+    policies: tuple[tuple[str, ExternalPolicyDecision], ...] = (
+        ("approved_binding", "require_approval"),
+        ("denied_binding", "deny"),
+    )
+    bindings = tuple(
+        selected.model_copy(
+            update={
+                "contract": ExternalToolContract(
+                    name=name,
+                    read_only=True,
+                    risk_level=RiskLevel.READ_ONLY,
+                    policy_decision=decision,
+                )
+            }
+        )
+        for name, decision in policies
+    )
+    server = base.model_copy(
+        update={
+            "bindings": (
+                *bindings,
+                MCPBinding(
+                    remote_name="counts",
+                    contract=ExternalToolContract(name="counts"),
+                ),
+            )
+        }
+    )
+    registry = ToolRegistry()
+    async with load_external_tools(registry, ExternalToolsConfig(mcp=(server,))):
+        service = RunExecutionService(tool_registry=registry)
+        arguments = (
+            {"message": "payload"}
+            if kind == "tool"
+            else ({"name": "Ada"} if kind == "prompt" else {})
+        )
+        with sqlite_session_factory() as session:
+            agent = AgentRepository(session).create(name="external-policy")
+            repository = RunRepository(session)
+            denied_run = repository.create(
+                agent_id=agent.id,
+                input_payload={
+                    "tool": {
+                        "name": "denied_binding",
+                        "arguments": arguments,
+                    }
+                },
+            )
+            repository.apply_transition(
+                run_id=denied_run.id,
+                status=RunStatus.QUEUED,
+                event_type=RunEventType.RUN_QUEUED,
+                payload={},
+            )
+            denied = await service.execute(run_id=denied_run.id, repository=repository)
+            assert denied.status is RunStatus.FAILED
+            assert denied.error_type == "tool_denied"
+            denied_call = ToolCallRepository(session).list_for_run(denied.id)[0]
+            assert denied_call.status is ToolCallStatus.DENIED
+            assert any(
+                event.type is RunEventType.POLICY_EVALUATED and event.payload["decision"] == "deny"
+                for event in repository.list_events(denied.id)
+            )
+            waiting_run = repository.create(
+                agent_id=agent.id,
+                input_payload={
+                    "tool": {
+                        "name": "approved_binding",
+                        "arguments": arguments,
+                    }
+                },
+            )
+            repository.apply_transition(
+                run_id=waiting_run.id,
+                status=RunStatus.QUEUED,
+                event_type=RunEventType.RUN_QUEUED,
+                payload={},
+            )
+            waiting = await service.execute(run_id=waiting_run.id, repository=repository)
+            assert waiting.status is RunStatus.WAITING_APPROVAL
+            counts = await registry.get("counts").execute({})
+            assert counts["data"]["structuredContent"][kind] == 0
+            approval_repository = ApprovalRepository(session)
+            approval = approval_repository.list_for_run(waiting.id)[0]
+            approval_repository.approve(approval_id=approval.id)
+            completed = await service.resume(
+                run_id=waiting.id,
+                repository=repository,
+                approval_repository=approval_repository,
+                tool_call_repository=ToolCallRepository(session),
+            )
+            assert completed.status is RunStatus.SUCCEEDED
+            counts = await registry.get("counts").execute({})
+            assert counts["data"]["structuredContent"][kind] == 1
+            call = ToolCallRepository(session).list_for_run(waiting.id)[0]
+            assert call.status is ToolCallStatus.SUCCEEDED
+            assert call.requires_approval is True
+            assert call.risk_level is RiskLevel.READ_ONLY
+            events = repository.list_events(waiting.id)
+            types = [event.type for event in events]
+            assert RunEventType.APPROVAL_REQUESTED in types
+            assert RunEventType.APPROVAL_APPROVED in types
+            assert types.count(RunEventType.TOOL_CALL_COMPLETED) == 1

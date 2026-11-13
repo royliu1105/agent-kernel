@@ -7,13 +7,16 @@ from pathlib import Path
 from typing import Never
 
 import pytest
+from kernel_core import ToolCall
 from kernel_evals.timeline import (
     TimelineDataset,
     compare_timeline,
     load_timeline_dataset,
     run_timeline_dataset,
 )
+from kernel_providers import LLMRequest, LLMResponse
 from kernel_runtime import RetryPolicy
+from kernel_runtime import execution as runtime_execution
 from pydantic import ValidationError
 
 SPEC = importlib.util.spec_from_file_location(
@@ -59,6 +62,101 @@ async def test_real_retry_behavior_regression_fails_golden(
     assert "model_call_retrying" in failures["event_order"]
     assert "run_failed" in failures["event_order"]
     assert "expected 2, observed 1" in failures["facts.model_calls"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "remove_result",
+        "corrupt_result",
+        "remove_call",
+        "wrong_call_id",
+        "wrong_arguments",
+        "changed_task",
+        "wrong_internal_id",
+    ],
+)
+async def test_native_followup_request_mutations_fail_release_gate(
+    monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    original = runtime_execution._request_with_tool_result
+
+    def mutate(
+        *, initial_request: LLMRequest, initial_response: LLMResponse, tool_call: ToolCall
+    ) -> LLMRequest:
+        request = original(
+            initial_request=initial_request, initial_response=initial_response, tool_call=tool_call
+        )
+        messages = list(request.messages)
+        if mutation == "remove_result":
+            messages.pop()
+        elif mutation == "corrupt_result":
+            payload = json.loads(messages[-1].content)
+            payload["result"] = {"ok": False}
+            messages[-1] = messages[-1].model_copy(update={"content": json.dumps(payload)})
+        elif mutation == "remove_call":
+            messages[1] = messages[1].model_copy(update={"metadata": {}})
+        elif mutation == "wrong_call_id":
+            messages[-1] = messages[-1].model_copy(
+                update={
+                    "metadata": {**messages[-1].metadata, "provider_tool_call_id": "different-call"}
+                }
+            )
+        elif mutation == "wrong_arguments":
+            calls = messages[1].metadata["tool_calls"]
+            messages[1] = messages[1].model_copy(
+                update={
+                    "metadata": {
+                        **messages[1].metadata,
+                        "tool_calls": [{**calls[0], "arguments": {"unexpected": True}}],
+                    }
+                }
+            )
+        elif mutation == "changed_task":
+            messages[0] = messages[0].model_copy(update={"content": "unrelated task"})
+        else:
+            # Keep the two request fields consistent, but break persisted correlation.
+            wrong_id = "00000000-0000-0000-0000-000000000001"
+            payload = json.loads(messages[-1].content)
+            payload["tool_call_id"] = wrong_id
+            messages[-1] = messages[-1].model_copy(
+                update={
+                    "metadata": {**messages[-1].metadata, "tool_call_id": wrong_id},
+                    "content": json.dumps(payload),
+                }
+            )
+        return request.model_copy(update={"messages": tuple(messages)})
+
+    monkeypatch.setattr(runtime_execution, "_request_with_tool_result", mutate)
+    dataset = load_timeline_dataset(harness.DEFAULT_GOLDEN)
+    report = await run_timeline_dataset(dataset, harness.execute_scenario)
+    assert not report.passed
+    assert report.failed_count == 1
+    native_result = next(case for case in report.case_results if case.case_name == "native-tool")
+    assert not native_result.passed
+
+
+def test_timeline_cli_rejects_removed_tool_result(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    original = runtime_execution._request_with_tool_result
+
+    def omit_result(
+        *, initial_request: LLMRequest, initial_response: LLMResponse, tool_call: ToolCall
+    ) -> LLMRequest:
+        request = original(
+            initial_request=initial_request, initial_response=initial_response, tool_call=tool_call
+        )
+        return request.model_copy(update={"messages": request.messages[:-1]})
+
+    monkeypatch.setattr(runtime_execution, "_request_with_tool_result", omit_result)
+    assert harness.main([]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["failed_count"] == 1
+    native = next(case for case in report["cases"] if case["name"] == "native-tool")
+    assert not native["passed"]
+    assert native["error_type"] == "FixtureContractError"
 
 
 @pytest.mark.asyncio

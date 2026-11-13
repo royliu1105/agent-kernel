@@ -58,6 +58,8 @@ Required integration contract:
 | `AGENT_KERNEL_REDIS_CONNECT_TIMEOUT_SECONDS` | `1` | Connection timeout with the same bounds |
 | `AGENT_KERNEL_REDIS_MAX_CONNECTIONS` | `20` | Client pool cap, 1 to 1,000 |
 | `AGENT_KERNEL_RATE_LIMIT_PREFIX` | `agent-kernel:rate-limit` | Deployment-specific admission keys |
+| `AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS` | `0` | Optional workspace-local principal quota across keys |
+| `AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS` | `0` | Optional independent key quota; admission checks all enabled quotas atomically |
 
 URL query overrides are rejected so URL parameters cannot silently disable
 timeouts or TLS verification. Credentials are not included in settings repr or

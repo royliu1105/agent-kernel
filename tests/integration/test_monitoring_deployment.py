@@ -126,7 +126,12 @@ def test_grafana_provisions_dashboard_and_reaches_prometheus() -> None:
         assert health["database"] == "ok"
         dashboard = _get(client, "/api/dashboards/uid/agent-kernel-operations")
         assert dashboard["meta"]["provisioned"] is True
-        assert len(dashboard["dashboard"]["panels"]) == 14
+        expected_dashboard = json.loads(
+            (ROOT / "deploy/observability/grafana/dashboards/agent-kernel.json").read_text()
+        )
+        assert {panel["id"] for panel in dashboard["dashboard"]["panels"]} == {
+            panel["id"] for panel in expected_dashboard["panels"]
+        }
         datasource = _get(client, "/api/datasources/uid/agent-kernel-prometheus")
         assert datasource["url"] == "http://prometheus:9090"
         assert datasource["readOnly"] is True
@@ -145,6 +150,8 @@ def test_grafana_provisions_dashboard_and_reaches_prometheus() -> None:
 
 
 def test_disposable_worker_has_restart_supervision() -> None:
+    project = os.getenv("AGENT_KERNEL_TEST_COMPOSE_PROJECT", "agent-kernel-hardening")
+    assert project in {"agent-kernel-hardening", "agent-kernel-remediation"}
     result = subprocess.run(
         [
             "docker",
@@ -152,7 +159,7 @@ def test_disposable_worker_has_restart_supervision() -> None:
             "--format",
             '{"project":{{json (index .Config.Labels "com.docker.compose.project")}},'
             '"policy":{{json .HostConfig.RestartPolicy.Name}}}',
-            "agent-kernel-hardening-worker-1",
+            f"{project}-worker-1",
         ],
         capture_output=True,
         text=True,
@@ -161,6 +168,6 @@ def test_disposable_worker_has_restart_supervision() -> None:
     )
     assert result.returncode == 0, "The disposable Compose Worker must be running."
     assert json.loads(result.stdout) == {
-        "project": "agent-kernel-hardening",
+        "project": project,
         "policy": "unless-stopped",
     }

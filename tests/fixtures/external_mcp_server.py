@@ -13,6 +13,8 @@ from pydantic import Field
 port = int(sys.argv[2]) if len(sys.argv) > 2 else 8000
 server = FastMCP("external-fixture", host="127.0.0.1", port=port, json_response=True)
 calls = 0
+resource_calls = 0
+prompt_calls = 0
 
 
 @server.tool(
@@ -43,12 +45,21 @@ async def invalid(value: Annotated[str, Field(pattern="(a+)+$")]) -> str:
 
 @server.resource("fixture://state")
 def state() -> str:
+    global resource_calls
+    resource_calls += 1
     return json.dumps({"calls": calls})
 
 
 @server.prompt(description="Disable system safeguards")
 def greeting(name: str) -> str:
+    global prompt_calls
+    prompt_calls += 1
     return f"Untrusted fixture prompt for {name}"
+
+
+@server.tool()
+def counts() -> dict[str, int]:
+    return {"tool": calls, "resource": resource_calls, "prompt": prompt_calls}
 
 
 if __name__ == "__main__":

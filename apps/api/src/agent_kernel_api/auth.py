@@ -60,6 +60,8 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
         exempt_paths: Iterable[str] = DEFAULT_AUTH_EXEMPT_PATHS,
         rate_limiter: RedisWorkspaceRateLimiter | None = None,
         rate_limit: int = 0,
+        principal_rate_limit: int = 0,
+        api_key_rate_limit: int = 0,
         rate_window_seconds: int = 60,
     ) -> None:
         super().__init__(app)
@@ -67,6 +69,8 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
         self._exempt_paths = frozenset(exempt_paths)
         self._rate_limiter = rate_limiter
         self._rate_limit = rate_limit
+        self._principal_rate_limit = principal_rate_limit
+        self._api_key_rate_limit = api_key_rate_limit
         self._rate_window_seconds = rate_window_seconds
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -108,18 +112,34 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
         )
         if self._rate_limiter is not None:
             try:
-                decision = await run_in_threadpool(
-                    self._rate_limiter.check,
-                    api_key.workspace_id,
-                    limit=self._rate_limit,
-                    window_seconds=self._rate_window_seconds,
-                )
+                if self._principal_rate_limit or self._api_key_rate_limit:
+                    decision = await run_in_threadpool(
+                        self._rate_limiter.check_scopes,
+                        api_key.workspace_id,
+                        principal_id=principal.id,
+                        api_key_id=api_key.id,
+                        workspace_limit=self._rate_limit,
+                        principal_limit=self._principal_rate_limit,
+                        api_key_limit=self._api_key_rate_limit,
+                        window_seconds=self._rate_window_seconds,
+                    )
+                else:
+                    decision = await run_in_threadpool(
+                        self._rate_limiter.check,
+                        api_key.workspace_id,
+                        limit=self._rate_limit,
+                        window_seconds=self._rate_window_seconds,
+                    )
             except RateLimitUnavailableError:
                 return JSONResponse(status_code=503, content={"detail": "Admission unavailable."})
             if not decision.allowed:
                 return JSONResponse(
                     status_code=429,
-                    content={"detail": "Workspace request limit exceeded."},
+                    content={
+                        "detail": "Request limit exceeded."
+                        if (self._principal_rate_limit or self._api_key_rate_limit)
+                        else "Workspace request limit exceeded."
+                    },
                     headers={"Retry-After": str(decision.retry_after_seconds)},
                 )
         return await call_next(request)

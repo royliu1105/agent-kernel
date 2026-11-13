@@ -6,7 +6,10 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
+from contextlib import suppress
+from copy import deepcopy
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -250,12 +253,31 @@ class RunExecutionService:
 
         work = asyncio.create_task(traced_operation())
         pulse = asyncio.create_task(heartbeat())
+        started = monotonic()
+        mode = "execute" if expected_status is RunStatus.QUEUED else "resume"
+        outcome = "error"
+        with suppress(Exception):
+            self._metrics_recorder.increment(
+                "agent_run_segments_started_total", labels={"execution_mode": mode}
+            )
         try:
             done, _ = await asyncio.wait({work, pulse}, return_when=asyncio.FIRST_COMPLETED)
             if pulse in done:
                 await pulse
-            return await work
+            result = await work
+            outcome = result.status.value
+            return result
+        except asyncio.CancelledError:
+            outcome = "canceled"
+            raise
         finally:
+            labels = {"execution_mode": mode, "outcome": outcome}
+            # A custom metrics sink must never prevent lease fencing/cleanup.
+            with suppress(Exception):
+                self._metrics_recorder.increment("agent_run_segments_total", labels=labels)
+                self._metrics_recorder.observe(
+                    "agent_run_segment_latency_ms", (monotonic() - started) * 1000, labels=labels
+                )
             # Fence before canceling: a provider/tool may suppress CancelledError
             # and return a late result. Keep the expired lease for recovery.
             pulse.cancel()
@@ -725,30 +747,87 @@ class RunExecutionService:
             initial_response=initial_response,
             tool_call=completed_tool_call,
         )
-        followup_timer = LatencyTimer.start()
-        try:
-            repository.assert_owned(running.id)
-            with trace_operation(
-                "llm.model_call",
-                attributes={
-                    "provider": provider_name,
-                    "model": followup_request.model,
-                },
-            ):
-                final_response = await provider.complete(followup_request)
-            followup_latency_ms = followup_timer.elapsed_ms()
-        except LLMProviderError as error:
-            self._record_model_failure_metrics(
-                provider=provider_name,
-                model=initial_request.model,
-                error_type=error.error_type,
-                latency_ms=followup_timer.elapsed_ms(),
-            )
+        final_response: LLMResponse | None = None
+        followup_latency_ms = 0
+        followup_total_latency_ms = 0
+        followup_attempt_count = 0
+        # Retry only synthesis on the same provider/model with the same history.
+        # The completed tool must never be executed again or rerouted on failure.
+        for followup_attempt in range(1, self._retry_policy.provider_max_attempts + 1):
+            followup_attempt_count += 1
+            followup_timer = LatencyTimer.start()
+            try:
+                repository.assert_owned(running.id)
+                with trace_operation(
+                    "llm.model_call",
+                    attributes={
+                        "provider": provider_name,
+                        "model": followup_request.model,
+                    },
+                ):
+                    final_response = await provider.complete(followup_request)
+                followup_latency_ms = followup_timer.elapsed_ms()
+                followup_total_latency_ms += followup_latency_ms
+                break
+            except LLMProviderError as error:
+                failed_latency_ms = followup_timer.elapsed_ms()
+                followup_total_latency_ms += failed_latency_ms
+                self._record_model_failure_metrics(
+                    provider=provider_name,
+                    model=initial_request.model,
+                    error_type=error.error_type,
+                    latency_ms=failed_latency_ms,
+                )
+                if self._should_retry_provider(error) and (
+                    followup_attempt < self._retry_policy.provider_max_attempts
+                ):
+                    log_event(
+                        LOGGER,
+                        level=logging.WARNING,
+                        event="llm.model_call.retrying",
+                        context=_context_from_run(running, tool_call_id=completed_tool_call.id),
+                        status=running.status.value,
+                        provider=provider_name,
+                        model=followup_request.model,
+                        error_type=error.error_type,
+                        extra={
+                            "phase": "tool_followup",
+                            "latency_ms": failed_latency_ms,
+                            "attempt": followup_attempt + 1,
+                            "max_attempts": self._retry_policy.provider_max_attempts,
+                        },
+                    )
+                    repository.append_event(
+                        run_id=running.id,
+                        event_type=RunEventType.MODEL_CALL_RETRYING,
+                        payload={
+                            "provider": provider_name,
+                            "model": followup_request.model,
+                            "model_ref": model_ref,
+                            "phase": "tool_followup",
+                            "tool_call_id": str(completed_tool_call.id),
+                            "provider_tool_call_id": completed_tool_call.provider_tool_call_id,
+                            "attempt": followup_attempt + 1,
+                            "max_attempts": self._retry_policy.provider_max_attempts,
+                            "error_type": error.error_type,
+                            "error_message": str(error),
+                        },
+                        trace_id=running.trace_id,
+                    )
+                    continue
+                return self._fail_running_run(
+                    running=running,
+                    repository=repository,
+                    error_type=error.error_type,
+                    error_message=str(error),
+                    provider=provider_name,
+                )
+        if final_response is None:
             return self._fail_running_run(
                 running=running,
                 repository=repository,
-                error_type=error.error_type,
-                error_message=str(error),
+                error_type="model_execution_failed",
+                error_message="No follow-up model attempt was permitted.",
                 provider=provider_name,
             )
 
@@ -774,10 +853,10 @@ class RunExecutionService:
             response=combined_response,
             provider=provider_name,
             model_ref=model_ref,
-            attempt_count=attempt_count + 1,
+            attempt_count=attempt_count + followup_attempt_count,
             fallback_used=fallback_used,
             memory_context=memory_context,
-            latency_ms=initial_latency_ms + followup_latency_ms,
+            latency_ms=initial_latency_ms + followup_total_latency_ms,
             extra_output={
                 "provider_tool_loop": {
                     "tool_call_id": str(completed_tool_call.id),
@@ -1213,6 +1292,8 @@ class RunExecutionService:
     ) -> None:
         repository.record_usage(
             run_id,
+            provider=response.provider,
+            model=response.model,
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
             estimated_cost=response.usage.estimated_cost,
@@ -1448,6 +1529,8 @@ def _request_with_tool_result(
                     name="provider_tool_call_request",
                     metadata={
                         "finish_reason": initial_response.finish_reason.value,
+                        "provider_name": initial_response.provider,
+                        "provider_response_output": deepcopy(initial_response.raw.get("output")),
                         "tool_calls": [
                             requested_tool_call.model_dump(mode="json")
                             for requested_tool_call in initial_response.tool_calls

@@ -146,6 +146,9 @@ class RunRecord(Base):
     __tablename__ = "runs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    principal_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("principals.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     agent_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -187,6 +190,24 @@ class RunRecord(Base):
     )
     worker_leases: Mapped[list[WorkerLeaseRecord]] = relationship(
         back_populates="run", cascade="all, delete-orphan"
+    )
+    model_usage: Mapped[list[ModelUsageRecord]] = relationship(cascade="all, delete-orphan")
+
+
+class ModelUsageRecord(Base):
+    __tablename__ = "model_usage"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    input_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    estimated_cost: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
     )
 
 

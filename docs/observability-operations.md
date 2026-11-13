@@ -21,6 +21,11 @@ a monitoring token when binding to a non-loopback address. Create/start once at
 worker startup and call `close()` in `finally`. The overlay enables this with
 `AGENT_KERNEL_WORKER_METRICS_ENABLED=true`, host `0.0.0.0`, port `9001`.
 
+Both shipped entry points pass that recorder into the `kb_search` registry.
+The API's registry and direct retrieval route use the same Retriever instance,
+including an explicitly injected Retriever. Custom injected services must use
+the supplied recorder themselves; injection does not rewrite private attributes.
+
 API integration uses `AGENT_KERNEL_MONITORING_TOKEN`, separate from tenant API
 keys. Authenticated deployments must not allow ordinary workspace keys to read
 process-wide metrics. The worker token must contain at least 32 ASCII characters.
@@ -43,6 +48,11 @@ must migrate; production does not emit duplicate millisecond aliases.
 
 | Exported family | Kind and unit | Labels |
 | --- | --- | --- |
+| `api_requests_total` | Counter, requests including auth failures, 404 and 500 | method, route_group, status_class |
+| `api_request_duration_seconds` | Histogram, request seconds | method, route_group, status_class |
+| `agent_run_segments_started_total` | Counter, acquired execution segments | execution_mode: execute or resume |
+| `agent_run_segments_total` | Counter, segments ending normally, interrupted or with an error | execution_mode, outcome |
+| `agent_run_segment_duration_seconds` | Histogram, segment seconds excluding suspended time | execution_mode, outcome |
 | `llm_model_calls_total` | Counter, completed attempts | provider, model, status, error_type |
 | `llm_model_call_duration_seconds` | Histogram, seconds | provider, model, status, error_type |
 | `llm_tokens_input_total`, `llm_tokens_output_total`, `llm_tokens_total` | Counter, reported tokens | provider, model |
@@ -55,15 +65,38 @@ must migrate; production does not emit duplicate millisecond aliases.
 | `run_queue_errors_total` | Counter, queue errors | operation: enqueue or dequeue |
 | `agent_kernel_metrics_dropped_total` | Counter, rejected updates | reason: invalid_metric, invalid_value, invalid_labels, capacity |
 | `agent_kernel_metrics_series` | Gauge, retained label combinations | none |
+| `agent_kernel_runs`, `agent_kernel_run_events` | Gauge, persisted lifecycle records | state |
+| `agent_kernel_evals`, `agent_kernel_approvals` | Gauge, persisted outcomes/approval state | state |
+| `agent_kernel_queue_backlog` | Gauge, durable queued run count | none |
+| `agent_kernel_queue_oldest_wait_seconds` | Gauge, age since latest queue event of oldest queued run | none |
+| `agent_kernel_approval_oldest_wait_seconds` | Gauge, oldest unresolved approval age | none |
+| `agent_kernel_operational_snapshot_unixtime` | Gauge, successful durable snapshot timestamp | none |
 
 Prometheus supplies `up`; blackbox supplies `probe_success`. These are not
-application-emitted metrics. Run outcome metrics, lease backlog, approval wait,
-and workspace costs are not fabricated by this registry. In particular model
+application-emitted metrics. In particular model
 call failure rate measures attempts, including recovered retries, not final run
 failure rate. A tool call may include retries; inspect the runtime event timeline
 for attempt-level investigation. Provider errors may lack billed usage; estimated
 cost is not an invoice. The explicit failure counters are convenient but the
 dashboard ratios use `status="failed"` in the corresponding total counter.
+
+HTTP labels use a fixed resource-group allowlist, not paths, route parameters,
+query strings, API keys or arbitrary methods. Unmatched/auth-short-circuited
+requests share the `unmatched` group. Segment metrics start only after a lease
+is acquired: approval interruption is `waiting_approval`, not success; resume
+is another segment. Hard process termination cannot emit a completion counter.
+Durable-state gauges remain the source for outstanding work after such a crash.
+
+Durable gauges are collected only by API `/metrics`, after monitoring-token
+authorization, using SQL aggregates without loading payload columns. They include
+all workspaces and records produced by CLI/worker as well as API. The snapshot
+uses multiple queries and is not a serializable point-in-time audit. If a query
+fails, the scrape returns sanitized HTTP 503, not misleading zero values. Set DB
+statement/connect timeouts; aggregate scans have database cost and are not an
+unbounded-history analytics service. Retention/deletion may lower these gauges.
+Use `max`, never `sum`, across API replicas sharing one database. Process counters
+still require `sum(rate(...))`. Separate deployments need an external deployment
+label and separately scoped scrape/alert configurations.
 
 Duration boundaries in seconds: `0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1,
 2.5, 5, 10, 30, 60, +Inf`. Result count boundaries: `0, 1, 3, 5, 10, 20, 50,
@@ -96,8 +129,11 @@ names, credentials, SQL, or a stack trace.
 | Dependency | Default | Probe and meaning |
 | --- | --- | --- |
 | Database | Always required | `SELECT 1` and zero-row query of `runs`; verifies connection and baseline schema, not all migrations, write rights, pgvector dimensions, or storage capacity. |
-| Redis | Optional if `REDIS_URL` is set; otherwise disabled | Real authenticated `PING`; becomes required whenever `AGENT_KERNEL_RATE_LIMIT_REQUESTS>0`. |
+| Redis | Optional if `REDIS_URL` is set; otherwise disabled | Real authenticated `PING`; required if any workspace, principal or API-key quota is nonzero. |
 | S3 | Required when `AGENT_KERNEL_OBJECT_STORE_BACKEND=s3`; otherwise disabled | Real authenticated `HeadBucket` with the configured bucket, endpoint and region. |
+| pgvector | Required for explicit `pgvector`, or `auto` on PostgreSQL | Executes the vector cosine operator and a zero-row query of migrated `vector_pg`; explicit pgvector on SQLite fails. No tenant vectors are read. |
+| Local storage | Required when local backend selected | Creates the root if needed; privately writes, reads and removes a temporary canary. Invalid/non-writable paths fail without exposing the path. |
+| OpenAI config | Required for `AGENT_KERNEL_EMBEDDING_PROVIDER=openai`; otherwise optional if an API key is present or disabled without one | Validates credential presence/header safety and embedding model/dimensions; no network calls, model invocation, quota or billing check. |
 
 `AGENT_KERNEL_READINESS_REDIS` and `AGENT_KERNEL_READINESS_S3` accept `required`,
 `optional`, or `disabled`. An active Redis limiter or selected S3 backend cannot
@@ -107,6 +143,18 @@ unconfigured dependencies fail readiness. Missing optional SDKs report
 `missing_client`, not success. Required failure returns 503; optional-only failure
 returns 200 with `status=degraded`. Blackbox therefore alerts on required failure,
 not auxiliary degradation. Inspect the sanitized response for optional failures.
+
+Deployments that require OpenAI must set `AGENT_KERNEL_READINESS_OPENAI=required`.
+It accepts the same required/optional/disabled modes. This explicit declaration
+is necessary because model routes are selected per run and the default runtime
+also supports mock/replay. The checker returns 503 for a required missing/malformed
+key or invalid dimensions; invalid provider constructor settings may instead
+prevent application startup entirely. A valid-looking key does not prove upstream authorization or model
+availability. The probe does not validate arbitrary injected provider objects.
+Selecting OpenAI embeddings automatically makes the check required and prevents
+optional/disabled overrides. Embedding backend selection is explicit, never
+inferred from the presence of an API key. API indexing and retrieval share the
+selected provider; an injected Retriever supplies the default indexer's provider.
 
 Checks run concurrently, are cached for two seconds, and have a two-second HTTP
 deadline by default. At most one in-flight future per dependency is reused across
@@ -125,7 +173,15 @@ clients in the image. They are not imported in the SQLite/mock startup path.
 
 ## Logs and Traces
 
-Attach `JsonLogFormatter` to all application-owned handlers; `log_event` builds
+The API factory and both default process entry points install
+`configure_safe_logging()` before creating clients. It replaces existing handler
+formatters, including SDK/root/last-resort handlers, and captures Python warnings.
+The API passes `uvicorn_log_config()` explicitly, so Uvicorn cannot reinstall its
+raw access/exception formatters. Worker disables Typer's rich exception renderer
+and logs uncaught entry-point exceptions through the safe formatter. Default API
+import-time initialization errors are also contained before `main()` runs.
+
+`JsonLogFormatter` is attached to application-owned handlers; `log_event` builds
 sanitized records before dispatch. The formatter also sanitizes direct
 `extra={"structured": ...}` calls. Only reviewed identifier/count fields survive.
 Prompts, messages, arguments, results, documents, unknown fields and all nested
@@ -142,8 +198,10 @@ exporters with `RedactingSpanExporter`. It creates sanitized SDK snapshots of
 attributes, events, links, resource, name, instrumentation scope and status.
 Exception messages/stack traces and trace-state are not exported. It does not
 mutate a shared SDK snapshot. Do not attach an additional raw exporter that
-bypasses this wrapper. Third-party handlers/exporters are not automatically
-secured by configuring this package.
+bypasses this wrapper. A custom handler installed after application configuration,
+direct stdout/stderr writes, or a separately attached raw trace exporter bypasses
+this boundary and is not supported as a safe logging path. Do not configure
+SQLAlchemy `echo` or SDK wire logging with additional raw handlers.
 
 Use the operation helper at the execution boundary:
 
@@ -177,8 +235,13 @@ each actual model response, before downstream tool/approval failures can discard
 that response's usage. Ownership derives from the persisted Run, never model
 arguments. `GET /v1/usage` requires run-read permission and aggregates the
 authenticated workspace's Run totals into one bounded response. It is an
-all-time summary, not a time-filtered per-attempt accounting ledger. Cross-
-workspace denial is tested; monitoring tokens do not authorize this API.
+all-time summary. `GET /v1/usage/breakdown` uses the same authorization and permits
+`group_by=workspace|run|principal|model`, an optional run filter, and a bounded
+limit. Workspace scope and Run principal ownership come from authentication,
+never request payload tenant selectors. Model grouping uses the new persisted
+model-usage records; legacy runs may have totals without model attribution.
+This is not a time-filtered billing ledger. Monitoring tokens do not authorize
+these tenant APIs. Storage/migration verification belongs to the attribution slice.
 
 Amounts are adapter-provided estimates. The current OpenAI adapter reports
 tokens but leaves estimated cost at zero when pricing is not supplied; that
@@ -192,7 +255,7 @@ stronger financial guarantees are not provided by this operational summary.
 
 The optional overlay is `deploy/observability/docker-compose.yml`. JSON files are
 valid YAML documents and are intentionally checked with native Prometheus tools.
-Grafana provisioning pins the datasource UID used by all 14 dashboard panels.
+Grafana provisioning pins the datasource UID used by all 24 dashboard panels.
 
 Before starting, provide a dedicated `AGENT_KERNEL_MONITORING_TOKEN`, a matching
 `AGENT_KERNEL_MONITORING_TOKEN_FILE`, and `AGENT_KERNEL_GRAFANA_ADMIN_PASSWORD`.
@@ -217,7 +280,13 @@ remain private because its target parameter can access internal URLs.
 
 Alerts cover unreachable API/worker metrics, required readiness failure, probe
 exporter outage, model/tool/retrieval error ratios, model p95 latency, metric
-rejections and queue errors. Failure ratios have a minimum 20-event/5-minute
+rejections, queue errors, API errors and terminal execution-segment failures.
+Additional five-minute-hold rules cover durable queue backlog above 100, oldest
+queued wait above 120 seconds, unresolved approval wait above one hour, and
+reported estimated spend above 10 USD in one hour across API/worker. The cost
+rule is operational: unpriced/unknown usage and process crashes can undercount;
+it cannot enforce billing budgets. Approval/queue rules use durable gauges with
+`max` across API replicas to avoid double counting. Failure ratios have a minimum 20-event/5-minute
 volume guard; latency requires the same volume. Thresholds are starting policy,
 not a workload-specific SLO. Missing application metrics before the first event
 are expected; do not interpret them as zero failures. `up` and probe alerts cover
@@ -238,6 +307,10 @@ When alerts fire:
    model/tool churn. A capacity alert means monitoring coverage is incomplete.
 6. Queue errors: verify Redis availability and durability/fallback behavior; the
    database remains the task source of truth, not this metric.
+7. Queue backlog/wait: inspect worker health, available capacity and stuck leases;
+   Redis hint length is not the durable backlog.
+8. Approval wait: review authorized pending approvals; never auto-approve to
+   clear an alert. Cost: verify provider pricing/usage completeness and workloads.
 
 ## Verification
 
@@ -253,13 +326,36 @@ AGENT_KERNEL_TEST_PROMTOOL=1 uv run pytest -q \
 
 This checks exposition with `promtool check metrics`, scrape config with
 `check config --syntax-only`, every dashboard PromQL as a recording rule, and
-all nine alerts using the checked-in firing/pending/recovery/low-volume cases.
+all 15 alerts using the checked-in firing/pending/recovery/low-volume cases.
 Syntax-only scrape validation does not prove connectivity or readable secret
 files. Inspect `/targets` after deployment and perform a controlled failure drill.
 
-### Local Verification Record
+### Remediation Verification (Not Final Acceptance)
 
-2026-11-13, uncommitted P0 implementation:
+2026-11-13 follow-up to the audit; no canonical acceptance state is changed here:
+
+- Five subprocess entry-point tests pass, including actual Uvicorn SQL exception
+  logging, Worker top-level failures, API initialization failures and malformed
+  MCP SDK notifications through both API and Worker logging configuration.
+- Readiness tests cover selected pgvector on SQLite, local file canary cleanup,
+  invalid provider configuration, and a required provider check with network
+  calls prohibited. A real isolated PostgreSQL test passes: removing the native
+  vector column leaves database connectivity healthy but makes readiness 503.
+- API/Worker integration verifies real queue, execution, eval and approval state
+  signals and recovery, plus bounded 404/auth/500 request metrics without IDs.
+- The focused observability/API/Worker/runtime set passed 117 tests, including
+  default Worker `kb_search` metrics, API injected Retriever wiring, and metrics
+  sink failure isolation. `mypy apps packages tests` passed on 200 source/test
+  files; scoped Ruff also passed at this point in integration.
+- Native Prometheus validation passed all three tests: exposition, 15 alert
+  scenarios and all 24 dashboard queries. This is not a new live Grafana scrape
+  rehearsal or proof of Alertmanager delivery. Parent integration/CI and the
+  canonical remediation checklist must be rerun before acceptance.
+
+### Historical Local Verification Record
+
+2026-11-13, original P0 implementation before the audit. These results do not
+cover the follow-up fixes and must not be used as their acceptance evidence:
 
 | Check | Result |
 | --- | --- |

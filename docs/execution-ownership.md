@@ -25,6 +25,13 @@ block it with CPU work or synchronous I/O; offload that work or isolate it in a
 process. A stalled event loop can lose ownership, which is preferable to a late
 writer silently succeeding. Database outages fail closed.
 
+The built-in `kb_search` offloads synchronous retrieval to a thread and creates
+and closes its read-only database Session there. Its tool deadline cancels the
+await and prevents a late result from completing the Run; it does not kill a
+Python thread or undo an embedding request. Underlying database/provider I/O
+still needs finite timeouts. The deadline, lease-renewal and late-result contracts
+are exercised together in `test_rag_execution_deadlines.py`.
+
 ## Approval and Side Effects
 
 Approval decisions lock the parent Run and recheck persisted state. Repeating

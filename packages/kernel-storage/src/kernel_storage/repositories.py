@@ -5,7 +5,7 @@ from __future__ import annotations
 import builtins
 import math
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
@@ -66,6 +66,7 @@ from kernel_storage.models import (
     IngestionJobRecord,
     KnowledgeBaseRecord,
     MemoryItemRecord,
+    ModelUsageRecord,
     PrincipalRecord,
     RunEventRecord,
     RunRecord,
@@ -389,10 +390,12 @@ class RunRepository:
         input_payload: dict[str, Any],
         trace_id: str | None = None,
         workspace_id: UUID | None = None,
+        principal_id: UUID | None = None,
     ) -> Run:
         run = Run(
             agent_id=agent_id,
             workspace_id=workspace_id,
+            principal_id=principal_id,
             input=input_payload,
             trace_id=ensure_trace_id(trace_id),
         )
@@ -602,7 +605,14 @@ class RunRepository:
         }
 
     def record_usage(
-        self, run_id: UUID, *, input_tokens: int, output_tokens: int, estimated_cost: float
+        self,
+        run_id: UUID,
+        *,
+        input_tokens: int,
+        output_tokens: int,
+        estimated_cost: float,
+        provider: str = "unknown",
+        model: str = "unknown",
     ) -> None:
         record = _guard_run_write(self._session, run_id, self.lease_token)
         if record is None:
@@ -610,7 +620,74 @@ class RunRepository:
         record.input_tokens_total += input_tokens
         record.output_tokens_total += output_tokens
         record.estimated_cost_total += estimated_cost
+        self._session.add(
+            ModelUsageRecord(
+                id=str(uuid4()),
+                run_id=str(run_id),
+                provider=provider,
+                model=model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                estimated_cost=estimated_cost,
+            )
+        )
         self._session.commit()
+
+    def usage_breakdown(
+        self,
+        *,
+        group_by: Literal["workspace", "run", "principal", "model"],
+        workspace_id: UUID | None = None,
+        run_id: UUID | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Authorized persisted attribution, never process-global metric labels."""
+        if not 1 <= limit <= 1000:
+            raise ValueError("Usage group limit must be between 1 and 1000.")
+        if group_by == "model":
+            dimensions: list[Any] = [ModelUsageRecord.provider, ModelUsageRecord.model]
+            statement = select(
+                *dimensions,
+                func.count(func.distinct(RunRecord.id)),
+                func.sum(ModelUsageRecord.input_tokens),
+                func.sum(ModelUsageRecord.output_tokens),
+                func.sum(ModelUsageRecord.estimated_cost),
+            ).join(RunRecord, RunRecord.id == ModelUsageRecord.run_id)
+        else:
+            dimension = {
+                "workspace": RunRecord.workspace_id,
+                "run": RunRecord.id,
+                "principal": RunRecord.principal_id,
+            }[group_by]
+            dimensions = [dimension]
+            statement = select(
+                dimension,
+                func.count(RunRecord.id),
+                func.sum(RunRecord.input_tokens_total),
+                func.sum(RunRecord.output_tokens_total),
+                func.sum(RunRecord.estimated_cost_total),
+            )
+        if workspace_id is not None:
+            statement = statement.where(RunRecord.workspace_id == str(workspace_id))
+        if run_id is not None:
+            statement = statement.where(RunRecord.id == str(run_id))
+        rows = self._session.execute(
+            statement.group_by(*dimensions).order_by(*dimensions).limit(limit)
+        )
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            offset = len(dimensions)
+            items.append(
+                {
+                    group_by: row[offset - 1],
+                    **({"provider": row[0]} if group_by == "model" else {}),
+                    "run_count": int(row[offset]),
+                    "input_tokens": int(row[offset + 1]),
+                    "output_tokens": int(row[offset + 2]),
+                    "estimated_cost": float(row[offset + 3]),
+                }
+            )
+        return items
 
     def _next_event_sequence(self, run_id: UUID) -> int:
         statement = select(func.max(RunEventRecord.sequence)).where(
@@ -2021,6 +2098,7 @@ def _run_to_record(run: Run) -> RunRecord:
         id=str(run.id),
         agent_id=str(run.agent_id),
         workspace_id=str(run.workspace_id) if run.workspace_id is not None else None,
+        principal_id=str(run.principal_id) if run.principal_id is not None else None,
         status=run.status.value,
         input_payload=run.input,
         output_payload=run.output,
@@ -2041,6 +2119,7 @@ def _run_from_record(record: RunRecord) -> Run:
         id=UUID(record.id),
         agent_id=UUID(record.agent_id),
         workspace_id=UUID(record.workspace_id) if record.workspace_id is not None else None,
+        principal_id=UUID(record.principal_id) if record.principal_id is not None else None,
         status=RunStatus(record.status),
         input=record.input_payload,
         output=record.output_payload,

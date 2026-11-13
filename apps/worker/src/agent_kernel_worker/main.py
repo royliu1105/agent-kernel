@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from typing import Annotated
 
@@ -12,6 +13,7 @@ from kernel_observability import (
     MetricsHttpServer,
     MetricsRecorder,
     configure_opentelemetry,
+    configure_safe_logging,
 )
 from kernel_providers import MockLLMProvider, OpenAIProvider, ReplayLLMProvider
 from kernel_rag import create_rag_tool_registry
@@ -35,6 +37,7 @@ app = typer.Typer(
     add_completion=False,
     help="Execute queued Agent Kernel runs.",
     invoke_without_command=True,
+    pretty_exceptions_enable=False,
 )
 
 
@@ -63,7 +66,7 @@ def cli(
     ] = 5.0,
 ) -> None:
     """Run the worker in one-shot or polling mode."""
-
+    configure_safe_logging()
     if ctx.invoked_subcommand is not None:
         return
     selected_modes = sum(1 for selected in (once, loop, recover_stuck) if selected)
@@ -98,7 +101,12 @@ def cli(
 def main() -> None:
     """Console script entrypoint."""
 
-    app()
+    configure_safe_logging()
+    try:
+        app()
+    except Exception:
+        logging.getLogger(__name__).exception("Worker startup or execution failed")
+        raise SystemExit(1) from None
 
 
 def _create_worker(
@@ -117,7 +125,8 @@ def _create_worker(
     )
     execution_service = RunExecutionService(
         router=router,
-        tool_registry=registry or create_rag_tool_registry(session_factory=session_factory),
+        tool_registry=registry
+        or create_rag_tool_registry(session_factory=session_factory, metrics_recorder=metrics),
         metrics_recorder=metrics,
     )
     return QueuedRunWorker(
@@ -139,7 +148,7 @@ async def _run_worker(
     client = create_redis_client(settings) if settings.queue_backend == "redis" else None
     metrics = AggregatingMetricsRecorder()
     listener: MetricsHttpServer | None = None
-    registry = create_rag_tool_registry(session_factory=session_factory)
+    registry = create_rag_tool_registry(session_factory=session_factory, metrics_recorder=metrics)
     try:
         if os.getenv("AGENT_KERNEL_WORKER_METRICS_ENABLED", "false").lower() == "true":
             listener = MetricsHttpServer(

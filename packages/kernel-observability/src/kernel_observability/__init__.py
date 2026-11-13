@@ -5,13 +5,16 @@ from kernel_observability.aggregation import (
     PROMETHEUS_CONTENT_TYPE,
     AggregatingMetricsRecorder,
 )
+from kernel_observability.asgi import HttpMetricsMiddleware
 from kernel_observability.http import MetricsHttpServer
 from kernel_observability.logging import (
     JsonLogFormatter,
     build_log_fields,
     build_log_record,
+    configure_safe_logging,
     log_event,
     redact_log_fields,
+    uvicorn_log_config,
 )
 from kernel_observability.metrics import (
     ExposableMetricsRecorder,
@@ -51,6 +54,7 @@ from kernel_observability.tracing import (
 )
 
 __all__ = [
+    "HttpMetricsMiddleware",
     "trace_operation",
     "MetricsHttpServer",
     "AggregatingMetricsRecorder",
@@ -81,6 +85,8 @@ __all__ = [
     "build_log_fields",
     "build_log_record",
     "configure_opentelemetry",
+    "configure_safe_logging",
+    "uvicorn_log_config",
     "create_span_id",
     "create_trace_id",
     "ensure_span_id",

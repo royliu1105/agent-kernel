@@ -9,6 +9,7 @@ import pytest
 from agent_kernel_api.main import create_app
 from agent_kernel_worker.main import _run_worker
 from fastapi.testclient import TestClient
+from kernel_core import RiskLevel
 from kernel_tools.external import (
     ExternalAccess,
     ExternalToolContract,
@@ -37,6 +38,9 @@ def test_external_tool_queued_worker_approval_and_api_resume(
                         remote_name="record",
                         contract=ExternalToolContract(
                             name="external_record",
+                            read_only=True,
+                            risk_level=RiskLevel.READ_ONLY,
+                            policy_decision="require_approval",
                         ),
                     ),
                 ),

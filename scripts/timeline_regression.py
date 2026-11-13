@@ -23,7 +23,9 @@ from kernel_providers import (
     LLMRequest,
     LLMResponse,
     LLMToolCall,
+    LLMToolChoice,
     LLMUsage,
+    MessageRole,
 )
 from kernel_runtime import (
     ModelRouter,
@@ -86,6 +88,15 @@ class _SimulatedProcessExit(BaseException):
     """Escape normal provider failure handling to leave a durable running run."""
 
 
+class FixtureContractError(ValueError):
+    """The real runtime sent an invalid request to a deterministic fixture."""
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise FixtureContractError(message)
+
+
 class _FixtureProvider:
     def __init__(
         self, name: str, *, failures: int = 0, native_tool: bool = False, crash: bool = False
@@ -95,9 +106,12 @@ class _FixtureProvider:
         self.native_tool = native_tool
         self.crash = crash
         self.calls = 0
+        self.requests: list[LLMRequest] = []
 
     async def complete(self, request: LLMRequest) -> LLMResponse:
         self.calls += 1
+        self.requests.append(request)
+        self._validate_request(request)
         if self.crash:
             raise _SimulatedProcessExit()
         if self.calls <= self.failures:
@@ -115,6 +129,59 @@ class _FixtureProvider:
             model=request.model,
             text="fixture complete",
             usage=LLMUsage(input_tokens=5, output_tokens=2),
+        )
+
+    def _validate_request(self, request: LLMRequest) -> None:
+        followup = self.native_tool and self.calls > 1
+        expected_roles = (
+            [MessageRole.USER, MessageRole.ASSISTANT, MessageRole.TOOL]
+            if followup
+            else [MessageRole.USER]
+        )
+        _require(
+            [m.role for m in request.messages] == expected_roles, "message roles/order changed"
+        )
+        _require(request.messages[0].content == "timeline fixture", "task content changed")
+        _require(request.model == "small", "routed model changed")
+        if not followup:
+            _require(request.tool_choice is LLMToolChoice.AUTO, "initial tool choice changed")
+            _require(len(request.tools) == 1, "initial tool definitions missing")
+            _require(request.tools[0].name == "fixture_read", "initial tool name changed")
+            _require(
+                request.tools[0].input_schema == {"type": "object", "additionalProperties": False},
+                "initial tool schema changed",
+            )
+            return
+
+        _require(self.calls == 2, "unexpected model call after tool result")
+        _require(not request.tools, "follow-up must not expose more tools")
+        _require(request.tool_choice is LLMToolChoice.NONE, "follow-up tool choice changed")
+        assistant, result = request.messages[1:]
+        _require(assistant.content == "", "assistant content changed")
+        _require(
+            assistant.metadata.get("tool_calls")
+            == [LLMToolCall(id="fixture-call-1", name="fixture_read", arguments={}).model_dump()],
+            "assistant call ID/name/arguments changed",
+        )
+        _require(result.name == "fixture_read", "tool result name changed")
+        _require(
+            result.metadata.get("provider_tool_call_id") == "fixture-call-1"
+            and result.metadata.get("provider_name") == self.name,
+            "tool result provider correlation changed",
+        )
+        payload = json.loads(result.content)
+        _require(isinstance(payload, dict), "tool result is not an object")
+        internal_id = result.metadata.get("tool_call_id")
+        _require(isinstance(internal_id, str) and bool(internal_id), "internal call ID missing")
+        _require(
+            payload
+            == {
+                "tool_call_id": internal_id,
+                "provider_tool_call_id": "fixture-call-1",
+                "tool_name": "fixture_read",
+                "result": {"ok": True},
+            },
+            "tool result content or correlation changed",
         )
 
 
@@ -224,6 +291,19 @@ async def _execute(name: str, factory: sessionmaker[Session]) -> TimelineObserva
     )
     with factory() as session:
         stored_tools = ToolCallRepository(session).list_for_run(run.id)
+        if name == "native-tool":
+            _require(len(primary.requests) == 2, "native model/tool/model request missing")
+            last = primary.requests[-1]
+            _require(len(last.messages) == 3, "native follow-up message missing")
+            _require(len(stored_tools) == 1, "persisted native call missing")
+            _require(
+                last.messages[-1].metadata.get("tool_call_id") == str(stored_tools[0].id),
+                "follow-up does not reference the persisted tool call",
+            )
+            _require(
+                json.loads(last.messages[-1].content).get("result") == stored_tools[0].result,
+                "follow-up differs from persisted tool result",
+            )
         facts["stable_tool_call_key"] = (
             len(tool.contexts) == tool.calls
             and all(

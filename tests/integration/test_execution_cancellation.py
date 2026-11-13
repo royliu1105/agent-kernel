@@ -17,7 +17,12 @@ from kernel_providers import (
     LLMToolCall,
     LLMUsage,
 )
-from kernel_runtime import QueuedRunWorker, RunExecutionService, StuckRunRecoveryService
+from kernel_runtime import (
+    QueuedRunWorker,
+    RetryPolicy,
+    RunExecutionService,
+    StuckRunRecoveryService,
+)
 from kernel_storage import (
     AgentRepository,
     ApprovalRepository,
@@ -441,7 +446,8 @@ async def test_source_model_usage_survives_downstream_failure(
     tool = SourceUsageTool(failure)
     registry = ToolRegistry()
     registry.register(tool)
-    service = RunExecutionService(provider=provider, tool_registry=registry)
+    policy = RetryPolicy()
+    service = RunExecutionService(provider=provider, tool_registry=registry, retry_policy=policy)
     result = await _execute(ownership_db, service, run_id)
     if failure == "approval_rejected":
         assert result.status is RunStatus.WAITING_APPROVAL
@@ -470,5 +476,7 @@ async def test_source_model_usage_survives_downstream_failure(
         assert summary["output_tokens"] == 4
         assert summary["estimated_cost"] == pytest.approx(0.0125)
         assert repository.list_events(run_id)[-1].type is RunEventType.RUN_FAILED
-    assert provider.calls == (2 if failure == "provider_unavailable" else 1)
+    assert provider.calls == (
+        1 + policy.provider_max_attempts if failure == "provider_unavailable" else 1
+    )
     assert tool.calls == (0 if failure in {"unknown_tool", "approval_rejected"} else 1)

@@ -85,3 +85,8 @@ async def test_usage_survives_native_failure_and_approval_resume(
             "output_tokens": 2,
             "estimated_cost": 0.25,
         }
+        models = repo.usage_breakdown(group_by="model", run_id=run.id)
+        assert len(models) == 1
+        assert models[0]["provider"] == "mock"
+        assert models[0]["estimated_cost"] == 0.25
+        assert models[0]["input_tokens"] == 10
