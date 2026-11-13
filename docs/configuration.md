@@ -1,5 +1,42 @@
 # Versioned Configuration Reference
 
+## Post-v1.0 Hardening Additions
+
+These additions are unreleased; apply the migration and compatibility guidance
+in [Upgrade Policy](upgrade-migration-policy.md). The Python/TypeScript stack
+and local SQLite/mock defaults are unchanged.
+
+| Variable | Default | Contract |
+| --- | --- | --- |
+| `AGENT_KERNEL_RUN_QUEUE_BACKEND` | `database` | Optional `redis` UUID hint queue; database remains authoritative. |
+| `AGENT_KERNEL_RUN_QUEUE_NAME` | `agent-kernel:runs:queued` | Deployment-specific Redis list. |
+| `AGENT_KERNEL_RUN_QUEUE_MAX_LENGTH` | `10000` | Atomic hint capacity; overflow never loses a committed Run. |
+| `AGENT_KERNEL_REDIS_TIMEOUT_SECONDS` | `1` | Bounded socket operation timeout, seconds. |
+| `AGENT_KERNEL_REDIS_CONNECT_TIMEOUT_SECONDS` | `1` | Bounded connect timeout, seconds. |
+| `AGENT_KERNEL_REDIS_MAX_CONNECTIONS` | `20` | Redis pool limit. |
+| `AGENT_KERNEL_RATE_LIMIT_REQUESTS` | `0` | Zero disables; positive enables shared per-workspace admission. Requires auth and Redis. |
+| `AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS` | `60` | Fixed window from first admission, 1..86400 seconds. |
+| `AGENT_KERNEL_RATE_LIMIT_PREFIX` | `agent-kernel:rate-limit` | Shared policy namespace across replicas. |
+| `AGENT_KERNEL_MONITORING_TOKEN` | empty | Secret, separate from workspace keys; required for authenticated API metrics and non-loopback Worker metrics. Use at least 32 random ASCII characters. |
+| `AGENT_KERNEL_WORKER_METRICS_ENABLED` | `false` | Enable independent Worker metrics HTTP listener. |
+| `AGENT_KERNEL_WORKER_METRICS_HOST` | `127.0.0.1` | Private bind address; do not publish on the public ingress. |
+| `AGENT_KERNEL_WORKER_METRICS_PORT` | `9001` | Metrics listener port. |
+| `AGENT_KERNEL_READINESS_REDIS` | inferred | `disabled`, `optional`, `required`; shared limiter forces required. |
+| `AGENT_KERNEL_READINESS_S3` | inferred | Selected S3 backend must be required; otherwise disabled. |
+| `AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG` | empty | Trusted local JSON path; empty means no external tools. Not a user-uploaded config. |
+
+Redis connection uses the existing `REDIS_URL`. Queue failure falls back to DB
+polling; enabled shared limiting fails closed with 503. Readiness returns 503
+when a required backend fails and sanitized degraded status for optional
+dependencies. `/healthz` only reports process liveness.
+
+See [backend operations](backend-operations.md),
+[execution ownership](execution-ownership.md) and
+[behavior regression](behavior-regression.md) for real-backend and opt-in live
+smoke test settings. `AGENT_KERNEL_TEST_*` variables are test-only and must not
+point at production services. Live smoke is disabled by default and never reads
+credentials from the Web browser. Deployment secrets must not be committed.
+
 This document defines the Agent Kernel v1.0 release candidate configuration
 contract.
 
@@ -147,6 +184,7 @@ only hashes.
 | `AGENT_KERNEL_POSTGRES_PORT` | Docker Compose | `5432` | Published Postgres host port | No | Does not change the internal Postgres service port used by API and worker. |
 | `AGENT_KERNEL_REDIS_PORT` | Docker Compose | `6379` | Published Redis host port | No | Does not change the internal Redis service port used by API and worker. |
 | `AGENT_KERNEL_API_URL` | CLI, Web server routes | `http://127.0.0.1:8000` | Internal API URL | Sometimes | Used by CLI and same-origin Web proxy routes. |
+| `AGENT_KERNEL_API_KEY` | CLI only | Empty | A scoped API key | When API auth is enabled | Sent as a Bearer header for JSON and file uploads; not a workspace override. Not forwarded by Web. Use HTTPS outside localhost. |
 | `NEXT_PUBLIC_AGENT_KERNEL_API_URL` | Web browser and Web server routes | `http://127.0.0.1:8000` | Public API URL or same-origin gateway | No | Exposed to browser bundles by Next.js. Do not put secrets here. |
 
 Web route preference:

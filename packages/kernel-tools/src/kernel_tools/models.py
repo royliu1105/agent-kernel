@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from kernel_core import RiskLevel
 from pydantic import BaseModel, ConfigDict, Field
@@ -26,6 +27,15 @@ class ToolMetadata(ToolModel):
     risk_level: RiskLevel = RiskLevel.READ_ONLY
     timeout_ms: int = Field(default=1_000, ge=1)
     enabled: bool = True
+    retry_safe: bool | None = None
+
+
+class ToolExecutionContext(ToolModel):
+    """Trusted runtime context, never populated from model tool arguments."""
+
+    run_id: UUID | None = None
+    workspace_id: UUID | None = None
+    tool_call_id: UUID | None = None
 
 
 class ToolRequest(ToolModel):
@@ -33,6 +43,7 @@ class ToolRequest(ToolModel):
 
     tool_name: str
     arguments: dict[str, Any] = Field(default_factory=dict)
+    context: ToolExecutionContext = Field(default_factory=ToolExecutionContext)
 
 
 class ToolResult(ToolModel):

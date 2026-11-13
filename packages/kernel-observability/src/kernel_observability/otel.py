@@ -5,7 +5,11 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
+from importlib import import_module
 from typing import Any
+
+from kernel_observability.operations import create_persisted_trace_id_generator
+from kernel_observability.span_export import RedactingSpanExporter
 
 OTEL_ENABLED_ENV = "AGENT_KERNEL_OTEL_ENABLED"
 OTEL_SERVICE_NAME_ENV = "AGENT_KERNEL_OTEL_SERVICE_NAME"
@@ -55,12 +59,13 @@ class _OpenTelemetrySdk:
     batch_span_processor_class: Any
     console_span_exporter_class: Any
     otlp_span_exporter_class: Any
+    id_generator_factory: Any = None
 
 
 def load_otel_config(env: Mapping[str, str] | None = None) -> OpenTelemetryConfig:
     """Load OpenTelemetry exporter settings from environment variables."""
 
-    values = env or os.environ
+    values = os.environ if env is None else env
     enabled = _parse_bool(values.get(OTEL_ENABLED_ENV))
     service_name = values.get(OTEL_SERVICE_NAME_ENV, DEFAULT_OTEL_SERVICE_NAME).strip()
     exporter = values.get(OTEL_EXPORTER_ENV, DEFAULT_OTEL_EXPORTER).strip().lower()
@@ -75,9 +80,7 @@ def load_otel_config(env: Mapping[str, str] | None = None) -> OpenTelemetryConfi
         exporter = DEFAULT_OTEL_EXPORTER
     if exporter not in SUPPORTED_OTEL_EXPORTERS:
         supported = ", ".join(sorted(SUPPORTED_OTEL_EXPORTERS))
-        raise OpenTelemetryConfigurationError(
-            f"{OTEL_EXPORTER_ENV} must be one of: {supported}."
-        )
+        raise OpenTelemetryConfigurationError(f"{OTEL_EXPORTER_ENV} must be one of: {supported}.")
     if not endpoint:
         endpoint = DEFAULT_OTEL_ENDPOINT
 
@@ -118,9 +121,12 @@ def configure_opentelemetry(
 
     sdk = _import_otel_sdk()
     resource = sdk.resource_class.create({"service.name": resolved.service_name})
-    provider = sdk.tracer_provider_class(resource=resource)
+    options: dict[str, Any] = {"resource": resource}
+    if sdk.id_generator_factory is not None:
+        options["id_generator"] = sdk.id_generator_factory()
+    provider = sdk.tracer_provider_class(**options)
     exporter = _create_span_exporter(config=resolved, sdk=sdk)
-    provider.add_span_processor(sdk.batch_span_processor_class(exporter))
+    provider.add_span_processor(sdk.batch_span_processor_class(RedactingSpanExporter(exporter)))
     sdk.trace_api.set_tracer_provider(provider)
     _CONFIGURED = True
 
@@ -138,6 +144,10 @@ def reset_opentelemetry_configuration_for_tests() -> None:
 
     global _CONFIGURED
     _CONFIGURED = False
+
+
+def is_opentelemetry_configured() -> bool:
+    return _CONFIGURED
 
 
 def _parse_bool(value: str | None) -> bool:
@@ -169,15 +179,16 @@ def _traces_endpoint(endpoint: str) -> str:
 
 def _import_otel_sdk() -> _OpenTelemetrySdk:
     try:
-        from opentelemetry import trace as trace_api  # type: ignore[import-not-found]
-        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (  # type: ignore[import-not-found]
-            OTLPSpanExporter,
-        )
-        from opentelemetry.sdk.resources import Resource  # type: ignore[import-not-found]
-        from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-not-found]
-        from opentelemetry.sdk.trace.export import (  # type: ignore[import-not-found]
-            BatchSpanProcessor,
-            ConsoleSpanExporter,
+        trace_api = import_module("opentelemetry.trace")
+        OTLPSpanExporter = import_module(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+        ).OTLPSpanExporter
+        Resource = import_module("opentelemetry.sdk.resources").Resource
+        TracerProvider = import_module("opentelemetry.sdk.trace").TracerProvider
+        export = import_module("opentelemetry.sdk.trace.export")
+        BatchSpanProcessor, ConsoleSpanExporter = (
+            export.BatchSpanProcessor,
+            export.ConsoleSpanExporter,
         )
     except ImportError as error:
         raise OpenTelemetryConfigurationError(
@@ -193,4 +204,5 @@ def _import_otel_sdk() -> _OpenTelemetrySdk:
         batch_span_processor_class=BatchSpanProcessor,
         console_span_exporter_class=ConsoleSpanExporter,
         otlp_span_exporter_class=OTLPSpanExporter,
+        id_generator_factory=create_persisted_trace_id_generator,
     )

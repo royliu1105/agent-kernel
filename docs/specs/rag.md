@@ -326,6 +326,26 @@ agent-kernel kb search <knowledge-base-id> --query "What is our deployment polic
 
 ## Security
 
+### Post-v1.0 Workspace Isolation Contract
+
+- `KnowledgeBase.workspace_id` is the ownership root. Documents, chunks,
+  embeddings and ingestion jobs derive ownership through that root.
+- Authenticated API requests bind repositories to the API key's workspace.
+  Direct child IDs must not bypass the parent check; missing and inaccessible
+  resources return the same not-found response before any side effect.
+- Explicit and provider-native `kb_search` calls use immutable execution context
+  from the persisted Run, including worker execution and resumed calls. Model
+  arguments cannot choose or override the workspace.
+- Authenticated document sources must use the object's own knowledge-base
+  namespace. Check this at registration and before reading persisted sources;
+  reject path traversal and cross-KB source references. Legacy invalid sources
+  must be re-uploaded before becoming accessible in scoped mode.
+- Legacy NULL ownership is never implicitly assigned. Auth-disabled local
+  operation remains an unscoped, trusted operator mode, not tenant isolation.
+- Scope checks precede object reads/writes and embedding calls; citations must
+  refer to a chunk and document within the requested knowledge base.
+
+
 - Uploaded document access must be scoped.
 - Retrieved content may contain prompt injection attempts.
 - Full document content should not be logged by default.

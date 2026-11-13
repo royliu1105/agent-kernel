@@ -36,8 +36,11 @@ def test_approval_api_lists_gets_and_approves(
     assert approved["resolved_at"] is not None
 
     duplicate_response = client.post(f"/v1/approvals/{approval_id}/approve", json={})
-    assert duplicate_response.status_code == 409
-    assert "already been decided" in duplicate_response.json()["detail"]
+    assert duplicate_response.status_code == 200
+    assert duplicate_response.json() == approved
+    conflicting = client.post(f"/v1/approvals/{approval_id}/reject", json={"reason": "Conflict"})
+    assert conflicting.status_code == 409
+    assert "already been decided" in conflicting.json()["detail"]
 
 
 def test_approval_api_rejects_with_reason(

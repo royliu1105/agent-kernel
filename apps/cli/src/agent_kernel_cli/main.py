@@ -881,6 +881,7 @@ def _request_json(
     url = f"{api_url}{path}"
     try:
         with httpx.Client(timeout=10.0) as client:
+            _authenticate_client(client)
             response = client.request(method, url, json=json_payload)
             response.raise_for_status()
             return response.json()
@@ -907,6 +908,7 @@ def _request_file_json(
     content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
     try:
         with httpx.Client(timeout=30.0) as client:
+            _authenticate_client(client)
             with file_path.open("rb") as file:
                 response = client.request(
                     method,
@@ -922,6 +924,12 @@ def _request_file_json(
         raise ClickException(message) from error
     except httpx.RequestError as error:
         raise ClickException(_api_unreachable_message(url=url, error=error)) from error
+
+
+def _authenticate_client(client: httpx.Client) -> None:
+    api_key = os.environ.get("AGENT_KERNEL_API_KEY", "").strip()
+    if api_key:
+        client.headers["Authorization"] = f"Bearer {api_key}"
 
 
 def _extract_error_detail(response: httpx.Response) -> str:

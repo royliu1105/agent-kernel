@@ -139,9 +139,7 @@ class Retriever:
     ) -> RetrievalResponse:
         knowledge_base = knowledge_base_repository.get(knowledge_base_id)
         if knowledge_base is None:
-            raise KnowledgeBaseNotFoundError(
-                f"Knowledge base {knowledge_base_id} was not found."
-            )
+            raise KnowledgeBaseNotFoundError(f"Knowledge base {knowledge_base_id} was not found.")
 
         normalized_query = query.strip()
         if not normalized_query:
@@ -189,7 +187,12 @@ class Retriever:
     ) -> RetrievalResult | None:
         document = document_repository.get(embedding.document_id)
         chunk = chunk_repository.get(embedding.chunk_id)
-        if document is None or chunk is None:
+        if (
+            document is None
+            or chunk is None
+            or document.knowledge_base_id != knowledge_base.id
+            or chunk.document_id != document.id
+        ):
             return None
 
         return RetrievalResult(

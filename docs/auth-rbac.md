@@ -1,6 +1,6 @@
 # Auth and RBAC
 
-This document is the v1.0 release candidate source of truth for Agent Kernel
+This document is the current source of truth for Agent Kernel
 API authentication, workspace-scoped authorization, and current security test
 coverage.
 
@@ -21,6 +21,8 @@ Implemented:
 - Route-level permission checks.
 - Workspace-scoped agents and runs.
 - Workspace-scoped approval access and approval decisions.
+- Post-v1.0 P1.1 knowledge-base ownership and derived document/chunk/embedding/
+  ingestion scope, including trusted Run scope in `kb_search`.
 
 Still deferred:
 
@@ -31,8 +33,8 @@ Still deferred:
 - Multi-workspace selector in Web.
 - Fine-grained custom roles.
 - Public hosted SaaS tenant isolation guarantees.
-- Final object-level scoping audit for knowledge bases, documents, memory, tool
-  calls, chunks, embeddings, ingestion jobs, evals, and observability records.
+- Final object-level scoping audit for memory, tool calls, evals and
+  observability records (P1.2/P1.3).
 
 ## Enable API Key Auth
 
@@ -69,6 +71,12 @@ Supported alternative:
 ```http
 X-Agent-Kernel-Api-Key: <agent-kernel-api-key>
 ```
+
+The CLI reads `AGENT_KERNEL_API_KEY` from its environment and sends the preferred
+header for JSON requests and multipart uploads. Load it through a secret manager
+or an untracked local environment; do not commit it or expose it in
+`NEXT_PUBLIC_*`. Web proxy authentication is separate and is not added by P1.1.
+Use HTTPS outside localhost and send credentials only to a trusted API URL.
 
 When auth is enabled:
 
@@ -165,22 +173,52 @@ Current scoped resources:
 | Agent | `agents.workspace_id` is populated on authenticated create and filtered on read. |
 | Run | `runs.workspace_id` is populated on authenticated create and filtered on read/write prechecks. |
 | Approval | Derived through `approvals.run_id -> runs.workspace_id`. |
+| Knowledge base | `knowledge_bases.workspace_id`, set from authenticated context on create. |
+| Document | Derived through `documents.knowledge_base_id -> knowledge_bases.workspace_id`. |
+| Chunk / embedding / ingestion job | Derived through their document and its knowledge base. |
+| Memory | `memory_items.workspace_id`; business `scope` strings never grant access. Source runs are validated against the same workspace. |
+| Eval | `eval_runs.workspace_id`; report/list/detail use authenticated workspace. |
+| Tool call / run event | Derived through Run; scoped repository queries and API run prechecks. |
+| Usage summary | `GET /v1/usage` aggregates only the authenticated workspace; requires `run:read`. |
 
-Current unscoped resources:
+Knowledge access rules:
 
-- Knowledge bases.
-- Documents.
-- Document chunks.
-- Embeddings.
-- Ingestion jobs.
-- Memory items.
-- Tool calls.
-- Run events beyond run prechecks.
-- Eval records.
-- Observability records.
+- Authenticated list queries exclude foreign and NULL-owned knowledge bases.
+- All direct child IDs and mutation paths check ownership before object-store
+  access, embedding calls or writes. Missing/foreign resources return 404;
+  insufficient role permission remains 403.
+- `kb_search` gets immutable context from the persisted Run, for direct,
+  provider-native, queued worker and approval-resume paths. Tool arguments
+  cannot override workspace scope. A missing/inaccessible KB fails the run
+  without retry or passing a tool result to a follow-up model request.
+- Sources and parsed artifacts must use their KB/document/job namespaces.
+  Invalid legacy references are hidden in scoped mode and must be re-uploaded.
+- `workspace_id=None` is trusted local/operator access, not a tenant scope.
+  Never expose auth-disabled API instances publicly or share one across tenants.
+- No knowledge update/delete/ownership-transfer HTTP endpoints exist in this
+  version. Database ownership assignment is an offline operator action; stop
+  API/workers while doing it. See [Upgrade policy](upgrade-migration-policy.md#knowledge-ownership-upgrade-p11).
 
-These remain v1.0 RC review areas and should not be treated as public hosted
-SaaS isolation yet.
+Memory and eval legacy NULL-owned records are quarantined like knowledge bases.
+Runtime memory retrieval uses the persisted Run workspace, not user/model input.
+API responses expose ownership for inspection, not as a client-selectable scope.
+
+Operational metrics are process-wide, low-cardinality and not tenant data APIs.
+Authenticated deployments require a separate monitoring token for `/metrics`;
+ordinary workspace keys cannot scrape it. Protect logs/traces at the deployment
+layer and do not give tenant users collector access. `/healthz` and sanitized
+dependency `/readyz` remain probe endpoints, not record-query interfaces.
+
+Optional `AGENT_KERNEL_RATE_LIMIT_REQUESTS` enables a shared Redis fixed window
+for authenticated requests per workspace, across keys and API replicas. Denied
+requests return 429 with `Retry-After`; unavailable Redis returns 503. Limits do
+not replace role checks, tool approvals, an ingress limit on unauthenticated
+traffic, or token/cost budgets. Default zero disables this policy explicitly.
+Auth-disabled mode cannot enable workspace limiting.
+
+External tools additionally require an operator-owned workspace allowlist and
+run through the same policy, approval and persisted audit path. These self-hosted
+boundaries are not a claim of hostile public multi-tenant SaaS isolation.
 
 ## Approval Authorization
 
@@ -215,6 +253,12 @@ Auth and RBAC test anchors:
 | Approval workspace isolation | `tests/unit/test_api_auth.py`, `tests/unit/test_approval_repository.py` |
 | Approval API compatibility | `tests/integration/test_api_approvals.py` |
 | Resume API compatibility | `tests/integration/test_api_run_lifecycle.py` |
+| Knowledge child IDs, mutations and legacy quarantine | `tests/unit/test_knowledge_workspace_scope.py` |
+| Knowledge API / runtime / worker / approval-resume isolation | `tests/integration/test_knowledge_workspace_isolation.py` |
+| Model workspace spoofing | `tests/unit/test_kb_search_tool.py` |
+| CLI key transport | `tests/unit/test_cli_commands.py` |
+| SQLite upgrade and ownership assignment | `tests/unit/test_migrations.py` |
+| Real pgvector scope, fresh/legacy upgrade | `tests/integration/test_pgvector_workspace_scope.py` (opt-in locally; required in CI) |
 
 Recommended security regression command:
 
@@ -247,14 +291,12 @@ Do not:
 - Add new workspace-scoped resources without repository and API cross-workspace
   tests.
 
-## v1.0 RC Hardening Steps
+## Remaining Hardening Steps
 
-Upcoming v1.0 RC review should:
+Follow the [capability hardening plan](capability-hardening-plan.md):
 
-- Decide whether to scope knowledge bases and documents before v1.0 final or
-  keep them listed as explicit limitations.
-- Decide whether to scope memory records before v1.0 final or keep them listed
-  as explicit limitations.
+- Finish P1.1 verification before claiming knowledge isolation accepted.
+- Scope memory and eval records in P1.2.
 - Decide whether tool calls need direct `workspace_id` or should stay derived
   through runs.
 - Add Web authentication or API key configuration for live Workbench calls.

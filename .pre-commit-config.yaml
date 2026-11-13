@@ -3,11 +3,16 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
+        exclude: ^deploy/hardening-smoke\.compose\.yml$
+      - id: check-yaml
+        name: check-compose-override-syntax
+        files: ^deploy/hardening-smoke\.compose\.yml$
+        args: ["--unsafe"]
       - id: check-toml
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.16.0
     hooks:
       - id: ruff
         args: ["--fix"]

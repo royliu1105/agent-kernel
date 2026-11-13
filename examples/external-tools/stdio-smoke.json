@@ -1,0 +1,23 @@
+{
+  "mcp": [
+    {
+      "name": "smoke_inventory",
+      "stdio": {
+        "command": "/app/.venv/bin/python",
+        "args": ["/app/examples/external-tools/mcp_server.py"]
+      },
+      "access": {"allow_unscoped": true},
+      "bindings": [
+        {
+          "remote_name": "inventory_lookup",
+          "contract": {
+            "name": "inventory_lookup",
+            "description": "Look up a synthetic item in the local smoke fixture.",
+            "read_only": true,
+            "idempotent": true
+          }
+        }
+      ]
+    }
+  ]
+}

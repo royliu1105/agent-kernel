@@ -120,9 +120,9 @@ async def test_worker_restart_recovery_prevents_duplicate_execution(
     )
     _expire_lease(sqlite_session_factory, lease_token=lease_token)
 
-    recovery_result = StuckRunRecoveryService(
-        session_factory=sqlite_session_factory
-    ).recover_once(limit=10)
+    recovery_result = StuckRunRecoveryService(session_factory=sqlite_session_factory).recover_once(
+        limit=10
+    )
     restarted_worker = QueuedRunWorker(
         session_factory=sqlite_session_factory,
         execution_service=RunExecutionService(
@@ -174,6 +174,7 @@ def _create_leased_run(
             ttl_seconds=60,
         )
         assert lease is not None
+        run_repository = RunRepository(session, lease_token=lease.lease_token)
         if status is not RunStatus.QUEUED:
             event_type = (
                 RunEventType.RUN_STARTED

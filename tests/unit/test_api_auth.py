@@ -15,6 +15,7 @@ from kernel_storage import (
     WorkspaceMembershipRepository,
     WorkspaceRepository,
 )
+from kernel_storage.models import WorkspaceRecord
 from pytest import MonkeyPatch
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -32,17 +33,25 @@ def test_healthz_stays_public_when_api_key_auth_is_enabled(
     assert response.json() == {"status": "ok", "service": "agent-kernel-api"}
 
 
-def test_metrics_stays_public_when_api_key_auth_is_enabled(
+def test_metrics_requires_separate_monitoring_token_when_auth_is_enabled(
     sqlite_session_factory: sessionmaker[Session],
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setenv("AGENT_KERNEL_MONITORING_TOKEN", "monitor-test-only")
     client = TestClient(
         create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.get("/metrics")
 
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/plain")
+    assert response.status_code == 401
+    tenant_key = _issue_api_key(sqlite_session_factory, "ak_monitor_denied")
+    assert (
+        client.get("/metrics", headers={"Authorization": f"Bearer {tenant_key}"}).status_code == 401
+    )
+    allowed = client.get("/metrics", headers={"Authorization": "Bearer monitor-test-only"})
+    assert allowed.status_code == 200
+    assert allowed.headers["content-type"].startswith("text/plain")
 
 
 def test_api_key_auth_rejects_missing_key(
@@ -489,6 +498,23 @@ def test_api_key_auth_is_disabled_by_default(
 
     assert response.status_code == 201
     assert response.json()["name"] == "local-dev"
+
+
+def test_disabled_workspace_cannot_use_previously_valid_key(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    key, workspace_id = _issue_api_key_with_workspace(sqlite_session_factory, "disabled-workspace")
+    with sqlite_session_factory() as session:
+        workspace = session.get(WorkspaceRecord, str(workspace_id))
+        assert workspace is not None
+        workspace.status = "disabled"
+        session.commit()
+    with TestClient(
+        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+    ) as client:
+        response = client.get("/v1/usage", headers={"Authorization": f"Bearer {key}"})
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Workspace is unavailable."}
 
 
 def _issue_api_key(

@@ -38,6 +38,8 @@ def test_worker_cli_once_executes_persisted_queued_run(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
     monkeypatch.setattr(worker_main, "create_engine_for_url", lambda: sqlite_engine)
+    # The test borrows an in-memory engine and inspects it after CLI shutdown.
+    monkeypatch.setattr(sqlite_engine, "dispose", lambda: None)
 
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-cli-agent")
@@ -72,6 +74,7 @@ def test_worker_cli_recover_stuck_fails_expired_running_run(
     sqlite_session_factory: sessionmaker[Session],
 ) -> None:
     monkeypatch.setattr(worker_main, "create_engine_for_url", lambda: sqlite_engine)
+    monkeypatch.setattr(sqlite_engine, "dispose", lambda: None)
 
     with sqlite_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-cli-recovery-agent")
@@ -89,6 +92,7 @@ def test_worker_cli_recover_stuck_fails_expired_running_run(
             ttl_seconds=60,
         )
         assert lease is not None
+        run_repository = RunRepository(session, lease_token=lease.lease_token)
         run_repository.apply_transition(
             run_id=run.id,
             status=RunStatus.RUNNING,
@@ -96,9 +100,7 @@ def test_worker_cli_recover_stuck_fails_expired_running_run(
             payload={"from_status": "queued", "to_status": "running"},
         )
         record = session.scalar(
-            select(WorkerLeaseRecord).where(
-                WorkerLeaseRecord.lease_token == lease.lease_token
-            )
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease.lease_token)
         )
         assert record is not None
         record.expires_at = utc_now() - timedelta(seconds=1)

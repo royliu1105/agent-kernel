@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from kernel_core import RunStatus, WorkerLease
-from kernel_storage import RunRepository, WorkerLeaseRepository
+from kernel_storage import WorkerLeaseRepository
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -67,51 +67,14 @@ class StuckRunRecoveryService:
         session: Session,
         lease: WorkerLease,
     ) -> StuckRunRecoveryResult:
-        run_repository = RunRepository(session)
-        lease_repository = WorkerLeaseRepository(session)
-        run = run_repository.get(lease.run_id)
-        if run is None:
-            lease_repository.release(lease_token=lease.lease_token)
-            return StuckRunRecoveryResult(
-                run_id=lease.run_id,
-                lease_id=lease.id,
-                worker_id=lease.worker_id,
-                recovered=False,
-                status=None,
-                reason="run_not_found",
-            )
-
-        if run.status not in self._recoverable_statuses:
-            lease_repository.release(lease_token=lease.lease_token)
-            return StuckRunRecoveryResult(
-                run_id=run.id,
-                lease_id=lease.id,
-                worker_id=lease.worker_id,
-                recovered=False,
-                status=run.status,
-                reason=f"status_{run.status.value}_not_recoverable",
-            )
-
-        failed = run_repository.fail(
-            run_id=run.id,
-            error_type="worker_lease_expired",
-            error_message=(
-                f"Worker lease {lease.id} from worker {lease.worker_id!r} expired before release."
-            ),
-            event_payload={
-                "from_status": run.status.value,
-                "to_status": RunStatus.FAILED.value,
-                "reason": "worker_lease_expired",
-                "lease_id": str(lease.id),
-                "worker_id": lease.worker_id,
-            },
+        recovered, status, reason = WorkerLeaseRepository(session).recover_expired(
+            lease_token=lease.lease_token,
         )
-        lease_repository.release(lease_token=lease.lease_token)
         return StuckRunRecoveryResult(
-            run_id=run.id,
+            run_id=lease.run_id,
             lease_id=lease.id,
             worker_id=lease.worker_id,
-            recovered=failed is not None,
-            status=failed.status if failed is not None else run.status,
-            reason="worker_lease_expired",
+            recovered=recovered,
+            status=status,
+            reason=reason,
         )

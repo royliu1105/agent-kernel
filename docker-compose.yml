@@ -40,6 +40,11 @@ services:
       REDIS_URL: redis://redis:6379/0
       AGENT_KERNEL_OBJECT_STORE_ROOT: /data/objects
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AGENT_KERNEL_API_KEY_AUTH_ENABLED: ${AGENT_KERNEL_API_KEY_AUTH_ENABLED:-false}
+      AGENT_KERNEL_RUN_QUEUE_BACKEND: ${AGENT_KERNEL_RUN_QUEUE_BACKEND:-database}
+      AGENT_KERNEL_RATE_LIMIT_REQUESTS: ${AGENT_KERNEL_RATE_LIMIT_REQUESTS:-0}
+      AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS: ${AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS:-60}
+      AGENT_KERNEL_MONITORING_TOKEN: ${AGENT_KERNEL_MONITORING_TOKEN:-}
     ports:
       - "${AGENT_KERNEL_API_PORT:-8000}:${AGENT_KERNEL_API_PORT:-8000}"
     volumes:
@@ -60,6 +65,7 @@ services:
       retries: 12
 
   worker:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: deploy/Dockerfile.python
@@ -71,6 +77,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       AGENT_KERNEL_OBJECT_STORE_ROOT: /data/objects
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AGENT_KERNEL_RUN_QUEUE_BACKEND: ${AGENT_KERNEL_RUN_QUEUE_BACKEND:-database}
     volumes:
       - object_data:/data/objects
     depends_on:

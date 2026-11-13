@@ -4,8 +4,11 @@ version = "1.0.0"
 description = "Tool registry and execution package for Agent Kernel."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "httpcore>=1.0.9,<1.1",
+  "httpx>=0.28.1,<0.29",
   "jsonschema>=4.23.0",
   "kernel-core",
+  "mcp>=1.30.0,<2",
   "pydantic>=2.8.0",
 ]
 

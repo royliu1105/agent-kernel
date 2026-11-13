@@ -22,6 +22,7 @@ cheap-eval:
 release-eval: cheap-eval
 	uv run agent-kernel eval report evals/release-rag-gate.json
 	uv run pytest tests/unit/test_tool_call_evals.py
+	uv run python scripts/timeline_regression.py
 
 release-smoke: release-eval docker-config
 	uv run pytest tests/unit/test_api_health.py tests/unit/test_cli_commands.py tests/unit/test_worker_cli.py tests/unit/test_tools.py tests/unit/test_kb_search_tool.py tests/integration/test_api_run_lifecycle.py tests/integration/test_runtime_e2e.py tests/integration/test_api_approvals.py tests/integration/test_api_knowledge_base.py tests/integration/test_api_memory.py tests/integration/test_api_evals.py

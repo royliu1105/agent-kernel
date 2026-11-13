@@ -1,0 +1,54 @@
+# Overlay from repo root; JSON configuration files are valid YAML documents.
+services:
+  api:
+    environment:
+      AGENT_KERNEL_MONITORING_TOKEN: ${AGENT_KERNEL_MONITORING_TOKEN:?Set a dedicated monitoring token}
+
+  worker:
+    environment:
+      AGENT_KERNEL_WORKER_METRICS_ENABLED: "true"
+      AGENT_KERNEL_MONITORING_TOKEN: ${AGENT_KERNEL_MONITORING_TOKEN:?Set a dedicated monitoring token}
+      AGENT_KERNEL_WORKER_METRICS_HOST: 0.0.0.0
+      AGENT_KERNEL_WORKER_METRICS_PORT: "9001"
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: [observability]
+    command:
+      - --config.file=/etc/prometheus/prometheus.json
+      - --storage.tsdb.retention.time=15d
+    ports: ["127.0.0.1:9090:9090"]
+    volumes:
+      - ./deploy/observability/prometheus.json:/etc/prometheus/prometheus.json:ro
+      - ./deploy/observability/alerts.json:/etc/prometheus/alerts.json:ro
+      - prometheus_data:/prometheus
+    secrets: [monitoring_token]
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.27.0
+    profiles: [observability]
+    command: ["--config.file=/etc/blackbox/blackbox.json"]
+    volumes:
+      - ./deploy/observability/blackbox.json:/etc/blackbox/blackbox.json:ro
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: [observability]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_PASSWORD: ${AGENT_KERNEL_GRAFANA_ADMIN_PASSWORD:?Set a strong Grafana password}
+    ports: ["127.0.0.1:3090:3000"]
+    volumes:
+      - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on: [prometheus]
+
+secrets:
+  monitoring_token:
+    file: ${AGENT_KERNEL_MONITORING_TOKEN_FILE:?Set the path to the monitoring token secret file}
+
+volumes:
+  prometheus_data:
+  grafana_data:

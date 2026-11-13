@@ -1,0 +1,17 @@
+# Local disposable rehearsal only. The fixture deliberately requires approval.
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:${AGENT_KERNEL_POSTGRES_PORT:-25432}:5432"
+  redis:
+    ports: !override
+      - "127.0.0.1:${AGENT_KERNEL_REDIS_PORT:-26379}:6379"
+  api:
+    environment:
+      AGENT_KERNEL_API_PORT: "8000"
+      AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG: /app/examples/external-tools/stdio-smoke.json
+    ports: !override
+      - "127.0.0.1:${AGENT_KERNEL_API_PORT:-28080}:8000"
+  worker:
+    environment:
+      AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG: /app/examples/external-tools/stdio-smoke.json

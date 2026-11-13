@@ -1,0 +1,30 @@
+{
+  "mcp": [
+    {
+      "name": "inventory",
+      "http": {"url": "http://127.0.0.1:8051/mcp", "allow_private_network": true},
+      "access": {"allow_unscoped": true},
+      "bindings": [
+        {
+          "remote_name": "inventory_lookup",
+          "contract": {
+            "name": "inventory_lookup",
+            "description": "Look up an item in the operator-approved inventory service.",
+            "read_only": true,
+            "idempotent": true
+          }
+        },
+        {
+          "kind": "resource",
+          "remote_name": "inventory://terms",
+          "contract": {"name": "inventory_terms"}
+        },
+        {
+          "kind": "prompt",
+          "remote_name": "inventory_question",
+          "contract": {"name": "inventory_question"}
+        }
+      ]
+    }
+  ]
+}

@@ -20,6 +20,22 @@ Allow agents to request execution of registered tools through validated schemas,
 
 ## Domain Model
 
+Post-v1.0 P1.1 trusted context:
+
+- `ToolExecutionContext` is immutable and carries `run_id` and `workspace_id`.
+  Runtime constructs it from the persisted Run, not the input payload or model.
+- `ToolRequest.context` is internal execution metadata. It is not added to
+  provider tool schemas or persisted model arguments.
+- Scoped tools implement `ContextualTool.execute_with_context(arguments,
+  context=...)`; `ToolExecutor` selects that interface. Existing stateless
+  `execute(arguments)` tools remain compatible.
+- `KnowledgeBaseSearchTool.execute(arguments)` is a trusted unscoped local
+  convenience only. Runtime always invokes its contextual interface. NULL
+  scope denotes local operator access, not a workspace selected by a model.
+- An inaccessible KB produces non-retryable `knowledge_base_not_found`.
+  Explicit/native paths persist the failed tool and failed Run; native calls
+  do not leave the Run running or send a failed result to a follow-up model.
+
 Initial entities:
 
 - `Tool`

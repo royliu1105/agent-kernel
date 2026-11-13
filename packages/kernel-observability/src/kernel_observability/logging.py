@@ -8,25 +8,11 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from kernel_observability.redaction import redact_fields, safe_event_name, safe_identifier
 from kernel_observability.tracing import ObservabilityContext
 
 LogScalar = str | int | float | bool
 LogFieldValue = LogScalar | None
-
-SENSITIVE_FIELD_FRAGMENTS = (
-    "api_key",
-    "authorization",
-    "credential",
-    "password",
-    "secret",
-    "token",
-)
-
-NON_SENSITIVE_TOKEN_FIELDS = {
-    "input_tokens",
-    "output_tokens",
-    "total_tokens",
-}
 
 
 def build_log_fields(
@@ -75,18 +61,13 @@ def build_log_record(
         error_type=error_type,
         extra=extra,
     )
-    return {"event": event, **fields}
+    return {**fields, "event": safe_event_name(event)}
 
 
-def redact_log_fields(fields: Mapping[str, LogFieldValue]) -> dict[str, LogScalar]:
+def redact_log_fields(fields: Mapping[str, object]) -> dict[str, LogScalar]:
     """Return log fields with sensitive values redacted and ``None`` omitted."""
 
-    redacted: dict[str, LogScalar] = {}
-    for key, value in fields.items():
-        if value is None:
-            continue
-        redacted[key] = "[REDACTED]" if _is_sensitive_field(key) else value
-    return redacted
+    return redact_fields(fields)
 
 
 def log_event(
@@ -114,7 +95,7 @@ def log_event(
         error_type=error_type,
         extra=extra,
     )
-    logger.log(level, event, extra={"structured": record})
+    logger.log(level, safe_event_name(event), extra={"structured": record})
 
 
 class JsonLogFormatter(logging.Formatter):
@@ -125,14 +106,19 @@ class JsonLogFormatter(logging.Formatter):
         payload: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(record.created, UTC).isoformat(),
             "level": record.levelname.lower(),
-            "logger": record.name,
+            "logger": safe_identifier(record.name),
         }
         if isinstance(structured, dict):
-            payload.update(structured)
+            payload.update(redact_log_fields(structured))
         else:
-            payload["event"] = record.getMessage()
+            # Unstructured messages and interpolated arguments may contain any
+            # user content. Never render them, including under error handling.
+            payload["event"] = "log.unstructured"
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            exception_class = record.exc_info[0]
+            payload["exception_type"] = (
+                safe_identifier(exception_class.__name__) if exception_class else "unknown"
+            )
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
@@ -143,10 +129,3 @@ def _add_if_present(
 ) -> None:
     if value is not None:
         fields[key] = value
-
-
-def _is_sensitive_field(key: str) -> bool:
-    normalized = key.lower().replace("-", "_")
-    if normalized in NON_SENSITIVE_TOKEN_FIELDS:
-        return False
-    return any(fragment in normalized for fragment in SENSITIVE_FIELD_FRAGMENTS)

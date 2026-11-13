@@ -14,6 +14,66 @@ Both must be backed up together. A database backup without matching object
 storage can leave documents, citations, ingestion artifacts, and retrieval
 workflows incomplete.
 
+## Automated Test-Only Restore Rehearsal
+
+`python -m scripts.backend_drill backup` implements a real `pg_dump`/`pg_restore`
+rehearsal with a matching local-object manifest. It is deliberately not a
+production backup command. The exact disposable service setup and test commands
+are in [Backend operations](backend-operations.md#reproducible-test-services).
+
+Safety gates are mandatory: `AGENT_KERNEL_ALLOW_BACKEND_DRILL=1`, a loopback
+PostgreSQL URL whose database is exactly `agent_kernel_test`, and no URL query
+overrides. The script creates two random `agent_kernel_drill_*` databases using
+that dedicated service account. It never dumps, restores, migrates or deletes
+an existing application database. Objects and backup files live under a newly
+created temporary directory. Cleanup drops only databases created by this
+invocation and removes that temporary directory.
+
+A force-killed process cannot guarantee cleanup. Inspect only the disposable
+service for leftover `agent_kernel_drill_*` databases and temporary directories;
+stop/remove the dedicated test container to discard its whole test-only state.
+Never use a broad database-prefix cleanup command against an application server.
+
+The account needs CREATE DATABASE on the disposable service. With local
+PostgreSQL tools, `pg_dump` and `pg_restore` must be on PATH and version-compatible
+with the test server. Without local tools, `--pg-tools-container` uses the tools
+inside the disposable PostgreSQL container; it must have the
+`agent-kernel-drill-` name prefix and `agent-kernel.drill=true` label. Only these
+test database names reach the tool subprocesses. Credentials are passed through
+environment variables and are not printed in the JSON report.
+
+The rehearsal performs these checks:
+
+1. Apply current Alembic migrations to a fresh fixture database, including
+   native pgvector schema.
+2. Persist a workspace, knowledge base, document source, parsed ingestion
+   artifact, chunk and embedding with real references and SHA-256 checksums.
+3. Record all database rows, the Alembic revision, linked object URIs, object
+   byte counts and checksums in a manifest. Reject source/KB, parsed/job and
+   embedding/chunk/document linkage mismatches.
+4. Produce a custom-format database dump and record its SHA-256 alongside the
+   object manifest. Copy the matching object set while the fixture is quiescent.
+5. Restore into the second empty database and a separate object root. Compare
+   full canonical database row content, not just row counts, and verify every
+   linked original/parsed object against both its DB checksum and the manifest.
+6. Execute a native pgvector similarity query on the restored fixture.
+7. Corrupt one restored artifact and prove validation rejects it. Unit tests
+   also cover missing bytes, modified DB rows and unsafe object paths.
+
+The JSON report contains pass/fail, tables/objects verified, native retrieval
+verification and corruption-detection result. It contains no real user data;
+retain reports with the commit SHA and service versions as release evidence.
+Failed subprocess/driver details are intentionally not echoed because they may
+contain credentials. Inspect the disposable service locally for diagnosis.
+
+Limitations: this is a synthetic, quiescent PostgreSQL + **local-object-store**
+rehearsal, not proof of S3 versioning, production RPO/RTO, replication recovery,
+encryption-key recovery, or restoring an arbitrary historical production dump.
+S3/MinIO deployments must additionally rehearse their bucket/version snapshot
+and remapping procedure below; do not mark that backend verified from this test.
+Manifest hashes detect accidental corruption, not malicious tampering: sign or
+authenticate production manifests separately and encrypt backup artifacts.
+
 ## Backup Scope
 
 Required production backup scope:

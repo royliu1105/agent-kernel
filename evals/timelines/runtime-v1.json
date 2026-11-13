@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "name": "runtime-timeline-regression-v1",
+  "cases": [
+    {
+      "name": "native-tool",
+      "expected": {
+        "status": "succeeded",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"from_status": "created", "to_status": "queued"}},
+          {"type": "run_started", "payload": {"from_status": "queued", "to_status": "running"}},
+          {"type": "tool_call_requested", "payload": {"tool_name": "fixture_read", "risk_level": "read_only"}},
+          {"type": "policy_evaluated", "payload": {"decision": "allow", "requires_approval": false}},
+          {"type": "tool_call_completed", "payload": {"tool_name": "fixture_read"}},
+          {"type": "run_completed", "payload": {"to_status": "succeeded", "attempt_count": 2, "fallback_used": false}}
+        ],
+        "facts": {
+          "model_calls": 2, "tool_executions": 1, "stable_tool_call_key": true,
+          "tool_statuses": ["succeeded"], "approval_statuses": [],
+          "provider_tool_call_ids": ["fixture-call-1"], "tool_results": [{"ok": true}],
+          "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    },
+    {
+      "name": "approval-approved",
+      "expected": {
+        "status": "succeeded",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"to_status": "queued"}},
+          {"type": "run_started", "payload": {"from_status": "queued", "to_status": "running"}},
+          {"type": "tool_call_requested", "payload": {"tool_name": "fixture_write", "risk_level": "external_write"}},
+          {"type": "policy_evaluated", "payload": {"decision": "require_approval", "requires_approval": true}},
+          {"type": "approval_requested", "payload": {"tool_name": "fixture_write"}},
+          {"type": "run_waiting_approval", "payload": {"from_status": "running", "to_status": "waiting_approval"}},
+          {"type": "approval_approved"},
+          {"type": "run_resuming", "payload": {"from_status": "waiting_approval", "to_status": "resuming"}},
+          {"type": "run_started", "payload": {"from_status": "resuming", "to_status": "running"}},
+          {"type": "tool_call_completed", "payload": {"tool_name": "fixture_write"}},
+          {"type": "run_completed", "payload": {"from_status": "running", "to_status": "succeeded"}}
+        ],
+        "facts": {
+          "paused_status": "waiting_approval", "tool_calls_before_decision": 0,
+          "model_calls": 0, "tool_executions": 1, "stable_tool_call_key": true,
+          "tool_statuses": ["succeeded"], "approval_statuses": ["approved"],
+          "tool_results": [{"ok": true}], "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    },
+    {
+      "name": "approval-rejected",
+      "expected": {
+        "status": "failed",
+        "error_type": "approval_rejected",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"to_status": "queued"}},
+          {"type": "run_started", "payload": {"to_status": "running"}},
+          {"type": "tool_call_requested", "payload": {"tool_name": "fixture_write"}},
+          {"type": "policy_evaluated", "payload": {"decision": "require_approval", "requires_approval": true}},
+          {"type": "approval_requested"},
+          {"type": "run_waiting_approval", "payload": {"to_status": "waiting_approval"}},
+          {"type": "approval_rejected"},
+          {"type": "run_failed", "payload": {"from_status": "waiting_approval", "to_status": "failed", "error_type": "approval_rejected"}}
+        ],
+        "facts": {
+          "paused_status": "waiting_approval", "tool_calls_before_decision": 0,
+          "model_calls": 0, "tool_executions": 0, "approval_statuses": ["rejected"],
+          "tool_results": [null], "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    },
+    {
+      "name": "model-retry",
+      "expected": {
+        "status": "succeeded",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"to_status": "queued"}},
+          {"type": "run_started", "payload": {"to_status": "running"}},
+          {"type": "model_call_retrying", "payload": {"attempt": 2, "max_attempts": 2, "model_ref": "fixture:small", "error_type": "mock_transient"}},
+          {"type": "run_completed", "payload": {"to_status": "succeeded", "attempt_count": 2, "fallback_used": false, "provider": "fixture"}}
+        ],
+        "facts": {
+          "model_calls": 2, "primary_calls": 2, "backup_calls": 0, "tool_executions": 0,
+          "tool_statuses": [], "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    },
+    {
+      "name": "model-fallback",
+      "expected": {
+        "status": "succeeded",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"to_status": "queued"}},
+          {"type": "run_started", "payload": {"to_status": "running"}},
+          {"type": "model_call_retrying", "payload": {"attempt": 2, "max_attempts": 2, "error_type": "mock_transient"}},
+          {"type": "model_fallback_selected", "payload": {"from_model": "fixture:small", "to_model": "backup:small", "error_type": "mock_transient"}},
+          {"type": "run_completed", "payload": {"to_status": "succeeded", "provider": "backup", "attempt_count": 3, "fallback_used": true}}
+        ],
+        "facts": {
+          "model_calls": 3, "primary_calls": 2, "backup_calls": 1, "tool_executions": 0,
+          "tool_statuses": [], "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    },
+    {
+      "name": "tool-retry",
+      "expected": {
+        "status": "succeeded",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"to_status": "queued"}},
+          {"type": "run_started", "payload": {"to_status": "running"}},
+          {"type": "tool_call_requested", "payload": {"tool_name": "fixture_read", "risk_level": "read_only"}},
+          {"type": "policy_evaluated", "payload": {"decision": "allow", "requires_approval": false}},
+          {"type": "tool_call_retrying", "payload": {"tool_name": "fixture_read", "attempt": 2, "max_attempts": 2, "error_type": "tool_execution_failed"}},
+          {"type": "tool_call_completed", "payload": {"tool_name": "fixture_read"}},
+          {"type": "run_completed", "payload": {"to_status": "succeeded"}}
+        ],
+        "facts": {
+          "model_calls": 0, "tool_executions": 2, "tool_statuses": ["succeeded"], "stable_tool_call_key": true,
+          "tool_results": [{"ok": true}], "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    },
+    {
+      "name": "lease-recovery",
+      "expected": {
+        "status": "failed",
+        "error_type": "worker_lease_expired",
+        "events": [
+          {"type": "run_created"},
+          {"type": "run_queued", "payload": {"to_status": "queued"}},
+          {"type": "run_started", "payload": {"to_status": "running"}},
+          {"type": "run_failed", "payload": {"from_status": "running", "to_status": "failed", "reason": "worker_lease_expired"}}
+        ],
+        "facts": {
+          "recovered_count": 1, "second_recovery_count": 0, "restart_processed_count": 0,
+          "active_lease": false, "model_calls": 1, "tool_executions": 0,
+          "tool_statuses": [], "contiguous_sequence": true, "trace_consistent": true
+        }
+      }
+    }
+  ]
+}

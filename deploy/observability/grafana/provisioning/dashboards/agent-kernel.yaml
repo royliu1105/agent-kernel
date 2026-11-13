@@ -1,0 +1,15 @@
+{
+  "apiVersion": 1,
+  "providers": [
+    {
+      "name": "agent-kernel",
+      "folder": "Agent Kernel",
+      "type": "file",
+      "disableDeletion": true,
+      "allowUiUpdates": false,
+      "options": {
+        "path": "/var/lib/grafana/dashboards"
+      }
+    }
+  ]
+}

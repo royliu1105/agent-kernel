@@ -2,6 +2,11 @@
 
 ## Status
 
+Historical delivery record. Post-v1.0 lease integration, fencing, heartbeat,
+atomic recovery and Redis runtime behavior are specified in
+[Execution Ownership and Recovery](execution-ownership.md); the descriptions
+below reflect the original Day 59-63 boundary.
+
 The first Beta durable execution track is complete under the Day 59-63 scope.
 
 ```text

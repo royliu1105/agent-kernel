@@ -1,5 +1,43 @@
 # Upgrade and Migration Policy
 
+## Post-v1.0 Hardening Upgrade
+
+Unreleased head: `0017_unique_active_lease`. Stop API writers and all workers,
+take a verified backup, then run `uv run alembic upgrade head` before deploying
+the new application. Do not mix old workers (without fencing) with new workers.
+
+- `0015_scope_knowledge_bases`: KB ownership and derived child scope.
+- `0016_scope_memory_evals`: nullable ownership on memory and evaluation records.
+- `0017_unique_active_lease`: one unreleased lease per run, including expired
+  leases until explicitly released/recovered/replaced.
+
+Before `0017`, run this read-only preflight:
+
+```sql
+SELECT run_id, COUNT(*) FROM worker_leases
+WHERE released_at IS NULL GROUP BY run_id HAVING COUNT(*) > 1;
+```
+
+If any rows appear, stop and review their runs and possible external effects.
+Do not blindly delete duplicate leases or retry writes. After stopping owners,
+an operator must deliberately resolve/release conflicting claims with an audit
+record. The migration fails rather than choosing an owner silently.
+
+Legacy `knowledge_bases`, `memory_items` and `eval_runs` keep `workspace_id=NULL`.
+They remain visible only to trusted auth-disabled operator access. For each
+record, independently verify ownership, back up, and assign an existing workspace
+in an offline transaction. Memory `source_run_id` must belong to the same
+workspace. Validate A/B denial after assignment. Never assign all legacy rows to
+the first API caller. Downgrades remove ownership and lease protection: stop all
+writers and prefer a verified restore; do not expose downgraded code publicly.
+
+Compatibility changes: metrics on authenticated deployments require a separate
+`AGENT_KERNEL_MONITORING_TOKEN`; repeated identical approval decisions return
+the original result (200), opposing decisions return 409; stale execution writes
+return 409; optional shared admission limits return 429/`Retry-After`, or 503
+when their required Redis backend is unavailable. The default local mock path
+does not enable rate limiting, external tools or a Worker metrics listener.
+
 This document defines the Agent Kernel v1.0 release candidate policy for
 upgrading application code, configuration, and database schema.
 
@@ -81,6 +119,66 @@ convenience. Production deployments should prefer an explicit migration job so
 schema migration failures are separated from application startup failures.
 
 ## Migration Rules for Maintainers
+
+### Knowledge Ownership Upgrade (P1.1)
+
+New head: `0015_scope_knowledge_bases`, following `0014_create_eval_runs`.
+This additive migration introduces nullable `knowledge_bases.workspace_id` with
+a workspace foreign key and index. Existing data stays NULL-owned. It is
+available in trusted auth-disabled local mode but invisible to authenticated
+workspaces. No first-user claim or automatic backfill occurs.
+
+For an existing shared deployment, ownership assignment is an explicit offline
+operator operation:
+
+1. Stop API writes and workers; take a matching database/object-store backup.
+2. Run `uv run alembic upgrade head` and verify the new revision.
+3. Review one KB at a time, confirm the intended workspace and membership, and
+   record an explicit KB-to-workspace mapping. Do not use a blanket UPDATE.
+4. Audit each source URI: it must be a canonical local/S3 key ending in
+   `knowledge-bases/<kb-id>/documents/<filename>`. Parsed artifacts must end in
+   `documents/<document-id>/parsed/<job-id>.txt`. Foreign references, traversal,
+   URL-encoded keys, arbitrary file/HTTP URLs and noncanonical legacy sources
+   are not accessible in scoped mode. Re-upload/re-ingest these documents into
+   the correct KB; do not merely relabel an object from another owner.
+5. Bind reviewed IDs as SQL parameters in one transaction per KB:
+
+   ```sql
+   UPDATE knowledge_bases
+   SET workspace_id = :workspace_id
+   WHERE id = :knowledge_base_id
+     AND workspace_id IS NULL
+     AND EXISTS (SELECT 1 FROM workspaces WHERE id = :workspace_id);
+   ```
+
+   Require exactly one changed row. On zero/unexpected rows, roll back and
+   investigate. Record operator, IDs, time and verification evidence. This is
+   initial assignment only, not an online ownership-transfer API.
+6. Verify the owner's list/detail/retrieval and a second workspace's denials
+   using separate API keys, then restart services. An API key grants access
+   only to its own workspace; no request/body field overrides this.
+
+Security compatibility: the knowledge-base response adds optional
+`workspace_id`. Authenticated access to formerly global KBs and arbitrary
+document source registrations is intentionally restricted. Upload is the
+preferred authenticated ingestion path. Local auth-disabled quickstart behavior
+is retained. Do not roll back to an old unscoped application against shared data:
+it would bypass the new authorization boundary. Downgrade drops ownership
+information and is test-only, not a production rollback strategy.
+
+Real PostgreSQL contracts run in CI and can run locally against a **dedicated
+test database** with pgvector and schema/extension creation privileges:
+
+```bash
+AGENT_KERNEL_TEST_POSTGRES_URL=postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel_test \
+  uv run pytest tests/integration/test_pgvector_workspace_scope.py
+```
+
+Tests create and remove random `test_knowledge_*` schemas and install the vector
+extension in `public` if needed. Never point this variable at production.
+Without the variable, these tests skip locally; a skip is not acceptance
+evidence. Coverage includes fresh/legacy upgrades, NULL ownership, pgvector
+retrieval denial, and downgrade/re-upgrade checks.
 
 Alembic migration rules:
 

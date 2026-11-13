@@ -14,16 +14,24 @@ from kernel_identity import (
     Principal,
     WorkspaceAuthorizer,
     WorkspaceMembership,
+    WorkspaceStatus,
 )
-from kernel_storage import ApiKeyRepository, PrincipalRepository, WorkspaceMembershipRepository
+from kernel_runtime.redis_support import RateLimitUnavailableError, RedisWorkspaceRateLimiter
+from kernel_storage import (
+    ApiKeyRepository,
+    PrincipalRepository,
+    WorkspaceMembershipRepository,
+    WorkspaceRepository,
+)
 from sqlalchemy.orm import Session, sessionmaker
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import JSONResponse, Response
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 from starlette.types import ASGIApp
 
 AUTH_CONTEXT_STATE_KEY = "auth_context"
-DEFAULT_AUTH_EXEMPT_PATHS = frozenset({"/healthz", "/metrics"})
+DEFAULT_AUTH_EXEMPT_PATHS = frozenset({"/healthz", "/readyz", "/metrics"})
 
 
 class AuthContext:
@@ -50,10 +58,16 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
         *,
         session_factory: sessionmaker[Session],
         exempt_paths: Iterable[str] = DEFAULT_AUTH_EXEMPT_PATHS,
+        rate_limiter: RedisWorkspaceRateLimiter | None = None,
+        rate_limit: int = 0,
+        rate_window_seconds: int = 60,
     ) -> None:
         super().__init__(app)
         self._session_factory = session_factory
         self._exempt_paths = frozenset(exempt_paths)
+        self._rate_limiter = rate_limiter
+        self._rate_limit = rate_limit
+        self._rate_window_seconds = rate_window_seconds
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.url.path in self._exempt_paths:
@@ -73,12 +87,41 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
                 return _unauthorized("API key principal is unavailable.")
 
             memberships = WorkspaceMembershipRepository(session).list_for_principal(principal.id)
+            workspace = WorkspaceRepository(session).get(api_key.workspace_id)
+            if workspace is None or workspace.status is not WorkspaceStatus.ACTIVE:
+                return _unauthorized("Workspace is unavailable.")
+
+        membership = WorkspaceAuthorizer(memberships).authorize(
+            AuthorizationRequest(
+                principal=principal,
+                workspace_id=api_key.workspace_id,
+                permission=Permission.WORKSPACE_READ,
+            )
+        )
+        if not membership.allowed:
+            return JSONResponse(status_code=403, content={"detail": "Workspace access denied."})
 
         setattr(
             request.state,
             AUTH_CONTEXT_STATE_KEY,
             AuthContext(principal=principal, api_key=api_key, memberships=memberships),
         )
+        if self._rate_limiter is not None:
+            try:
+                decision = await run_in_threadpool(
+                    self._rate_limiter.check,
+                    api_key.workspace_id,
+                    limit=self._rate_limit,
+                    window_seconds=self._rate_window_seconds,
+                )
+            except RateLimitUnavailableError:
+                return JSONResponse(status_code=503, content={"detail": "Admission unavailable."})
+            if not decision.allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Workspace request limit exceeded."},
+                    headers={"Retry-After": str(decision.retry_after_seconds)},
+                )
         return await call_next(request)
 
 

@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterator, Mapping
+import secrets
+from collections.abc import AsyncIterator, Iterator, Mapping
+from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
 
 import uvicorn
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from kernel_core import (
     Agent,
     Approval,
@@ -28,7 +30,11 @@ from kernel_core import (
     RunEvent,
 )
 from kernel_identity import Permission
-from kernel_observability import InMemoryMetricsRecorder, configure_opentelemetry
+from kernel_observability import (
+    AggregatingMetricsRecorder,
+    ExposableMetricsRecorder,
+    configure_opentelemetry,
+)
 from kernel_rag import (
     DocumentChunkingService,
     DocumentIndexingService,
@@ -56,6 +62,13 @@ from kernel_runtime import (
     RunNotFoundError,
     RunStateMachine,
 )
+from kernel_runtime.queue import QueueUnavailableError, RunQueue
+from kernel_runtime.redis_support import (
+    RedisSettings,
+    RedisWorkspaceRateLimiter,
+    create_redis_client,
+    create_run_queue,
+)
 from kernel_storage import (
     AgentRepository,
     ApprovalDecisionError,
@@ -64,14 +77,18 @@ from kernel_storage import (
     DocumentChunkRepository,
     DocumentRepository,
     EvalRunRepository,
+    ExecutionOwnershipError,
     IngestionJobRepository,
     KnowledgeBaseRepository,
     MemoryRepository,
+    RunConflictError,
     RunRepository,
     ToolCallRepository,
     create_engine_for_url,
     create_session_factory,
 )
+from kernel_tools.external.config import external_tools_config_from_env
+from kernel_tools.external.loader import load_external_tools
 from sqlalchemy.orm import Session, sessionmaker
 
 from agent_kernel_api.auth import (
@@ -81,6 +98,7 @@ from agent_kernel_api.auth import (
     current_workspace_id,
     require_permission,
 )
+from agent_kernel_api.readiness import ReadinessChecker, create_readiness_checker
 from agent_kernel_api.schemas import (
     AgentCreateRequest,
     AgentResponse,
@@ -119,28 +137,78 @@ def create_app(
     chunking_service: DocumentChunkingService | None = None,
     indexing_service: DocumentIndexingService | None = None,
     retriever: Retriever | None = None,
-    metrics_recorder: InMemoryMetricsRecorder | None = None,
+    metrics_recorder: ExposableMetricsRecorder | None = None,
     api_key_auth_enabled: bool | None = None,
+    run_queue: RunQueue | None = None,
+    rate_limiter: RedisWorkspaceRateLimiter | None = None,
+    readiness_checker: ReadinessChecker | None = None,
 ) -> FastAPI:
     configure_opentelemetry()
-    app = FastAPI(title="Agent Kernel API", version="1.0.0")
     factory = session_factory or create_session_factory(create_engine_for_url())
     auth_enabled = api_key_auth_enabled
     if auth_enabled is None:
         auth_enabled = api_key_auth_enabled_from_env()
-    if auth_enabled:
-        app.add_middleware(ApiKeyAuthMiddleware, session_factory=factory)
+    redis_settings = RedisSettings.from_env()
+    rate_limit = int(os.getenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "0"))
+    rate_window = int(os.getenv("AGENT_KERNEL_RATE_LIMIT_WINDOW_SECONDS", "60"))
+    if not 0 <= rate_limit <= 1_000_000 or not 1 <= rate_window <= 86400:
+        raise ValueError("Invalid workspace rate-limit bounds.")
+    if rate_limit and not auth_enabled:
+        raise ValueError("Workspace rate limiting requires API key authentication.")
+    needs_redis = (run_queue is None and redis_settings.queue_backend == "redis") or (
+        rate_limit > 0 and rate_limiter is None
+    )
+    redis_client = create_redis_client(redis_settings) if needs_redis else None
+    queue = run_queue or create_run_queue(redis_settings, client=redis_client)
+    limiter = rate_limiter
+    if rate_limit and limiter is None:
+        assert redis_client is not None
+        limiter = RedisWorkspaceRateLimiter(
+            client=redis_client,
+            prefix=redis_settings.rate_limit_prefix,
+        )
+    readiness = readiness_checker or create_readiness_checker(
+        factory,
+        redis_probe=redis_client.ping if redis_client is not None else None,
+    )
+    registry = create_rag_tool_registry(session_factory=factory)
+    external_config = external_tools_config_from_env()
 
-    process_metrics = metrics_recorder or InMemoryMetricsRecorder()
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        try:
+            async with load_external_tools(registry, external_config):
+                yield
+        finally:
+            readiness.close()
+            if redis_client is not None:
+                redis_client.close()
+
+    app = FastAPI(title="Agent Kernel API", version="1.0.0", lifespan=lifespan)
+    if auth_enabled:
+        app.add_middleware(
+            ApiKeyAuthMiddleware,
+            session_factory=factory,
+            rate_limiter=limiter,
+            rate_limit=rate_limit,
+            rate_window_seconds=rate_window,
+        )
+
+    process_metrics = metrics_recorder or AggregatingMetricsRecorder()
     runner = execution_service or RunExecutionService(
         metrics_recorder=process_metrics,
-        tool_registry=create_rag_tool_registry(session_factory=factory),
+        tool_registry=registry,
     )
     store = object_store or create_object_store()
     ingester = ingestion_service or DocumentIngestionService(object_store=store)
     chunker = chunking_service or DocumentChunkingService(object_store=store)
     indexer = indexing_service or DocumentIndexingService()
     retrieval_service = retriever or Retriever(metrics_recorder=process_metrics)
+
+    @app.exception_handler(ExecutionOwnershipError)
+    @app.exception_handler(RunConflictError)
+    async def execution_conflict(request: Request, error: Exception) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": "Run changed; refresh its state."})
 
     def get_session() -> Iterator[Session]:
         with factory() as session:
@@ -150,11 +218,34 @@ def create_app(
     async def healthz() -> dict[str, str]:
         return {"status": "ok", "service": "agent-kernel-api"}
 
+    @app.get("/readyz", tags=["health"])
+    async def readyz() -> JSONResponse:
+        result = await readiness.check()
+        return JSONResponse(status_code=result.status_code, content=result.to_dict())
+
     @app.get("/metrics", include_in_schema=False)
-    async def metrics() -> Response:
+    async def metrics(request: Request) -> Response:
+        token = os.getenv("AGENT_KERNEL_MONITORING_TOKEN", "")
+        if auth_enabled or token:
+            supplied = request.headers.get("authorization", "").removeprefix("Bearer ")
+            if not token or not secrets.compare_digest(token.encode(), supplied.encode()):
+                raise HTTPException(status_code=401, detail="Monitoring authentication required.")
         return Response(
             content=process_metrics.prometheus_text(),
             media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
+
+    @app.get(
+        "/v1/usage",
+        dependencies=[Depends(require_permission(Permission.RUN_READ))],
+        tags=["runs"],
+    )
+    def usage_summary(
+        http_request: Request,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> dict[str, object]:
+        return RunRepository(session).usage_summary(
+            workspace_id=current_workspace_id(http_request),
         )
 
     @app.post(
@@ -290,6 +381,11 @@ def create_app(
         )
         if updated is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+        if queue is not None:
+            try:
+                queue.enqueue(updated.id)
+            except QueueUnavailableError:
+                process_metrics.increment("run_queue_errors_total", labels={"operation": "enqueue"})
         return _run_response(updated)
 
     @app.post(
@@ -442,17 +538,23 @@ def create_app(
         tags=["memory"],
     )
     def create_memory(
+        http_request: Request,
         request: MemoryCreateRequest,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> MemoryResponse:
-        memory = MemoryRepository(session).create(
-            type=request.type,
-            scope=request.scope,
-            content=request.content,
-            source_run_id=request.source_run_id,
-            confidence=request.confidence,
-            metadata=request.metadata,
-        )
+        try:
+            memory = MemoryRepository(
+                session, workspace_id=current_workspace_id(http_request)
+            ).create(
+                type=request.type,
+                scope=request.scope,
+                content=request.content,
+                source_run_id=request.source_run_id,
+                confidence=request.confidence,
+                metadata=request.metadata,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=404, detail="Source run not found") from error
         return _memory_response(memory)
 
     @app.get(
@@ -462,12 +564,13 @@ def create_app(
         tags=["memory"],
     )
     def list_memory(
+        http_request: Request,
         scope: str | None = None,
         type_filter: Annotated[MemoryType | None, Query(alias="type")] = None,
         limit: Annotated[int, Query(ge=1, le=500)] = 100,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[MemoryResponse]:
-        memories = MemoryRepository(session).list(
+        memories = MemoryRepository(session, workspace_id=current_workspace_id(http_request)).list(
             scope=scope,
             type=type_filter,
             limit=limit,
@@ -481,10 +584,13 @@ def create_app(
         tags=["memory"],
     )
     def get_memory(
+        http_request: Request,
         memory_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> MemoryResponse:
-        memory = MemoryRepository(session).get(memory_id)
+        memory = MemoryRepository(session, workspace_id=current_workspace_id(http_request)).get(
+            memory_id
+        )
         if memory is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
         return _memory_response(memory)
@@ -496,10 +602,13 @@ def create_app(
         tags=["memory"],
     )
     def delete_memory(
+        http_request: Request,
         memory_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> MemoryDeleteResponse:
-        deleted = MemoryRepository(session).delete(memory_id)
+        deleted = MemoryRepository(session, workspace_id=current_workspace_id(http_request)).delete(
+            memory_id
+        )
         if not deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
         return MemoryDeleteResponse(id=memory_id, deleted=True)
@@ -537,10 +646,13 @@ def create_app(
         tags=["knowledge-bases"],
     )
     def create_knowledge_base(
+        http_request: Request,
         request: KnowledgeBaseCreateRequest,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> KnowledgeBaseResponse:
-        knowledge_base = KnowledgeBaseRepository(session).create(
+        knowledge_base = KnowledgeBaseRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).create(
             name=request.name,
             description=request.description,
             metadata=request.metadata,
@@ -554,9 +666,12 @@ def create_app(
         tags=["knowledge-bases"],
     )
     def list_knowledge_bases(
+        http_request: Request,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[KnowledgeBaseResponse]:
-        knowledge_bases = KnowledgeBaseRepository(session).list()
+        knowledge_bases = KnowledgeBaseRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).list()
         return [_knowledge_base_response(knowledge_base) for knowledge_base in knowledge_bases]
 
     @app.get(
@@ -566,10 +681,13 @@ def create_app(
         tags=["knowledge-bases"],
     )
     def get_knowledge_base(
+        http_request: Request,
         knowledge_base_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> KnowledgeBaseResponse:
-        knowledge_base = KnowledgeBaseRepository(session).get(knowledge_base_id)
+        knowledge_base = KnowledgeBaseRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).get(knowledge_base_id)
         if knowledge_base is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -584,6 +702,7 @@ def create_app(
         tags=["retrieval"],
     )
     def retrieve_from_knowledge_base(
+        http_request: Request,
         knowledge_base_id: UUID,
         request: RetrievalRequest,
         session: Session = Depends(get_session),  # noqa: B008
@@ -593,10 +712,18 @@ def create_app(
                 knowledge_base_id=knowledge_base_id,
                 query=request.query,
                 top_k=request.top_k,
-                knowledge_base_repository=KnowledgeBaseRepository(session),
-                document_repository=DocumentRepository(session),
-                chunk_repository=DocumentChunkRepository(session),
-                embedding_repository=ChunkEmbeddingRepository(session),
+                knowledge_base_repository=KnowledgeBaseRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                document_repository=DocumentRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                chunk_repository=DocumentChunkRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                embedding_repository=ChunkEmbeddingRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
             )
         except RetrievalKnowledgeBaseNotFoundError as error:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -610,11 +737,14 @@ def create_app(
         tags=["evals"],
     )
     def create_eval_run(
+        http_request: Request,
         request: EvalRunCreateRequest,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> EvalRunResponse:
         try:
-            eval_run = EvalRunRepository(session).create_from_report(
+            eval_run = EvalRunRepository(
+                session, workspace_id=current_workspace_id(http_request)
+            ).create_from_report(
                 name=request.name,
                 suite_type=request.suite_type,
                 report=request.report,
@@ -636,10 +766,13 @@ def create_app(
         tags=["evals"],
     )
     def list_eval_runs(
+        http_request: Request,
         limit: Annotated[int, Query(ge=1, le=200)] = 100,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[EvalRunResponse]:
-        eval_runs = EvalRunRepository(session).list(limit=limit)
+        eval_runs = EvalRunRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).list(limit=limit)
         return [_eval_run_response(eval_run) for eval_run in eval_runs]
 
     @app.get(
@@ -649,10 +782,13 @@ def create_app(
         tags=["evals"],
     )
     def get_eval_run(
+        http_request: Request,
         eval_run_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> EvalRunResponse:
-        eval_run = EvalRunRepository(session).get(eval_run_id)
+        eval_run = EvalRunRepository(session, workspace_id=current_workspace_id(http_request)).get(
+            eval_run_id
+        )
         if eval_run is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Eval run not found")
         return _eval_run_response(eval_run)
@@ -665,19 +801,27 @@ def create_app(
         tags=["documents"],
     )
     def create_document(
+        http_request: Request,
         knowledge_base_id: UUID,
         request: DocumentCreateRequest,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> DocumentResponse:
-        document = DocumentRepository(session).create(
-            knowledge_base_id=knowledge_base_id,
-            title=request.title,
-            source_uri=request.source_uri,
-            mime_type=request.mime_type,
-            checksum=request.checksum,
-            size_bytes=request.size_bytes,
-            metadata=request.metadata,
-        )
+        try:
+            document = DocumentRepository(
+                session, workspace_id=current_workspace_id(http_request)
+            ).create(
+                knowledge_base_id=knowledge_base_id,
+                title=request.title,
+                source_uri=request.source_uri,
+                mime_type=request.mime_type,
+                checksum=request.checksum,
+                size_bytes=request.size_bytes,
+                metadata=request.metadata,
+            )
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)
+            ) from error
         if document is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -693,13 +837,19 @@ def create_app(
         tags=["documents"],
     )
     async def upload_document(
+        http_request: Request,
         knowledge_base_id: UUID,
         file: Annotated[UploadFile, File(description="Document file to upload.")],
         title: Annotated[str | None, Form(max_length=500)] = None,
         metadata: Annotated[str, Form()] = "{}",
         session: Session = Depends(get_session),  # noqa: B008
     ) -> DocumentResponse:
-        if KnowledgeBaseRepository(session).get(knowledge_base_id) is None:
+        if (
+            KnowledgeBaseRepository(session, workspace_id=current_workspace_id(http_request)).get(
+                knowledge_base_id
+            )
+            is None
+        ):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Knowledge base not found",
@@ -721,7 +871,9 @@ def create_app(
                 detail=str(error),
             ) from error
 
-        document = DocumentRepository(session).create(
+        document = DocumentRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).create(
             knowledge_base_id=knowledge_base_id,
             title=title or filename,
             source_uri=stored.uri,
@@ -749,10 +901,13 @@ def create_app(
         tags=["documents"],
     )
     def list_documents(
+        http_request: Request,
         knowledge_base_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[DocumentResponse]:
-        documents = DocumentRepository(session).list_for_knowledge_base(knowledge_base_id)
+        documents = DocumentRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).list_for_knowledge_base(knowledge_base_id)
         if documents is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -767,10 +922,13 @@ def create_app(
         tags=["documents"],
     )
     def get_document(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> DocumentResponse:
-        document = DocumentRepository(session).get(document_id)
+        document = DocumentRepository(session, workspace_id=current_workspace_id(http_request)).get(
+            document_id
+        )
         if document is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return _document_response(document)
@@ -783,15 +941,22 @@ def create_app(
         tags=["chunks"],
     )
     def chunk_document(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[DocumentChunkResponse]:
         try:
             chunks = chunker.chunk_document(
                 document_id=document_id,
-                document_repository=DocumentRepository(session),
-                ingestion_job_repository=IngestionJobRepository(session),
-                chunk_repository=DocumentChunkRepository(session),
+                document_repository=DocumentRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                ingestion_job_repository=IngestionJobRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                chunk_repository=DocumentChunkRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
             )
         except DocumentNotChunkableError as error:
             if "was not found" in str(error):
@@ -809,10 +974,13 @@ def create_app(
         tags=["chunks"],
     )
     def list_document_chunks(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[DocumentChunkResponse]:
-        chunks = DocumentChunkRepository(session).list_for_document(document_id)
+        chunks = DocumentChunkRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).list_for_document(document_id)
         if chunks is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return [_document_chunk_response(chunk) for chunk in chunks]
@@ -824,10 +992,13 @@ def create_app(
         tags=["chunks"],
     )
     def get_document_chunk(
+        http_request: Request,
         chunk_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> DocumentChunkResponse:
-        chunk = DocumentChunkRepository(session).get(chunk_id)
+        chunk = DocumentChunkRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).get(chunk_id)
         if chunk is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -843,15 +1014,22 @@ def create_app(
         tags=["embeddings"],
     )
     def index_document(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> DocumentIndexResponse:
         try:
             result = indexer.index_document(
                 document_id=document_id,
-                document_repository=DocumentRepository(session),
-                chunk_repository=DocumentChunkRepository(session),
-                embedding_repository=ChunkEmbeddingRepository(session),
+                document_repository=DocumentRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                chunk_repository=DocumentChunkRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                embedding_repository=ChunkEmbeddingRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
             )
         except DocumentNotIndexableError as error:
             if "was not found" in str(error):
@@ -874,10 +1052,13 @@ def create_app(
         tags=["embeddings"],
     )
     def list_document_embeddings(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[ChunkEmbeddingResponse]:
-        embeddings = ChunkEmbeddingRepository(session).list_for_document(document_id=document_id)
+        embeddings = ChunkEmbeddingRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).list_for_document(document_id=document_id)
         if embeddings is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return [_chunk_embedding_response(embedding) for embedding in embeddings]
@@ -890,14 +1071,19 @@ def create_app(
         tags=["ingestion"],
     )
     def ingest_document(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> IngestionJobResponse:
         try:
             job = ingester.ingest(
                 document_id=document_id,
-                document_repository=DocumentRepository(session),
-                ingestion_job_repository=IngestionJobRepository(session),
+                document_repository=DocumentRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
+                ingestion_job_repository=IngestionJobRepository(
+                    session, workspace_id=current_workspace_id(http_request)
+                ),
             )
         except DocumentNotFoundError as error:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -912,10 +1098,13 @@ def create_app(
         tags=["ingestion"],
     )
     def list_document_ingestion_jobs(
+        http_request: Request,
         document_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> list[IngestionJobResponse]:
-        jobs = IngestionJobRepository(session).list_for_document(document_id)
+        jobs = IngestionJobRepository(
+            session, workspace_id=current_workspace_id(http_request)
+        ).list_for_document(document_id)
         if jobs is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         return [_ingestion_job_response(job) for job in jobs]
@@ -927,10 +1116,13 @@ def create_app(
         tags=["ingestion"],
     )
     def get_ingestion_job(
+        http_request: Request,
         job_id: UUID,
         session: Session = Depends(get_session),  # noqa: B008
     ) -> IngestionJobResponse:
-        job = IngestionJobRepository(session).get(job_id)
+        job = IngestionJobRepository(session, workspace_id=current_workspace_id(http_request)).get(
+            job_id
+        )
         if job is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1039,6 +1231,7 @@ def _approval_response(approval: Approval) -> ApprovalResponse:
 def _memory_response(memory: MemoryItem) -> MemoryResponse:
     return MemoryResponse(
         id=memory.id,
+        workspace_id=memory.workspace_id,
         type=memory.type,
         scope=memory.scope,
         content=memory.content,
@@ -1068,6 +1261,7 @@ def _parse_metadata_json(value: str) -> dict[str, object]:
 def _knowledge_base_response(knowledge_base: KnowledgeBase) -> KnowledgeBaseResponse:
     return KnowledgeBaseResponse(
         id=knowledge_base.id,
+        workspace_id=knowledge_base.workspace_id,
         name=knowledge_base.name,
         description=knowledge_base.description,
         status=knowledge_base.status,
@@ -1106,6 +1300,7 @@ def _retrieval_response(response: RagRetrievalResponse) -> RetrievalResponseMode
 def _eval_run_response(eval_run: EvalRun) -> EvalRunResponse:
     return EvalRunResponse(
         id=eval_run.id,
+        workspace_id=eval_run.workspace_id,
         name=eval_run.name,
         suite_type=eval_run.suite_type,
         status=eval_run.status,

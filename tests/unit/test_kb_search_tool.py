@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from kernel_core import DocumentChunk, DocumentStatus, RiskLevel
@@ -9,7 +9,13 @@ from kernel_storage import (
     DocumentRepository,
     KnowledgeBaseRepository,
 )
-from kernel_tools import ToolExecutor, ToolRegistry, ToolRequest, ToolValidationError
+from kernel_tools import (
+    ToolExecutionContext,
+    ToolExecutor,
+    ToolRegistry,
+    ToolRequest,
+    ToolValidationError,
+)
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -81,6 +87,26 @@ async def test_kb_search_tool_schema_rejects_invalid_top_k(
                     "query": "anything",
                     "top_k": 0,
                 },
+            )
+        )
+
+
+@pytest.mark.asyncio
+async def test_model_cannot_supply_trusted_workspace_context(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    registry = ToolRegistry()
+    registry.register(KnowledgeBaseSearchTool(session_factory=sqlite_session_factory))
+    with pytest.raises(ToolValidationError):
+        await ToolExecutor(registry=registry).execute(
+            ToolRequest(
+                tool_name="kb_search",
+                arguments={
+                    "knowledge_base_id": str(uuid4()),
+                    "query": "x",
+                    "workspace_id": str(uuid4()),
+                },
+                context=ToolExecutionContext(workspace_id=uuid4()),
             )
         )
 

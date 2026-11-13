@@ -1,5 +1,16 @@
 # Development Plan
 
+## Current Follow-Up
+
+The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) is the
+canonical plan for current implementation work. The P0-P5 batch is in final
+integration acceptance; per-package status, local verification and outstanding
+deployment/CI evidence live in that plan. Do not restart from P1.1.
+
+The Day 1-90 schedule below is the historical delivery plan. Completed
+foundation items must not be read as proof of full object isolation,
+multi-worker fencing, Redis worker integration or external-tool support.
+
 ## Delivery Target
 
 The original v0.1 target is complete and published:

@@ -22,7 +22,7 @@ from kernel_core import (
     utc_now,
 )
 from kernel_identity import ApiKeyStatus, PrincipalType, WorkspaceRole, WorkspaceStatus
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from kernel_storage.base import Base
@@ -58,9 +58,7 @@ class WorkspaceRecord(Base):
 
 class WorkspaceMembershipRecord(Base):
     __tablename__ = "workspace_memberships"
-    __table_args__ = (
-        Index("ix_workspace_memberships_workspace_id_role", "workspace_id", "role"),
-    )
+    __table_args__ = (Index("ix_workspace_memberships_workspace_id_role", "workspace_id", "role"),)
 
     principal_id: Mapped[str] = mapped_column(
         String(36),
@@ -194,6 +192,15 @@ class RunRecord(Base):
 
 class WorkerLeaseRecord(Base):
     __tablename__ = "worker_leases"
+    __table_args__ = (
+        Index(
+            "uq_worker_leases_unreleased_run",
+            "run_id",
+            unique=True,
+            postgresql_where=text("released_at IS NULL"),
+            sqlite_where=text("released_at IS NULL"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     run_id: Mapped[str] = mapped_column(
@@ -335,6 +342,9 @@ class KnowledgeBaseRecord(Base):
     __tablename__ = "knowledge_bases"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    workspace_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
     status: Mapped[str] = mapped_column(
@@ -441,6 +451,9 @@ class EvalRunRecord(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    workspace_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     suite_type: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     status: Mapped[str] = mapped_column(
@@ -543,6 +556,9 @@ class MemoryItemRecord(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    workspace_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     type: Mapped[str] = mapped_column(
         String(64), nullable=False, default=MemoryType.LONG_TERM.value, index=True
     )

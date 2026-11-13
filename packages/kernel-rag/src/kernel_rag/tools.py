@@ -12,7 +12,13 @@ from kernel_storage import (
     DocumentRepository,
     KnowledgeBaseRepository,
 )
-from kernel_tools import ToolMetadata, ToolRegistry, create_default_tool_registry
+from kernel_tools import (
+    ToolError,
+    ToolExecutionContext,
+    ToolMetadata,
+    ToolRegistry,
+    create_default_tool_registry,
+)
 from sqlalchemy.orm import Session, sessionmaker
 
 from kernel_rag.retrieval import Retriever
@@ -62,6 +68,12 @@ class KnowledgeBaseSearchTool:
         )
 
     async def execute(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Trusted local operator entry point; runtime uses execute_with_context."""
+        return await self.execute_with_context(arguments, context=ToolExecutionContext())
+
+    async def execute_with_context(
+        self, arguments: dict[str, Any], *, context: ToolExecutionContext
+    ) -> dict[str, Any]:
         knowledge_base_id = UUID(arguments["knowledge_base_id"])
         query = arguments["query"]
         top_k = arguments.get("top_k", 5)
@@ -71,14 +83,23 @@ class KnowledgeBaseSearchTool:
             raise TypeError("top_k must be an integer.")
 
         with self._session_factory() as session:
+            knowledge_base_repository = KnowledgeBaseRepository(
+                session, workspace_id=context.workspace_id
+            )
+            if knowledge_base_repository.get(knowledge_base_id) is None:
+                raise ToolError("Knowledge base not found.", error_type="knowledge_base_not_found")
             response = self._retriever.retrieve(
                 knowledge_base_id=knowledge_base_id,
                 query=query,
                 top_k=top_k,
-                knowledge_base_repository=KnowledgeBaseRepository(session),
-                document_repository=DocumentRepository(session),
-                chunk_repository=DocumentChunkRepository(session),
-                embedding_repository=ChunkEmbeddingRepository(session),
+                knowledge_base_repository=knowledge_base_repository,
+                document_repository=DocumentRepository(session, workspace_id=context.workspace_id),
+                chunk_repository=DocumentChunkRepository(
+                    session, workspace_id=context.workspace_id
+                ),
+                embedding_repository=ChunkEmbeddingRepository(
+                    session, workspace_id=context.workspace_id
+                ),
             )
 
         return {

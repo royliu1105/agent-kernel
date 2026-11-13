@@ -255,6 +255,7 @@ class Approval(KernelModel):
 
 class KnowledgeBase(KernelModel):
     id: UUID = Field(default_factory=uuid4)
+    workspace_id: UUID | None = None
     name: str
     description: str = ""
     status: KnowledgeBaseStatus = KnowledgeBaseStatus.ACTIVE
@@ -322,6 +323,7 @@ class IngestionJob(KernelModel):
 
 class EvalRun(KernelModel):
     id: UUID = Field(default_factory=uuid4)
+    workspace_id: UUID | None = None
     name: str = Field(min_length=1, max_length=255)
     suite_type: str = Field(min_length=1, max_length=255)
     status: EvalRunStatus
@@ -341,6 +343,7 @@ class EvalRun(KernelModel):
 
 class MemoryItem(KernelModel):
     id: UUID = Field(default_factory=uuid4)
+    workspace_id: UUID | None = None
     type: MemoryType
     scope: str = Field(min_length=1, max_length=255)
     content: dict[str, Any]

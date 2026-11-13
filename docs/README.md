@@ -2,7 +2,25 @@
 
 This directory contains the canonical planning baseline for Agent Kernel. Treat these documents as the source of truth for the initial implementation plan unless a later ADR changes a decision.
 
+Current follow-up work is tracked in the
+[Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
+The P0-P5 batch is in final acceptance; implementation and local evidence are
+tracked in that plan. Local container/monitoring gates now pass; current remote
+CI and any later release authorization remain separate.
+The Day 1-90 documents below
+record the earlier delivery scope; their completion does not imply that the
+new isolation, worker ownership or external-tool guarantees are implemented.
+
 ## Recommended Document Split
+
+Current hardening operator guides:
+
+- [Execution Ownership and Recovery](execution-ownership.md)
+- [Observability Operations](observability-operations.md)
+- [External Tools](external-tools.md)
+- [Backend Operations](backend-operations.md)
+- [Behavior Regression](behavior-regression.md)
+- [Hardening Verification](hardening-verification.md)
 
 The plan is split into these documents:
 
@@ -24,7 +42,7 @@ The plan is split into these documents:
 16. [Public Alpha Guide](public-alpha.md): early-user trial path, feedback workflow, and live Web API priorities.
 17. [Post-v0.1 Completion Plan](post-v0.1-plan.md): Public Alpha, Beta, and v1.0 completion plan.
 18. [Public Alpha Summary](public-alpha-summary.md): completed Day 39-51 hardening work, verification scope, limitations, and Beta entry point.
-19. [Durable Execution Summary](durable-execution-summary.md): completed Day 59-63 worker leasing, recovery, queue adapter foundation, retry visibility, and operator CLI scope.
+19. [Durable Execution Summary](durable-execution-summary.md): historical Day 59-63 scope. Current guarantees: [Execution Ownership](execution-ownership.md).
 20. [Beta Summary](beta-summary.md): completed Day 52-75 production hardening work, verification scope, limitations, and v1.0 RC handoff.
 21. [API and CLI Compatibility Policy](api-cli-compatibility.md): v1.0 RC stability levels, public contract, preview surfaces, and deprecation rules.
 22. [Versioned Configuration Reference](configuration.md): v1.0 RC environment-variable contract, defaults, secret status, and change-control rules.

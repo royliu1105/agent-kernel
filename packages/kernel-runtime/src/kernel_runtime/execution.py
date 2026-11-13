@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from kernel_core import (
     Approval,
@@ -26,6 +28,7 @@ from kernel_observability import (
     NoOpMetricsRecorder,
     ObservabilityContext,
     log_event,
+    trace_operation,
 )
 from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
 from kernel_providers import (
@@ -39,14 +42,23 @@ from kernel_providers import (
     LLMUsage,
     MessageRole,
 )
-from kernel_storage import ApprovalRepository, MemoryRepository, RunRepository, ToolCallRepository
+from kernel_storage import (
+    ApprovalRepository,
+    ExecutionOwnershipError,
+    MemoryRepository,
+    RunRepository,
+    ToolCallRepository,
+    WorkerLeaseRepository,
+)
 from kernel_tools import (
     ToolError,
+    ToolExecutionContext,
     ToolExecutor,
     ToolRegistry,
     ToolRequest,
     create_default_tool_registry,
 )
+from sqlalchemy.orm import sessionmaker
 
 from kernel_runtime.provider_tool_calls import persist_provider_tool_calls
 from kernel_runtime.provider_tools import tool_registry_to_llm_tool_definitions
@@ -62,6 +74,10 @@ class RunExecutionError(RuntimeError):
 
 class RunNotFoundError(RunExecutionError):
     """Raised when execution is requested for a missing run."""
+
+
+class RunAlreadyClaimedError(RunExecutionError):
+    """Another executor owns the run, or its state no longer permits execution."""
 
 
 @dataclass(frozen=True)
@@ -116,6 +132,7 @@ class RunExecutionService:
         retry_policy: RetryPolicy | None = None,
         default_model: str = "mock:mock-default",
         state_machine: RunStateMachine | None = None,
+        lease_ttl_seconds: int = 60,
     ) -> None:
         self._router: ModelRouter | None
         if router is not None:
@@ -132,8 +149,134 @@ class RunExecutionService:
         self._retry_policy = retry_policy or RetryPolicy()
         self._default_model = default_model
         self._state_machine = state_machine or RunStateMachine()
+        if lease_ttl_seconds < 1:
+            raise ValueError("Lease TTL must be at least one second.")
+        self._lease_ttl_seconds = lease_ttl_seconds
+        self._worker_id = f"executor-{uuid4()}"
 
     async def execute(self, *, run_id: UUID, repository: RunRepository) -> Run:
+        return await self._with_lease(
+            run_id=run_id,
+            repository=repository,
+            expected_status=RunStatus.QUEUED,
+            operation=lambda owned: self._execute_claimed(run_id=run_id, repository=owned),
+        )
+
+    async def resume(
+        self,
+        *,
+        run_id: UUID,
+        repository: RunRepository,
+        approval_repository: ApprovalRepository,
+        tool_call_repository: ToolCallRepository,
+        approval_id: UUID | None = None,
+    ) -> Run:
+        return await self._with_lease(
+            run_id=run_id,
+            repository=repository,
+            expected_status=RunStatus.WAITING_APPROVAL,
+            operation=lambda owned: self._resume_claimed(
+                run_id=run_id,
+                repository=owned,
+                approval_id=approval_id,
+                approval_repository=ApprovalRepository(
+                    owned.session,
+                    lease_token=owned.lease_token,
+                ),
+                tool_call_repository=ToolCallRepository(
+                    owned.session,
+                    lease_token=owned.lease_token,
+                ),
+            ),
+        )
+
+    async def _with_lease(
+        self,
+        *,
+        run_id: UUID,
+        repository: RunRepository,
+        expected_status: RunStatus,
+        operation: Callable[[RunRepository], Awaitable[Run]],
+    ) -> Run:
+        existing = repository.get(run_id)
+        if existing is None:
+            raise RunNotFoundError(f"Run {run_id} was not found.")
+        if existing.status is not expected_status:
+            if expected_status is RunStatus.QUEUED:
+                self._state_machine.start(existing)
+            raise RunExecutionError(
+                f"Run {run_id} is {existing.status.value}; only waiting_approval runs can resume."
+            )
+        lease = WorkerLeaseRepository(repository.session).acquire(
+            run_id=run_id,
+            worker_id=self._worker_id,
+            ttl_seconds=self._lease_ttl_seconds,
+            expected_status=expected_status,
+        )
+        if lease is None:
+            repository.session.rollback()
+            raise RunAlreadyClaimedError("Run is already claimed or no longer executable.")
+        owned = RunRepository(repository.session, lease_token=lease.lease_token)
+        factory = sessionmaker(bind=repository.session.get_bind(), expire_on_commit=False)
+
+        async def heartbeat() -> None:
+            while True:
+                await asyncio.sleep(self._lease_ttl_seconds / 3)
+                with factory() as session:
+                    renewed = WorkerLeaseRepository(session).heartbeat(
+                        lease_token=lease.lease_token,
+                        ttl_seconds=self._lease_ttl_seconds,
+                    )
+                    if renewed is None:
+                        raise ExecutionOwnershipError("Execution lease could not be renewed.")
+
+        async def traced_operation() -> Run:
+            with trace_operation(
+                "agent.run",
+                trace_id=existing.trace_id,
+                attributes={"run_id": str(run_id)},
+            ) as span:
+                result = await operation(owned)
+                if span is not None:
+                    span.set_attribute("status", result.status.value)
+                    if result.status is RunStatus.FAILED:
+                        from opentelemetry.trace import StatusCode
+
+                        span.set_status(StatusCode.ERROR)
+                        span.add_event(
+                            "agent.run.failed", {"error.type": result.error_type or "unknown"}
+                        )
+                return result
+
+        work = asyncio.create_task(traced_operation())
+        pulse = asyncio.create_task(heartbeat())
+        try:
+            done, _ = await asyncio.wait({work, pulse}, return_when=asyncio.FIRST_COMPLETED)
+            if pulse in done:
+                await pulse
+            return await work
+        finally:
+            # Fence before canceling: a provider/tool may suppress CancelledError
+            # and return a late result. Keep the expired lease for recovery.
+            pulse.cancel()
+            owned.revoke_local_ownership()
+            repository.session.rollback()
+            try:
+                with factory() as session:
+                    WorkerLeaseRepository(session).invalidate(lease_token=lease.lease_token)
+            finally:
+                work.cancel()
+                await asyncio.gather(work, pulse, return_exceptions=True)
+                repository.session.rollback()
+            with factory() as session:
+                current = RunRepository(session).get(run_id)
+                if current is not None and current.status not in {
+                    RunStatus.RUNNING,
+                    RunStatus.RESUMING,
+                }:
+                    WorkerLeaseRepository(session).release(lease_token=lease.lease_token)
+
+    async def _execute_claimed(self, *, run_id: UUID, repository: RunRepository) -> Run:
         run = repository.get(run_id)
         if run is None:
             raise RunNotFoundError(f"Run {run_id} was not found.")
@@ -173,13 +316,19 @@ class RunExecutionService:
                 running=running,
                 request=tool_request,
                 repository=repository,
-                tool_call_repository=ToolCallRepository(repository.session),
-                approval_repository=ApprovalRepository(repository.session),
+                tool_call_repository=ToolCallRepository(
+                    repository.session,
+                    lease_token=repository.lease_token,
+                ),
+                approval_repository=ApprovalRepository(
+                    repository.session,
+                    lease_token=repository.lease_token,
+                ),
             )
 
         return await self._execute_model_request(running=running, repository=repository)
 
-    async def resume(
+    async def _resume_claimed(
         self,
         *,
         run_id: UUID,
@@ -315,7 +464,15 @@ class RunExecutionService:
                 attempt_count += 1
                 model_timer = LatencyTimer.start()
                 try:
-                    response = await route.provider.complete(routed_request)
+                    repository.assert_owned(running.id)
+                    with trace_operation(
+                        "llm.model_call",
+                        attributes={
+                            "provider": route.provider_name,
+                            "model": route.model,
+                        },
+                    ):
+                        response = await route.provider.complete(routed_request)
                     latency_ms = model_timer.elapsed_ms()
                 except LLMProviderError as error:
                     latency_ms = model_timer.elapsed_ms()
@@ -361,6 +518,7 @@ class RunExecutionService:
                         )
                         continue
                     break
+                self._record_response_usage(repository, running.id, response, latency_ms)
                 if response.finish_reason is LLMFinishReason.TOOL_CALLS or response.tool_calls:
                     return await self._execute_provider_native_tool_loop(
                         running=running,
@@ -455,7 +613,10 @@ class RunExecutionService:
                 provider=provider_name,
             )
 
-        tool_call_repository = ToolCallRepository(repository.session)
+        tool_call_repository = ToolCallRepository(
+            repository.session,
+            lease_token=repository.lease_token,
+        )
         persisted_calls = persist_provider_tool_calls(
             running=running,
             response=initial_response,
@@ -506,7 +667,10 @@ class RunExecutionService:
             )
             if waiting_tool_call is None:
                 raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
-            approval = ApprovalRepository(repository.session).create_requested(
+            approval = ApprovalRepository(
+                repository.session,
+                lease_token=repository.lease_token,
+            ).create_requested(
                 tool_call_id=waiting_tool_call.id,
                 reason=decision.reason,
             )
@@ -541,12 +705,21 @@ class RunExecutionService:
         if checked_tool_call is None:
             raise RunExecutionError(f"Tool call {tool_call.id} was not found.")
 
-        completed_tool_call = await self._execute_tool_call_only(
-            running=running,
-            repository=repository,
-            tool_call=checked_tool_call,
-            tool_call_repository=tool_call_repository,
-        )
+        try:
+            completed_tool_call = await self._execute_tool_call_only(
+                running=running,
+                repository=repository,
+                tool_call=checked_tool_call,
+                tool_call_repository=tool_call_repository,
+            )
+        except ToolError as error:
+            return self._fail_running_run(
+                running=running,
+                repository=repository,
+                error_type=error.error_type,
+                error_message=str(error),
+                provider=provider_name,
+            )
         followup_request = _request_with_tool_result(
             initial_request=initial_request,
             initial_response=initial_response,
@@ -554,7 +727,15 @@ class RunExecutionService:
         )
         followup_timer = LatencyTimer.start()
         try:
-            final_response = await provider.complete(followup_request)
+            repository.assert_owned(running.id)
+            with trace_operation(
+                "llm.model_call",
+                attributes={
+                    "provider": provider_name,
+                    "model": followup_request.model,
+                },
+            ):
+                final_response = await provider.complete(followup_request)
             followup_latency_ms = followup_timer.elapsed_ms()
         except LLMProviderError as error:
             self._record_model_failure_metrics(
@@ -571,20 +752,18 @@ class RunExecutionService:
                 provider=provider_name,
             )
 
+        self._record_response_usage(repository, running.id, final_response, followup_latency_ms)
         combined_response = final_response.model_copy(
             update={
                 "usage": LLMUsage(
                     input_tokens=(
-                        initial_response.usage.input_tokens
-                        + final_response.usage.input_tokens
+                        initial_response.usage.input_tokens + final_response.usage.input_tokens
                     ),
                     output_tokens=(
-                        initial_response.usage.output_tokens
-                        + final_response.usage.output_tokens
+                        initial_response.usage.output_tokens + final_response.usage.output_tokens
                     ),
                     estimated_cost=(
-                        initial_response.usage.estimated_cost
-                        + final_response.usage.estimated_cost
+                        initial_response.usage.estimated_cost + final_response.usage.estimated_cost
                     ),
                 )
             }
@@ -653,14 +832,6 @@ class RunExecutionService:
                 "fallback_used": fallback_used,
             },
         )
-        self._record_model_success_metrics(
-            provider=response.provider,
-            model=response.model,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            estimated_cost=response.usage.estimated_cost,
-            latency_ms=latency_ms,
-        )
         completed = repository.complete(
             run_id=running.id,
             output_payload=output_payload,
@@ -693,7 +864,7 @@ class RunExecutionService:
             return None
 
         memory_context = self._memory_retrieval_service.retrieve(
-            repository=MemoryRepository(repository.session),
+            repository=MemoryRepository(repository.session, workspace_id=running.workspace_id),
             scopes=memory_request.scopes,
             types=memory_request.types,
             limit=memory_request.limit,
@@ -946,6 +1117,9 @@ class RunExecutionService:
     ) -> Run:
 
         succeed_transition = self._state_machine.succeed(running)
+        persisted = repository.get(running.id)
+        if persisted is None:
+            raise RunNotFoundError(f"Run {running.id} was not found.")
         completed = repository.complete(
             run_id=running.id,
             output_payload={
@@ -956,9 +1130,9 @@ class RunExecutionService:
                     "result": completed_tool_call.result,
                 }
             },
-            input_tokens_total=0,
-            output_tokens_total=0,
-            estimated_cost_total=0.0,
+            input_tokens_total=persisted.input_tokens_total,
+            output_tokens_total=persisted.output_tokens_total,
+            estimated_cost_total=persisted.estimated_cost_total,
             event_payload={
                 "from_status": succeed_transition.from_status.value,
                 "to_status": succeed_transition.to_status.value,
@@ -977,11 +1151,21 @@ class RunExecutionService:
         repository: RunRepository,
         tool_call: ToolCall,
     ) -> Any:
-        request = ToolRequest(tool_name=tool_call.tool_name, arguments=tool_call.arguments)
+        request = ToolRequest(
+            tool_name=tool_call.tool_name,
+            arguments=tool_call.arguments,
+            context=ToolExecutionContext(
+                run_id=running.id,
+                workspace_id=running.workspace_id,
+                tool_call_id=tool_call.id,
+            ),
+        )
         for attempt in range(1, self._retry_policy.tool_max_attempts + 1):
             attempt_timer = LatencyTimer.start()
             try:
-                return await self._tool_executor.execute(request)
+                repository.assert_owned(running.id)
+                with trace_operation("tool.call", attributes={"tool_name": tool_call.tool_name}):
+                    return await self._tool_executor.execute(request)
             except ToolError as error:
                 attempt_latency_ms = attempt_timer.elapsed_ms()
                 if self._should_retry_tool(error, tool_call) and (
@@ -1020,10 +1204,34 @@ class RunExecutionService:
 
         raise RunExecutionError("Tool retry loop exited without a result or error.")
 
+    def _record_response_usage(
+        self,
+        repository: RunRepository,
+        run_id: UUID,
+        response: LLMResponse,
+        latency_ms: int,
+    ) -> None:
+        repository.record_usage(
+            run_id,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            estimated_cost=response.usage.estimated_cost,
+        )
+        self._record_model_success_metrics(
+            provider=response.provider,
+            model=response.model,
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            estimated_cost=response.usage.estimated_cost,
+            latency_ms=latency_ms,
+        )
+
     def _should_retry_provider(self, error: LLMProviderError) -> bool:
         return error.error_type in self._retry_policy.retryable_provider_error_types
 
     def _should_retry_tool(self, error: ToolError, tool_call: ToolCall) -> bool:
+        if self._tool_registry.get(tool_call.tool_name).metadata.retry_safe is False:
+            return False
         return (
             error.error_type in self._retry_policy.retryable_tool_error_types
             and tool_call.risk_level in self._retry_policy.retryable_tool_risk_levels

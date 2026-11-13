@@ -1,0 +1,325 @@
+{
+  "rule_files": [
+    "alerts.json"
+  ],
+  "evaluation_interval": "1m",
+  "tests": [
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"agent-kernel-api\",instance=\"api:8000\"}",
+          "values": "0+0x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelTargetDown",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "job": "agent-kernel-api",
+                "instance": "api:8000"
+              },
+              "exp_annotations": {
+                "summary": "Agent Kernel metrics target is unreachable."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "probe_success{job=\"agent-kernel-readiness\",instance=\"http://api:8000/readyz\"}",
+          "values": "0+0x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelNotReady",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "job": "agent-kernel-readiness",
+                "instance": "http://api:8000/readyz"
+              },
+              "exp_annotations": {
+                "summary": "Agent Kernel required dependency readiness is failing."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"agent-kernel-readiness\",instance=\"blackbox:9115\"}",
+          "values": "0+0x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelProbeDown",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-readiness",
+                "instance": "blackbox:9115"
+              },
+              "exp_annotations": {
+                "summary": "Readiness probe exporter is unreachable."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "llm_model_calls_total{job=\"agent-kernel-api\",status=\"failed\"}",
+          "values": "0+10x20"
+        },
+        {
+          "series": "llm_model_calls_total{job=\"agent-kernel-api\",status=\"succeeded\"}",
+          "values": "0+10x20"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "10m",
+          "alertname": "AgentKernelModelErrors",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Model attempt failure ratio exceeds 20 percent."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "tool_calls_total{job=\"agent-kernel-api\",status=\"failed\"}",
+          "values": "0+10x20"
+        },
+        {
+          "series": "tool_calls_total{job=\"agent-kernel-api\",status=\"succeeded\"}",
+          "values": "0+10x20"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "10m",
+          "alertname": "AgentKernelToolErrors",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Tool call failure ratio exceeds 10 percent."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "rag_retrievals_total{job=\"agent-kernel-api\",status=\"failed\"}",
+          "values": "0+10x20"
+        },
+        {
+          "series": "rag_retrievals_total{job=\"agent-kernel-api\",status=\"succeeded\"}",
+          "values": "0+10x20"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "10m",
+          "alertname": "AgentKernelRetrievalErrors",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Retrieval failure ratio exceeds 10 percent."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "llm_model_call_duration_seconds_bucket{job=\"agent-kernel-api\",le=\"10\"}",
+          "values": "0+0x30"
+        },
+        {
+          "series": "llm_model_call_duration_seconds_bucket{job=\"agent-kernel-api\",le=\"30\"}",
+          "values": "0+100x30"
+        },
+        {
+          "series": "llm_model_call_duration_seconds_bucket{job=\"agent-kernel-api\",le=\"+Inf\"}",
+          "values": "0+100x30"
+        },
+        {
+          "series": "llm_model_call_duration_seconds_count{job=\"agent-kernel-api\"}",
+          "values": "0+100x30"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelModelLatency",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Model attempt p95 latency exceeds 15 seconds."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "agent_kernel_metrics_dropped_total{job=\"agent-kernel-api\",reason=\"capacity\"}",
+          "values": "0+1x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelMetricsDropped",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api"
+              },
+              "exp_annotations": {
+                "summary": "Metric updates are rejected by validation or capacity limits."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "run_queue_errors_total{job=\"agent-kernel-api\",operation=\"enqueue\"}",
+          "values": "0+1x10"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "4m",
+          "alertname": "AgentKernelQueueErrors",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "job": "agent-kernel-api",
+                "operation": "enqueue"
+              },
+              "exp_annotations": {
+                "summary": "Redis queue operations are failing."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "up{job=\"agent-kernel-api\",instance=\"api:8000\"}",
+          "values": "0 0 0 0 1 1 1"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "1m",
+          "alertname": "AgentKernelTargetDown",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "6m",
+          "alertname": "AgentKernelTargetDown",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "llm_model_calls_total{job=\"agent-kernel-api\",status=\"failed\"}",
+          "values": "0+1x30"
+        },
+        {
+          "series": "tool_calls_total{job=\"agent-kernel-api\",status=\"failed\"}",
+          "values": "0+1x30"
+        },
+        {
+          "series": "rag_retrievals_total{job=\"agent-kernel-api\",status=\"failed\"}",
+          "values": "0+1x30"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelModelErrors",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelToolErrors",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "15m",
+          "alertname": "AgentKernelRetrievalErrors",
+          "exp_alerts": []
+        }
+      ]
+    }
+  ]
+}

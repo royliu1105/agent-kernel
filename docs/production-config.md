@@ -1,7 +1,9 @@
 # Production Configuration Guide
 
 This guide describes the production configuration expectations for Agent Kernel
-v1.0 release candidate deployments.
+deployments. The post-v1.0 changes below are tracked in the
+[capability hardening plan](capability-hardening-plan.md); use release-matched
+documentation when operating an older tag.
 
 Agent Kernel is a self-hosted runtime. It is deployable as separate API,
 worker, Web, Postgres, Redis, and object-storage components, but it is not a
@@ -20,12 +22,14 @@ API      - FastAPI service for state, inspection, and control APIs
 Worker   - background queued-run executor
 Web      - Next.js Agent Workbench
 Postgres - relational runtime state and pgvector-ready storage
-Redis    - future queue/cache dependency, included in the local stack
+Redis    - optional scheduling hints and shared workspace admission limits
 Objects  - document upload and parsed artifact storage
 ```
 
 Run API and worker as separate processes. The API should not execute long-running
 agent loops directly.
+PostgreSQL remains the source of truth; Redis hints are not execution ownership
+or completion acknowledgments. See [backend operations](backend-operations.md).
 
 ## Environment Variables
 
@@ -225,9 +229,16 @@ agent-kernel-worker --loop --limit 25 --poll-interval 2
 
 Run at least one worker process for queued agent execution.
 
-Current worker behavior uses persisted queued runs as the MVP queue. The Beta
-storage layer now includes worker leases and an explicit stuck-run recovery
-mode:
+Every execution/resume acquires a database lease with a heartbeat and stale-owner
+write fencing. Workers poll persisted queued runs on every pass; optional Redis
+hints are enabled with `AGENT_KERNEL_RUN_QUEUE_BACKEND=redis`. The default
+`database` mode does not require Redis for scheduling.
+
+Compose supervises the Worker with `restart: unless-stopped`. A failed process
+can recover when a database outage ends; an explicit operator stop remains
+stopped. Use equivalent supervision on other platforms. Process restart does
+not retry uncertain in-flight operations. Inspect leases and use explicit
+stuck-run recovery when appropriate:
 
 ```bash
 agent-kernel-worker --recover-stuck --limit 100
@@ -235,11 +246,11 @@ agent-kernel-worker --recover-stuck --limit 100
 
 Recovery marks expired `running` or `resuming` runs as failed instead of
 automatically requeueing them. This avoids blindly repeating side effects.
-The worker polling loop has not yet switched to lease-backed claiming.
-The runtime now includes a Redis queue adapter foundation using the default list
-key `agent-kernel:runs:queued`, but API queueing and worker polling do not use
-it by default yet. Redis-first scheduling and advanced retry queues are v1.0 RC
-hardening follow-ups.
+Redis mode uses the default hint list `agent-kernel:runs:queued`. API enqueue
+failure leaves the committed database run available, and Worker database polling
+continues if Redis is unavailable. Shared admission limits, when configured,
+instead fail closed with HTTP 503 during Redis failure. These deliberately
+different semantics are described in [backend operations](backend-operations.md).
 
 Durable retry and restart visibility:
 
@@ -253,7 +264,8 @@ Durable retry and restart visibility:
   and recover expired in-flight leases.
 - The completed worker leasing, recovery, retry visibility, queue adapter, and
   operator command scope is summarized in
-  [Durable Execution Summary](durable-execution-summary.md).
+  [Execution Ownership and Recovery](execution-ownership.md); the
+  [Durable Execution Summary](durable-execution-summary.md) is historical scope.
 - Public manual retry APIs, delayed retry scheduling, and exponential backoff
   remain later hardening work.
 

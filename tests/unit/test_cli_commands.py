@@ -9,6 +9,33 @@ from click import ClickException
 from typer.testing import CliRunner
 
 
+@pytest.mark.parametrize("upload", [False, True])
+def test_api_key_is_forwarded_for_json_and_upload_requests(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    upload: bool,
+) -> None:
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setenv("AGENT_KERNEL_API_KEY", "test-only-secret")
+    monkeypatch.setattr(httpx, "Client", lambda **kwargs: client)
+    if upload:
+        path = tmp_path / "test.txt"
+        path.write_text("test")
+        cli_main._request_file_json(
+            "POST", "/upload", api_url="http://testserver", file_path=path, data={}
+        )
+    else:
+        cli_main._request_json("GET", "/list", api_url="http://testserver")
+    assert captured[0].headers["Authorization"] == "Bearer test-only-secret"
+    assert b"test-only-secret" not in captured[0].content
+
+
 def test_agent_create_cli_prints_api_response(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, str, dict[str, object] | None]] = []
 

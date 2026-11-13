@@ -20,6 +20,7 @@ from kernel_storage.repositories import (
     DocumentRepository,
     EvalRunNotFoundError,
     EvalRunRepository,
+    ExecutionOwnershipError,
     IngestionJobRepository,
     IngestionJobStateError,
     KnowledgeBaseNotFoundError,
@@ -27,6 +28,7 @@ from kernel_storage.repositories import (
     MemoryNotFoundError,
     MemoryRepository,
     PrincipalRepository,
+    RunConflictError,
     RunRepository,
     ToolCallRepository,
     VectorStoreConfigError,
@@ -37,6 +39,8 @@ from kernel_storage.repositories import (
 from kernel_storage.session import create_engine_for_url, create_session_factory
 
 __all__ = [
+    "ExecutionOwnershipError",
+    "RunConflictError",
     "AgentRepository",
     "ApiKeyRepository",
     "ApprovalDecisionError",

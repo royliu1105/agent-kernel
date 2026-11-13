@@ -109,6 +109,7 @@ class KnowledgeBaseCreateRequest(ApiModel):
 
 class KnowledgeBaseResponse(ApiModel):
     id: UUID
+    workspace_id: UUID | None = None
     name: str
     description: str
     status: KnowledgeBaseStatus
@@ -214,6 +215,7 @@ class EvalRunCreateRequest(ApiModel):
 
 class EvalRunResponse(ApiModel):
     id: UUID
+    workspace_id: UUID | None = None
     name: str
     suite_type: str
     status: EvalRunStatus
@@ -242,6 +244,7 @@ class MemoryCreateRequest(ApiModel):
 
 class MemoryResponse(ApiModel):
     id: UUID
+    workspace_id: UUID | None = None
     type: MemoryType
     scope: str
     content: dict[str, Any]

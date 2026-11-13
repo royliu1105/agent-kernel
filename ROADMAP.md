@@ -1,5 +1,16 @@
 # Agent Kernel Roadmap
 
+## Current Follow-Up
+
+Use the [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
+for current work and status. The P0-P5 batch has reached integration acceptance,
+including workspace isolation, execution ownership, external tools, backend
+drills and regression gates. Local deployment/monitoring rehearsals pass; remote
+CI remains an explicit gate. The earlier release targets below are historical scope, not
+evidence that every production guarantee is already implemented.
+
+## Historical Release Targets
+
 This roadmap separates the published v0.1.0 foundation from Public Alpha, Beta,
 and v1.0 completion work.
 

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import builtins
 import math
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from kernel_core import (
@@ -50,7 +51,7 @@ from kernel_identity import (
     hash_api_key,
 )
 from kernel_observability import ensure_trace_id
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session
 
 from kernel_storage.config import get_vector_store_mode
@@ -77,6 +78,51 @@ from kernel_storage.models import (
 
 class ApprovalDecisionError(ValueError):
     """Raised when an approval cannot be decided."""
+
+
+class ExecutionOwnershipError(RuntimeError):
+    """The execution no longer owns a valid lease; its transaction must abort."""
+
+
+class RunConflictError(ValueError):
+    """Persisted state changed after a transition was proposed."""
+
+
+def _lock_run(session: Session, run_id: UUID) -> RunRecord | None:
+    # The no-op update provides a row lock on Postgres and a write lock on SQLite.
+    # All lease/state/event writers use this lock order: run, then lease/children.
+    return session.scalar(
+        update(RunRecord)
+        .where(RunRecord.id == str(run_id))
+        .values(id=str(run_id))
+        .returning(RunRecord)
+        .execution_options(populate_existing=True)
+    )
+
+
+def _guard_run_write(session: Session, run_id: UUID, token: str | None) -> RunRecord | None:
+    if token is not None and token in session.info.get("revoked_execution_tokens", set()):
+        raise ExecutionOwnershipError("Execution was canceled in this session.")
+    record = _lock_run(session, run_id)
+    if record is None:
+        return None
+    lease = session.scalar(
+        select(WorkerLeaseRecord)
+        .where(
+            WorkerLeaseRecord.run_id == str(run_id),
+            WorkerLeaseRecord.released_at.is_(None),
+        )
+        .execution_options(populate_existing=True)
+    )
+    if token is None and lease is None:
+        return record
+    if (
+        lease is None
+        or token != lease.lease_token
+        or not _worker_lease_record_is_active(lease, utc_now())
+    ):
+        raise ExecutionOwnershipError("Execution lease is missing, expired, or owned elsewhere.")
+    return record
 
 
 class KnowledgeBaseNotFoundError(ValueError):
@@ -328,8 +374,9 @@ class AgentRepository:
 class RunRepository:
     """Persistence operations for runs and run event timelines."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, lease_token: str | None = None) -> None:
         self._session = session
+        self.lease_token = lease_token
 
     @property
     def session(self) -> Session:
@@ -371,7 +418,9 @@ class RunRepository:
             return None
         return _run_from_record(record)
 
-    def list_events(self, run_id: UUID) -> list[RunEvent]:
+    def list_events(self, run_id: UUID, *, workspace_id: UUID | None = None) -> list[RunEvent]:
+        if self.get(run_id, workspace_id=workspace_id) is None:
+            return []
         statement = (
             select(RunEventRecord)
             .where(RunEventRecord.run_id == str(run_id))
@@ -380,7 +429,7 @@ class RunRepository:
         return [_run_event_from_record(record) for record in self._session.scalars(statement)]
 
     def update_status(self, *, run_id: UUID, status: RunStatus) -> Run | None:
-        record = self._session.get(RunRecord, str(run_id))
+        record = _guard_run_write(self._session, run_id, self.lease_token)
         if record is None:
             return None
 
@@ -396,7 +445,7 @@ class RunRepository:
         payload: dict[str, Any] | None = None,
         trace_id: str | None = None,
     ) -> RunEvent | None:
-        record = self._session.get(RunRecord, str(run_id))
+        record = _guard_run_write(self._session, run_id, self.lease_token)
         if record is None:
             return None
 
@@ -430,10 +479,25 @@ class RunRepository:
         event_type: RunEventType,
         payload: dict[str, Any],
     ) -> Run | None:
-        record = self._session.get(RunRecord, str(run_id))
+        record = (
+            _lock_run(self._session, run_id)
+            if status is RunStatus.CANCELED
+            else _guard_run_write(self._session, run_id, self.lease_token)
+        )
         if record is None:
             return None
 
+        expected = payload.get("from_status")
+        if expected is not None and record.status != expected:
+            raise RunConflictError("Run state changed; refresh before retrying.")
+        if status is RunStatus.CANCELED:
+            self._session.execute(
+                update(WorkerLeaseRecord)
+                .where(
+                    WorkerLeaseRecord.run_id == str(run_id), WorkerLeaseRecord.released_at.is_(None)
+                )
+                .values(released_at=utc_now())
+            )
         _apply_status(record, status)
         sequence = self._next_event_sequence(run_id)
         self._session.add(
@@ -459,7 +523,7 @@ class RunRepository:
         estimated_cost_total: float,
         event_payload: dict[str, Any],
     ) -> Run | None:
-        record = self._session.get(RunRecord, str(run_id))
+        record = _guard_run_write(self._session, run_id, self.lease_token)
         if record is None:
             return None
 
@@ -485,7 +549,7 @@ class RunRepository:
         error_message: str,
         event_payload: dict[str, Any],
     ) -> Run | None:
-        record = self._session.get(RunRecord, str(run_id))
+        record = _guard_run_write(self._session, run_id, self.lease_token)
         if record is None:
             return None
 
@@ -509,6 +573,44 @@ class RunRepository:
             .limit(limit)
         )
         return [_run_from_record(record) for record in self._session.scalars(statement)]
+
+    def assert_owned(self, run_id: UUID) -> None:
+        if _guard_run_write(self._session, run_id, self.lease_token) is None:
+            raise ExecutionOwnershipError("Run no longer exists.")
+        self._session.commit()
+
+    def revoke_local_ownership(self) -> None:
+        """Fail closed locally even if persisting lease invalidation is unavailable."""
+        if self.lease_token is not None:
+            self._session.info.setdefault("revoked_execution_tokens", set()).add(self.lease_token)
+
+    def usage_summary(self, *, workspace_id: UUID | None = None) -> dict[str, Any]:
+        statement = select(
+            func.count(RunRecord.id),
+            func.coalesce(func.sum(RunRecord.input_tokens_total), 0),
+            func.coalesce(func.sum(RunRecord.output_tokens_total), 0),
+            func.coalesce(func.sum(RunRecord.estimated_cost_total), 0.0),
+        )
+        if workspace_id is not None:
+            statement = statement.where(RunRecord.workspace_id == str(workspace_id))
+        row = self._session.execute(statement).one()
+        return {
+            "run_count": int(row[0]),
+            "input_tokens": int(row[1]),
+            "output_tokens": int(row[2]),
+            "estimated_cost": float(row[3]),
+        }
+
+    def record_usage(
+        self, run_id: UUID, *, input_tokens: int, output_tokens: int, estimated_cost: float
+    ) -> None:
+        record = _guard_run_write(self._session, run_id, self.lease_token)
+        if record is None:
+            raise ExecutionOwnershipError("Run no longer exists.")
+        record.input_tokens_total += input_tokens
+        record.output_tokens_total += output_tokens
+        record.estimated_cost_total += estimated_cost
+        self._session.commit()
 
     def _next_event_sequence(self, run_id: UUID) -> int:
         statement = select(func.max(RunEventRecord.sequence)).where(
@@ -552,14 +654,15 @@ class WorkerLeaseRepository:
         run_id: UUID,
         worker_id: str,
         ttl_seconds: int = 60,
+        expected_status: RunStatus = RunStatus.QUEUED,
     ) -> WorkerLease | None:
         if ttl_seconds < 1:
             raise ValueError("Lease ttl_seconds must be at least 1.")
         if not worker_id.strip():
             raise ValueError("Lease worker_id must not be empty.")
 
-        run = self._session.get(RunRecord, str(run_id))
-        if run is None or RunStatus(run.status) is not RunStatus.QUEUED:
+        run = _lock_run(self._session, run_id)
+        if run is None or RunStatus(run.status) is not expected_status:
             return None
 
         now = utc_now()
@@ -568,6 +671,7 @@ class WorkerLeaseRepository:
             return None
 
         self._release_expired_records(run_id=run_id, now=now)
+        self._session.flush()
         lease = WorkerLease(
             run_id=run_id,
             worker_id=worker_id.strip(),
@@ -615,6 +719,10 @@ class WorkerLeaseRepository:
         record = self._session.scalar(
             select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease_token)
         )
+        if record is not None:
+            _lock_run(self._session, UUID(record.run_id))
+            self._session.refresh(record)
+            now = utc_now()
         if record is None or not _worker_lease_record_is_active(record, now):
             return None
 
@@ -623,17 +731,74 @@ class WorkerLeaseRepository:
         self._session.commit()
         return _worker_lease_from_record(record)
 
+    def invalidate(self, *, lease_token: str) -> WorkerLease | None:
+        """Fence canceled work immediately, retaining the lease for recovery."""
+        record = self._session.scalar(
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease_token)
+        )
+        if record is not None:
+            _lock_run(self._session, UUID(record.run_id))
+            self._session.refresh(record)
+        if record is None or record.released_at is not None:
+            return None
+
+        record.expires_at = utc_now()
+        self._session.commit()
+        return _worker_lease_from_record(record)
+
     def release(self, *, lease_token: str) -> WorkerLease | None:
         now = utc_now()
         record = self._session.scalar(
             select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease_token)
         )
+        if record is not None:
+            _lock_run(self._session, UUID(record.run_id))
+            self._session.refresh(record)
         if record is None or record.released_at is not None:
             return None
 
         record.released_at = now
         self._session.commit()
         return _worker_lease_from_record(record)
+
+    def recover_expired(self, *, lease_token: str) -> tuple[bool, RunStatus | None, str]:
+        """Recheck expiry under the same lock used by claims and heartbeats."""
+        lease = self._session.scalar(
+            select(WorkerLeaseRecord).where(WorkerLeaseRecord.lease_token == lease_token)
+        )
+        if lease is None:
+            return False, None, "lease_not_found"
+        run = _lock_run(self._session, UUID(lease.run_id))
+        self._session.refresh(lease)
+        now = utc_now()
+        status = RunStatus(run.status) if run is not None else None
+        if lease.released_at is not None or _worker_lease_record_is_active(lease, now):
+            self._session.commit()
+            return False, status, "lease_no_longer_expired"
+        lease.released_at = now
+        if run is None or status not in {RunStatus.RUNNING, RunStatus.RESUMING}:
+            self._session.commit()
+            reason = "run_not_found" if status is None else f"status_{status.value}_not_recoverable"
+            return False, status, reason
+        # An external side effect may have succeeded before the worker disappeared.
+        # Preserve the audit trail and fail for review; never replay it automatically.
+        _apply_status(run, RunStatus.FAILED)
+        run.error_type = "worker_lease_expired"
+        run.error_message = f"Worker lease {lease.id} expired before release; review side effects."
+        RunRepository(self._session)._add_event_record(
+            run_id=UUID(run.id),
+            event_type=RunEventType.RUN_FAILED,
+            payload={
+                "from_status": status.value,
+                "to_status": RunStatus.FAILED.value,
+                "reason": "worker_lease_expired",
+                "lease_id": lease.id,
+                "worker_id": lease.worker_id,
+            },
+            trace_id=run.trace_id,
+        )
+        self._session.commit()
+        return True, RunStatus.FAILED, "worker_lease_expired"
 
     def _active_record_for_run(self, *, run_id: UUID, now: datetime) -> WorkerLeaseRecord | None:
         statement = (
@@ -662,8 +827,12 @@ class WorkerLeaseRepository:
 class ToolCallRepository:
     """Persistence operations for tool calls and audit timeline events."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(
+        self, session: Session, *, lease_token: str | None = None, workspace_id: UUID | None = None
+    ) -> None:
         self._session = session
+        self._lease_token = lease_token
+        self._workspace_id = workspace_id
 
     def create_requested(
         self,
@@ -680,8 +849,10 @@ class ToolCallRepository:
         trace_id: str | None = None,
         span_id: str | None = None,
     ) -> ToolCall | None:
-        run = self._session.get(RunRecord, str(run_id))
-        if run is None:
+        run = _guard_run_write(self._session, run_id, self._lease_token)
+        if run is None or (
+            self._workspace_id is not None and run.workspace_id != str(self._workspace_id)
+        ):
             return None
 
         tool_call = ToolCall(
@@ -739,11 +910,19 @@ class ToolCallRepository:
 
     def get(self, tool_call_id: UUID) -> ToolCall | None:
         record = self._session.get(ToolCallRecord, str(tool_call_id))
-        if record is None:
+        if (
+            record is None
+            or RunRepository(self._session).get(
+                UUID(record.run_id), workspace_id=self._workspace_id
+            )
+            is None
+        ):
             return None
         return _tool_call_from_record(record)
 
     def list_for_run(self, run_id: UUID) -> list[ToolCall]:
+        if RunRepository(self._session).get(run_id, workspace_id=self._workspace_id) is None:
+            return []
         statement = (
             select(ToolCallRecord)
             .where(ToolCallRecord.run_id == str(run_id))
@@ -760,7 +939,7 @@ class ToolCallRepository:
         status: ToolCallStatus,
         requires_approval: bool = False,
     ) -> ToolCall | None:
-        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        record = self._writable_call(tool_call_id)
         if record is None:
             return None
 
@@ -789,7 +968,7 @@ class ToolCallRepository:
         result: dict[str, Any],
         latency_ms: int | None = None,
     ) -> ToolCall | None:
-        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        record = self._writable_call(tool_call_id)
         if record is None:
             return None
 
@@ -811,10 +990,15 @@ class ToolCallRepository:
         return _tool_call_from_record(record)
 
     def mark_running(self, *, tool_call_id: UUID) -> ToolCall | None:
-        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        record = self._writable_call(tool_call_id)
         if record is None:
             return None
 
+        if record.status not in {
+            ToolCallStatus.POLICY_CHECKED.value,
+            ToolCallStatus.WAITING_APPROVAL.value,
+        }:
+            raise RunConflictError("Tool call cannot be executed again from its current state.")
         record.status = ToolCallStatus.RUNNING.value
         self._session.commit()
         return _tool_call_from_record(record)
@@ -827,7 +1011,7 @@ class ToolCallRepository:
         error_message: str,
         latency_ms: int | None = None,
     ) -> ToolCall | None:
-        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        record = self._writable_call(tool_call_id)
         if record is None:
             return None
 
@@ -850,6 +1034,18 @@ class ToolCallRepository:
         )
         self._session.commit()
         return _tool_call_from_record(record)
+
+    def _writable_call(self, tool_call_id: UUID) -> ToolCallRecord | None:
+        record = self._session.get(ToolCallRecord, str(tool_call_id))
+        if record is None:
+            return None
+        run = _guard_run_write(self._session, UUID(record.run_id), self._lease_token)
+        if run is None or (
+            self._workspace_id is not None and run.workspace_id != str(self._workspace_id)
+        ):
+            return None
+        self._session.refresh(record)
+        return record
 
     def _next_event_sequence(self, run_id: UUID) -> int:
         statement = select(func.max(RunEventRecord.sequence)).where(
@@ -884,8 +1080,9 @@ class ToolCallRepository:
 class ApprovalRepository:
     """Persistence operations for approvals and decision audit events."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, lease_token: str | None = None) -> None:
         self._session = session
+        self._lease_token = lease_token
 
     def create_requested(
         self,
@@ -898,6 +1095,10 @@ class ApprovalRepository:
         if tool_call is None:
             return None
 
+        _guard_run_write(self._session, UUID(tool_call.run_id), self._lease_token)
+        self._session.refresh(tool_call)
+        if tool_call.approval_id is not None:
+            return self.get(UUID(tool_call.approval_id))
         approval = Approval(
             run_id=UUID(tool_call.run_id),
             tool_call_id=tool_call_id,
@@ -1011,6 +1212,11 @@ class ApprovalRepository:
         record = self._get_record(approval_id=approval_id, workspace_id=workspace_id)
         if record is None:
             return None
+        _lock_run(self._session, UUID(record.run_id))
+        self._session.refresh(record)
+        if ApprovalStatus(record.status) is status:
+            self._session.commit()
+            return _approval_from_record(record)
         if ApprovalStatus(record.status) is not ApprovalStatus.REQUESTED:
             raise ApprovalDecisionError(
                 f"Approval {approval_id} has already been decided as {record.status}."
@@ -1084,11 +1290,95 @@ class ApprovalRepository:
         )
 
 
-class KnowledgeBaseRepository:
-    """Persistence operations for knowledge bases."""
+def _object_uri_parts(source_uri: str) -> list[str] | None:
+    # Accept only canonical object keys; storage adapters do not URL-decode keys.
+    if not source_uri.startswith(("object://local/", "s3://")):
+        return None
+    try:
+        uri = urlsplit(source_uri)
+    except ValueError:
+        return None
+    parts = uri.path.removeprefix("/").split("/")
+    if (
+        uri.query
+        or uri.fragment
+        or not uri.netloc
+        or any(part in {"", ".", ".."} for part in parts)
+        or "%" in source_uri
+        or "\\" in source_uri
+        or any(ord(char) < 32 for char in source_uri)
+    ):
+        return None
+    if uri.scheme == "s3" or (uri.scheme == "object" and uri.netloc == "local"):
+        return parts
+    return None
 
-    def __init__(self, session: Session) -> None:
+
+def _source_belongs_to_knowledge_base(source_uri: str, knowledge_base_id: str) -> bool:
+    parts = _object_uri_parts(source_uri)
+    return (
+        parts is not None
+        and len(parts) >= 4
+        and parts[-4:-1] == ["knowledge-bases", knowledge_base_id, "documents"]
+        and (not source_uri.startswith("object:") or len(parts) == 4)
+    )
+
+
+def _artifact_belongs_to_job(uri: str, document_id: str, job_id: str) -> bool:
+    parts = _object_uri_parts(uri)
+    return (
+        parts is not None
+        and parts[-4:] == ["documents", document_id, "parsed", f"{job_id}.txt"]
+        and (not uri.startswith("object:") or len(parts) == 4)
+    )
+
+
+class _KnowledgeRepository:
+    """Bind knowledge access to one trusted workspace; None is local operator mode."""
+
+    def __init__(self, session: Session, *, workspace_id: UUID | None = None) -> None:
         self._session = session
+        self._workspace_id = workspace_id
+
+    def _get_knowledge_base(self, knowledge_base_id: UUID | str) -> KnowledgeBaseRecord | None:
+        statement = select(KnowledgeBaseRecord).where(
+            KnowledgeBaseRecord.id == str(knowledge_base_id)
+        )
+        if self._workspace_id is not None:
+            statement = statement.where(KnowledgeBaseRecord.workspace_id == str(self._workspace_id))
+        return self._session.scalar(statement)
+
+    def _get_document(self, document_id: UUID | str) -> DocumentRecord | None:
+        record = self._session.get(DocumentRecord, str(document_id))
+        if record is None or self._get_knowledge_base(record.knowledge_base_id) is None:
+            return None
+        if self._workspace_id is not None and not _source_belongs_to_knowledge_base(
+            record.source_uri, record.knowledge_base_id
+        ):
+            return None
+        return record
+
+    def _get_job(self, job_id: UUID) -> IngestionJobRecord | None:
+        record = self._session.get(IngestionJobRecord, str(job_id))
+        if record is None or self._get_document(record.document_id) is None:
+            return None
+        if (
+            self._workspace_id is not None
+            and record.parsed_text_uri is not None
+            and not _artifact_belongs_to_job(record.parsed_text_uri, record.document_id, record.id)
+        ):
+            return None
+        return record
+
+    def _get_chunk(self, chunk_id: UUID) -> DocumentChunkRecord | None:
+        record = self._session.get(DocumentChunkRecord, str(chunk_id))
+        if record is None or self._get_document(record.document_id) is None:
+            return None
+        return record
+
+
+class KnowledgeBaseRepository(_KnowledgeRepository):
+    """Persistence operations for knowledge bases."""
 
     def create(
         self,
@@ -1098,6 +1388,7 @@ class KnowledgeBaseRepository:
         metadata: dict[str, Any] | None = None,
     ) -> KnowledgeBase:
         knowledge_base = KnowledgeBase(
+            workspace_id=self._workspace_id,
             name=name,
             description=description,
             metadata=metadata or {},
@@ -1107,21 +1398,20 @@ class KnowledgeBaseRepository:
         return knowledge_base
 
     def get(self, knowledge_base_id: UUID) -> KnowledgeBase | None:
-        record = self._session.get(KnowledgeBaseRecord, str(knowledge_base_id))
+        record = self._get_knowledge_base(knowledge_base_id)
         if record is None:
             return None
         return _knowledge_base_from_record(record)
 
     def list(self) -> list[KnowledgeBase]:
         statement = select(KnowledgeBaseRecord).order_by(KnowledgeBaseRecord.created_at)
+        if self._workspace_id is not None:
+            statement = statement.where(KnowledgeBaseRecord.workspace_id == str(self._workspace_id))
         return [_knowledge_base_from_record(record) for record in self._session.scalars(statement)]
 
 
-class DocumentRepository:
+class DocumentRepository(_KnowledgeRepository):
     """Persistence operations for document metadata."""
-
-    def __init__(self, session: Session) -> None:
-        self._session = session
 
     def create(
         self,
@@ -1135,8 +1425,13 @@ class DocumentRepository:
         status: DocumentStatus = DocumentStatus.REGISTERED,
         metadata: dict[str, Any] | None = None,
     ) -> Document | None:
-        if self._session.get(KnowledgeBaseRecord, str(knowledge_base_id)) is None:
+        if self._get_knowledge_base(knowledge_base_id) is None:
             return None
+
+        if self._workspace_id is not None and not _source_belongs_to_knowledge_base(
+            source_uri, str(knowledge_base_id)
+        ):
+            raise ValueError("Document source must belong to the target knowledge base.")
 
         document = Document(
             knowledge_base_id=knowledge_base_id,
@@ -1153,13 +1448,13 @@ class DocumentRepository:
         return document
 
     def get(self, document_id: UUID) -> Document | None:
-        record = self._session.get(DocumentRecord, str(document_id))
+        record = self._get_document(document_id)
         if record is None:
             return None
         return _document_from_record(record)
 
     def list_for_knowledge_base(self, knowledge_base_id: UUID) -> list[Document] | None:
-        if self._session.get(KnowledgeBaseRecord, str(knowledge_base_id)) is None:
+        if self._get_knowledge_base(knowledge_base_id) is None:
             return None
 
         statement = (
@@ -1167,7 +1462,12 @@ class DocumentRepository:
             .where(DocumentRecord.knowledge_base_id == str(knowledge_base_id))
             .order_by(DocumentRecord.created_at)
         )
-        return [_document_from_record(record) for record in self._session.scalars(statement)]
+        return [
+            _document_from_record(record)
+            for record in self._session.scalars(statement)
+            if self._workspace_id is None
+            or _source_belongs_to_knowledge_base(record.source_uri, record.knowledge_base_id)
+        ]
 
     def update_status(
         self,
@@ -1176,7 +1476,7 @@ class DocumentRepository:
         status: DocumentStatus,
         error_message: str | None = None,
     ) -> Document | None:
-        record = self._session.get(DocumentRecord, str(document_id))
+        record = self._get_document(document_id)
         if record is None:
             return None
 
@@ -1187,11 +1487,8 @@ class DocumentRepository:
         return _document_from_record(record)
 
 
-class IngestionJobRepository:
+class IngestionJobRepository(_KnowledgeRepository):
     """Persistence operations for document ingestion jobs."""
-
-    def __init__(self, session: Session) -> None:
-        self._session = session
 
     def create(
         self,
@@ -1199,7 +1496,7 @@ class IngestionJobRepository:
         document_id: UUID,
         metadata: dict[str, Any] | None = None,
     ) -> IngestionJob | None:
-        if self._session.get(DocumentRecord, str(document_id)) is None:
+        if self._get_document(document_id) is None:
             return None
 
         job = IngestionJob(document_id=document_id, metadata=metadata or {})
@@ -1208,13 +1505,13 @@ class IngestionJobRepository:
         return job
 
     def get(self, job_id: UUID) -> IngestionJob | None:
-        record = self._session.get(IngestionJobRecord, str(job_id))
+        record = self._get_job(job_id)
         if record is None:
             return None
         return _ingestion_job_from_record(record)
 
     def list_for_document(self, document_id: UUID) -> list[IngestionJob] | None:
-        if self._session.get(DocumentRecord, str(document_id)) is None:
+        if self._get_document(document_id) is None:
             return None
 
         statement = (
@@ -1222,10 +1519,14 @@ class IngestionJobRepository:
             .where(IngestionJobRecord.document_id == str(document_id))
             .order_by(IngestionJobRecord.created_at)
         )
-        return [_ingestion_job_from_record(record) for record in self._session.scalars(statement)]
+        return [
+            _ingestion_job_from_record(record)
+            for record in self._session.scalars(statement)
+            if self._get_job(UUID(record.id)) is not None
+        ]
 
     def mark_parsing(self, *, job_id: UUID, parser_name: str) -> IngestionJob | None:
-        record = self._session.get(IngestionJobRecord, str(job_id))
+        record = self._get_job(job_id)
         if record is None:
             return None
         if IngestionJobStatus(record.status) is not IngestionJobStatus.CREATED:
@@ -1253,9 +1554,13 @@ class IngestionJobRepository:
         parsed_text_size_bytes: int,
         content_char_count: int,
     ) -> IngestionJob | None:
-        record = self._session.get(IngestionJobRecord, str(job_id))
+        record = self._get_job(job_id)
         if record is None:
             return None
+        if self._workspace_id is not None and not _artifact_belongs_to_job(
+            parsed_text_uri, record.document_id, record.id
+        ):
+            raise IngestionJobStateError("Parsed artifact must belong to the ingestion job.")
         if IngestionJobStatus(record.status) is not IngestionJobStatus.PARSING:
             raise IngestionJobStateError(
                 f"Ingestion job {job_id} cannot complete from status {record.status}."
@@ -1282,7 +1587,7 @@ class IngestionJobRepository:
         error_type: str,
         error_message: str,
     ) -> IngestionJob | None:
-        record = self._session.get(IngestionJobRecord, str(job_id))
+        record = self._get_job(job_id)
         if record is None:
             return None
 
@@ -1299,11 +1604,8 @@ class IngestionJobRepository:
         return _ingestion_job_from_record(record)
 
 
-class DocumentChunkRepository:
+class DocumentChunkRepository(_KnowledgeRepository):
     """Persistence operations for parsed document chunks."""
-
-    def __init__(self, session: Session) -> None:
-        self._session = session
 
     def replace_for_document(
         self,
@@ -1311,7 +1613,7 @@ class DocumentChunkRepository:
         document_id: UUID,
         chunks: list[DocumentChunk],
     ) -> list[DocumentChunk] | None:
-        document = self._session.get(DocumentRecord, str(document_id))
+        document = self._get_document(document_id)
         if document is None:
             return None
         if any(chunk.document_id != document_id for chunk in chunks):
@@ -1334,13 +1636,13 @@ class DocumentChunkRepository:
         return self.list_for_document(document_id) or []
 
     def get(self, chunk_id: UUID) -> DocumentChunk | None:
-        record = self._session.get(DocumentChunkRecord, str(chunk_id))
+        record = self._get_chunk(chunk_id)
         if record is None:
             return None
         return _document_chunk_from_record(record)
 
     def list_for_document(self, document_id: UUID) -> list[DocumentChunk] | None:
-        if self._session.get(DocumentRecord, str(document_id)) is None:
+        if self._get_document(document_id) is None:
             return None
 
         statement = (
@@ -1351,11 +1653,17 @@ class DocumentChunkRepository:
         return [_document_chunk_from_record(record) for record in self._session.scalars(statement)]
 
 
-class ChunkEmbeddingRepository:
+class ChunkEmbeddingRepository(_KnowledgeRepository):
     """Persistence operations for chunk embeddings."""
 
-    def __init__(self, session: Session, *, vector_store_mode: str | None = None) -> None:
-        self._session = session
+    def __init__(
+        self,
+        session: Session,
+        *,
+        vector_store_mode: str | None = None,
+        workspace_id: UUID | None = None,
+    ) -> None:
+        super().__init__(session, workspace_id=workspace_id)
         self._vector_store_mode = vector_store_mode or get_vector_store_mode()
 
     def replace_for_document(
@@ -1365,13 +1673,17 @@ class ChunkEmbeddingRepository:
         model: str,
         embeddings: list[ChunkEmbedding],
     ) -> list[ChunkEmbedding] | None:
-        document = self._session.get(DocumentRecord, str(document_id))
+        document = self._get_document(document_id)
         if document is None:
             return None
         if any(embedding.document_id != document_id for embedding in embeddings):
             raise DocumentChunkingError("All embeddings must belong to the target document.")
         if any(embedding.model != model for embedding in embeddings):
             raise DocumentChunkingError("All embeddings must use the selected model.")
+        for embedding in embeddings:
+            chunk = self._get_chunk(embedding.chunk_id)
+            if chunk is None or chunk.document_id != str(document_id):
+                raise DocumentChunkingError("All embedding chunks must belong to the document.")
         use_pgvector = _use_pgvector(self._session, self._vector_store_mode)
 
         self._session.query(ChunkEmbeddingRecord).filter(
@@ -1396,11 +1708,16 @@ class ChunkEmbeddingRepository:
         document_id: UUID,
         model: str | None = None,
     ) -> list[ChunkEmbedding] | None:
-        if self._session.get(DocumentRecord, str(document_id)) is None:
+        if self._get_document(document_id) is None:
             return None
 
-        statement = select(ChunkEmbeddingRecord).where(
-            ChunkEmbeddingRecord.document_id == str(document_id)
+        statement = (
+            select(ChunkEmbeddingRecord)
+            .join(DocumentChunkRecord, ChunkEmbeddingRecord.chunk_id == DocumentChunkRecord.id)
+            .where(
+                ChunkEmbeddingRecord.document_id == str(document_id),
+                DocumentChunkRecord.document_id == str(document_id),
+            )
         )
         if model is not None:
             statement = statement.where(ChunkEmbeddingRecord.model == model)
@@ -1415,6 +1732,8 @@ class ChunkEmbeddingRepository:
         model: str,
         limit: int = 5,
     ) -> list[tuple[ChunkEmbedding, float]]:
+        if self._get_knowledge_base(knowledge_base_id) is None:
+            return []
         if _use_pgvector(self._session, self._vector_store_mode):
             return self._similarity_search_pgvector(
                 knowledge_base_id=knowledge_base_id,
@@ -1426,12 +1745,15 @@ class ChunkEmbeddingRepository:
         statement = (
             select(ChunkEmbeddingRecord)
             .join(DocumentRecord, ChunkEmbeddingRecord.document_id == DocumentRecord.id)
+            .join(DocumentChunkRecord, ChunkEmbeddingRecord.chunk_id == DocumentChunkRecord.id)
+            .where(DocumentChunkRecord.document_id == DocumentRecord.id)
             .where(DocumentRecord.knowledge_base_id == str(knowledge_base_id))
             .where(ChunkEmbeddingRecord.model == model)
         )
         scored = [
             (_chunk_embedding_from_record(record), _cosine_similarity(query_vector, record.vector))
             for record in self._session.scalars(statement)
+            if self._get_document(record.document_id) is not None
         ]
         return sorted(scored, key=lambda item: item[1], reverse=True)[:limit]
 
@@ -1472,6 +1794,7 @@ class ChunkEmbeddingRepository:
                     ) AS score
                 FROM chunk_embeddings AS ce
                 JOIN documents AS d ON ce.document_id = d.id
+                JOIN document_chunks AS c ON ce.chunk_id = c.id AND c.document_id = d.id
                 WHERE d.knowledge_base_id = :knowledge_base_id
                     AND ce.model = :model
                     AND ce.dimensions = :dimensions
@@ -1494,7 +1817,7 @@ class ChunkEmbeddingRepository:
         results: list[tuple[ChunkEmbedding, float]] = []
         for row in rows:
             record = self._session.get(ChunkEmbeddingRecord, str(row["embedding_id"]))
-            if record is None:
+            if record is None or self._get_document(record.document_id) is None:
                 continue
             results.append((_chunk_embedding_from_record(record), float(row["score"])))
         return results
@@ -1503,8 +1826,9 @@ class ChunkEmbeddingRepository:
 class EvalRunRepository:
     """Persistence operations for eval run reports."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, workspace_id: UUID | None = None) -> None:
         self._session = session
+        self._workspace_id = workspace_id
 
     def create_from_report(
         self,
@@ -1521,6 +1845,7 @@ class EvalRunRepository:
     ) -> EvalRun:
         passed = bool(report.get("passed", False))
         eval_run = EvalRun(
+            workspace_id=self._workspace_id,
             name=name,
             suite_type=suite_type,
             status=EvalRunStatus.SUCCEEDED if passed else EvalRunStatus.FAILED,
@@ -1548,7 +1873,9 @@ class EvalRunRepository:
 
     def get(self, eval_run_id: UUID) -> EvalRun | None:
         record = self._session.get(EvalRunRecord, str(eval_run_id))
-        if record is None:
+        if record is None or (
+            self._workspace_id is not None and record.workspace_id != str(self._workspace_id)
+        ):
             return None
         return _eval_run_from_record(record)
 
@@ -1563,6 +1890,8 @@ class EvalRunRepository:
             raise ValueError("limit must be at least 1.")
 
         statement = select(EvalRunRecord)
+        if self._workspace_id is not None:
+            statement = statement.where(EvalRunRecord.workspace_id == str(self._workspace_id))
         if suite_type is not None:
             statement = statement.where(EvalRunRecord.suite_type == suite_type)
         if status is not None:
@@ -1574,8 +1903,9 @@ class EvalRunRepository:
 class MemoryRepository:
     """Persistence operations for scoped memory items."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, workspace_id: UUID | None = None) -> None:
         self._session = session
+        self._workspace_id = workspace_id
 
     def create(
         self,
@@ -1587,7 +1917,14 @@ class MemoryRepository:
         confidence: float = 1.0,
         metadata: dict[str, Any] | None = None,
     ) -> MemoryItem:
+        if source_run_id is not None and self._workspace_id is not None:
+            source = RunRepository(self._session).get(
+                source_run_id, workspace_id=self._workspace_id
+            )
+            if source is None:
+                raise MemoryNotFoundError("Source run not found.")
         memory = MemoryItem(
+            workspace_id=self._workspace_id,
             type=type,
             scope=scope,
             content=content,
@@ -1601,7 +1938,9 @@ class MemoryRepository:
 
     def get(self, memory_id: UUID) -> MemoryItem | None:
         record = self._session.get(MemoryItemRecord, str(memory_id))
-        if record is None:
+        if record is None or (
+            self._workspace_id is not None and record.workspace_id != str(self._workspace_id)
+        ):
             return None
         return _memory_item_from_record(record)
 
@@ -1616,6 +1955,8 @@ class MemoryRepository:
             raise ValueError("limit must be at least 1.")
 
         statement = select(MemoryItemRecord)
+        if self._workspace_id is not None:
+            statement = statement.where(MemoryItemRecord.workspace_id == str(self._workspace_id))
         if scope is not None:
             statement = statement.where(MemoryItemRecord.scope == scope)
         if type is not None:
@@ -1625,7 +1966,9 @@ class MemoryRepository:
 
     def delete(self, memory_id: UUID) -> bool:
         record = self._session.get(MemoryItemRecord, str(memory_id))
-        if record is None:
+        if record is None or (
+            self._workspace_id is not None and record.workspace_id != str(self._workspace_id)
+        ):
             return False
 
         self._session.delete(record)
@@ -1845,14 +2188,19 @@ def _approval_from_record(record: ApprovalRecord) -> Approval:
         reviewed_by=UUID(record.reviewed_by) if record.reviewed_by is not None else None,
         decision_note=record.decision_note,
         trace_id=record.trace_id,
-        requested_at=record.requested_at,
-        resolved_at=record.resolved_at,
+        requested_at=_utc_datetime(record.requested_at),
+        resolved_at=_utc_datetime(record.resolved_at) if record.resolved_at is not None else None,
     )
+
+
+def _utc_datetime(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 def _knowledge_base_to_record(knowledge_base: KnowledgeBase) -> KnowledgeBaseRecord:
     return KnowledgeBaseRecord(
         id=str(knowledge_base.id),
+        workspace_id=str(knowledge_base.workspace_id) if knowledge_base.workspace_id else None,
         name=knowledge_base.name,
         description=knowledge_base.description,
         status=knowledge_base.status.value,
@@ -1865,6 +2213,7 @@ def _knowledge_base_to_record(knowledge_base: KnowledgeBase) -> KnowledgeBaseRec
 def _knowledge_base_from_record(record: KnowledgeBaseRecord) -> KnowledgeBase:
     return KnowledgeBase(
         id=UUID(record.id),
+        workspace_id=UUID(record.workspace_id) if record.workspace_id else None,
         name=record.name,
         description=record.description,
         status=KnowledgeBaseStatus(record.status),
@@ -1969,6 +2318,7 @@ def _chunk_embedding_from_record(record: ChunkEmbeddingRecord) -> ChunkEmbedding
 def _memory_item_to_record(memory: MemoryItem) -> MemoryItemRecord:
     return MemoryItemRecord(
         id=str(memory.id),
+        workspace_id=str(memory.workspace_id) if memory.workspace_id else None,
         type=memory.type.value,
         scope=memory.scope,
         content=memory.content,
@@ -1982,6 +2332,7 @@ def _memory_item_to_record(memory: MemoryItem) -> MemoryItemRecord:
 def _memory_item_from_record(record: MemoryItemRecord) -> MemoryItem:
     return MemoryItem(
         id=UUID(record.id),
+        workspace_id=UUID(record.workspace_id) if record.workspace_id else None,
         type=MemoryType(record.type),
         scope=record.scope,
         content=record.content,
@@ -2015,9 +2366,7 @@ def _use_pgvector(session: Session, mode: str) -> bool:
                 "AGENT_KERNEL_VECTOR_STORE=pgvector requires a PostgreSQL database."
             )
         return True
-    raise VectorStoreConfigError(
-        "AGENT_KERNEL_VECTOR_STORE must be one of: auto, json, pgvector."
-    )
+    raise VectorStoreConfigError("AGENT_KERNEL_VECTOR_STORE must be one of: auto, json, pgvector.")
 
 
 def _pgvector_literal(vector: list[float]) -> str:
@@ -2163,6 +2512,7 @@ def _ingestion_job_from_record(record: IngestionJobRecord) -> IngestionJob:
 def _eval_run_to_record(eval_run: EvalRun) -> EvalRunRecord:
     return EvalRunRecord(
         id=str(eval_run.id),
+        workspace_id=str(eval_run.workspace_id) if eval_run.workspace_id else None,
         name=eval_run.name,
         suite_type=eval_run.suite_type,
         status=eval_run.status.value,
@@ -2184,6 +2534,7 @@ def _eval_run_to_record(eval_run: EvalRun) -> EvalRunRecord:
 def _eval_run_from_record(record: EvalRunRecord) -> EvalRun:
     return EvalRun(
         id=UUID(record.id),
+        workspace_id=UUID(record.workspace_id) if record.workspace_id else None,
         name=record.name,
         suite_type=record.suite_type,
         status=EvalRunStatus(record.status),

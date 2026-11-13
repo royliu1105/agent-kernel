@@ -9,6 +9,7 @@ from typing import Any
 from jsonschema import ValidationError
 from jsonschema.validators import validate
 
+from kernel_tools.base import ContextualTool
 from kernel_tools.errors import (
     ToolDisabledError,
     ToolError,
@@ -49,7 +50,9 @@ class ToolExecutor:
 
         try:
             output = await asyncio.wait_for(
-                tool.execute(request.arguments),
+                tool.execute_with_context(request.arguments, context=request.context)
+                if isinstance(tool, ContextualTool)
+                else tool.execute(request.arguments),
                 timeout=metadata.timeout_ms / 1_000,
             )
         except TimeoutError as error:

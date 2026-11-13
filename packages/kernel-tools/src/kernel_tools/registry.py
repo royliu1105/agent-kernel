@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from kernel_tools.base import Tool
 from kernel_tools.errors import DuplicateToolError, UnknownToolError
 from kernel_tools.models import ToolMetadata
@@ -27,3 +29,19 @@ class ToolRegistry:
 
     def list_metadata(self) -> tuple[ToolMetadata, ...]:
         return tuple(tool.metadata for tool in self._tools.values())
+
+    def register_many(self, tools: Iterable[Tool]) -> None:
+        """Validate the whole batch before exposing any new tools."""
+        pending: dict[str, Tool] = {}
+        for tool in tools:
+            name = tool.metadata.name
+            if name in self._tools or name in pending:
+                raise DuplicateToolError(name)
+            pending[name] = tool
+        self._tools.update(pending)
+
+    def unregister(self, tool: Tool) -> None:
+        """Remove only the exact instance owned by a closing lifecycle."""
+        name = tool.metadata.name
+        if self._tools.get(name) is tool:
+            del self._tools[name]

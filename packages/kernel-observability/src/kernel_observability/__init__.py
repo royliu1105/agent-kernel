@@ -1,5 +1,11 @@
 """Observability primitives for Agent Kernel."""
 
+from kernel_observability.aggregation import (
+    METRIC_DEFINITIONS,
+    PROMETHEUS_CONTENT_TYPE,
+    AggregatingMetricsRecorder,
+)
+from kernel_observability.http import MetricsHttpServer
 from kernel_observability.logging import (
     JsonLogFormatter,
     build_log_fields,
@@ -8,6 +14,7 @@ from kernel_observability.logging import (
     redact_log_fields,
 )
 from kernel_observability.metrics import (
+    ExposableMetricsRecorder,
     InMemoryMetricsRecorder,
     MetricPoint,
     MetricsRecorder,
@@ -15,6 +22,7 @@ from kernel_observability.metrics import (
     normalize_labels,
     prometheus_text_from_points,
 )
+from kernel_observability.operations import trace_operation
 from kernel_observability.otel import (
     DEFAULT_OTEL_ENDPOINT,
     DEFAULT_OTEL_EXPORTER,
@@ -43,6 +51,12 @@ from kernel_observability.tracing import (
 )
 
 __all__ = [
+    "trace_operation",
+    "MetricsHttpServer",
+    "AggregatingMetricsRecorder",
+    "ExposableMetricsRecorder",
+    "METRIC_DEFINITIONS",
+    "PROMETHEUS_CONTENT_TYPE",
     "SPAN_ID_PATTERN",
     "TRACE_ID_PATTERN",
     "DEFAULT_OTEL_ENDPOINT",

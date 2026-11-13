@@ -285,6 +285,26 @@ POST  /v1/approvals/{approval_id}/reject
 
 ## Security
 
+Post-v1.0 P1.1 adds knowledge-base ownership and derived scope for documents,
+chunks, embeddings and ingestion jobs. Role checks and object scope are separate:
+an allowed role does not grant access to another workspace's objects. Scoped
+repositories return no data for foreign or unowned IDs; API routes use 404.
+Tool execution context comes from persisted Run ownership, never tool arguments.
+Auth-disabled API and local repository access remain trusted, unscoped operator
+interfaces. P1.2/P1.3 additionally scope memory/eval records and derived tool/audit
+records, protect monitoring separately, and apply optional shared workspace
+admission limits. Disabled workspaces and removed memberships cannot access the
+authenticated API. This does not claim hostile public SaaS isolation. See the current object-scope matrix in
+[Auth and RBAC](../auth-rbac.md#object-scope).
+
+Post-v1.0 approval decisions are idempotent for the same decision and reject an
+opposing decision. Runtime claims, heartbeats, fencing and uncertain side effects
+follow [Execution Ownership](../execution-ownership.md). External metadata never
+sets trusted risk, workspace access or retry policy; these are operator-reviewed
+configuration. MCP stdio executes only configured commands and is not an OS
+sandbox. Deploy it under a restricted account/container with an egress policy.
+
+
 MVP requirements:
 
 - API key auth.

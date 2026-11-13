@@ -25,8 +25,10 @@ from kernel_observability import (
     normalize_labels,
     prometheus_text_from_points,
     redact_log_fields,
+    trace_operation,
 )
 from kernel_observability import otel as otel_module
+from kernel_observability.span_export import RedactingSpanExporter
 
 
 def test_trace_and_span_ids_use_otel_compatible_hex_shapes() -> None:
@@ -243,19 +245,10 @@ def test_prometheus_text_from_points_renders_counters_and_observations() -> None
     )
 
     assert "# TYPE tool_calls_total counter" in text
-    assert (
-        'tool_calls_total{status="succeeded\\"ok",tool_name="kb_search"} 1'
-        in text
-    )
+    assert 'tool_calls_total{status="succeeded\\"ok",tool_name="kb_search"} 1' in text
     assert "# TYPE tool_call_latency_ms summary" in text
-    assert (
-        'tool_call_latency_ms_count{status="succeeded\\"ok",tool_name="kb_search"} 2'
-        in text
-    )
-    assert (
-        'tool_call_latency_ms_sum{status="succeeded\\"ok",tool_name="kb_search"} 25.5'
-        in text
-    )
+    assert 'tool_call_latency_ms_count{status="succeeded\\"ok",tool_name="kb_search"} 2' in text
+    assert 'tool_call_latency_ms_sum{status="succeeded\\"ok",tool_name="kb_search"} 25.5' in text
 
 
 def test_load_otel_config_defaults_to_disabled() -> None:
@@ -302,6 +295,8 @@ def test_configure_opentelemetry_is_noop_when_disabled() -> None:
     assert result.enabled is False
     assert result.configured is False
     assert result.reason == "disabled"
+    with trace_operation("agent.run", trace_id="a" * 32) as span:
+        assert span is None
 
 
 def test_configure_opentelemetry_wires_otlp_http_exporter(
@@ -338,8 +333,9 @@ def test_configure_opentelemetry_wires_otlp_http_exporter(
     assert isinstance(trace_api.provider, _FakeTracerProvider)
     assert trace_api.provider.resource == {"service.name": "agent-kernel-api"}
     processor = trace_api.provider.processors[0]
-    assert isinstance(processor.exporter, _FakeOtlpSpanExporter)
-    assert processor.exporter.endpoint == "http://collector:4318/v1/traces"
+    assert isinstance(processor.exporter, RedactingSpanExporter)
+    assert isinstance(processor.exporter.exporter, _FakeOtlpSpanExporter)
+    assert processor.exporter.exporter.endpoint == "http://collector:4318/v1/traces"
 
     second = configure_opentelemetry(OpenTelemetryConfig(enabled=True))
     assert second.configured is False

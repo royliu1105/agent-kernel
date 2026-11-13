@@ -10,6 +10,15 @@ jobs:
   python:
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
       postgres:
         image: pgvector/pgvector:pg16
         env:
@@ -38,8 +47,36 @@ jobs:
         run: uv run ruff check .
       - name: Typecheck
         run: uv run mypy .
+      - name: Prepare Prometheus Validator
+        run: docker pull prom/prometheus:v3.5.0
       - name: Test
+        env:
+          AGENT_KERNEL_TEST_POSTGRES_URL: postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel
+          AGENT_KERNEL_TEST_REDIS_URL: redis://127.0.0.1:6379/15
+          AGENT_KERNEL_TEST_PROMTOOL: "1"
         run: uv run pytest
+      - name: Start Disposable Restore Database
+        run: |
+          docker run --detach --rm --name agent-kernel-drill-ci \
+            --label agent-kernel.drill=true --publish 127.0.0.1:15432:5432 \
+            --env POSTGRES_USER=agent_kernel --env POSTGRES_PASSWORD=drill-only \
+            --env POSTGRES_DB=agent_kernel_test pgvector/pgvector:pg16
+          for attempt in $(seq 1 30); do
+            if docker exec agent-kernel-drill-ci pg_isready -U agent_kernel -d agent_kernel_test; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+      - name: Restore Drill
+        env:
+          AGENT_KERNEL_TEST_POSTGRES_URL: postgresql+psycopg://agent_kernel:drill-only@127.0.0.1:15432/agent_kernel_test
+          AGENT_KERNEL_ALLOW_BACKEND_DRILL: "1"
+          AGENT_KERNEL_TEST_PG_TOOLS_CONTAINER: agent-kernel-drill-ci
+        run: uv run pytest -q tests/integration/test_real_backend_drill.py
+      - name: Stop Disposable Restore Database
+        if: always()
+        run: docker stop agent-kernel-drill-ci || true
       - name: Release Eval Gates
         run: make release-eval
 
@@ -64,7 +101,42 @@ jobs:
 
   compose:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AGENT_KERNEL_API_PORT: "28080"
+      AGENT_KERNEL_POSTGRES_PORT: "25432"
+      AGENT_KERNEL_REDIS_PORT: "26379"
+      AGENT_KERNEL_API_KEY_AUTH_ENABLED: "false"
+      AGENT_KERNEL_RUN_QUEUE_BACKEND: redis
+      # Synthetic credentials for this isolated loopback-only CI deployment.
+      AGENT_KERNEL_MONITORING_TOKEN: ci-monitoring-fixture-only-do-not-deploy
+      AGENT_KERNEL_MONITORING_TOKEN_FILE: /tmp/agent-kernel-ci-monitoring-token
+      AGENT_KERNEL_GRAFANA_ADMIN_PASSWORD: ci-grafana-fixture-only-do-not-deploy
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.32"
+      - name: Prepare Disposable Monitoring Credential
+        run: printf '%s' "$AGENT_KERNEL_MONITORING_TOKEN" > "$AGENT_KERNEL_MONITORING_TOKEN_FILE"
       - name: Validate Docker Compose
-        run: docker compose config
+        run: docker compose -f docker-compose.yml -f deploy/hardening-smoke.compose.yml -f deploy/observability/docker-compose.yml --profile observability config --quiet
+      - name: Sync Rehearsal Client
+        run: uv sync --locked --dev
+      - name: Build and Start Disposable Deployment
+        run: docker compose -p agent-kernel-hardening -f docker-compose.yml -f deploy/hardening-smoke.compose.yml -f deploy/observability/docker-compose.yml --profile observability up --build --detach --wait --wait-timeout 180 api worker prometheus blackbox grafana
+      - name: HTTP Deployment Rehearsal
+        env:
+          AGENT_KERNEL_TEST_DEPLOYMENT_URL: http://127.0.0.1:28080
+        run: uv run pytest -q tests/integration/test_self_hosted_hardening.py
+      - name: Monitoring Deployment Rehearsal
+        env:
+          AGENT_KERNEL_TEST_MONITORING: "1"
+          AGENT_KERNEL_TEST_GRAFANA_PASSWORD: ci-grafana-fixture-only-do-not-deploy
+        run: uv run pytest -q tests/integration/test_monitoring_deployment.py
+      - name: Deployment Diagnostics
+        if: failure()
+        run: docker compose -p agent-kernel-hardening -f docker-compose.yml -f deploy/hardening-smoke.compose.yml -f deploy/observability/docker-compose.yml --profile observability logs --no-color --tail 150
+      - name: Remove Disposable Deployment
+        if: always()
+        run: docker compose -p agent-kernel-hardening -f docker-compose.yml -f deploy/hardening-smoke.compose.yml -f deploy/observability/docker-compose.yml --profile observability down --volumes --remove-orphans

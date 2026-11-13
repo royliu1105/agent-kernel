@@ -88,9 +88,10 @@ async def test_execution_service_completes_queued_run(
     assert completed.output_tokens_total == 4
     assert completed.estimated_cost_total == 0.0
     structured_logs = _structured_logs(caplog)
-    assert {
-        log["event"] for log in structured_logs
-    } >= {"agent.run.started", "llm.model_call.completed"}
+    assert {log["event"] for log in structured_logs} >= {
+        "agent.run.started",
+        "llm.model_call.completed",
+    }
     model_log = _single_log(structured_logs, "llm.model_call.completed")
     assert model_log["trace_id"] == completed.trace_id
     assert model_log["run_id"] == str(completed.id)
@@ -109,9 +110,9 @@ async def test_execution_service_completes_queued_run(
     assert metrics_recorder.counter_value("llm_tokens_output_total", labels=token_labels) == 4
     assert metrics_recorder.counter_value("llm_tokens_total", labels=token_labels) == 6
     assert metrics_recorder.counter_value("llm_estimated_cost_total", labels=token_labels) == 0.0
-    assert len(
-        metrics_recorder.observations("llm_model_call_latency_ms", labels=metric_labels)
-    ) == 1
+    assert (
+        len(metrics_recorder.observations("llm_model_call_latency_ms", labels=metric_labels)) == 1
+    )
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,
@@ -507,7 +508,7 @@ async def test_execution_service_completes_provider_native_tool_loop(
     ]
     assert events[-1].payload["provider_tool_loop"]["provider_tool_call_id"] == "call_echo_001"
     model_labels = {"provider": "native", "model": "mock-native", "status": "succeeded"}
-    assert metrics_recorder.counter_value("llm_model_calls_total", labels=model_labels) == 1
+    assert metrics_recorder.counter_value("llm_model_calls_total", labels=model_labels) == 2
 
 
 @pytest.mark.asyncio

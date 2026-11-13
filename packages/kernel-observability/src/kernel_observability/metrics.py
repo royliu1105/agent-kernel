@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -33,6 +34,11 @@ class MetricsRecorder(Protocol):
         labels: MetricLabels | None = None,
     ) -> None:
         """Record an observed numeric value."""
+
+
+class ExposableMetricsRecorder(MetricsRecorder, Protocol):
+    def prometheus_text(self) -> str:
+        """Return one consistent Prometheus text snapshot."""
 
 
 @dataclass(frozen=True)
@@ -143,9 +149,14 @@ def prometheus_text_from_points(
     """Render counters and observations as Prometheus text exposition."""
 
     lines: list[str] = []
+    emitted: set[str] = set()
     for point in counter_points:
+        if not isfinite(point.value) or point.value < 0:
+            continue
         metric_name = _prometheus_metric_name(point.name)
-        lines.append(f"# TYPE {metric_name} counter")
+        if metric_name not in emitted:
+            lines.append(f"# TYPE {metric_name} counter")
+            emitted.add(metric_name)
         lines.append(
             f"{metric_name}{_prometheus_labels(point.labels)} {_format_number(point.value)}"
         )
@@ -154,11 +165,16 @@ def prometheus_text_from_points(
     for point in observation_points:
         grouped_observations[(point.name, point.labels)].append(point.value)
 
+    observation_names: set[str] = set()
     for (name, labels), values in sorted(grouped_observations.items()):
         metric_name = _prometheus_metric_name(name)
+        if metric_name in emitted:
+            raise ValueError("Metric names must not mix counters and observations.")
         label_text = _prometheus_labels(labels)
         finite_values = [value for value in values if isfinite(value)]
-        lines.append(f"# TYPE {metric_name} summary")
+        if metric_name not in observation_names:
+            lines.append(f"# TYPE {metric_name} summary")
+            observation_names.add(metric_name)
         lines.append(f"{metric_name}_count{label_text} {len(finite_values)}")
         lines.append(f"{metric_name}_sum{label_text} {_format_number(sum(finite_values))}")
 
@@ -166,9 +182,7 @@ def prometheus_text_from_points(
 
 
 def _prometheus_metric_name(name: str) -> str:
-    sanitized = "".join(
-        character if character.isalnum() or character in "_:" else "_" for character in name
-    )
+    sanitized = re.sub(r"[^a-zA-Z0-9_:]", "_", name)
     if sanitized == "":
         return "agent_kernel_metric"
     if sanitized[0].isdigit():
@@ -180,16 +194,13 @@ def _prometheus_labels(labels: MetricLabelKey) -> str:
     if not labels:
         return ""
     values = ",".join(
-        f'{_prometheus_label_name(key)}="{_escape_label_value(value)}"'
-        for key, value in labels
+        f'{_prometheus_label_name(key)}="{_escape_label_value(value)}"' for key, value in labels
     )
     return f"{{{values}}}"
 
 
 def _prometheus_label_name(name: str) -> str:
-    sanitized = "".join(
-        character if character.isalnum() or character == "_" else "_" for character in name
-    )
+    sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
     if sanitized == "":
         return "label"
     if sanitized[0].isdigit():

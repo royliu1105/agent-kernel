@@ -1,0 +1,108 @@
+{
+  "groups": [
+    {
+      "name": "agent-kernel",
+      "rules": [
+        {
+          "alert": "AgentKernelTargetDown",
+          "expr": "up{job=~\"agent-kernel-(api|worker)\"} == 0",
+          "for": "2m",
+          "labels": {
+            "severity": "critical"
+          },
+          "annotations": {
+            "summary": "Agent Kernel metrics target is unreachable."
+          }
+        },
+        {
+          "alert": "AgentKernelNotReady",
+          "expr": "probe_success{job=\"agent-kernel-readiness\"} == 0",
+          "for": "2m",
+          "labels": {
+            "severity": "critical"
+          },
+          "annotations": {
+            "summary": "Agent Kernel required dependency readiness is failing."
+          }
+        },
+        {
+          "alert": "AgentKernelProbeDown",
+          "expr": "up{job=\"agent-kernel-readiness\"} == 0",
+          "for": "2m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Readiness probe exporter is unreachable."
+          }
+        },
+        {
+          "alert": "AgentKernelModelErrors",
+          "expr": "(sum by (job) (rate(llm_model_calls_total{status=\"failed\"}[5m])) / sum by (job) (rate(llm_model_calls_total[5m])) > 0.2) and (sum by (job) (increase(llm_model_calls_total[5m])) >= 20)",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Model attempt failure ratio exceeds 20 percent."
+          }
+        },
+        {
+          "alert": "AgentKernelToolErrors",
+          "expr": "(sum by (job) (rate(tool_calls_total{status=\"failed\"}[5m])) / sum by (job) (rate(tool_calls_total[5m])) > 0.1) and (sum by (job) (increase(tool_calls_total[5m])) >= 20)",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Tool call failure ratio exceeds 10 percent."
+          }
+        },
+        {
+          "alert": "AgentKernelRetrievalErrors",
+          "expr": "(sum by (job) (rate(rag_retrievals_total{status=\"failed\"}[5m])) / sum by (job) (rate(rag_retrievals_total[5m])) > 0.1) and (sum by (job) (increase(rag_retrievals_total[5m])) >= 20)",
+          "for": "5m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Retrieval failure ratio exceeds 10 percent."
+          }
+        },
+        {
+          "alert": "AgentKernelModelLatency",
+          "expr": "(histogram_quantile(0.95, sum by (job, le) (rate(llm_model_call_duration_seconds_bucket[5m]))) > 15) and (sum by (job) (increase(llm_model_call_duration_seconds_count[5m])) >= 20)",
+          "for": "10m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Model attempt p95 latency exceeds 15 seconds."
+          }
+        },
+        {
+          "alert": "AgentKernelMetricsDropped",
+          "expr": "sum by (job) (increase(agent_kernel_metrics_dropped_total[5m])) > 0",
+          "for": "1m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Metric updates are rejected by validation or capacity limits."
+          }
+        },
+        {
+          "alert": "AgentKernelQueueErrors",
+          "expr": "sum by (job, operation) (increase(run_queue_errors_total[5m])) > 0",
+          "for": "1m",
+          "labels": {
+            "severity": "warning"
+          },
+          "annotations": {
+            "summary": "Redis queue operations are failing."
+          }
+        }
+      ]
+    }
+  ]
+}

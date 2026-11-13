@@ -12,6 +12,7 @@ dependencies = [
   "kernel-storage",
   "kernel-tools",
   "pydantic>=2.8.0",
+  "redis>=5.0,<7",
 ]
 
 [build-system]

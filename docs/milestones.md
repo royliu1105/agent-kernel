@@ -1,5 +1,21 @@
 # Milestones
 
+## Current Capability Hardening
+
+Status: the authorized P0-P5 batch is in final integration acceptance.
+Implementation, local backend contracts and container/monitoring fault rehearsals
+pass. Current remote CI evidence remains open. See the canonical plan rather
+than treating this batch as a newly published release.
+
+The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) owns the
+P0-P5 scope, execution order, task statuses and acceptance criteria. Update
+that checklist as work proceeds; update this summary at workstream boundaries.
+
+The completed foundation tasks below reflect their original delivery scope.
+They do not certify full resource isolation, execution-path leasing/fencing,
+or a production-integrated Redis queue. Those gaps are explicit in the current
+plan and require new implementation and acceptance evidence.
+
 ## Timeline
 
 The short-term delivery plan is:
