@@ -10,8 +10,8 @@ The following deliberately separate paths exist:
 
 | Path | Default network/cost | Release impact |
 | --- | --- | --- |
-| Runtime golden timelines | None; in-memory SQLite and fixture providers/tools | Candidate blocking gate; a behavior mismatch exits 1. |
-| OpenAI wire/runtime contracts | None; actual adapter with HTTP mock transport and SQLite | Blocking Python test suite; not a live-provider success claim. |
+| Runtime golden timelines | Local disposable PostgreSQL; fixture providers/tools, no paid calls | Candidate blocking gate; a behavior mismatch exits 1. |
+| OpenAI wire/runtime contracts | Local disposable PostgreSQL; actual adapter with HTTP mock transport | Blocking Python test suite; not a live-provider success claim. |
 | Live provider smoke | Disabled unless explicitly enabled | Optional; never part of the default credential-free gate. |
 | Cost/latency comparison | Offline reads of two JSON reports | Informational; increases or incomparable samples do not fail a release. |
 
@@ -24,6 +24,8 @@ remote CI evidence.
 From the repository root after the normal workspace dependency sync:
 
 ```bash
+make test-db-up
+export AGENT_KERNEL_TEST_POSTGRES_URL=postgresql+psycopg://agent_kernel:test-only@127.0.0.1:55432/agent_kernel_test
 uv run python scripts/timeline_regression.py
 uv run pytest tests/integration/test_timeline_regression.py tests/unit/test_eval_comparison.py tests/unit/test_live_provider_smoke.py
 uv run pytest tests/unit/test_openai_provider.py tests/integration/test_openai_runtime_contract.py
@@ -34,9 +36,10 @@ object on stdout with `passed`, case counts and named assertions. Runtime logs
 use stderr. Exit codes are 0 for all cases passing, 1 for a behavior/fixture
 failure and 2 for an invalid or incomplete golden dataset.
 
-The checked-in contract is `evals/timelines/runtime-v1.json`. No credentials,
-existing database, migration history, object store, Redis or external service
-are used. Each case builds its own disposable SQLite database. Run UUIDs,
+The checked-in contract is `evals/timelines/runtime-v1.json`. No provider
+credentials, business database, object store or Redis are used. Start the isolated
+PostgreSQL test service with `make test-db-up`; each case creates and migrates its
+own disposable schema using `AGENT_KERNEL_TEST_POSTGRES_URL`. Run UUIDs,
 timestamps and execution durations are deliberately absent from the comparison.
 
 The harness invokes the actual execution service and storage repositories; it
@@ -215,7 +218,7 @@ no-write-retry. Existing single-call wire/timeline cases remain strict about
 history and actual tool results, but subsequent requests keep the same tools
 with `auto` choice. Historical R3 evidence does not accept these additions;
 current evidence/status is tracked separately in
-[N1-N5](capability-hardening-plan.md#active-follow-up-bounded-agent-execution).
+[N1-N5](capability-hardening-plan.md#completed-follow-up-bounded-agent-execution).
 
 ## Optional Live Provider Smoke
 

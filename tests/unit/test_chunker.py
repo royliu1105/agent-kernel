@@ -33,14 +33,14 @@ def test_text_chunker_returns_empty_for_empty_text() -> None:
 
 
 def test_document_chunking_service_chunks_latest_parsed_artifact(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     chunker = TextChunker(chunk_size_chars=12, chunk_overlap_chars=3)
     service = DocumentChunkingService(object_store=object_store, chunker=chunker)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         stored = object_store.write_artifact(
             key="documents/source/parsed/job.txt",

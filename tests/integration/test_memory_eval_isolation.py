@@ -11,13 +11,13 @@ from test_knowledge_workspace_isolation import _client
 
 
 def test_memory_and_evals_do_not_cross_workspaces(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    a, workspace_a = _client(sqlite_session_factory, store)
-    b, workspace_b = _client(sqlite_session_factory, store)
-    with sqlite_session_factory() as session:
+    a, workspace_a = _client(postgres_session_factory, store)
+    b, workspace_b = _client(postgres_session_factory, store)
+    with postgres_session_factory() as session:
         legacy = MemoryRepository(session).create(
             type=MemoryType.LONG_TERM, scope="same", content={}
         )
@@ -74,13 +74,13 @@ def test_memory_and_evals_do_not_cross_workspaces(
 
 @pytest.mark.asyncio
 async def test_runtime_memory_scope_is_not_an_authorization_override(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    _, a = _client(sqlite_session_factory, store)
-    _, b = _client(sqlite_session_factory, store)
-    with sqlite_session_factory() as session:
+    _, a = _client(postgres_session_factory, store)
+    _, b = _client(postgres_session_factory, store)
+    with postgres_session_factory() as session:
         MemoryRepository(session, workspace_id=b).create(
             type=MemoryType.USER_PREFERENCE, scope="shared-label", content={"value": "SECRET-B"}
         )

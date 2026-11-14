@@ -16,3 +16,8 @@ node_modules/
 playwright-report/
 storage/
 test-results/
+.env
+.env.*
+**/.env
+**/.env.*
+resource/

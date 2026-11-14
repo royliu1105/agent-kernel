@@ -96,12 +96,12 @@ Recommended production storage:
 Postgres + pgvector image
 ```
 
-Backup and restore expectations for Postgres, SQLite local development, local
+Backup and restore expectations for PostgreSQL, local
 object storage, and S3/MinIO-compatible object storage are defined in
 [Backup and Restore Guide](backup-restore.md).
 
-SQLite is supported for local development only. Do not use SQLite as the primary
-multi-user production database.
+PostgreSQL is required in development, tests and production. SQLite URLs are
+rejected; see [the compatibility change](postgresql-only.md).
 
 Object storage is selected with:
 
@@ -146,8 +146,7 @@ Embedding storage:
 - Store `OPENAI_API_KEY` as a secret.
 - `OPENAI_EMBEDDING_MODEL` and `OPENAI_EMBEDDING_DIMENSIONS` should be pinned
   per environment so retrieval quality does not drift accidentally.
-- `AGENT_KERNEL_VECTOR_STORE=auto` uses pgvector on PostgreSQL and JSON-vector
-  fallback on SQLite.
+- `AGENT_KERNEL_VECTOR_STORE=auto` uses native pgvector without dialect fallback.
 - `AGENT_KERNEL_VECTOR_STORE=json` forces portable JSON-vector similarity.
 - `AGENT_KERNEL_VECTOR_STORE=pgvector` requires PostgreSQL and the
   `0013_pgvector_embeddings` migration.
@@ -333,7 +332,7 @@ Durable retry and restart visibility:
   and the [trusted execution limits](configuration.md#native-execution-bounds-unreleased)
   consistently to every executor. This does not permit automatic replay of
   uncertain in-flight effects. Verification status remains in
-  [N1-N5](capability-hardening-plan.md#active-follow-up-bounded-agent-execution).
+  [N1-N5](capability-hardening-plan.md#completed-follow-up-bounded-agent-execution).
 
 ## Web
 

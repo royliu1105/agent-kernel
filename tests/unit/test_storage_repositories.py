@@ -25,9 +25,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_agent_repository_creates_and_loads_agent(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         created = AgentRepository(session).create(
             name="research-agent",
             description="Research assistant",
@@ -42,9 +42,9 @@ def test_agent_repository_creates_and_loads_agent(
 
 
 def test_agent_repository_filters_by_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         workspace = WorkspaceRepository(session).create(name="A", slug="a")
         other_workspace = WorkspaceRepository(session).create(name="B", slug="b")
         created = AgentRepository(session).create(
@@ -61,9 +61,9 @@ def test_agent_repository_filters_by_workspace(
 
 
 def test_run_repository_creates_run_and_initial_event(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="ops-agent")
         run = RunRepository(session).create(
             agent_id=agent.id,
@@ -86,9 +86,9 @@ def test_run_repository_creates_run_and_initial_event(
 
 
 def test_run_repository_filters_by_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         workspace = WorkspaceRepository(session).create(name="A", slug="a")
         other_workspace = WorkspaceRepository(session).create(name="B", slug="b")
         agent = AgentRepository(session).create(name="ops-agent", workspace_id=workspace.id)
@@ -107,9 +107,9 @@ def test_run_repository_filters_by_workspace(
 
 
 def test_run_repository_accepts_explicit_trace_id(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="ops-agent")
         run = RunRepository(session).create(
             agent_id=agent.id,
@@ -123,9 +123,9 @@ def test_run_repository_accepts_explicit_trace_id(
 
 
 def test_run_repository_updates_status_and_appends_monotonic_events(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="ops-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "queue"})
 
@@ -147,8 +147,8 @@ def test_run_repository_updates_status_and_appends_monotonic_events(
     assert events[1].trace_id == run.trace_id
 
 
-def test_run_repository_lists_queued_runs(sqlite_session_factory: sessionmaker[Session]) -> None:
-    with sqlite_session_factory() as session:
+def test_run_repository_lists_queued_runs(postgres_session_factory: sessionmaker[Session]) -> None:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="ops-agent")
         created_run = RunRepository(session).create(
             agent_id=agent.id,
@@ -167,9 +167,9 @@ def test_run_repository_lists_queued_runs(sqlite_session_factory: sessionmaker[S
 
 
 def test_worker_lease_repository_acquires_heartbeats_and_releases(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "leased"})
         RunRepository(session).update_status(run_id=run.id, status=RunStatus.QUEUED)
@@ -196,9 +196,9 @@ def test_worker_lease_repository_acquires_heartbeats_and_releases(
 
 
 def test_worker_lease_repository_only_acquires_queued_runs(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "created"})
 
@@ -212,9 +212,9 @@ def test_worker_lease_repository_only_acquires_queued_runs(
 
 
 def test_worker_lease_repository_allows_reacquire_after_expiration(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "expired"})
         RunRepository(session).update_status(run_id=run.id, status=RunStatus.QUEUED)
@@ -242,9 +242,9 @@ def test_worker_lease_repository_allows_reacquire_after_expiration(
 
 
 def test_worker_lease_repository_rejects_invalid_inputs(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "invalid"})
         RunRepository(session).update_status(run_id=run.id, status=RunStatus.QUEUED)
@@ -269,7 +269,7 @@ def test_worker_lease_repository_rejects_invalid_inputs(
 
 
 def test_eval_run_repository_creates_lists_and_loads_report(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     report = {
         "name": "rag-smoke",
@@ -279,7 +279,7 @@ def test_eval_run_repository_creates_lists_and_loads_report(
         "case_count": 1,
         "cases": [],
     }
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = EvalRunRepository(session)
         created = repository.create_from_report(
             name="rag-smoke",
@@ -303,9 +303,9 @@ def test_eval_run_repository_creates_lists_and_loads_report(
 
 
 def test_eval_run_repository_marks_failed_report(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         created = EvalRunRepository(session).create_from_report(
             name="tool-regression",
             suite_type="tool_calls",
@@ -324,9 +324,9 @@ def test_eval_run_repository_marks_failed_report(
 
 
 def test_run_repository_completes_run_with_output_and_usage(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="ops-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "finish"})
 
@@ -350,9 +350,9 @@ def test_run_repository_completes_run_with_output_and_usage(
 
 
 def test_run_repository_fails_run_with_error_details(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="ops-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "fail"})
 
@@ -373,9 +373,9 @@ def test_run_repository_fails_run_with_error_details(
 
 
 def test_knowledge_base_repository_creates_loads_and_lists(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = KnowledgeBaseRepository(session)
         created = repository.create(
             name="engineering-handbook",
@@ -395,9 +395,9 @@ def test_knowledge_base_repository_creates_loads_and_lists(
 
 
 def test_document_repository_registers_and_lists_documents(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="engineering-handbook")
 
         document = DocumentRepository(session).create(
@@ -429,19 +429,17 @@ def test_document_repository_registers_and_lists_documents(
 
 
 def test_document_repository_returns_none_for_missing_knowledge_base(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     missing_knowledge_base_id = UUID("00000000-0000-0000-0000-000000000010")
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         document = DocumentRepository(session).create(
             knowledge_base_id=missing_knowledge_base_id,
             title="Missing KB",
             source_uri="object://local/missing.md",
         )
-        documents = DocumentRepository(session).list_for_knowledge_base(
-            missing_knowledge_base_id
-        )
+        documents = DocumentRepository(session).list_for_knowledge_base(missing_knowledge_base_id)
 
     assert document is None
     assert documents is None

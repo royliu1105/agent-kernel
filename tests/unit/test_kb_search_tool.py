@@ -21,13 +21,13 @@ from sqlalchemy.orm import Session, sessionmaker
 
 @pytest.mark.asyncio
 async def test_kb_search_tool_returns_cited_results(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id, chunk_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
-    tool = KnowledgeBaseSearchTool(session_factory=sqlite_session_factory)
+    tool = KnowledgeBaseSearchTool(session_factory=postgres_session_factory)
 
     result = await tool.execute(
         {
@@ -52,12 +52,12 @@ async def test_kb_search_tool_returns_cited_results(
 
 @pytest.mark.asyncio
 async def test_kb_search_tool_returns_empty_results_for_empty_kb(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="empty")
 
-    tool = KnowledgeBaseSearchTool(session_factory=sqlite_session_factory)
+    tool = KnowledgeBaseSearchTool(session_factory=postgres_session_factory)
 
     result = await tool.execute(
         {
@@ -71,9 +71,9 @@ async def test_kb_search_tool_returns_empty_results_for_empty_kb(
 
 @pytest.mark.asyncio
 async def test_kb_search_tool_schema_rejects_invalid_top_k(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    tool = KnowledgeBaseSearchTool(session_factory=sqlite_session_factory)
+    tool = KnowledgeBaseSearchTool(session_factory=postgres_session_factory)
     registry = ToolRegistry()
     registry.register(tool)
     executor = ToolExecutor(registry=registry)
@@ -93,10 +93,10 @@ async def test_kb_search_tool_schema_rejects_invalid_top_k(
 
 @pytest.mark.asyncio
 async def test_model_cannot_supply_trusted_workspace_context(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     registry = ToolRegistry()
-    registry.register(KnowledgeBaseSearchTool(session_factory=sqlite_session_factory))
+    registry.register(KnowledgeBaseSearchTool(session_factory=postgres_session_factory))
     with pytest.raises(ToolValidationError):
         await ToolExecutor(registry=registry).execute(
             ToolRequest(
@@ -112,11 +112,11 @@ async def test_model_cannot_supply_trusted_workspace_context(
 
 
 def _create_indexed_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     *,
     content: str,
 ) -> tuple[UUID, UUID]:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,

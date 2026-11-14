@@ -74,16 +74,16 @@ def _indexed_knowledge(client: TestClient, name: str) -> dict[str, str]:
 
 
 def test_api_isolates_complete_knowledge_pipeline(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    a, workspace_a = _client(sqlite_session_factory, store)
-    b, _ = _client(sqlite_session_factory, store)
+    a, workspace_a = _client(postgres_session_factory, store)
+    b, _ = _client(postgres_session_factory, store)
     own = _indexed_knowledge(a, "a")
     foreign = _indexed_knowledge(b, "b")
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         legacy = KnowledgeBaseRepository(session).create(name="legacy")
 
     assert [kb["id"] for kb in a.get("/v1/knowledge-bases").json()] == [own["kb"]]
@@ -146,12 +146,12 @@ def test_api_isolates_complete_knowledge_pipeline(
 
 
 def test_knowledge_role_denial_is_separate_from_scope(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    viewer, workspace = _client(sqlite_session_factory, store, WorkspaceRole.VIEWER)
-    with sqlite_session_factory() as session:
+    viewer, workspace = _client(postgres_session_factory, store, WorkspaceRole.VIEWER)
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session, workspace_id=workspace).create(name="visible")
     assert viewer.get(f"/v1/knowledge-bases/{kb.id}").status_code == 200
     assert viewer.post("/v1/knowledge-bases", json={"name": "denied"}).status_code == 403
@@ -199,26 +199,26 @@ class _ApprovalSearchTool(KnowledgeBaseSearchTool):
 @pytest.mark.parametrize("path", ["inline", "worker", "resume"])
 @pytest.mark.parametrize("foreign", [False, True], ids=["own", "foreign"])
 async def test_runtime_knowledge_scope_comes_from_persisted_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
     native: bool,
     path: str,
     foreign: bool,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    a, workspace_a = _client(sqlite_session_factory, store)
-    b, workspace_b = _client(sqlite_session_factory, store)
+    a, workspace_a = _client(postgres_session_factory, store)
+    b, workspace_b = _client(postgres_session_factory, store)
     target = _indexed_knowledge(b if foreign else a, "secret")
     arguments = {"knowledge_base_id": target["kb"], "query": "deployment"}
     provider = _SearchProvider(arguments)
     registry = ToolRegistry()
     tool_type = _ApprovalSearchTool if path == "resume" else KnowledgeBaseSearchTool
-    registry.register(tool_type(session_factory=sqlite_session_factory))
+    registry.register(tool_type(session_factory=postgres_session_factory))
 
     def service() -> RunExecutionService:
         return RunExecutionService(router=ModelRouter({"native": provider}), tool_registry=registry)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="agent", workspace_id=workspace_a)
         repository = RunRepository(session)
         run = repository.create(
@@ -241,7 +241,7 @@ async def test_runtime_knowledge_scope_comes_from_persisted_run(
         )
         if path == "worker":
             await QueuedRunWorker(
-                session_factory=sqlite_session_factory, execution_service=service()
+                session_factory=postgres_session_factory, execution_service=service()
             ).run_once()
             session.expire_all()
         else:

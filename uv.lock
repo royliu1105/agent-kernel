@@ -115,6 +115,12 @@ dependencies = [
     { name = "kernel-tools" },
 ]
 
+[package.optional-dependencies]
+observability = [
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "httpx" },
@@ -143,7 +149,10 @@ requires-dist = [
     { name = "kernel-runtime", editable = "packages/kernel-runtime" },
     { name = "kernel-storage", editable = "packages/kernel-storage" },
     { name = "kernel-tools", editable = "packages/kernel-tools" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'observability'", specifier = ">=1.39,<2" },
+    { name = "opentelemetry-sdk", marker = "extra == 'observability'", specifier = ">=1.39,<2" },
 ]
+provides-extras = ["observability"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -51,7 +51,7 @@ def test_tool_registry_to_llm_tool_definitions_filters_disabled_tools() -> None:
 
 
 def test_persist_provider_tool_calls_records_known_tool_metadata(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     registry = ToolRegistry()
     registry.register(_StaticTool(name="kb_search", enabled=True, risk_level=RiskLevel.READ_ONLY))
@@ -74,7 +74,7 @@ def test_persist_provider_tool_calls_records_known_tool_metadata(
             ),
         ),
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="native-tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "search"})
 
@@ -97,7 +97,7 @@ def test_persist_provider_tool_calls_records_known_tool_metadata(
 
 
 def test_persist_provider_tool_calls_marks_unknown_tool_dangerous(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     response = LLMResponse(
         provider="openai",
@@ -112,7 +112,7 @@ def test_persist_provider_tool_calls_marks_unknown_tool_dangerous(
             ),
         ),
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="native-tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "search"})
 

@@ -24,10 +24,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_rag_eval_runner_passes_relevance_and_citation_cases(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
 
@@ -41,7 +41,7 @@ def test_rag_eval_runner_passes_relevance_and_citation_cases(
             ),
         ),
         retrieve=_retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=knowledge_base_id,
         ),
     )
@@ -63,10 +63,10 @@ def test_rag_eval_runner_passes_relevance_and_citation_cases(
 
 
 def test_rag_eval_runner_checks_result_limit_score_and_source_uri(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content=(
             "alpha deployment rollback checklist",
             "alpha deployment health checks",
@@ -88,7 +88,7 @@ def test_rag_eval_runner_checks_result_limit_score_and_source_uri(
             ),
         ),
         retrieve=_retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=knowledge_base_id,
         ),
     )
@@ -139,10 +139,10 @@ def test_rag_eval_runner_reports_score_and_source_uri_failures() -> None:
 
 
 def test_rag_eval_runner_records_readable_failure_reasons(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
 
@@ -156,7 +156,7 @@ def test_rag_eval_runner_records_readable_failure_reasons(
             ),
         ),
         retrieve=_retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=knowledge_base_id,
         ),
     )
@@ -173,9 +173,9 @@ def test_rag_eval_runner_records_readable_failure_reasons(
 
 
 def test_rag_eval_runner_passes_empty_knowledge_base_case(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="empty")
 
     report = RagEvalRunner().run(
@@ -188,7 +188,7 @@ def test_rag_eval_runner_passes_empty_knowledge_base_case(
             ),
         ),
         retrieve=_retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=knowledge_base.id,
         ),
     )
@@ -199,7 +199,7 @@ def test_rag_eval_runner_passes_empty_knowledge_base_case(
 
 
 def test_rag_eval_runner_passes_expected_missing_knowledge_base_error(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     report = RagEvalRunner().run(
         cases=(
@@ -210,7 +210,7 @@ def test_rag_eval_runner_passes_expected_missing_knowledge_base_error(
             ),
         ),
         retrieve=_retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=UUID("00000000-0000-0000-0000-000000000000"),
         ),
     )
@@ -274,11 +274,11 @@ def test_load_rag_eval_dataset_reports_readable_validation_errors(tmp_path: Path
 
 
 def test_loaded_rag_eval_dataset_runs_with_retrieval_callable(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     knowledge_base_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
     dataset_path = tmp_path / "rag-eval.json"
@@ -301,7 +301,7 @@ def test_loaded_rag_eval_dataset_runs_with_retrieval_callable(
 
     report = load_rag_eval_dataset(dataset_path).run(
         _retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=knowledge_base_id,
         )
     )
@@ -325,10 +325,10 @@ def test_release_rag_gate_dataset_is_valid() -> None:
 
 
 def test_eval_report_serializes_to_stable_dict(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
     report = RagEvalRunner(name="rag-report").run(
@@ -341,7 +341,7 @@ def test_eval_report_serializes_to_stable_dict(
             ),
         ),
         retrieve=_retrieval_callable(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             knowledge_base_id=knowledge_base_id,
         ),
     )
@@ -359,11 +359,11 @@ def test_eval_report_serializes_to_stable_dict(
 
 def _retrieval_callable(
     *,
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     knowledge_base_id: UUID,
 ) -> Callable[[str, int], RetrievalResponse]:
     def retrieve(query: str, top_k: int) -> RetrievalResponse:
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             return Retriever().retrieve(
                 knowledge_base_id=knowledge_base_id,
                 query=query,
@@ -378,11 +378,11 @@ def _retrieval_callable(
 
 
 def _create_indexed_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     *,
     content: str | tuple[str, ...],
 ) -> UUID:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,

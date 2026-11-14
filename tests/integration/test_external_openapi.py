@@ -287,7 +287,7 @@ async def test_openapi_rejects_claiming_write_is_read_only() -> None:
 @pytest.mark.asyncio
 async def test_openapi_read_only_binding_requires_independent_persisted_approval(
     http_fixture: tuple[str, list[dict[str, Any]]],
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     url, requests = http_fixture
     base = configuration(url).openapi[0]
@@ -314,7 +314,7 @@ async def test_openapi_read_only_binding_requires_independent_persisted_approval
     api = base.model_copy(update={"bindings": (binding, denied_binding)})
     registry = ToolRegistry()
     async with load_external_tools(registry, ExternalToolsConfig(openapi=(api,))):
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             agent = AgentRepository(session).create(name="external-openapi-policy")
             repository = RunRepository(session)
             service = RunExecutionService(tool_registry=registry)

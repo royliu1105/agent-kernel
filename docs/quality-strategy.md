@@ -141,7 +141,7 @@ release evals, Docker Compose config validation, selected API/CLI/worker/RAG/
 memory/approval/tool/eval tests, and Web lint/build checks.
 
 `make release-load-soak` is the quick deterministic local load gate. It runs a
-queued-worker burst against in-memory SQLite and the mock provider to verify
+queued-worker burst against isolated PostgreSQL and the mock provider to verify
 that durable run creation, queue transitions, worker polling, execution, and
 terminal state remain correct under a larger burst.
 

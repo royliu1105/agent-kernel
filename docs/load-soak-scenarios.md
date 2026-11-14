@@ -20,10 +20,13 @@ resource leaks, or unacceptable latency?
 Run:
 
 ```bash
+make test-db-up
 make release-load-soak
 ```
 
-The default gate runs:
+The default gate runs the following with the isolated test URL supplied by Make
+(direct commands require `AGENT_KERNEL_TEST_POSTGRES_URL`; see
+[test setup](postgresql-only.md)):
 
 ```bash
 uv run python scripts/release_load_soak.py --profile quick
@@ -36,9 +39,9 @@ Current quick profile:
 | Scenario | `queued-worker-burst` |
 | Runs | 25 |
 | Worker batch size | 10 |
-| Backend | In-memory SQLite |
+| Backend | Isolated PostgreSQL test schema |
 | Provider | Mock LLM provider |
-| External services | None |
+| Dependencies | Local disposable PostgreSQL; no provider network calls |
 | Max elapsed time | 5 seconds |
 
 The quick gate verifies:
@@ -67,9 +70,9 @@ Current local profile:
 | Scenario | `queued-worker-burst` |
 | Runs | 100 |
 | Worker batch size | 25 |
-| Backend | In-memory SQLite |
+| Backend | Isolated PostgreSQL test schema |
 | Provider | Mock LLM provider |
-| External services | None |
+| Dependencies | Local disposable PostgreSQL; no provider network calls |
 | Max elapsed time | 20 seconds |
 
 Use this before larger release rehearsals when changing worker, queue, storage,

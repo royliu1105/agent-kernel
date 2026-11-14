@@ -31,3 +31,6 @@ test-results/
 # Local runtime data
 .agent-kernel/
 storage/
+
+# User-provided reference projects, not maintained source.
+resource/

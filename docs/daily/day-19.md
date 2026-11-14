@@ -1,5 +1,10 @@
 # Day 19: Retriever, Citation Builder, Retrieval API, and CLI
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 ## Goal
 
 Turn indexed document chunks into a user-facing retrieval path.

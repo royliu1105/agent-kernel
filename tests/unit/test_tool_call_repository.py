@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_tool_call_repository_persists_requested_call_and_event(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "use tool"})
         repository = ToolCallRepository(session)
@@ -34,7 +34,7 @@ def test_tool_call_repository_persists_requested_call_and_event(
 
 
 def test_tool_call_repository_persists_provider_native_metadata(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     raw_provider_payload = {
         "type": "function_call",
@@ -42,7 +42,7 @@ def test_tool_call_repository_persists_provider_native_metadata(
         "name": "echo",
         "arguments": '{"message":"hello"}',
     }
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "use tool"})
         repository = ToolCallRepository(session)
@@ -67,9 +67,9 @@ def test_tool_call_repository_persists_provider_native_metadata(
 
 
 def test_tool_call_repository_lists_calls_for_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run_repository = RunRepository(session)
         first_run = run_repository.create(agent_id=agent.id, input_payload={"task": "one"})
@@ -96,9 +96,9 @@ def test_tool_call_repository_lists_calls_for_run(
 
 
 def test_tool_call_repository_records_policy_decision_event(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "use tool"})
         repository = ToolCallRepository(session)
@@ -132,9 +132,9 @@ def test_tool_call_repository_records_policy_decision_event(
 
 
 def test_tool_call_repository_records_denied_policy_state(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "use tool"})
         repository = ToolCallRepository(session)
@@ -159,9 +159,9 @@ def test_tool_call_repository_records_denied_policy_state(
 
 
 def test_tool_call_repository_records_success_and_failure(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run = RunRepository(session).create(agent_id=agent.id, input_payload={"task": "use tools"})
         repository = ToolCallRepository(session)
@@ -211,9 +211,9 @@ def test_tool_call_repository_records_success_and_failure(
 
 
 def test_tool_call_repository_returns_none_for_missing_run_or_call(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = ToolCallRepository(session)
 
         missing_run_call = repository.create_requested(

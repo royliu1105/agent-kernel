@@ -8,7 +8,7 @@ The baseline is:
 
 ```text
 uv-first Python environment
-Docker Compose for infrastructure
+Docker Compose for all long-running services
 direnv for local environment variables
 pre-commit for local quality gates
 VS Code or PyCharm with Ruff, mypy, and pytest integration
@@ -24,15 +24,20 @@ Host machine:
   Node.js runtime
   IDE
   lint/typecheck/test
-  API/worker/CLI development
+  Short-lived CLI/test tooling only; no default host application servers
 
 Docker Compose:
+  API + continuous Worker + Web
   PostgreSQL + pgvector
   Redis
-  Later: MinIO, OpenTelemetry Collector, observability backends
+  Prometheus + Grafana + Blackbox
+  Alloy + Loki + Tempo + Alertmanager + Mailpit
 ```
 
 Do not install project databases directly on the host unless there is a strong reason.
+The default startup command is `make docker-up`. See [Docker-only local runtime](docker-local.md).
+Host `uv`/Node remain development tools, not the default runtime. Use host server
+processes only for an explicitly requested debugging exception.
 
 ## Required Tools
 
@@ -78,7 +83,7 @@ Optional:
 brew install pyenv
 ```
 
-Start Docker Desktop before running infrastructure services.
+Start Docker Desktop before running the local stack.
 
 ## Python Environment
 
@@ -102,7 +107,8 @@ Expected daily commands:
 ```bash
 uv sync
 uv run python --version
-uv run pytest
+make test-db-up
+make test
 uv run ruff check .
 uv run ruff format .
 uv run mypy .
@@ -155,50 +161,42 @@ The package manager choice should be locked in the root `package.json`.
 
 ## Docker Compose
 
-MVP infrastructure services:
+All long-running services now use one Compose project, `agent-kernel-local`.
+The original infrastructure-only workflow is no longer the startup default.
 
 ```text
-PostgreSQL + pgvector
-Redis
+API / Worker / Web / PostgreSQL / Redis / observability / local SMTP
 ```
 
 Expected commands:
 
 ```bash
-docker compose up -d postgres redis
-docker compose ps
-docker compose logs -f
-docker compose down
+make docker-up
+make docker-status
+make docker-logs SERVICE=worker
+make docker-stop
+make docker-down
 ```
 
 ## Local Worker
 
-The worker can be started without processing any runs:
+The Docker stack already runs a continuous Worker; do not launch a second host loop.
+Inspect it with:
 
 ```bash
-uv run agent-kernel-worker
+make docker-logs SERVICE=worker
 ```
 
-Process queued runs once:
+Use the CLI inside the API container:
 
 ```bash
-uv run agent-kernel-worker --once --limit 10
+sh scripts/local-stack.sh exec -T api agent-kernel run inspect <run-id>
 ```
 
-Run a local polling loop:
-
-```bash
-uv run agent-kernel-worker --loop --limit 10 --poll-interval 5
-```
-
-The worker uses the same `DATABASE_URL` resolution as the API. If `DATABASE_URL` is not set, it uses
-the local SQLite database path from `kernel-storage`.
-
-Before processing runs against a fresh database, apply migrations:
-
-```bash
-uv run alembic upgrade head
-```
+API and Worker share Docker PostgreSQL and Redis settings. The API startup applies
+migrations before the Worker/Web become ready. PostgreSQL is required for all
+database paths, including tests and explicit host debugging. Start a separate
+test service with `make test-db-up`; see [PostgreSQL-only testing](postgresql-only.md).
 
 For normal local testing, create runs with `mock:*` model references so no API key or network access
 is required. Real OpenAI execution is explicit and requires:
@@ -207,17 +205,17 @@ is required. Real OpenAI execution is explicit and requires:
 OPENAI_API_KEY=...
 ```
 
-Later services may include:
+Already included in the default stack:
 
 ```text
-MinIO
-OpenTelemetry Collector
 Prometheus
 Grafana
-Tempo or Jaeger
+Alloy / Loki / Tempo
+Alertmanager / Mailpit
 ```
 
 Do not make developers install those services directly on the host.
+S3/MinIO is a separate deployment choice; this profile keeps objects in a named volume.
 
 ## Environment Variables
 
@@ -230,6 +228,9 @@ The project should include:
 ```
 
 Rules:
+
+- The Docker wrapper uses its own private `.agent-kernel/docker-local/config.env`,
+  not root `.env`/`direnv`; see the Docker guide before changing runtime settings.
 
 - `.env.example` is committed.
 - `.env` is local and must not be committed.
@@ -311,13 +312,15 @@ Configure PyCharm to use the project `.venv` created by `uv`.
 
 ## Standard Local Commands
 
-The project should later expose one-command workflows through `Makefile` or `justfile`.
+The repository exposes these workflows through `Makefile`. Database tests require
+`make test-db-up`; do not use the running application's PostgreSQL for tests.
 
 Recommended commands:
 
 ```bash
 make setup
-make dev
+make docker-up
+make test-db-up
 make test
 make lint
 make format
@@ -332,10 +335,13 @@ uv sync
 uv run ruff check .
 uv run ruff format .
 uv run mypy .
+export AGENT_KERNEL_TEST_POSTGRES_URL=postgresql+psycopg://agent_kernel:test-only@127.0.0.1:55432/agent_kernel_test
 uv run pytest
 npm run lint
 npm run build
 ```
+
+Run `make test-db-down` after testing to discard only the disposable test service.
 
 ## Professional Habits
 
@@ -378,12 +384,13 @@ docker-compose.yml
 Makefile or justfile
 ```
 
-The initial quality gate should include:
+The quality gate includes:
 
 ```bash
 uv run ruff check .
 uv run mypy .
-uv run pytest
+make test-db-up
+make test
 npm run lint
 npm run build
 ```

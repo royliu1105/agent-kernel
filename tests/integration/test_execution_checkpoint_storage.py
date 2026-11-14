@@ -1,9 +1,8 @@
-"""Private checkpoint persistence on SQLite and opt-in isolated PostgreSQL schemas."""
+"""Private checkpoint persistence on isolated PostgreSQL schemas."""
 
 from collections.abc import Iterator
 from copy import deepcopy
 from datetime import timedelta
-from os import getenv
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
@@ -22,69 +21,30 @@ from kernel_storage import (
 )
 from kernel_storage.models import RunRecord, WorkerLeaseRecord
 from pydantic import ValidationError
-from sqlalchemy import JSON, Engine, MetaData, Table, create_engine, inspect, select, text, update
-from sqlalchemy.engine import make_url
+from sqlalchemy import JSON, Engine, MetaData, Table, inspect, select, text, update
 from sqlalchemy.orm import Session, sessionmaker
 
 CHECKPOINT_REVISION = "0019_execution_checkpoint"
 PREVIOUS_REVISION = "0018_usage_attribution"
 
 
-@pytest.fixture(params=["sqlite", "postgres"])
+@pytest.fixture
 def checkpoint_database(
-    request: pytest.FixtureRequest,
-    tmp_path: Path,
+    migration_engine: Engine,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Iterator[tuple[Engine, Config]]:
-    admin = None
-    schema = f"test_checkpoint_{uuid4().hex}"
-    if request.param == "postgres":
-        source = getenv("AGENT_KERNEL_TEST_POSTGRES_URL")
-        if not source:
-            pytest.skip("Set AGENT_KERNEL_TEST_POSTGRES_URL to a disposable pgvector test DB.")
-        source_url = make_url(source)
-        assert source_url.get_backend_name() == "postgresql"
-        assert source_url.database and source_url.database.casefold() != "appdata", (
-            "Checkpoint tests must never use appdata; supply a disposable test database."
-        )
-        admin = create_engine(source_url)
-        url = source_url.update_query_dict({"options": f"-csearch_path={schema},public"})
-    else:
-        url = make_url(f"sqlite+pysqlite:///{tmp_path / 'checkpoint.db'}")
-    engine = create_engine(url)
+    engine = migration_engine
     root = Path(__file__).resolve().parents[2]
     config = Config(str(root / "alembic.ini"))
     config.set_main_option(
         "script_location", str(root / "packages/kernel-storage/src/kernel_storage/migrations")
     )
-    monkeypatch.setenv("DATABASE_URL", url.render_as_string(hide_password=False))
-    schema_created = False
-    try:
-        if admin is not None:
-            with admin.begin() as connection:
-                assert connection.scalar(text("SELECT current_database()")) == source_url.database
-                connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public"))
-                connection.execute(text(f'CREATE SCHEMA "{schema}"'))
-                # Prevent discovery of another schema's migration version via public fallback.
-                connection.execute(
-                    text(
-                        f'CREATE TABLE "{schema}".alembic_version '
-                        "(version_num VARCHAR(32) NOT NULL PRIMARY KEY)"
-                    )
-                )
-            schema_created = True
-            with engine.connect() as connection:
-                assert connection.scalar(text("SELECT current_schema()")) == schema
-        yield engine, config
-    finally:
-        engine.dispose()
-        if admin is not None:
-            try:
-                if schema_created:
-                    with admin.begin() as connection:
-                        connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-            finally:
-                admin.dispose()
+    monkeypatch.setenv("DATABASE_URL", engine.url.render_as_string(hide_password=False))
+    with engine.connect() as connection:
+        config.attributes["version_table_schema"] = connection.scalar(
+            text("SELECT current_schema()")
+        )
+    yield engine, config
 
 
 @pytest.fixture
@@ -93,12 +53,11 @@ def checkpoint_sessions(
 ) -> sessionmaker[Session]:
     engine, config = checkpoint_database
     command.upgrade(config, CHECKPOINT_REVISION)
-    if engine.dialect.name == "postgresql":
-        with engine.connect() as connection:
-            schema = connection.scalar(text("SELECT current_schema()"))
-        assert {"runs", "worker_leases", "alembic_version"} <= set(
-            inspect(engine).get_table_names(schema=schema)
-        )
+    with engine.connect() as connection:
+        schema = connection.scalar(text("SELECT current_schema()"))
+    assert {"runs", "worker_leases", "alembic_version"} <= set(
+        inspect(engine).get_table_names(schema=schema)
+    )
     return create_session_factory(engine)
 
 

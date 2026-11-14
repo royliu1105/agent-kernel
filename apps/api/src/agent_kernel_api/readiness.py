@@ -201,9 +201,7 @@ def create_readiness_checker(
     vector_mode = values.get("AGENT_KERNEL_VECTOR_STORE", "auto").strip().lower() or "auto"
     if vector_mode not in {"auto", "json", "pgvector"}:
         raise ValueError("Unsupported vector storage mode.")
-    with session_factory() as session:
-        is_postgres = session.get_bind().dialect.name == "postgresql"
-    uses_pgvector = vector_mode == "pgvector" or (vector_mode == "auto" and is_postgres)
+    uses_pgvector = vector_mode in {"auto", "pgvector"}
     embedding_provider = (
         values.get("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock").strip().lower() or "mock"
     )
@@ -246,8 +244,6 @@ def create_readiness_checker(
             session.execute(text("SELECT id FROM runs LIMIT 0"))
 
     def pgvector_check() -> None:
-        if not is_postgres:
-            raise ValueError("pgvector requires PostgreSQL")
         with session_factory() as session:
             # Exercise the installed type/operator and migrated column, without
             # reading or writing any tenant vectors.

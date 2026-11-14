@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from collections.abc import Iterator
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from kernel_core import RiskLevel, RunEventType, RunStatus, ToolCallStatus
@@ -13,42 +12,16 @@ from kernel_providers import LLMFinishReason, LLMRequest, LLMResponse, LLMToolCa
 from kernel_runtime import ExecutionLimits, ModelRouter, RunExecutionService
 from kernel_runtime.execution import RunAlreadyClaimedError, RunExecutionError
 from kernel_storage import AgentRepository, ApprovalRepository, RunRepository, ToolCallRepository
-from kernel_storage.base import Base
 from kernel_storage.models import RunRecord
 from kernel_tools import ToolMetadata, ToolRegistry
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 
-@pytest.fixture(params=["sqlite", "postgres"])
+@pytest.fixture
 def continuation_db(
-    request: pytest.FixtureRequest, tmp_path: Any
+    postgres_session_factory: sessionmaker[Session],
 ) -> Iterator[sessionmaker[Session]]:
-    if request.param == "sqlite":
-        engine = create_engine(f"sqlite:///{tmp_path / 'continuation.db'}")
-        Base.metadata.create_all(engine)
-        try:
-            yield sessionmaker(engine, expire_on_commit=False)
-        finally:
-            engine.dispose()
-        return
-    url = os.getenv("AGENT_KERNEL_TEST_POSTGRES_URL")
-    if not url:
-        pytest.skip("Set AGENT_KERNEL_TEST_POSTGRES_URL for native continuation contracts.")
-    schema = f"test_continuation_{uuid4().hex}"
-    admin = create_engine(url)
-    with admin.begin() as connection:
-        connection.execute(text(f'CREATE SCHEMA "{schema}"'))
-    engine = create_engine(make_url(url).update_query_dict({"options": f"-csearch_path={schema}"}))
-    try:
-        Base.metadata.create_all(engine)
-        yield sessionmaker(engine, expire_on_commit=False)
-    finally:
-        engine.dispose()
-        with admin.begin() as connection:
-            connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-        admin.dispose()
+    yield postgres_session_factory
 
 
 class ScriptedProvider:
@@ -112,7 +85,7 @@ def queued(session: Session, *, payload: dict[str, Any] | None = None) -> UUID:
 
 @pytest.mark.asyncio
 async def test_multiple_rounds_and_ordered_batch_reach_real_final_answer(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     tool = CountingTool("read")
     registry = ToolRegistry()
@@ -124,7 +97,7 @@ async def test_multiple_rounds_and_ordered_batch_reach_real_final_answer(
             reply(text="final answer after all three results"),
         ]
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_id = queued(session)
         result = await RunExecutionService(provider=provider, tool_registry=registry).execute(
             run_id=run_id, repository=RunRepository(session)
@@ -197,13 +170,13 @@ async def test_two_approval_rounds_resume_with_new_executor_and_no_replayed_tool
 
 @pytest.mark.asyncio
 async def test_duplicate_native_ids_are_rejected_before_any_batch_side_effect(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     tool = CountingTool("read")
     registry = ToolRegistry()
     registry.register(tool)
     provider = ScriptedProvider([reply(call("duplicate"), call("duplicate"))])
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         result = await RunExecutionService(provider=provider, tool_registry=registry).execute(
             run_id=queued(session), repository=RunRepository(session)
         )
@@ -271,7 +244,7 @@ async def test_duplicate_native_ids_are_rejected_before_any_batch_side_effect(
     ],
 )
 async def test_budgets_and_invalid_responses_stop_before_more_effects(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     limits: ExecutionLimits,
     responses: list[LLMResponse],
     error_type: str,
@@ -282,7 +255,7 @@ async def test_budgets_and_invalid_responses_stop_before_more_effects(
     tool = CountingTool("read")
     registry = ToolRegistry()
     registry.register(tool)
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_id = queued(
             session,
             payload={
@@ -311,10 +284,10 @@ async def test_budgets_and_invalid_responses_stop_before_more_effects(
 
 @pytest.mark.asyncio
 async def test_terminal_answer_at_exact_token_budget_and_output_cap(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = ScriptedProvider([reply(text="done")])
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         result = await RunExecutionService(
             provider=provider,
             execution_limits=ExecutionLimits(max_total_tokens=3),
@@ -325,7 +298,7 @@ async def test_terminal_answer_at_exact_token_budget_and_output_cap(
 
 @pytest.mark.asyncio
 async def test_route_alias_preserves_canonical_provider_identity_through_resume(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     write = CountingTool("write", write=True)
     registry = ToolRegistry()
@@ -335,7 +308,7 @@ async def test_route_alias_preserves_canonical_provider_identity_through_resume(
         router=ModelRouter({"configured-alias": provider}),
         tool_registry=registry,
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_id = queued(
             session, payload={"task": "alias fixture", "model": "configured-alias:small"}
         )

@@ -11,12 +11,12 @@ from test_knowledge_workspace_isolation import _client
 
 
 def test_api_cost_dimensions_are_scoped_and_principal_cannot_be_spoofed(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    client, workspace = _client(sqlite_session_factory, store)
-    other, _ = _client(sqlite_session_factory, store)
+    client, workspace = _client(postgres_session_factory, store)
+    other, _ = _client(postgres_session_factory, store)
     with client, other:
         agent = client.post("/v1/agents", json={"name": "attribution"}).json()
         forged = str(uuid4())
@@ -28,7 +28,7 @@ def test_api_cost_dimensions_are_scoped_and_principal_cannot_be_spoofed(
         )
         assert response.status_code == 201, response.text
         run_id = UUID(response.json()["id"])
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             repo = RunRepository(session)
             run = repo.get(run_id)
             assert run is not None and run.principal_id is not None
@@ -62,11 +62,11 @@ def test_api_cost_dimensions_are_scoped_and_principal_cannot_be_spoofed(
 
 
 def test_unknown_local_initiator_is_not_inferred_from_input(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     from kernel_storage import AgentRepository
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="local")
         repo = RunRepository(session)
         run = repo.create(agent_id=agent.id, input_payload={"principal_id": str(uuid4())})

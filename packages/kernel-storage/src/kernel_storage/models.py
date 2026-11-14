@@ -220,7 +220,6 @@ class WorkerLeaseRecord(Base):
             "run_id",
             unique=True,
             postgresql_where=text("released_at IS NULL"),
-            sqlite_where=text("released_at IS NULL"),
         ),
     )
 

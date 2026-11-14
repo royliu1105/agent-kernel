@@ -1,0 +1,96 @@
+# Add after the base Compose and metrics overlay. Single-host, operator-only.
+services:
+  api:
+    build:
+      args:
+        INSTALL_OBSERVABILITY: "true"
+    environment:
+      AGENT_KERNEL_LOG_FILE: /var/log/agent-kernel/api.jsonl
+      AGENT_KERNEL_OTEL_ENABLED: "true"
+      AGENT_KERNEL_OTEL_SERVICE_NAME: agent-kernel-api
+      AGENT_KERNEL_OTEL_ENDPOINT: http://alloy:4318
+    volumes:
+      - telemetry_logs:/var/log/agent-kernel
+  worker:
+    build:
+      args:
+        INSTALL_OBSERVABILITY: "true"
+    environment:
+      AGENT_KERNEL_LOG_FILE: /var/log/agent-kernel/worker.jsonl
+      AGENT_KERNEL_OTEL_ENABLED: "true"
+      AGENT_KERNEL_OTEL_SERVICE_NAME: agent-kernel-worker
+      AGENT_KERNEL_OTEL_ENDPOINT: http://alloy:4318
+    volumes:
+      - telemetry_logs:/var/log/agent-kernel
+  prometheus:
+    volumes:
+      - ./deploy/observability/prometheus-full.json:/etc/prometheus/prometheus.json:ro
+      - ./deploy/observability/telemetry-alerts.json:/etc/prometheus/telemetry-alerts.json:ro
+  grafana:
+    volumes: !override
+      - ./deploy/observability/grafana/provisioning/datasources/agent-kernel.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml:ro
+      - ./deploy/observability/grafana/full-datasources.yaml:/etc/grafana/provisioning/datasources/full.yaml:ro
+      - ./deploy/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+  loki:
+    image: grafana/loki:3.7.10
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.json"]
+    volumes:
+      - ./deploy/observability/loki.json:/etc/loki/config.json:ro
+      - loki_data:/loki
+    ports: ["127.0.0.1:${AGENT_KERNEL_LOKI_PORT:-3100}:3100"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  tempo:
+    image: grafana/tempo:3.1.1
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/config.json", "-target=all"]
+    volumes:
+      - ./deploy/observability/tempo.json:/etc/tempo/config.json:ro
+      - tempo_data:/var/tempo
+    ports: ["127.0.0.1:${AGENT_KERNEL_TEMPO_PORT:-3200}:3200"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  alloy:
+    image: grafana/alloy:v1.22.0
+    profiles: [observability]
+    restart: unless-stopped
+    # Reads private files in only the application log volume, not Docker/host logs.
+    user: "0:0"
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/agent-kernel-alloy", "--disable-reporting", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./deploy/observability/config.alloy:/etc/alloy/config.alloy:ro
+      - telemetry_logs:/var/log/agent-kernel:ro
+      - alloy_data:/var/lib/agent-kernel-alloy
+    ports: ["127.0.0.1:${AGENT_KERNEL_OTLP_PORT:-4318}:4318"]
+    depends_on: [loki, tempo]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  alertmanager:
+    image: prom/alertmanager:v0.35.0
+    profiles: [observability]
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/config.json", "--storage.path=/alertmanager", "--cluster.listen-address=", "--web.external-url=http://127.0.0.1:9093"]
+    volumes:
+      - ${AGENT_KERNEL_ALERTMANAGER_CONFIG_FILE:?Set an explicit SMTP configuration file}:/etc/alertmanager/config.json:ro
+      - ./deploy/observability/email.tmpl:/etc/alertmanager/email.tmpl:ro
+      - alertmanager_data:/alertmanager
+    secrets: [smtp_password]
+    ports: ["127.0.0.1:${AGENT_KERNEL_ALERTMANAGER_PORT:-9093}:9093"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+secrets:
+  smtp_password:
+    file: ${AGENT_KERNEL_SMTP_PASSWORD_FILE:?Set a private SMTP password file (empty only for local Mailpit)}
+
+volumes:
+  telemetry_logs:
+  loki_data:
+  tempo_data:
+  alloy_data:
+  alertmanager_data:

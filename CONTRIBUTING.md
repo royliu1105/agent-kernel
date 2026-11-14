@@ -8,6 +8,11 @@ documentation, examples, or release quality.
 
 ## Development Setup
 
+Start all local runtime services with `make docker-up`; see
+[Docker-only local runtime](docs/docker-local.md). Host Python/Node are for
+short-lived contributor tools, not the default API/Worker/Web startup path.
+Local browser smoke tests target the Docker Web at port 3000 by default.
+
 Required tools:
 
 - Python 3.12 through `uv`.
@@ -22,7 +27,7 @@ uv sync
 npm install
 ```
 
-Optional local environment:
+Optional host-tool/custom-deployment environment (not read by the Docker wrapper):
 
 ```bash
 cp .env.example .env
@@ -51,9 +56,15 @@ Run Python checks:
 ```bash
 uv run ruff check .
 uv run mypy .
-uv run pytest
+make test-db-up
+make test
 uv run agent-kernel eval report evals/rag-smoke.json
 ```
+
+Database tests require the dedicated PostgreSQL test service, never the active
+runtime database. Make supplies its test URL; direct pytest invocations need
+`AGENT_KERNEL_TEST_POSTGRES_URL`. See [test isolation](docs/postgresql-only.md).
+Use `make test-db-down` after database checks and release gates finish.
 
 Run Web checks:
 

@@ -3,10 +3,10 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
-        exclude: ^deploy/hardening-smoke\.compose\.yml$
+        exclude: ^deploy/(hardening-smoke\.compose|local\.compose|observability/full-stack\.compose)\.yml$
       - id: check-yaml
         name: check-compose-override-syntax
-        files: ^deploy/hardening-smoke\.compose\.yml$
+        files: ^deploy/(hardening-smoke\.compose|local\.compose|observability/full-stack\.compose)\.yml$
         args: ["--unsafe"]
       - id: check-toml
       - id: end-of-file-fixer

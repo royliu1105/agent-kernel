@@ -2,7 +2,28 @@
 
 This directory contains the canonical planning baseline for Agent Kernel. Treat these documents as the source of truth for the initial implementation plan unless a later ADR changes a decision.
 
-Current follow-up work is tracked in the
+Default local startup is now **Docker only**: `make docker-up`.
+See [Docker-Only Local Runtime](docker-local.md) for the single-project stack,
+private configuration, data retention and cutover evidence.
+
+The authorized [Observability Completion](observability-completion-plan.md)
+workstream (O1-O5) tracks centralized logs, trace backend and SMTP delivery. Read that ledger for
+per-capability local verification and remaining gates, not a blanket completion claim.
+External mailbox delivery is blocked pending setup, not passed by local tests.
+The subsequent user-facing stage is the
+[Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md).
+PV1-PV6 are planned, not started; foundation feature expansion is frozen.
+That plan owns pilot priorities, tasks, scoring and go/no-go criteria.
+Use the [pilot learning guide](pilot-learning-guide.md) alongside it: explain
+tradeoffs, investigate failures and verify tests with the maintainer, recording
+learning separately from technical acceptance.
+The [reference-project comparison](reference-project-comparison.md) records the
+2026-11-14 code/test review; the [reference follow-up plan](reference-follow-up-plan.md)
+owns CF1-CF8 priorities, tasks and acceptance. CF1/CF2 feed pilot-entry checks;
+CF3-CF8 are deferred/conditional. CF1 has
+[read-only review evidence](reviews/2026-11-14-cf1-memory-boundary.md);
+repair and acceptance remain pending.
+Completed implementation evidence remains in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
 R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier
 blanket acceptance was withdrawn. Subsequent N1-N5 execution work passed local
@@ -18,6 +39,12 @@ new isolation, worker ownership or external-tool guarantees are implemented.
 
 Current hardening operator guides:
 
+- [Observability Completion Plan](observability-completion-plan.md)
+- [Observability Backends and SMTP](observability-backends.md)
+- [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
+- [Guided Learning During Pilot Acceptance](pilot-learning-guide.md)
+- [Reference Project Comparison](reference-project-comparison.md)
+- [Reference-Informed Follow-Up Plan](reference-follow-up-plan.md)
 - [Execution Ownership and Recovery](execution-ownership.md)
 - [Bounded Native Execution](specs/bounded-native-execution.md)
 - [Observability Operations](observability-operations.md)
@@ -32,7 +59,7 @@ The plan is split into these documents:
 2. [Engineering Architecture](architecture.md): monorepo, modular monolith, runtime boundaries, and deployment shape.
 3. [Agent Architectures](agent-architectures.md): mainstream Agent architecture patterns and how Agent Kernel combines them.
 4. [Technology Stack](tech-stack.md): selected backend, frontend, storage, observability, testing, and deployment stack.
-5. [Storage Architecture](storage-architecture.md): Postgres, pgvector, Redis, object storage, SQLite positioning, and storage abstractions.
+5. [Storage Architecture](storage-architecture.md): PostgreSQL, pgvector, Redis, object storage and storage abstractions. See [PostgreSQL-only change and tests](postgresql-only.md) for the current database contract.
 6. [Module Boundaries](modules.md): package responsibilities and dependency rules.
 7. [Product Shape and Capabilities](product-shape.md): what the project becomes and which product capabilities it exposes.
 8. [User Experience](user-experience.md): Agent Workbench UX, where chat is an input mode rather than the whole product.

@@ -1,5 +1,10 @@
 # Day 18: Embedding Interface and Vector Store Foundation
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 ## Goal
 
 Add the first embedding/indexing layer so chunked documents can be converted into deterministic vectors and stored for future retrieval.

@@ -36,7 +36,7 @@ class SharedAdmission:
 
 @pytest.fixture
 def shared_admission(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     request: pytest.FixtureRequest,
@@ -56,8 +56,8 @@ def shared_admission(
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS", "0")
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS", "0")
     store = LocalObjectStore(root_path=tmp_path)
-    issued_a, workspace_a = _client(sqlite_session_factory, store)
-    issued_b, workspace_b = _client(sqlite_session_factory, store)
+    issued_a, workspace_a = _client(postgres_session_factory, store)
+    issued_b, workspace_b = _client(postgres_session_factory, store)
     headers_a, headers_b = dict(issued_a.headers), dict(issued_b.headers)
     issued_a.close()
     issued_b.close()
@@ -75,14 +75,14 @@ def shared_admission(
         with (
             TestClient(
                 create_app(
-                    session_factory=sqlite_session_factory,
+                    session_factory=postgres_session_factory,
                     object_store=store,
                     api_key_auth_enabled=True,
                 )
             ) as first,
             TestClient(
                 create_app(
-                    session_factory=sqlite_session_factory,
+                    session_factory=postgres_session_factory,
                     object_store=store,
                     api_key_auth_enabled=True,
                 )
@@ -143,7 +143,7 @@ def test_two_api_instances_share_workspace_quota_but_not_other_workspace(
 
 def test_wrongtype_limiter_key_fails_closed_without_write_or_cross_workspace_outage(
     shared_admission: SharedAdmission,
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     cluster = shared_admission
     cluster.redis.rpush(cluster.key_a, "test-only-wrongtype")
@@ -157,7 +157,7 @@ def test_wrongtype_limiter_key_fails_closed_without_write_or_cross_workspace_out
             assert "WRONGTYPE" not in unavailable.text
             assert cluster.key_a not in unavailable.text
             assert client.get("/healthz").status_code == 200
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             assert (
                 session.scalar(
                     select(func.count())
@@ -187,11 +187,11 @@ def test_wrongtype_limiter_key_fails_closed_without_write_or_cross_workspace_out
 )
 def test_real_api_principal_and_key_quotas_use_authenticated_ids(
     shared_admission: SharedAdmission,
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     second_key_status: int,
 ) -> None:
     cluster = shared_admission
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         keys = ApiKeyRepository(session)
         key = keys.authenticate(cluster.headers_a["authorization"].removeprefix("Bearer "))
         assert key is not None

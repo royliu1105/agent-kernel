@@ -76,8 +76,8 @@ Agent Kernel uses:
 - [Versioned Configuration Reference](configuration.md) for environment
   variable compatibility.
 
-For v1.0, the supported production database is PostgreSQL. SQLite remains
-supported for local development, tests, and quickstart flows.
+Current unreleased mainline supports PostgreSQL only in all environments.
+The historical v1.0 SQLite support is superseded by [this change](postgresql-only.md).
 
 ## Supported Upgrade Paths
 
@@ -95,7 +95,7 @@ Unsupported:
 - Running v1.0 application code against a database that has not been upgraded
   to the release's expected Alembic head.
 - Downgrading production databases as a normal rollback strategy.
-- Treating SQLite as a multi-user production database.
+- Selecting any non-PostgreSQL database on current mainline.
 - Upgrading across uncommitted local schema changes without a manual migration
   review.
 
@@ -205,12 +205,9 @@ Alembic migration rules:
 
 - Every schema change must have an Alembic migration.
 - Migration revision ids must fit Alembic's default `version_num VARCHAR(32)`.
-- Migrations must support fresh upgrade from an empty SQLite database unless
-  they are explicitly PostgreSQL-only and guarded.
-- PostgreSQL-only migrations must check the dialect before executing
-  PostgreSQL-specific DDL.
-- SQLite table alterations that add or drop constraints must use Alembic batch
-  operations.
+- Migrations must support fresh and legacy-data upgrades on PostgreSQL/pgvector.
+- The migration entrypoint rejects non-PostgreSQL connections before DDL.
+- Existing PostgreSQL revision IDs and schema behavior must remain stable.
 - Migrations must be deterministic and safe to run once.
 - Migrations must not depend on application services being online.
 - Data backfills must be idempotent where practical.
@@ -229,39 +226,26 @@ Model and repository rules:
 Release-blocking migration checks:
 
 ```bash
-uv run pytest tests/unit/test_migrations.py
-DATABASE_URL=sqlite:////tmp/agent-kernel-ci.db uv run alembic upgrade head
-DATABASE_URL=postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel uv run alembic upgrade head
+make test-db-up
+AGENT_KERNEL_TEST_POSTGRES_URL=postgresql+psycopg://agent_kernel:test-only@127.0.0.1:55432/agent_kernel_test \
+  uv run pytest tests/unit/test_migrations.py tests/integration/test_execution_checkpoint_storage.py tests/integration/test_usage_migration.py
 ```
 
-The GitHub CI Python job runs SQLite and Postgres/pgvector migration smoke
-checks. Local Postgres migration checks require a running Postgres/pgvector
-database, such as the Docker Compose `postgres` service.
+The GitHub CI Python job runs PostgreSQL/pgvector migration checks in isolated
+test schemas. Local checks use the dedicated test service, never the active
+Docker experience database. See [test setup](postgresql-only.md).
 
 `tests/unit/test_migrations.py` must continue to cover:
 
 - Revision id length compatibility.
-- Fresh SQLite upgrade to Alembic head.
-- PostgreSQL-only pgvector migration guard behavior.
+- Fresh PostgreSQL upgrade to Alembic head.
+- Native pgvector migration, legacy data and downgrade/re-upgrade behavior.
 
-## SQLite Policy
+## Removed Backend
 
-SQLite is supported for:
-
-- Local quickstart.
-- Unit and integration tests.
-- Single-developer experimentation.
-- Fast migration smoke checks.
-
-SQLite is not supported for:
-
-- Multi-user production deployments.
-- Production pgvector search.
-- Distributed worker coordination.
-- High-concurrency write workloads.
-
-All releases should keep SQLite fresh-upgrade compatibility unless a release
-note explicitly says otherwise.
+SQLite is no longer supported. Old data must be exported with an older checkout
+and migrated separately if needed; this change does not provide an automatic
+cross-database importer. Existing PostgreSQL deployments need no data rewrite.
 
 ## PostgreSQL Policy
 
@@ -279,7 +263,7 @@ pgvector expectations:
 
 - The pgvector migration installs the `vector` extension when running on
   PostgreSQL.
-- SQLite must skip pgvector-specific DDL.
+- Non-PostgreSQL URLs must fail before migration execution.
 - The default HNSW expression index targets 1536-dimensional vectors.
 - Different embedding dimensions require an index review before production use.
 
@@ -338,7 +322,6 @@ Every release note must include:
 For v1.0 RC releases, release notes should also state whether the release was
 validated against:
 
-- Fresh SQLite migration.
 - Fresh Postgres/pgvector migration.
 - Existing database upgrade, when applicable.
 - Full release smoke tests.
@@ -347,10 +330,9 @@ validated against:
 
 Block a release if:
 
-- Fresh SQLite migration to head fails.
 - Fresh Postgres/pgvector migration to head fails.
 - A migration revision id exceeds the Alembic version column limit.
-- A PostgreSQL-only migration runs unguarded on SQLite.
+- An unsupported database URL is accepted by the migration entrypoint.
 - A stable API, CLI, or configuration change is not documented.
 - A migration requires data loss without release-note approval.
 - The target release cannot pass the documented smoke test matrix.

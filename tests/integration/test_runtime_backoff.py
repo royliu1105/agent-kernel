@@ -1,4 +1,4 @@
-"""Offline runtime retry contracts through real providers, tools and SQLite state."""
+"""Runtime retry contracts through fixture providers, tools and PostgreSQL state."""
 
 from __future__ import annotations
 
@@ -206,7 +206,7 @@ def _retry_events(factory: sessionmaker[Session], run_id: UUID) -> list[RunEvent
     [(None, [0.125, 0.25, 0.5, 0.5]), (0.75, [0.75] * 4), (1.0, [1.0] * 4)],
 )
 async def test_model_backoff_records_capped_jitter_and_respects_server_floor(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     phase: Phase,
     hint: float | None,
     expected: list[float],
@@ -215,9 +215,9 @@ async def test_model_backoff_records_capped_jitter_and_respects_server_floor(
     sleep = RecordingSleep(trace)
     tool = ScriptedTool(trace)
     provider = _script(phase, [*[_failure(hint) for _ in range(4)], _reply()], trace)
-    run_id = _queued(sqlite_session_factory)
+    run_id = _queued(postgres_session_factory)
     result = await _execute(
-        sqlite_session_factory, _service(provider, tool, sleep, attempts=5), run_id
+        postgres_session_factory, _service(provider, tool, sleep, attempts=5), run_id
     )
     assert result.status is RunStatus.SUCCEEDED
     assert result.output is not None and result.output["text"] == "final fixture answer"
@@ -235,7 +235,7 @@ async def test_model_backoff_records_capped_jitter_and_respects_server_floor(
     assert all(request == retried_requests[0] for request in retried_requests)
     assert all(request.tool_choice is LLMToolChoice.AUTO for request in provider.requests)
     assert all(request.tools for request in provider.requests)
-    events = _retry_events(sqlite_session_factory, run_id)
+    events = _retry_events(postgres_session_factory, run_id)
     assert [event.type for event in events] == [RunEventType.MODEL_CALL_RETRYING] * 4
     assert [event.payload["attempt"] for event in events] == [2, 3, 4, 5]
     assert [event.payload["delay_seconds"] for event in events] == expected
@@ -252,7 +252,7 @@ async def test_model_backoff_records_capped_jitter_and_respects_server_floor(
     [(1.01, 300.0, "execution_retry_delay_limit"), (0.75, 0.5, "execution_active_time_limit")],
 )
 async def test_model_hint_refusal_sends_nothing_early_and_does_not_fallback(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     phase: Phase,
     hint: float,
     active_seconds: float,
@@ -262,9 +262,9 @@ async def test_model_hint_refusal_sends_nothing_early_and_does_not_fallback(
     sleep = RecordingSleep(trace)
     tool = ScriptedTool(trace)
     provider = _script(phase, [_failure(hint), _reply()], trace)
-    run_id = _queued(sqlite_session_factory, fallback=True)
+    run_id = _queued(postgres_session_factory, fallback=True)
     result = await _execute(
-        sqlite_session_factory,
+        postgres_session_factory,
         _service(provider, tool, sleep, limits=ExecutionLimits(max_active_seconds=active_seconds)),
         run_id,
     )
@@ -273,8 +273,8 @@ async def test_model_hint_refusal_sends_nothing_early_and_does_not_fallback(
     assert len(provider.requests) == 1 + int(phase == "followup")
     assert tool.calls == (2 if phase == "followup" else 0)
     assert sleep.delays == []
-    assert _retry_events(sqlite_session_factory, run_id) == []
-    with sqlite_session_factory() as session:
+    assert _retry_events(postgres_session_factory, run_id) == []
+    with postgres_session_factory() as session:
         assert not any(
             event.type is RunEventType.MODEL_FALLBACK_SELECTED
             for event in RunRepository(session).list_events(run_id)
@@ -285,21 +285,21 @@ async def test_model_hint_refusal_sends_nothing_early_and_does_not_fallback(
 @pytest.mark.parametrize("phase", ["initial", "followup"])
 @pytest.mark.parametrize("attempts", [1, 3])
 async def test_model_max_attempts_has_no_sleep_after_last_failure(
-    sqlite_session_factory: sessionmaker[Session], phase: Phase, attempts: int
+    postgres_session_factory: sessionmaker[Session], phase: Phase, attempts: int
 ) -> None:
     trace: Trace = []
     sleep = RecordingSleep(trace)
     tool = ScriptedTool(trace)
     provider = _script(phase, [*[_failure() for _ in range(attempts)], _reply()], trace)
-    run_id = _queued(sqlite_session_factory)
+    run_id = _queued(postgres_session_factory)
     result = await _execute(
-        sqlite_session_factory, _service(provider, tool, sleep, attempts=attempts), run_id
+        postgres_session_factory, _service(provider, tool, sleep, attempts=attempts), run_id
     )
     assert result.status is RunStatus.FAILED and result.error_type == "rate_limit"
     assert len(provider.requests) == attempts + int(phase == "followup")
     assert tool.calls == (2 if phase == "followup" else 0)
     assert sleep.delays == [0.125, 0.25][: attempts - 1]
-    assert len(_retry_events(sqlite_session_factory, run_id)) == attempts - 1
+    assert len(_retry_events(postgres_session_factory, run_id)) == attempts - 1
     assert trace[-1][0] == "provider"
 
 
@@ -309,33 +309,33 @@ async def test_model_max_attempts_has_no_sleep_after_last_failure(
     "error_type", ["openai_quota_exhausted", "openai_status_error", "openai_invalid_response"]
 )
 async def test_permanent_model_failure_does_not_sleep_retry_or_fallback(
-    sqlite_session_factory: sessionmaker[Session], phase: Phase, error_type: str
+    postgres_session_factory: sessionmaker[Session], phase: Phase, error_type: str
 ) -> None:
     trace: Trace = []
     sleep = RecordingSleep(trace)
     tool = ScriptedTool(trace)
     provider = _script(phase, [_failure(0.5, error_type), _reply()], trace)
-    run_id = _queued(sqlite_session_factory, fallback=True)
-    result = await _execute(sqlite_session_factory, _service(provider, tool, sleep), run_id)
+    run_id = _queued(postgres_session_factory, fallback=True)
+    result = await _execute(postgres_session_factory, _service(provider, tool, sleep), run_id)
     assert result.status is RunStatus.FAILED and result.error_type == error_type
     assert len(provider.requests) == 1 + int(phase == "followup")
     assert tool.calls == (2 if phase == "followup" else 0)
     assert sleep.delays == []
-    assert _retry_events(sqlite_session_factory, run_id) == []
+    assert _retry_events(postgres_session_factory, run_id) == []
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("retry_safe", [None, True])
 @pytest.mark.parametrize("succeeds", [False, True])
 async def test_safe_read_only_tool_backoff_uses_real_executor_and_attempt_limit(
-    sqlite_session_factory: sessionmaker[Session], retry_safe: bool | None, succeeds: bool
+    postgres_session_factory: sessionmaker[Session], retry_safe: bool | None, succeeds: bool
 ) -> None:
     trace: Trace = []
     sleep = RecordingSleep(trace)
     tool = ScriptedTool(trace, failures=2 if succeeds else 3, retry_safe=retry_safe)
     provider = ScriptedProvider([_reply("read"), _reply()], trace)
-    run_id = _queued(sqlite_session_factory)
-    result = await _execute(sqlite_session_factory, _service(provider, tool, sleep), run_id)
+    run_id = _queued(postgres_session_factory)
+    result = await _execute(postgres_session_factory, _service(provider, tool, sleep), run_id)
     assert result.status is (RunStatus.SUCCEEDED if succeeds else RunStatus.FAILED)
     assert result.error_type == (None if succeeds else "tool_execution_failed")
     assert tool.calls == 3
@@ -349,11 +349,11 @@ async def test_safe_read_only_tool_backoff_uses_real_executor_and_attempt_limit(
         ("sleep", 0.25),
         ("read", 3),
     ]
-    events = _retry_events(sqlite_session_factory, run_id)
+    events = _retry_events(postgres_session_factory, run_id)
     assert [event.type for event in events] == [RunEventType.TOOL_CALL_RETRYING] * 2
     assert [event.payload["delay_seconds"] for event in events] == [0.125, 0.25]
     assert [event.payload["attempt"] for event in events] == [2, 3]
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         calls = ToolCallRepository(session).list_for_run(run_id)
     assert len(calls) == 1
     assert calls[0].status is (ToolCallStatus.SUCCEEDED if succeeds else ToolCallStatus.FAILED)
@@ -363,7 +363,7 @@ async def test_safe_read_only_tool_backoff_uses_real_executor_and_attempt_limit(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("kind", ["not_retry_safe", "write", "permanent"])
 async def test_ineligible_tool_failure_is_never_replayed(
-    sqlite_session_factory: sessionmaker[Session], kind: str
+    postgres_session_factory: sessionmaker[Session], kind: str
 ) -> None:
     trace: Trace = []
     sleep = RecordingSleep(trace)
@@ -386,19 +386,19 @@ async def test_ineligible_tool_failure_is_never_replayed(
         retry_random=lambda: 0.5,
         execution_limits=ExecutionLimits(),
     )
-    run_id = _queued(sqlite_session_factory)
-    result = await _execute(sqlite_session_factory, service, run_id)
+    run_id = _queued(postgres_session_factory)
+    result = await _execute(postgres_session_factory, service, run_id)
     assert result.status is RunStatus.FAILED and result.error_type == tool.error_type
     assert tool.calls == 1
     assert len(provider.requests) == 1
     assert sleep.delays == []
-    assert _retry_events(sqlite_session_factory, run_id) == []
+    assert _retry_events(postgres_session_factory, run_id) == []
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("risk", [RiskLevel.READ_ONLY, RiskLevel.EXTERNAL_WRITE])
 async def test_approved_tool_failure_is_not_retried_even_when_marked_retry_safe(
-    sqlite_session_factory: sessionmaker[Session], risk: RiskLevel
+    postgres_session_factory: sessionmaker[Session], risk: RiskLevel
 ) -> None:
     trace: Trace = []
     sleep = RecordingSleep(trace)
@@ -415,11 +415,11 @@ async def test_approved_tool_failure_is_not_retried_even_when_marked_retry_safe(
         retry_random=lambda: 0.5,
         execution_limits=ExecutionLimits(),
     )
-    run_id = _queued(sqlite_session_factory)
-    waiting = await _execute(sqlite_session_factory, service, run_id)
+    run_id = _queued(postgres_session_factory)
+    waiting = await _execute(postgres_session_factory, service, run_id)
     assert waiting.status is RunStatus.WAITING_APPROVAL
     assert tool.calls == 0 and sleep.delays == []
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         approvals = ApprovalRepository(session)
         approval = approvals.list_for_run(run_id)[0]
         approvals.approve(approval_id=approval.id)
@@ -436,13 +436,13 @@ async def test_approved_tool_failure_is_not_retried_even_when_marked_retry_safe(
     assert len(calls) == 1 and calls[0].status is ToolCallStatus.FAILED
     assert calls[0].requires_approval
     assert sleep.delays == []
-    assert _retry_events(sqlite_session_factory, run_id) == []
+    assert _retry_events(postgres_session_factory, run_id) == []
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("boundary", ["initial", "followup", "tool"])
 async def test_cancellation_during_backoff_has_no_late_send_or_tool_effect(
-    sqlite_session_factory: sessionmaker[Session], boundary: str
+    postgres_session_factory: sessionmaker[Session], boundary: str
 ) -> None:
     trace: Trace = []
     sleep = SuspendedSleep(trace)
@@ -461,9 +461,9 @@ async def test_cancellation_during_backoff_has_no_late_send_or_tool_effect(
         retry_random=lambda: 1,
         execution_limits=ExecutionLimits(),
     )
-    run_id = _queued(sqlite_session_factory)
+    run_id = _queued(postgres_session_factory)
     initial_tasks = asyncio.all_tasks()
-    task = asyncio.create_task(_execute(sqlite_session_factory, service, run_id))
+    task = asyncio.create_task(_execute(postgres_session_factory, service, run_id))
     try:
         await asyncio.wait_for(sleep.started.wait(), timeout=5)
         assert len(provider.requests) == (2 if boundary == "followup" else 1)
@@ -477,9 +477,9 @@ async def test_cancellation_during_backoff_has_no_late_send_or_tool_effect(
         assert sleep.cancelled.is_set()
         assert trace == before_cancel
         assert not (asyncio.all_tasks() - initial_tasks), "Leaked retry or heartbeat task"
-        events = _retry_events(sqlite_session_factory, run_id)
+        events = _retry_events(postgres_session_factory, run_id)
         assert len(events) == 1 and events[0].payload["delay_seconds"] == 0.25
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             run = RunRepository(session).get(run_id)
             assert run is not None and run.status is RunStatus.RUNNING and run.output is None
             assert WorkerLeaseRepository(session).get_active(run_id=run_id) is None
@@ -502,11 +502,11 @@ async def test_cancellation_during_backoff_has_no_late_send_or_tool_effect(
 
 @pytest.mark.asyncio
 async def test_lease_heartbeat_continues_while_retry_sleep_exceeds_lease_ttl(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     trace: Trace = []
     provider = ScriptedProvider([_failure(), _reply()], trace)
-    run_id = _queued(sqlite_session_factory)
+    run_id = _queued(postgres_session_factory)
     observed_delays: list[float] = []
 
     async def real_sleep(seconds: float) -> None:
@@ -514,7 +514,7 @@ async def test_lease_heartbeat_continues_while_retry_sleep_exceeds_lease_ttl(
         assert len(provider.requests) == 1
         await asyncio.sleep(seconds)
         assert len(provider.requests) == 1
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             lease = WorkerLeaseRepository(session).get_active(run_id=run_id)
             assert lease is not None
             assert lease.heartbeat_at > lease.acquired_at
@@ -528,10 +528,10 @@ async def test_lease_heartbeat_continues_while_retry_sleep_exceeds_lease_ttl(
         lease_ttl_seconds=1,
         execution_limits=ExecutionLimits(max_active_seconds=10),
     )
-    result = await asyncio.wait_for(_execute(sqlite_session_factory, service, run_id), timeout=5)
+    result = await asyncio.wait_for(_execute(postgres_session_factory, service, run_id), timeout=5)
     assert result.status is RunStatus.SUCCEEDED
     assert observed_delays == [1.1] and len(provider.requests) == 2
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         lease_record = session.scalar(
             select(WorkerLeaseRecord).where(WorkerLeaseRecord.run_id == str(run_id))
         )

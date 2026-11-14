@@ -9,6 +9,8 @@ on:
 jobs:
   python:
     runs-on: ubuntu-latest
+    env:
+      AGENT_KERNEL_TEST_POSTGRES_URL: postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel_test
     services:
       redis:
         image: redis:7-alpine
@@ -22,13 +24,13 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_DB: agent_kernel
+          POSTGRES_DB: agent_kernel_test
           POSTGRES_USER: agent_kernel
           POSTGRES_PASSWORD: agent_kernel
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U agent_kernel -d agent_kernel"
+          --health-cmd "pg_isready -U agent_kernel -d agent_kernel_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -39,10 +41,8 @@ jobs:
           version: "0.11.32"
       - name: Sync Python workspace
         run: uv sync --dev
-      - name: SQLite migration smoke
-        run: DATABASE_URL=sqlite:////tmp/agent-kernel-ci.db uv run alembic upgrade head
       - name: Postgres migration smoke
-        run: DATABASE_URL=postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel uv run alembic upgrade head
+        run: uv run pytest -q tests/unit/test_migrations.py tests/integration/test_usage_migration.py tests/integration/test_execution_checkpoint_storage.py
       - name: Lint
         run: uv run ruff check .
       - name: Typecheck
@@ -51,7 +51,6 @@ jobs:
         run: docker pull prom/prometheus:v3.5.0
       - name: Test
         env:
-          AGENT_KERNEL_TEST_POSTGRES_URL: postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel
           AGENT_KERNEL_TEST_REDIS_URL: redis://127.0.0.1:6379/15
           AGENT_KERNEL_ALLOW_BACKEND_DRILL: "1"
           AGENT_KERNEL_TEST_PROMTOOL: "1"
@@ -99,6 +98,9 @@ jobs:
       - name: Install Playwright
         run: npm --workspace apps/web exec playwright install --with-deps chromium
       - name: Smoke Test Web
+        env:
+          # Explicit isolated test harness, never the default local startup path.
+          PLAYWRIGHT_MANAGED_SERVER: "1"
         run: npm run test:e2e
 
   compose:
@@ -142,3 +144,29 @@ jobs:
       - name: Remove Disposable Deployment
         if: always()
         run: docker compose -p agent-kernel-hardening -f docker-compose.yml -f deploy/hardening-smoke.compose.yml -f deploy/observability/docker-compose.yml --profile observability down --volumes --remove-orphans
+
+  observability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.32"
+      - name: Sync Full Observability Rehearsal Client
+        run: uv sync --locked --dev --extra observability
+      - name: Full Logs Traces and Local SMTP Rehearsal
+        # Random disposable project, mock-only calls and local Mailpit; no real recipients.
+        run: uv run python scripts/observability_rehearsal.py
+      - name: Start Default Docker Local Stack
+        run: make docker-up
+      - name: Verify Default Docker Local Runtime and Web Proxy
+        env:
+          AGENT_KERNEL_TEST_DOCKER_LOCAL: "1"
+        run: uv run pytest -q tests/integration/test_docker_local.py
+      - name: Default Docker Local Diagnostics
+        if: failure()
+        run: make docker-logs
+      - name: Stop Default Docker Local Stack
+        if: always()
+        run: make docker-down

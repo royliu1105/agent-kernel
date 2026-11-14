@@ -10,13 +10,14 @@ from kernel_storage import (
     VectorStoreConfigError,
 )
 from kernel_storage.repositories import _pgvector_literal
+from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_chunk_embedding_repository_replaces_embeddings_for_document_and_model(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base, document, chunks = _create_chunked_document(session)
         repository = ChunkEmbeddingRepository(session)
 
@@ -60,9 +61,9 @@ def test_chunk_embedding_repository_replaces_embeddings_for_document_and_model(
 
 
 def test_chunk_embedding_repository_similarity_search_ranks_vectors(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base, document, chunks = _create_chunked_document(session)
         repository = ChunkEmbeddingRepository(session)
         embeddings = repository.replace_for_document(
@@ -101,9 +102,9 @@ def test_chunk_embedding_repository_similarity_search_ranks_vectors(
 
 
 def test_chunk_embedding_repository_json_mode_ranks_vectors(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base, document, chunks = _create_chunked_document(session)
         repository = ChunkEmbeddingRepository(session, vector_store_mode="json")
         embeddings = repository.replace_for_document(
@@ -140,28 +141,35 @@ def test_chunk_embedding_repository_json_mode_ranks_vectors(
     assert [embedding.chunk_id for embedding, _score in results] == [chunks[0].id, chunks[1].id]
 
 
-def test_chunk_embedding_repository_pgvector_mode_requires_postgres(
-    sqlite_session_factory: sessionmaker[Session],
+def test_chunk_embedding_repository_pgvector_mode_persists_native_vectors(
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         _knowledge_base, document, chunks = _create_chunked_document(session)
         repository = ChunkEmbeddingRepository(session, vector_store_mode="pgvector")
 
-        with pytest.raises(VectorStoreConfigError, match="requires a PostgreSQL database"):
-            repository.replace_for_document(
-                document_id=document.id,
-                model="mock",
-                embeddings=[
-                    ChunkEmbedding(
-                        document_id=document.id,
-                        chunk_id=chunks[0].id,
-                        model="mock",
-                        dimensions=2,
-                        vector=[1.0, 0.0],
-                        checksum="sha256:a",
-                    )
-                ],
+        saved = repository.replace_for_document(
+            document_id=document.id,
+            model="mock",
+            embeddings=[
+                ChunkEmbedding(
+                    document_id=document.id,
+                    chunk_id=chunks[0].id,
+                    model="mock",
+                    dimensions=2,
+                    vector=[1.0, 0.0],
+                    checksum="sha256:a",
+                )
+            ],
+        )
+        assert saved is not None and len(saved) == 1
+        assert (
+            session.scalar(
+                text("SELECT vector_pg::text FROM chunk_embeddings WHERE id=:id"),
+                {"id": str(saved[0].id)},
             )
+            == "[1,0]"
+        )
 
 
 def test_pgvector_literal_validates_vector_values() -> None:
@@ -176,11 +184,11 @@ def test_pgvector_literal_validates_vector_values() -> None:
 
 
 def test_chunk_embedding_repository_returns_none_for_missing_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     missing_document_id = UUID("00000000-0000-0000-0000-000000000030")
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         embeddings = ChunkEmbeddingRepository(session).replace_for_document(
             document_id=missing_document_id,
             model="mock",

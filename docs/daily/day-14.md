@@ -1,5 +1,10 @@
 # Day 14: Knowledge Base and Document Storage Foundation
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 ## Goal
 
 Start Phase 3 by adding the durable foundation for knowledge bases and documents.

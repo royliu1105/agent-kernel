@@ -1,326 +1,88 @@
 # Quickstart
 
-This quickstart exercises the current v0.1 local runtime path:
+The default local runtime is **Docker only**. API, Worker, Web, PostgreSQL,
+Redis and all observability services run together, with mock models and a local
+Mailpit mailbox. No external model or SMTP credentials are required.
 
-```text
-install deps -> migrate storage -> create agent/run -> execute worker -> inspect runtime -> open Web Workbench
-```
+## Start
 
-Use mock models for the default path. No external LLM credentials are required.
-
-If you are trying Agent Kernel for the first time during Public Alpha, start
-with the SQLite quick path, then share setup friction through the
-[Public Alpha Guide](public-alpha.md).
-
-## Prerequisites
-
-- Python 3.12 through `uv`.
-- Node.js 24+.
-- Docker Desktop when using Postgres/Redis or full Docker Compose.
-- `make` for convenience commands.
-
-## Setup
-
-Install dependencies:
+Install/start Docker Desktop (or Docker Engine with Compose), then run from the
+repository root:
 
 ```bash
-uv sync
-npm install
+make docker-up
+make docker-status
 ```
 
-Create a local environment file:
+Without make: `sh scripts/local-stack.sh up`. The wrapper also uses POSIX `sh`
+and `openssl`; host Python/Node are not required to run the services.
+
+Open the Web at `http://127.0.0.1:3000`, API docs at
+`http://127.0.0.1:8000/docs`, Grafana at `http://127.0.0.1:3090` and the local
+test inbox at `http://127.0.0.1:8025`. Grafana username is `admin`; its password
+is generated in `.agent-kernel/docker-local/grafana-password` (do not commit it).
+
+All published ports are loopback-only. The default API is unauthenticated and
+intended for a trusted local machine, not public hosting. PostgreSQL/Redis are
+internal-only. See [Docker operations](docker-local.md) for all 13 services,
+configuration, data/backup boundaries and remaining acceptance gates.
+
+## Run an Agent
+
+The API applies migrations automatically. The Worker runs continuously.
+Execute CLI commands inside the API container so they share its database:
 
 ```bash
-cp .env.example .env
+sh scripts/local-stack.sh exec -T api agent-kernel agent create --name "Local Test Agent"
+sh scripts/local-stack.sh exec -T api agent-kernel run create <agent-id> --input '{"task":"hello runtime","model":"mock:echo"}'
+sh scripts/local-stack.sh exec -T api agent-kernel run queue <run-id>
+sh scripts/local-stack.sh exec -T api agent-kernel run inspect <run-id>
+sh scripts/local-stack.sh exec -T api agent-kernel run events <run-id>
 ```
 
-For the fastest local path, either leave `DATABASE_URL` unset to use SQLite or
-set it to the Postgres URL from `.env.example` after starting Docker services.
+Use the returned IDs in subsequent commands. Expected final status: `succeeded`.
+The Web's live run lookup accepts that run ID. Some other Workbench sections
+remain fixture-backed previews; starting Docker does not change their scope.
+Do not start a host API, Worker loop or Next server alongside this stack.
 
-## Option A: SQLite Quick Path
-
-SQLite is useful for fast local development without Docker:
+## RAG and Evals
 
 ```bash
-unset DATABASE_URL
-uv run alembic upgrade head
+sh scripts/local-stack.sh exec -T api agent-kernel kb create --name "Engineering Handbook"
+sh scripts/local-stack.sh exec -T api agent-kernel document upload <knowledge-base-id> /app/README.md
+sh scripts/local-stack.sh exec -T api agent-kernel document ingest <document-id>
+sh scripts/local-stack.sh exec -T api agent-kernel document chunk <document-id>
+sh scripts/local-stack.sh exec -T api agent-kernel document index <document-id>
+sh scripts/local-stack.sh exec -T api agent-kernel kb search <knowledge-base-id> --query "Agent Kernel"
+sh scripts/local-stack.sh exec -T api agent-kernel eval report evals/rag-smoke.json
 ```
 
-This creates the local database under:
+These paths use deterministic mock embeddings. Objects live in a named volume,
+not S3; pgvector is enabled by PostgreSQL migrations. Provider activation is a
+separate, explicit step. Do not place real keys in browser `NEXT_PUBLIC_*` values.
 
-```text
-.agent-kernel/agent_kernel.db
-```
-
-## Option B: Postgres and Redis Services
-
-Start infrastructure services:
+## Daily Commands
 
 ```bash
-docker compose up -d postgres redis
-docker compose ps
+make docker-logs SERVICE=worker
+make docker-stop
+make docker-up
+make docker-down
 ```
 
-Apply migrations against Postgres:
+Both `stop` and `down` preserve data volumes. The default wrapper does not offer
+volume deletion. `docker-up` rebuilds changed code; there is no host hot reload.
+Bare `docker compose up` is the lower-level base template, not this full default.
+
+Host lint/typecheck/tests remain available with the contributor toolchain in
+[development environment](development-environment.md). Test the running Docker
+Web without starting a host server:
 
 ```bash
-DATABASE_URL=postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel \
-  uv run alembic upgrade head
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 AGENT_KERNEL_TEST_DOCKER_WEB=1 npm run test:e2e
 ```
 
-## Start API
-
-In one terminal:
-
-```bash
-uv run agent-kernel-api
-```
-
-If port `8000` is already in use, choose another port:
-
-```bash
-AGENT_KERNEL_API_HOST=127.0.0.1 AGENT_KERNEL_API_PORT=8011 uv run agent-kernel-api
-```
-
-Verify:
-
-```bash
-curl http://127.0.0.1:8000/healthz
-```
-
-Expected response:
-
-```json
-{"status":"ok","service":"agent-kernel-api"}
-```
-
-## Create and Run an Agent
-
-Create an agent:
-
-```bash
-uv run agent-kernel agent create --name "Local Test Agent"
-```
-
-Copy the returned agent `id`.
-
-Create a run using a mock model:
-
-```bash
-uv run agent-kernel run create <agent-id> --input '{"task":"hello runtime","model":"mock:echo"}'
-```
-
-Copy the returned run `id`.
-
-Queue the run:
-
-```bash
-uv run agent-kernel run queue <run-id>
-```
-
-Execute queued work:
-
-```bash
-uv run agent-kernel-worker --once --limit 10
-```
-
-Expected shape:
-
-```text
-processed=1 succeeded=1 failed=0
-```
-
-Inspect the result and timeline:
-
-```bash
-uv run agent-kernel run inspect <run-id>
-uv run agent-kernel run events <run-id>
-```
-
-Expected run status:
-
-```text
-succeeded
-```
-
-Expected event timeline includes:
-
-```text
-run_created
-run_queued
-run_started
-run_completed
-```
-
-## Try RAG and Memory Commands
-
-Create a knowledge base:
-
-```bash
-uv run agent-kernel kb create --name "Engineering Handbook"
-```
-
-Upload, ingest, chunk, index, and search a document:
-
-```bash
-uv run agent-kernel document upload <knowledge-base-id> ./README.md
-uv run agent-kernel document ingest <document-id>
-uv run agent-kernel document chunk <document-id>
-uv run agent-kernel document index <document-id>
-uv run agent-kernel kb search <knowledge-base-id> --query "What is Agent Kernel?"
-```
-
-The quickstart uses deterministic mock embeddings by default. For real OpenAI
-embeddings, configure:
-
-```bash
-export OPENAI_API_KEY=...
-export OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-export OPENAI_EMBEDDING_DIMENSIONS=1536
-```
-
-Then wire `OpenAIEmbeddingProvider` where your application constructs the
-indexing and retrieval services. Keep the same embedding model and dimensions
-for both indexing and search.
-
-Vector storage defaults to:
-
-```bash
-export AGENT_KERNEL_VECTOR_STORE=auto
-```
-
-In `auto` mode, SQLite uses the JSON-vector fallback and PostgreSQL uses the
-pgvector-native path after migrations are applied.
-
-Create and inspect a scoped memory item:
-
-```bash
-uv run agent-kernel memory create \
-  --type user_preference \
-  --scope user:local \
-  --content '{"language":"en"}'
-
-uv run agent-kernel memory list --scope user:local
-```
-
-## Run Evals
-
-Run the deterministic RAG smoke eval:
-
-```bash
-uv run agent-kernel eval report evals/rag-smoke.json
-```
-
-## Start Web Workbench
-
-In another terminal:
-
-```bash
-npm run web:dev
-```
-
-Open:
-
-```text
-http://127.0.0.1:3000
-```
-
-The current Workbench is partially live and partially fixture-backed. It exposes
-the v0.1 product surface, including dashboard, agents, runs, approvals,
-knowledge, evals, and settings, but it does not yet fetch all live backend data.
-
-Public Alpha live paths currently include:
-
-- API health status.
-- Run lookup by run ID.
-- Run events lookup by run ID.
-- Approval inbox list.
-- Approval approve/reject mutations.
-- Knowledge base list.
-- Retrieval search with raw cited chunks.
-
-For guided product workflows, see:
-
-- [Examples README](../examples/README.md)
-- [Public Alpha Walkthrough](../examples/public-alpha-walkthrough.md)
-- [Public Alpha HTTP requests](../examples/public-alpha.http)
-
-## Full Docker Compose Stack
-
-When Docker Desktop is running, start the full local stack:
-
-```bash
-docker compose up --build
-```
-
-Services:
-
-```text
-postgres  -> localhost:5432
-redis     -> localhost:6379
-api       -> http://127.0.0.1:8000
-web       -> http://127.0.0.1:3000
-worker    -> background queued-run worker
-```
-
-The API container runs migrations before startup.
-
-For config-only validation:
-
-```bash
-docker compose config
-```
-
-## Verification
-
-Run backend checks:
-
-```bash
-uv run ruff check .
-uv run mypy .
-uv run pytest
-uv run agent-kernel eval report evals/rag-smoke.json
-```
-
-Run Web checks:
-
-```bash
-npm run lint
-npm run build
-npm run test:e2e
-```
-
-Convenience targets:
-
-```bash
-make verify
-make verify-web
-```
-
-For v1.0 release candidate rehearsal from a fresh checkout, use the
-[Clean-Machine Release Rehearsal](clean-machine-rehearsal.md).
-
-## Notes
-
-- Use `mock:*` models for normal local development.
-- `openai:*` models require `OPENAI_API_KEY`.
-- `replay:*` models are for deterministic replay fixtures and fail clearly when
-  no fixture is registered.
-- The worker currently uses persisted queued runs as the MVP queue.
-- Worker leases, stuck-run recovery, and the Redis queue adapter foundation are
-  available in the Beta baseline. Redis-backed worker polling is not enabled by
-  default.
-- Some Web areas remain fixture-backed previews until their backend list/detail
-  APIs are complete.
-
-## Public Alpha Feedback
-
-If this quickstart fails or feels confusing, open a GitHub Issue with:
-
-- The command that failed.
-- The expected result.
-- The actual output.
-- OS, Python, `uv`, Node.js, Docker, and database details.
-- The release or commit SHA.
-
-Do not include secrets, API keys, tokens, private documents, or private logs.
+For troubleshooting, include the failing command and redacted service logs,
+never passwords, API keys, private documents or raw task content. See
+[troubleshooting](troubleshooting.md), [Docker operations](docker-local.md), and
+[observability backends](observability-backends.md).

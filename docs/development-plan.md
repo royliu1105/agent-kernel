@@ -1,12 +1,25 @@
 # Development Plan
 
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
 ## Current Follow-Up
 
-The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) is the
-canonical plan for current implementation work. R1-R10 remediation passed scoped
-acceptance; the subsequent N1-N5 execution work passed local and exact-commit
-remote verification for `cb25484`. Consult that plan for evidence and explicit
-limits; do not substitute historical CI or restart from P1.1. This is unreleased.
+The explicitly authorized [observability completion](observability-completion-plan.md)
+uses O1-O5 for per-capability status and evidence; SMTP is the selected
+notification channel and external inbox verification remains blocked by setup.
+This is a narrow exception to the feature freeze below, not a new daily schedule.
+
+The [Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md)
+is the canonical next-stage plan. PV1-PV6 are planned, not started: freeze scope,
+rehearse safety, verify live behavior and deployment recovery, run a small user
+pilot, then decide go/no-go. Foundation feature expansion is frozen; only
+reproduced blocking defects justify scoped repair after execution is authorized.
+
+The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) retains
+R1-R10 and N1-N5 scoped acceptance and explicit limits. Do not restart P1.1 or
+use historical CI as live-provider/user-pilot proof. This work is unreleased.
 
 The Day 1-90 schedule below is the historical delivery plan. Completed
 foundation items must not be read as proof of full object isolation,
@@ -36,6 +49,12 @@ See [Post-v0.1 Completion Plan](post-v0.1-plan.md) for the historical scope and
 [v1.0 Release Checklist](v1-release-checklist.md) for publication evidence.
 
 ## Development Method
+
+During PV1-PV6, use the [pilot learning guide](pilot-learning-guide.md). Explain
+the relevant design choice, invite one learner hypothesis or test assertion,
+and verify the result together instead of silently completing the whole task.
+Keep project acceptance and observed learning separate; adapt hints to Python
+experience without expanding foundation scope or inventing additional days.
 
 Use:
 

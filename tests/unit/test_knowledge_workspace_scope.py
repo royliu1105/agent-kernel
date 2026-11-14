@@ -16,9 +16,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_knowledge_scope_hides_foreign_and_legacy_data(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         workspace_a = WorkspaceRepository(session).create(name="a", slug="a").id
         workspace_b = WorkspaceRepository(session).create(name="b", slug="b").id
         a = KnowledgeBaseRepository(session, workspace_id=workspace_a)
@@ -39,9 +39,9 @@ def test_knowledge_scope_hides_foreign_and_legacy_data(
 
 
 def test_child_repository_scope_checks_before_mutation(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         a = WorkspaceRepository(session).create(name="a", slug="a").id
         b = WorkspaceRepository(session).create(name="b", slug="b").id
         kb = KnowledgeBaseRepository(session, workspace_id=b).create(name="b")
@@ -137,10 +137,10 @@ def test_child_repository_scope_checks_before_mutation(
     ],
 )
 def test_scoped_source_validation_and_legacy_quarantine(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     source: str,
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         workspace = WorkspaceRepository(session).create(name="a", slug="a").id
         kb = KnowledgeBaseRepository(session, workspace_id=workspace).create(name="a")
         source = source.format(own=kb.id, foreign=uuid4())
@@ -163,9 +163,9 @@ def test_scoped_source_validation_and_legacy_quarantine(
 
 
 def test_scoped_artifact_and_embedding_references_cannot_cross_documents(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         workspace = WorkspaceRepository(session).create(name="a", slug="a").id
         kb = KnowledgeBaseRepository(session, workspace_id=workspace).create(name="a")
         doc = DocumentRepository(session, workspace_id=workspace).create(

@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_document_chunk_repository_replaces_chunks_and_marks_document_chunked(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -74,9 +74,9 @@ def test_document_chunk_repository_replaces_chunks_and_marks_document_chunked(
 
 
 def test_document_chunk_repository_gets_and_lists_chunks(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -119,9 +119,9 @@ def test_document_chunk_repository_gets_and_lists_chunks(
 
 
 def test_document_chunk_repository_rejects_mismatched_document_id(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -149,11 +149,11 @@ def test_document_chunk_repository_rejects_mismatched_document_id(
 
 
 def test_document_chunk_repository_returns_none_for_missing_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     missing_document_id = UUID("00000000-0000-0000-0000-000000000021")
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         chunks = DocumentChunkRepository(session).replace_for_document(
             document_id=missing_document_id,
             chunks=[],

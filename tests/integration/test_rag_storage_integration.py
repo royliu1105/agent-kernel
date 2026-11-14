@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_rag_api_round_trip_with_s3_object_store(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     s3_client = _FakeS3Client()
     object_store = S3ObjectStore(
@@ -16,7 +16,7 @@ def test_rag_api_round_trip_with_s3_object_store(
         client=s3_client,
     )
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
 
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "prod-kb"}).json()

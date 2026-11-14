@@ -1,5 +1,10 @@
 # Agent Kernel Public Alpha Release Notes
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 Historical announcement draft for the Day 39-51 milestone, not the current
 release status. v1.0.0 has since been [published](v1.0.0.md). Current work is
 tracked in the [capability hardening plan](../capability-hardening-plan.md).

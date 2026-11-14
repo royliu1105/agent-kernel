@@ -20,10 +20,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_retriever_returns_ranked_chunks_with_citations(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     metrics_recorder = InMemoryMetricsRecorder()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -99,9 +99,9 @@ def test_retriever_returns_ranked_chunks_with_citations(
 
 
 def test_retriever_returns_empty_results_for_empty_knowledge_base(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="empty")
 
         response = Retriever().retrieve(
@@ -117,10 +117,10 @@ def test_retriever_returns_empty_results_for_empty_knowledge_base(
 
 
 def test_retriever_raises_for_missing_knowledge_base(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     metrics_recorder = InMemoryMetricsRecorder()
-    with sqlite_session_factory() as session, pytest.raises(KnowledgeBaseNotFoundError):
+    with postgres_session_factory() as session, pytest.raises(KnowledgeBaseNotFoundError):
         Retriever(metrics_recorder=metrics_recorder).retrieve(
             knowledge_base_id=UUID("00000000-0000-0000-0000-000000000000"),
             query="anything",
@@ -148,7 +148,7 @@ def test_retriever_raises_for_missing_knowledge_base(
     ],
 )
 def test_all_backend_failures_are_counted_without_sensitive_labels(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     monkeypatch: pytest.MonkeyPatch,
     error: Exception,
 ) -> None:
@@ -159,7 +159,7 @@ def test_all_backend_failures_are_counted_without_sensitive_labels(
         raise error
 
     monkeypatch.setattr(retriever.embedding_provider, "embed_texts", fail)
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="failure")
         with pytest.raises(type(error)):
             retriever.retrieve(

@@ -144,7 +144,7 @@ Before exposing a deployment to shared users:
 
 - [ ] Set `AGENT_KERNEL_ENV=production`.
 - [ ] Set `AGENT_KERNEL_API_KEY_AUTH_ENABLED=true`.
-- [ ] Use PostgreSQL, not SQLite.
+- [ ] Use PostgreSQL and keep runtime/test credentials separate.
 - [ ] Keep Postgres private.
 - [ ] Keep Redis private.
 - [ ] Keep object storage private.
@@ -174,11 +174,11 @@ Before each release:
 - [ ] Run the Auth/RBAC test matrix in [Auth and RBAC](auth-rbac.md).
 - [ ] Run the full Python test suite.
 - [ ] Run `make release-eval`: RAG smoke/release datasets, native tool-call evals,
-  bounded continuation/backoff/wire contracts (SQLite), and `scripts/timeline_regression.py`.
+  bounded continuation/backoff/wire contracts (isolated PostgreSQL), and `scripts/timeline_regression.py`.
 - [ ] Verify the Python CI `Test` step also passes the actual-adapter HTTP mock
   contracts and timeline mutation tests. `make release-eval` alone is not enough.
 - [ ] Run the Web smoke tests.
-- [ ] Run migration smoke tests for SQLite and Postgres.
+- [ ] Run fresh/legacy PostgreSQL migration and downgrade/re-upgrade checks.
 - [ ] Confirm no stable `/v1/*` route lacks a permission dependency.
 - [ ] Confirm security docs match current behavior.
 - [ ] Run cross-workspace and legacy NULL-ownership regressions; review new

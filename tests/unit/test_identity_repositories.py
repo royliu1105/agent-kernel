@@ -19,9 +19,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_identity_repositories_create_workspace_principal_and_membership(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="Platform Owner",
@@ -59,9 +59,9 @@ def test_identity_repositories_create_workspace_principal_and_membership(
 
 
 def test_membership_assignment_requires_existing_principal_and_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="No Workspace",
@@ -84,9 +84,9 @@ def test_membership_assignment_requires_existing_principal_and_workspace(
 
 
 def test_membership_assignment_updates_existing_role(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="Operator",
@@ -111,9 +111,9 @@ def test_membership_assignment_updates_existing_role(
 
 
 def test_persisted_memberships_can_feed_workspace_authorizer(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="Viewer",
@@ -138,10 +138,10 @@ def test_persisted_memberships_can_feed_workspace_authorizer(
 
 
 def test_api_key_repository_issues_hashed_key_and_authenticates_once_presented(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key = "ak_test_secret"
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="API User",
@@ -172,9 +172,9 @@ def test_api_key_repository_issues_hashed_key_and_authenticates_once_presented(
 
 
 def test_api_key_issue_requires_workspace_membership(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="No Membership",
@@ -192,9 +192,9 @@ def test_api_key_issue_requires_workspace_membership(
 
 
 def test_api_key_repository_rejects_revoked_and_expired_keys(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.SERVICE,
             display_name="Service",

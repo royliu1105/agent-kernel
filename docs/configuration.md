@@ -4,7 +4,8 @@
 
 These additions are unreleased; apply the migration and compatibility guidance
 in [Upgrade Policy](upgrade-migration-policy.md). The Python/TypeScript stack
-and local SQLite/mock defaults are unchanged.
+is unchanged. Storage now requires PostgreSQL, including local tests; mock models
+remain the default. See [PostgreSQL-only compatibility](postgresql-only.md).
 
 | Variable | Default | Contract |
 | --- | --- | --- |
@@ -41,6 +42,29 @@ credentials from the Web browser. Deployment secrets must not be committed.
 
 This document defines the Agent Kernel v1.0 release candidate configuration
 contract.
+
+## Observability Backend Additions (Unreleased)
+
+These are optional settings for the [backend/SMTP profile](observability-backends.md),
+not part of the published tag. Acceptance is tracked in the
+[completion ledger](observability-completion-plan.md).
+
+| Variable | Default | Contract |
+| --- | --- | --- |
+| `AGENT_KERNEL_LOG_FILE` | empty | Optional absolute sanitized JSON file path; one writer per path, 0600 files. |
+| `AGENT_KERNEL_LOG_MAX_BYTES` | `10485760` | Rotation threshold, 1024..104857600 bytes. |
+| `AGENT_KERNEL_LOG_BACKUP_COUNT` | `5` | Retained rotated files, 1..20; zero/unbounded mode rejected. |
+| `AGENT_KERNEL_ALERTMANAGER_CONFIG_FILE` | required by full overlay | Trusted private SMTP configuration path; no recipient inferred by the app. |
+| `AGENT_KERNEL_SMTP_PASSWORD_FILE` | required by full overlay | Secret file for SMTP; empty only in explicit local Mailpit mode. |
+| `AGENT_KERNEL_GRAFANA_PORT` / `AGENT_KERNEL_PROMETHEUS_PORT` | `3090` / `9090` | Loopback-only host mappings. |
+| `AGENT_KERNEL_LOKI_PORT` / `AGENT_KERNEL_TEMPO_PORT` | `3100` / `3200` | Trusted local diagnostic APIs; no built-in auth in this profile. |
+| `AGENT_KERNEL_OTLP_PORT` | `4318` | Alloy receiver loopback mapping; application containers use `alloy:4318`. |
+| `AGENT_KERNEL_ALERTMANAGER_PORT` / `AGENT_KERNEL_MAILPIT_PORT` | `9093` / `8025` | Operator UI / local test inbox loopback mappings. |
+
+The Docker build argument `INSTALL_OBSERVABILITY=true` installs the locked
+`observability` extra without developer tools. It is enabled by the full overlay.
+The SMTP JSON fields are Alertmanager configuration, not application environment
+variables; ordinary environment substitution does not rewrite that JSON file.
 
 ## Native Execution Bounds (Unreleased)
 
@@ -120,7 +144,7 @@ Secret handling:
 | --- | --- | --- | --- | --- | --- |
 | `AGENT_KERNEL_ENV` | API, worker | `development` | `production` | No | Environment label used for deployment posture and operator diagnostics. |
 | `AGENT_KERNEL_LOG_LEVEL` | API, worker | `info` | `info` | No | Logging verbosity. Use `debug` only in controlled environments. |
-| `DATABASE_URL` | API, worker, migrations | `sqlite:///./.agent-kernel/agent_kernel.db` | Required Postgres URL | Yes | Postgres is the production database. SQLite is for local development and tests. |
+| `DATABASE_URL` | API, worker, migrations | Required; Docker supplies it | Required PostgreSQL URL | Yes | PostgreSQL with sync psycopg only. No implicit filesystem database or fallback. |
 | `REDIS_URL` | API, worker | `redis://localhost:6379/0` in examples | Recommended when Redis has credentials | Sometimes | Redis is a coordination dependency. The default worker path remains database-first. |
 
 Production database guidance:
@@ -129,7 +153,7 @@ Production database guidance:
 - Use the pgvector image or install the `vector` extension before enabling the
   pgvector vector store path.
 - Run Alembic migrations before starting API and worker.
-- Keep SQLite for local quickstart, tests, and single-user development only.
+- Keep tests on the dedicated disposable PostgreSQL service, never the runtime DB.
 
 ## Stable Object Storage Variables
 
@@ -167,7 +191,7 @@ them through platform secret storage.
 
 Vector store behavior:
 
-- `auto` uses pgvector on PostgreSQL and JSON-vector fallback on SQLite.
+- `auto` uses native pgvector; there is no database-dialect fallback.
 - `json` forces portable JSON-vector similarity.
 - `pgvector` requires PostgreSQL and the pgvector migration.
 

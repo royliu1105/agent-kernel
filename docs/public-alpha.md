@@ -35,8 +35,8 @@ Start here:
 Recommended first-run order:
 
 1. Install dependencies with `uv sync` and `npm install`.
-2. Run the SQLite quick path in [Quickstart](quickstart.md).
-3. Create a mock agent run and execute the worker once.
+2. Start the Docker PostgreSQL stack using [Quickstart](quickstart.md).
+3. Create a mock agent run; the Docker Worker processes the queue continuously.
 4. Run the RAG workflow.
 5. Run the memory workflow.
 6. Run the deterministic eval.

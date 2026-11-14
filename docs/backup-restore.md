@@ -141,38 +141,13 @@ Operational notes:
 - Monitor backup job success and backup age.
 - Test restore into an isolated environment before trusting the backup policy.
 
-## SQLite Local Backup
+## Legacy Local Data
 
-SQLite is not a production database for Agent Kernel, but local development data
-can still matter.
-
-Default SQLite path:
-
-```text
-.agent-kernel/agent_kernel.db
-```
-
-Simple local backup while the API and worker are stopped:
-
-```bash
-cp .agent-kernel/agent_kernel.db .agent-kernel/agent_kernel.backup.db
-```
-
-SQLite online backup through the SQLite shell:
-
-```bash
-sqlite3 .agent-kernel/agent_kernel.db ".backup '.agent-kernel/agent_kernel.backup.db'"
-```
-
-Restore:
-
-```bash
-cp .agent-kernel/agent_kernel.backup.db .agent-kernel/agent_kernel.db
-uv run alembic upgrade head
-```
-
-SQLite backups are for developer convenience only. Do not treat them as a
-production disaster-recovery strategy.
+Current code supports PostgreSQL only, including development. Do not restore an
+old SQLite file into the active runtime or unset `DATABASE_URL` to select it.
+Use an older checkout for any separately retained legacy exports. The maintainer's
+old local data and pre-Docker archive were explicitly deleted on 2026-11-14;
+see [the cutover record](docker-local.md). Current Docker volumes are unaffected.
 
 ## Local Object Store Backup
 

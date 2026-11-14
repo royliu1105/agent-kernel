@@ -17,17 +17,19 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_recovery_fails_running_run_with_expired_lease(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     run_id, lease_token = _create_leased_run(
-        sqlite_session_factory,
+        postgres_session_factory,
         status=RunStatus.RUNNING,
     )
-    _expire_lease(sqlite_session_factory, lease_token=lease_token)
+    _expire_lease(postgres_session_factory, lease_token=lease_token)
 
-    result = StuckRunRecoveryService(session_factory=sqlite_session_factory).recover_once(limit=10)
+    result = StuckRunRecoveryService(session_factory=postgres_session_factory).recover_once(
+        limit=10
+    )
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run = RunRepository(session).get(run_id)
         events = RunRepository(session).list_events(run_id)
         active_lease = WorkerLeaseRepository(session).get_active(run_id=run_id)
@@ -46,17 +48,19 @@ def test_recovery_fails_running_run_with_expired_lease(
 
 
 def test_recovery_fails_resuming_run_with_expired_lease(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     run_id, lease_token = _create_leased_run(
-        sqlite_session_factory,
+        postgres_session_factory,
         status=RunStatus.RESUMING,
     )
-    _expire_lease(sqlite_session_factory, lease_token=lease_token)
+    _expire_lease(postgres_session_factory, lease_token=lease_token)
 
-    result = StuckRunRecoveryService(session_factory=sqlite_session_factory).recover_once(limit=10)
+    result = StuckRunRecoveryService(session_factory=postgres_session_factory).recover_once(
+        limit=10
+    )
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run = RunRepository(session).get(run_id)
 
     assert result.recovered_count == 1
@@ -66,17 +70,19 @@ def test_recovery_fails_resuming_run_with_expired_lease(
 
 
 def test_recovery_releases_expired_queued_lease_without_failing_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     run_id, lease_token = _create_leased_run(
-        sqlite_session_factory,
+        postgres_session_factory,
         status=RunStatus.QUEUED,
     )
-    _expire_lease(sqlite_session_factory, lease_token=lease_token)
+    _expire_lease(postgres_session_factory, lease_token=lease_token)
 
-    result = StuckRunRecoveryService(session_factory=sqlite_session_factory).recover_once(limit=10)
+    result = StuckRunRecoveryService(session_factory=postgres_session_factory).recover_once(
+        limit=10
+    )
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run = RunRepository(session).get(run_id)
         active_lease = WorkerLeaseRepository(session).get_active(run_id=run_id)
 
@@ -91,16 +97,18 @@ def test_recovery_releases_expired_queued_lease_without_failing_run(
 
 
 def test_recovery_ignores_non_expired_leases(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     run_id, _lease_token = _create_leased_run(
-        sqlite_session_factory,
+        postgres_session_factory,
         status=RunStatus.RUNNING,
     )
 
-    result = StuckRunRecoveryService(session_factory=sqlite_session_factory).recover_once(limit=10)
+    result = StuckRunRecoveryService(session_factory=postgres_session_factory).recover_once(
+        limit=10
+    )
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run = RunRepository(session).get(run_id)
         active_lease = WorkerLeaseRepository(session).get_active(run_id=run_id)
 
@@ -112,26 +120,26 @@ def test_recovery_ignores_non_expired_leases(
 
 @pytest.mark.asyncio
 async def test_worker_restart_recovery_prevents_duplicate_execution(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     run_id, lease_token = _create_leased_run(
-        sqlite_session_factory,
+        postgres_session_factory,
         status=RunStatus.RUNNING,
     )
-    _expire_lease(sqlite_session_factory, lease_token=lease_token)
+    _expire_lease(postgres_session_factory, lease_token=lease_token)
 
-    recovery_result = StuckRunRecoveryService(session_factory=sqlite_session_factory).recover_once(
-        limit=10
-    )
+    recovery_result = StuckRunRecoveryService(
+        session_factory=postgres_session_factory
+    ).recover_once(limit=10)
     restarted_worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(
             router=ModelRouter({"mock": MockLLMProvider(response_prefix="Restarted")})
         ),
     )
     worker_result = await restarted_worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run = RunRepository(session).get(run_id)
         events = RunRepository(session).list_events(run_id)
 
@@ -145,9 +153,9 @@ async def test_worker_restart_recovery_prevents_duplicate_execution(
 
 
 def test_recovery_rejects_invalid_limit(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    service = StuckRunRecoveryService(session_factory=sqlite_session_factory)
+    service = StuckRunRecoveryService(session_factory=postgres_session_factory)
 
     with pytest.raises(ValueError, match="Recovery limit must be at least 1"):
         service.recover_once(limit=0)

@@ -1,19 +1,29 @@
 # Post-v0.1 Completion Plan
 
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
 Agent Kernel v0.1.0 is published as the first public runtime foundation.
 
 This document records the historical Day 39-90 path from v0.1.0 through Public
 Alpha and Beta to v1.0. Original goals below describe that delivery scope, not
-acceptance of stronger guarantees added afterward. Current work and evidence
-belong to the [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
+acceptance of stronger guarantees added afterward. Implementation evidence lives
+in the [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md); the
+next stage is the [real-scenario pilot plan](real-scenario-pilot-plan.md).
 
 ## Current Status
+
+The authorized prerequisite is [observability completion](observability-completion-plan.md),
+with per-capability local and external acceptance gates. The pilot track below
+remains planned; no live pilot results exist.
 
 ```text
 v0.1.0: Published
 v1.0.0: Published 2026-08-07
 Day 39-90: Historical delivery completed within the recorded scope
-Current track: Post-v1.0 capability hardening (unreleased)
+Current track: Real-scenario acceptance and controlled pilot (planned)
+Current branch enhancements: Unreleased
 ```
 
 Publication evidence is recorded in the [v1.0 release checklist](v1-release-checklist.md).

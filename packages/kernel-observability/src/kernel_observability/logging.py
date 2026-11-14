@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Any
+from io import TextIOWrapper
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Any, cast
 
 from kernel_observability.redaction import redact_fields, safe_event_name, safe_identifier
 from kernel_observability.tracing import ObservabilityContext
@@ -17,7 +21,7 @@ LogFieldValue = LogScalar | None
 
 def uvicorn_log_config() -> dict[str, Any]:
     """Prevent Uvicorn from reinstalling raw access/exception formatters."""
-    return {
+    config: dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {"safe": {"()": JsonLogFormatter}},
@@ -34,6 +38,13 @@ def uvicorn_log_config() -> dict[str, Any]:
             for name in ("uvicorn", "uvicorn.error", "uvicorn.access")
         },
     }
+    if os.getenv("AGENT_KERNEL_LOG_FILE"):
+        config["handlers"]["agent_kernel_file"] = {
+            "()": create_file_log_handler,
+            "formatter": "safe",
+        }
+        config["root"]["handlers"].append("agent_kernel_file")
+    return config
 
 
 def configure_safe_logging() -> None:
@@ -46,6 +57,12 @@ def configure_safe_logging() -> None:
     root = logging.getLogger()
     if not root.handlers:
         root.addHandler(logging.StreamHandler())
+    file_path = os.getenv("AGENT_KERNEL_LOG_FILE")
+    owned = [handler for handler in root.handlers if handler.name == "agent_kernel_file"]
+    if file_path and not owned:
+        file_handler = create_file_log_handler()
+        file_handler.name = "agent_kernel_file"
+        root.addHandler(file_handler)
     formatter = JsonLogFormatter()
     loggers = [root] + [
         logger
@@ -60,6 +77,43 @@ def configure_safe_logging() -> None:
     root.setLevel(logging.INFO)
     logging.captureWarnings(True)
     logging.raiseExceptions = False
+
+
+class PrivateRotatingFileHandler(RotatingFileHandler):
+    """Keep newly opened/rotated files private; the collector uses a read-only mount."""
+
+    def _open(self) -> TextIOWrapper:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW
+        descriptor = os.open(self.baseFilename, flags, 0o600)
+        try:
+            os.fchmod(descriptor, 0o600)
+            return cast(
+                TextIOWrapper,
+                os.fdopen(descriptor, self.mode, encoding=self.encoding, errors=self.errors),
+            )
+        except BaseException:
+            os.close(descriptor)
+            raise
+
+
+def create_file_log_handler() -> RotatingFileHandler:
+    """Build the optional bounded sink without changing the default stderr path."""
+    path = Path(os.environ["AGENT_KERNEL_LOG_FILE"])
+    if not path.is_absolute():
+        raise ValueError("AGENT_KERNEL_LOG_FILE must be an absolute path.")
+    try:
+        max_bytes = int(os.getenv("AGENT_KERNEL_LOG_MAX_BYTES", "10485760"))
+        backups = int(os.getenv("AGENT_KERNEL_LOG_BACKUP_COUNT", "5"))
+    except ValueError:
+        raise ValueError("Log rotation limits must be integers.") from None
+    if not 1024 <= max_bytes <= 104857600 or not 1 <= backups <= 20:
+        raise ValueError("Log rotation limits are outside the supported bounds.")
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    handler = PrivateRotatingFileHandler(
+        path, maxBytes=max_bytes, backupCount=backups, encoding="utf-8"
+    )
+    handler.setFormatter(JsonLogFormatter())
+    return handler
 
 
 def build_log_fields(

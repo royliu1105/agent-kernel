@@ -14,9 +14,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_approval_repository_creates_requested_approval_and_event(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         tool_call = _create_waiting_tool_call(session)
         repository = ApprovalRepository(session)
 
@@ -44,9 +44,9 @@ def test_approval_repository_creates_requested_approval_and_event(
 
 
 def test_approval_repository_lists_and_gets_approvals(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         tool_call = _create_waiting_tool_call(session)
         repository = ApprovalRepository(session)
         approval = repository.create_requested(tool_call_id=tool_call.id, reason="Review needed.")
@@ -63,9 +63,9 @@ def test_approval_repository_lists_and_gets_approvals(
 
 
 def test_approval_repository_filters_approvals_by_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         first_workspace = WorkspaceRepository(session).create(name="First", slug="first-approval")
         second_workspace = WorkspaceRepository(session).create(
             name="Second",
@@ -102,9 +102,9 @@ def test_approval_repository_filters_approvals_by_workspace(
 
 
 def test_approval_repository_approves_and_rejects_with_events(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         first_tool_call = _create_waiting_tool_call(session)
         second_tool_call = _create_waiting_tool_call(session)
         repository = ApprovalRepository(session)
@@ -144,9 +144,9 @@ def test_approval_repository_approves_and_rejects_with_events(
 
 
 def test_approval_repository_decisions_are_workspace_scoped(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         first_workspace = WorkspaceRepository(session).create(
             name="First Decision",
             slug="first-decision",
@@ -180,9 +180,9 @@ def test_approval_repository_decisions_are_workspace_scoped(
 
 
 def test_approval_repository_rejects_duplicate_decisions(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         tool_call = _create_waiting_tool_call(session)
         repository = ApprovalRepository(session)
         approval = repository.create_requested(tool_call_id=tool_call.id, reason="Review needed.")
@@ -194,9 +194,9 @@ def test_approval_repository_rejects_duplicate_decisions(
 
 
 def test_approval_repository_returns_none_for_missing_records(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = ApprovalRepository(session)
 
         assert repository.create_requested(tool_call_id=uuid4(), reason="Missing.") is None

@@ -16,10 +16,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
-    if bind.dialect.name != "postgresql":
-        return
-
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute("ALTER TABLE chunk_embeddings ADD COLUMN IF NOT EXISTS vector_pg vector")
     op.execute(
@@ -40,9 +36,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    bind = op.get_bind()
-    if bind.dialect.name != "postgresql":
-        return
-
     op.execute("DROP INDEX IF EXISTS ix_chunk_embeddings_vector_pg_cosine")
     op.execute("ALTER TABLE chunk_embeddings DROP COLUMN IF EXISTS vector_pg")

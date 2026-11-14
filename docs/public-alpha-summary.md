@@ -1,5 +1,10 @@
 # Public Alpha Summary: Day 39-51
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 Historical phase snapshot: capabilities, limitations and next steps below refer
 to this phase's completion, not current `master`. Current status and acceptance
 live in the [capability hardening plan](capability-hardening-plan.md).

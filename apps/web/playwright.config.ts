@@ -1,7 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = process.env.PLAYWRIGHT_PORT ?? "3100";
-const baseURL = `http://127.0.0.1:${port}`;
+const managedServer = process.env.PLAYWRIGHT_MANAGED_SERVER === "1";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? (
+  managedServer ? `http://127.0.0.1:${port}` : "http://127.0.0.1:3000"
+);
 
 export default defineConfig({
   testDir: "./e2e",
@@ -12,7 +15,7 @@ export default defineConfig({
     baseURL,
     trace: "on-first-retry",
   },
-  webServer: {
+  webServer: !managedServer ? undefined : {
     command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

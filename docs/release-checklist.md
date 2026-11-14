@@ -1,5 +1,9 @@
 # v0.1 Release Checklist
 
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
 This checklist records the `v0.1.0` release status.
 
 Historical release record. For the subsequently published v1.0.0, see its

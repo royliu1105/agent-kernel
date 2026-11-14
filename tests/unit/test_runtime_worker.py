@@ -28,9 +28,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 @pytest.mark.asyncio
 async def test_worker_executes_queued_runs(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -45,7 +45,7 @@ async def test_worker_executes_queued_runs(
         )
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(
             router=ModelRouter({"mock": MockLLMProvider(response_prefix="Worker")})
         ),
@@ -53,7 +53,7 @@ async def test_worker_executes_queued_runs(
 
     result = await worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_repository = RunRepository(session)
         completed = run_repository.get(run.id)
         events = run_repository.list_events(run.id)
@@ -75,9 +75,9 @@ async def test_worker_executes_queued_runs(
 
 @pytest.mark.asyncio
 async def test_worker_records_provider_failures(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(agent_id=agent.id, input_payload={"task": "fail me"})
@@ -89,7 +89,7 @@ async def test_worker_records_provider_failures(
         )
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(
             router=ModelRouter(
                 {
@@ -106,7 +106,7 @@ async def test_worker_records_provider_failures(
 
     result = await worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_repository = RunRepository(session)
         failed = run_repository.get(run.id)
         events = run_repository.list_events(run.id)
@@ -125,9 +125,9 @@ async def test_worker_records_provider_failures(
 
 @pytest.mark.asyncio
 async def test_worker_only_picks_queued_runs(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run_repository = RunRepository(session)
         queued_run = run_repository.create(
@@ -160,13 +160,13 @@ async def test_worker_only_picks_queued_runs(
         )
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(router=ModelRouter({"mock": MockLLMProvider()})),
     )
 
     result = await worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_repository = RunRepository(session)
         completed_queued_run = run_repository.get(queued_run.id)
         untouched_terminal_run = run_repository.get(terminal_run.id)
@@ -186,9 +186,9 @@ async def test_worker_only_picks_queued_runs(
 
 @pytest.mark.asyncio
 async def test_worker_marks_route_errors_failed(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -203,13 +203,13 @@ async def test_worker_marks_route_errors_failed(
         )
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(router=ModelRouter({"mock": MockLLMProvider()})),
     )
 
     result = await worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_repository = RunRepository(session)
         failed = run_repository.get(run.id)
         events = run_repository.list_events(run.id)
@@ -225,9 +225,9 @@ async def test_worker_marks_route_errors_failed(
 
 @pytest.mark.asyncio
 async def test_worker_pauses_risky_tool_run_and_does_not_repick_waiting_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-approval-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -242,14 +242,14 @@ async def test_worker_pauses_risky_tool_run_and_does_not_repick_waiting_run(
         )
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(tool_registry=_approval_tool_registry()),
     )
 
     first_result = await worker.run_once(limit=10)
     second_result = await worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_repository = RunRepository(session)
         waiting = run_repository.get(run.id)
         approvals = ApprovalRepository(session).list_for_run(run.id)
@@ -268,13 +268,13 @@ async def test_worker_pauses_risky_tool_run_and_does_not_repick_waiting_run(
 
 @pytest.mark.asyncio
 async def test_worker_executes_queued_kb_search_tool_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id, chunk_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-rag-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -298,15 +298,15 @@ async def test_worker_executes_queued_kb_search_tool_run(
         )
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(
-            tool_registry=create_rag_tool_registry(session_factory=sqlite_session_factory)
+            tool_registry=create_rag_tool_registry(session_factory=postgres_session_factory)
         ),
     )
 
     result = await worker.run_once(limit=10)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         run_repository = RunRepository(session)
         completed = run_repository.get(run.id)
         tool_calls = ToolCallRepository(session).list_for_run(run.id)
@@ -324,10 +324,10 @@ async def test_worker_executes_queued_kb_search_tool_run(
 
 @pytest.mark.asyncio
 async def test_worker_rejects_invalid_limit(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(router=ModelRouter({"mock": MockLLMProvider()})),
     )
 
@@ -361,11 +361,11 @@ def _approval_tool_registry() -> ToolRegistry:
 
 
 def _create_indexed_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     *,
     content: str,
 ) -> tuple[UUID, UUID]:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,

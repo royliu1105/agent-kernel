@@ -44,7 +44,7 @@ def _promtool(*args: str, input_text: str | None = None, mount: Path | None = No
 
 
 def test_promtool_validates_production_exposition(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     recorder = AggregatingMetricsRecorder()
     for name in ("echo", "kb_search"):
@@ -62,7 +62,7 @@ def test_promtool_validates_production_exposition(
     _promtool(
         "check",
         "metrics",
-        input_text=recorder.prometheus_text() + _operational_metrics(sqlite_session_factory),
+        input_text=recorder.prometheus_text() + _operational_metrics(postgres_session_factory),
     )
 
 

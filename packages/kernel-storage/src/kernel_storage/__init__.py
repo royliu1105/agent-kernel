@@ -2,7 +2,6 @@
 
 from kernel_storage.base import Base
 from kernel_storage.config import (
-    DEFAULT_DATABASE_URL,
     DEFAULT_VECTOR_STORE_MODE,
     SUPPORTED_VECTOR_STORE_MODES,
     VECTOR_STORE_MODE_ENV,
@@ -47,7 +46,6 @@ __all__ = [
     "ApprovalRepository",
     "Base",
     "ChunkEmbeddingRepository",
-    "DEFAULT_DATABASE_URL",
     "DEFAULT_VECTOR_STORE_MODE",
     "DocumentChunkRepository",
     "DocumentChunkingError",

@@ -17,7 +17,6 @@ def upgrade() -> None:
         ["run_id"],
         unique=True,
         postgresql_where=sa.text("released_at IS NULL"),
-        sqlite_where=sa.text("released_at IS NULL"),
     )
 
 

@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_memory_retrieval_service_filters_by_scope_and_type(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = MemoryRepository(session)
         preference = repository.create(
             type=MemoryType.USER_PREFERENCE,
@@ -45,9 +45,9 @@ def test_memory_retrieval_service_filters_by_scope_and_type(
 
 
 def test_memory_retrieval_service_returns_empty_context(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         context = MemoryRetrievalService().retrieve(
             repository=MemoryRepository(session),
             scopes=("user:missing",),
@@ -63,11 +63,14 @@ def test_memory_retrieval_service_returns_empty_context(
 
 
 def test_memory_retrieval_service_rejects_empty_scopes(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session, pytest.raises(
-        ValueError,
-        match="At least one memory scope is required",
+    with (
+        postgres_session_factory() as session,
+        pytest.raises(
+            ValueError,
+            match="At least one memory scope is required",
+        ),
     ):
         MemoryRetrievalService().retrieve(
             repository=MemoryRepository(session),

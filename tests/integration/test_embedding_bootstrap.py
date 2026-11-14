@@ -30,7 +30,7 @@ def test_embedding_selection_is_explicit_and_validated() -> None:
 
 
 def test_api_index_retrieve_and_worker_tool_use_selected_real_adapter(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -63,7 +63,7 @@ def test_api_index_retrieve_and_worker_tool_use_selected_real_adapter(
     monkeypatch.setattr(OpenAIEmbeddingProvider, "__init__", init_with_fixture)
     with TestClient(
         create_app(
-            session_factory=sqlite_session_factory,
+            session_factory=postgres_session_factory,
             object_store=LocalObjectStore(root_path=tmp_path),
         )
     ) as client:
@@ -95,7 +95,7 @@ def test_api_index_retrieve_and_worker_tool_use_selected_real_adapter(
             },
         ).json()["id"]
         assert client.post(f"/v1/runs/{run}/queue").status_code == 200
-        worker = _create_worker(session_factory=sqlite_session_factory)
+        worker = _create_worker(session_factory=postgres_session_factory)
         assert asyncio.run(worker.run_once()).succeeded_count == 1
         result = client.get(f"/v1/runs/{run}").json()
         assert result["output"]["tool"]["result"]["model"] == "fixture-embedding"
@@ -103,7 +103,7 @@ def test_api_index_retrieve_and_worker_tool_use_selected_real_adapter(
 
 
 def test_embedding_failure_keeps_document_retryable(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     from kernel_core import DocumentChunk, DocumentStatus
     from kernel_rag import DocumentIndexingService, OpenAIEmbeddingError
@@ -118,7 +118,7 @@ def test_embedding_failure_keeps_document_retryable(
         def embed_texts(self, texts: list[str]) -> list[list[float]]:
             raise OpenAIEmbeddingError("Provider unavailable.")
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="retry")
         docs = DocumentRepository(session)
         doc = docs.create(

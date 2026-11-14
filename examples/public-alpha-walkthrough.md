@@ -11,17 +11,10 @@ It should take about 30 minutes on a prepared development machine.
 ## 1. Prepare Local Runtime
 
 ```bash
-uv sync
-npm install
-unset DATABASE_URL
-uv run alembic upgrade head
+make docker-up
 ```
 
-Start the API:
-
-```bash
-uv run agent-kernel-api
-```
+API, Worker, Web and PostgreSQL run in Docker. No host server is needed.
 
 In another terminal:
 
@@ -40,7 +33,7 @@ Expected:
 Create an agent:
 
 ```bash
-uv run agent-kernel agent create --name "Public Alpha Agent"
+sh scripts/local-stack.sh exec -T api agent-kernel agent create --name "Public Alpha Agent"
 ```
 
 Copy the returned `id` as:
@@ -52,7 +45,7 @@ AGENT_ID=<returned agent id>
 Create a run:
 
 ```bash
-uv run agent-kernel run create <AGENT_ID> --input @examples/mock-run.json
+sh scripts/local-stack.sh exec -T api agent-kernel run create <AGENT_ID> --input @examples/mock-run.json
 ```
 
 Copy the returned `id` as:
@@ -64,15 +57,15 @@ RUN_ID=<returned run id>
 Queue and execute:
 
 ```bash
-uv run agent-kernel run queue <RUN_ID>
-uv run agent-kernel-worker --once --limit 10
+sh scripts/local-stack.sh exec -T api agent-kernel run queue <RUN_ID>
+# The Docker Worker processes queued runs automatically.
 ```
 
 Inspect:
 
 ```bash
-uv run agent-kernel run inspect <RUN_ID>
-uv run agent-kernel run events <RUN_ID>
+sh scripts/local-stack.sh exec -T api agent-kernel run inspect <RUN_ID>
+sh scripts/local-stack.sh exec -T api agent-kernel run events <RUN_ID>
 ```
 
 Expected:
@@ -87,7 +80,7 @@ events: run_created, run_queued, run_started, run_completed
 Create a knowledge base:
 
 ```bash
-uv run agent-kernel kb create \
+sh scripts/local-stack.sh exec -T api agent-kernel kb create \
   --name "Public Alpha Handbook" \
   --description "Example deployment knowledge base"
 ```
@@ -101,7 +94,7 @@ KNOWLEDGE_BASE_ID=<returned knowledge base id>
 Upload the example document:
 
 ```bash
-uv run agent-kernel document upload \
+sh scripts/local-stack.sh exec -T api agent-kernel document upload \
   <KNOWLEDGE_BASE_ID> \
   examples/docs/deployment-playbook.md
 ```
@@ -115,15 +108,15 @@ DOCUMENT_ID=<returned document id>
 Ingest, chunk, and index:
 
 ```bash
-uv run agent-kernel document ingest <DOCUMENT_ID>
-uv run agent-kernel document chunk <DOCUMENT_ID>
-uv run agent-kernel document index <DOCUMENT_ID>
+sh scripts/local-stack.sh exec -T api agent-kernel document ingest <DOCUMENT_ID>
+sh scripts/local-stack.sh exec -T api agent-kernel document chunk <DOCUMENT_ID>
+sh scripts/local-stack.sh exec -T api agent-kernel document index <DOCUMENT_ID>
 ```
 
 Search:
 
 ```bash
-uv run agent-kernel kb search \
+sh scripts/local-stack.sh exec -T api agent-kernel kb search \
   <KNOWLEDGE_BASE_ID> \
   --query "When should an operator roll back a deployment?"
 ```
@@ -137,12 +130,12 @@ results include deployment-playbook.md citation metadata
 ## 4. Create Scoped Memory
 
 ```bash
-uv run agent-kernel memory create \
+sh scripts/local-stack.sh exec -T api agent-kernel memory create \
   --type user_preference \
   --scope user:public-alpha \
   --content @examples/memory-user-preference.json
 
-uv run agent-kernel memory list --scope user:public-alpha
+sh scripts/local-stack.sh exec -T api agent-kernel memory list --scope user:public-alpha
 ```
 
 Expected:
@@ -154,7 +147,7 @@ user_preference memory with language=en and concise answer style
 ## 5. Run the Cheap Eval
 
 ```bash
-uv run agent-kernel eval report evals/rag-smoke.json
+sh scripts/local-stack.sh exec -T api agent-kernel eval report evals/rag-smoke.json
 ```
 
 Expected:
@@ -165,11 +158,7 @@ Expected:
 
 ## 6. Open the Web Workbench
 
-Start the Web app:
-
-```bash
-npm run web:dev
-```
+The Web app is already running in Docker after `make docker-up`.
 
 Open:
 

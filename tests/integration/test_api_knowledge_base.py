@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_knowledge_base_and_document_metadata_api(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     create_kb_response = client.post(
         "/v1/knowledge-bases",
@@ -58,9 +58,9 @@ def test_knowledge_base_and_document_metadata_api(
 
 
 def test_knowledge_base_document_api_returns_404_for_missing_records(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     get_kb_response = client.get(f"/v1/knowledge-bases/{missing_id}")
@@ -78,12 +78,12 @@ def test_knowledge_base_document_api_returns_404_for_missing_records(
 
 
 def test_document_upload_api_stores_file_and_metadata(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post(
         "/v1/knowledge-bases",
@@ -110,12 +110,12 @@ def test_document_upload_api_stores_file_and_metadata(
 
 
 def test_document_upload_api_rejects_oversized_file(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path, max_object_bytes=3)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
 
@@ -128,12 +128,12 @@ def test_document_upload_api_rejects_oversized_file(
 
 
 def test_document_upload_api_returns_404_for_missing_knowledge_base(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     missing_id = "00000000-0000-0000-0000-000000000000"
 
@@ -147,12 +147,12 @@ def test_document_upload_api_returns_404_for_missing_knowledge_base(
 
 
 def test_document_ingest_api_parses_uploaded_text_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -188,12 +188,12 @@ def test_document_ingest_api_parses_uploaded_text_document(
 
 
 def test_document_ingest_api_records_failed_job_for_unsupported_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -215,9 +215,9 @@ def test_document_ingest_api_records_failed_job_for_unsupported_document(
 
 
 def test_document_ingest_api_rejects_document_that_is_not_uploaded(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
         f"/v1/knowledge-bases/{knowledge_base['id']}/documents",
@@ -230,9 +230,9 @@ def test_document_ingest_api_rejects_document_that_is_not_uploaded(
 
 
 def test_ingestion_job_api_returns_404_for_missing_records(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     ingest_response = client.post(f"/v1/documents/{missing_id}/ingest")
@@ -245,12 +245,12 @@ def test_ingestion_job_api_returns_404_for_missing_records(
 
 
 def test_document_chunk_api_chunks_parsed_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -291,12 +291,12 @@ def test_document_chunk_api_chunks_parsed_document(
 
 
 def test_document_chunk_api_rejects_unparsed_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -310,9 +310,9 @@ def test_document_chunk_api_rejects_unparsed_document(
 
 
 def test_document_chunk_api_returns_404_for_missing_records(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     chunk_response = client.post(f"/v1/documents/{missing_id}/chunk")
@@ -325,12 +325,12 @@ def test_document_chunk_api_returns_404_for_missing_records(
 
 
 def test_document_index_api_embeds_chunked_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -364,12 +364,12 @@ def test_document_index_api_embeds_chunked_document(
 
 
 def test_knowledge_base_retrieve_api_returns_cited_results(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -414,9 +414,9 @@ def test_knowledge_base_retrieve_api_returns_cited_results(
 
 
 def test_knowledge_base_retrieve_api_returns_empty_results(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "empty"}).json()
 
     retrieve_response = client.post(
@@ -429,9 +429,9 @@ def test_knowledge_base_retrieve_api_returns_empty_results(
 
 
 def test_knowledge_base_retrieve_api_returns_404_for_missing_knowledge_base(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     retrieve_response = client.post(
@@ -443,12 +443,12 @@ def test_knowledge_base_retrieve_api_returns_404_for_missing_knowledge_base(
 
 
 def test_document_index_api_rejects_unchunked_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     object_store = LocalObjectStore(root_path=tmp_path)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, object_store=object_store)
+        create_app(session_factory=postgres_session_factory, object_store=object_store)
     )
     knowledge_base = client.post("/v1/knowledge-bases", json={"name": "kb"}).json()
     document = client.post(
@@ -462,9 +462,9 @@ def test_document_index_api_rejects_unchunked_document(
 
 
 def test_document_index_api_returns_404_for_missing_records(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     index_response = client.post(f"/v1/documents/{missing_id}/index")

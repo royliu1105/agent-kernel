@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_external_tool_queued_worker_approval_and_api_resume(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -55,7 +55,7 @@ def test_external_tool_queued_worker_approval_and_api_resume(
     monkeypatch.setenv("AGENT_KERNEL_RUN_QUEUE_BACKEND", "database")
 
     with TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=False)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=False)
     ) as client:
         agent_response = client.post("/v1/agents", json={"name": "external-agent"})
         assert agent_response.status_code == 201
@@ -76,7 +76,7 @@ def test_external_tool_queued_worker_approval_and_api_resume(
         assert client.post(f"/v1/runs/{run_id}/queue").status_code == 200
         asyncio.run(
             _run_worker(
-                session_factory=sqlite_session_factory,
+                session_factory=postgres_session_factory,
                 once=True,
                 limit=1,
                 poll_interval=0.01,

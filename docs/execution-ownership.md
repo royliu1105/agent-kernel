@@ -10,8 +10,8 @@ Every `RunExecutionService.execute` and `resume` acquires a database lease,
 including direct calls, queued workers and API approval resume. Queued runs and
 waiting-approval runs have separate expected starting states. All claim/state/
 event writers serialize on the Run row; an unreleased-lease partial unique
-index adds a database invariant. PostgreSQL is the multi-worker target. SQLite
-serializes writes and remains a local/test option, not a high-throughput backend.
+index adds a database invariant. PostgreSQL is the only supported database for
+both multi-worker execution and tests; independent sessions/processes are retained.
 
 Lease TTL defaults to 60 seconds, with renewal every TTL/3 using an independent
 SQLAlchemy session. No Session is shared between execution and heartbeat tasks.
@@ -90,7 +90,7 @@ conversation state without their own serialization.
 
 `tests/integration/test_execution_ownership.py` exercises independent processes,
 stale result/event writes, heartbeat and concurrent approval/resume against
-SQLite and real PostgreSQL. `test_stuck_run_recovery.py` covers recovery without
+real PostgreSQL. `test_stuck_run_recovery.py` covers recovery without
 replay; `test_execution_cancellation.py` covers late results after cancellation,
 recovery and owner replacement, including cancellation-resistant operations.
 `test_operational_scope.py` covers queue-outage database recovery and

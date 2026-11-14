@@ -1,5 +1,9 @@
 # Capability Hardening Verification
 
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
 This is the historical P0-P5/R1-R10 evidence record. Subsequent N1-N5 bounded
 execution, approval continuation and retry-backoff evidence is tracked separately
 in the [capability hardening plan](capability-hardening-plan.md). The older green

@@ -37,14 +37,14 @@ class ShortDeadlineSearch(KnowledgeBaseSearchTool):
 
 @pytest.mark.asyncio
 async def test_blocking_search_obeys_tool_deadline(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="deadline")
     retriever = BlockingRetriever(0.25)
     registry = ToolRegistry()
     registry.register(
-        ShortDeadlineSearch(session_factory=sqlite_session_factory, retriever=retriever)
+        ShortDeadlineSearch(session_factory=postgres_session_factory, retriever=retriever)
     )
     try:
         with pytest.raises(ToolTimeoutError):
@@ -62,9 +62,9 @@ async def test_blocking_search_obeys_tool_deadline(
 
 @pytest.mark.asyncio
 async def test_blocking_search_keeps_lease_alive(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="heartbeat")
         agent = AgentRepository(session).create(name="search")
         repo = RunRepository(session)
@@ -86,10 +86,10 @@ async def test_blocking_search_keeps_lease_alive(
     registry = ToolRegistry()
     registry.register(
         KnowledgeBaseSearchTool(
-            session_factory=sqlite_session_factory, retriever=BlockingRetriever(1.25)
+            session_factory=postgres_session_factory, retriever=BlockingRetriever(1.25)
         )
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         result = await RunExecutionService(tool_registry=registry, lease_ttl_seconds=1).execute(
             run_id=run.id, repository=RunRepository(session)
         )
@@ -98,9 +98,9 @@ async def test_blocking_search_keeps_lease_alive(
 
 @pytest.mark.asyncio
 async def test_timed_out_search_cannot_complete_run_later(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="late")
         agent = AgentRepository(session).create(name="search")
         repo = RunRepository(session)
@@ -119,17 +119,17 @@ async def test_timed_out_search_cannot_complete_run_later(
     retriever = BlockingRetriever(0.25)
     registry = ToolRegistry()
     registry.register(
-        ShortDeadlineSearch(session_factory=sqlite_session_factory, retriever=retriever)
+        ShortDeadlineSearch(session_factory=postgres_session_factory, retriever=retriever)
     )
     try:
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             result = await RunExecutionService(tool_registry=registry).execute(
                 run_id=run.id, repository=RunRepository(session)
             )
             assert result.status is RunStatus.FAILED
             before = len(RunRepository(session).list_events(run.id))
         await asyncio.to_thread(retriever.finished.wait, 2)
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             stored = RunRepository(session).get(run.id)
             assert stored is not None and stored.status is RunStatus.FAILED
             assert len(RunRepository(session).list_events(run.id)) == before

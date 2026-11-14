@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_ingestion_job_repository_transitions_document_to_parsed(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -52,9 +52,9 @@ def test_ingestion_job_repository_transitions_document_to_parsed(
 
 
 def test_ingestion_job_repository_failure_marks_document_failed(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -82,9 +82,9 @@ def test_ingestion_job_repository_failure_marks_document_failed(
 
 
 def test_ingestion_job_repository_rejects_invalid_transition(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -107,11 +107,11 @@ def test_ingestion_job_repository_rejects_invalid_transition(
 
 
 def test_ingestion_job_repository_returns_none_for_missing_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     missing_document_id = UUID("00000000-0000-0000-0000-000000000012")
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         created = IngestionJobRepository(session).create(document_id=missing_document_id)
         jobs = IngestionJobRepository(session).list_for_document(missing_document_id)
 

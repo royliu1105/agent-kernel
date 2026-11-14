@@ -6,13 +6,12 @@ import pytest
 from kernel_core import DocumentStatus
 from kernel_rag.object_store import LocalObjectStore
 from kernel_storage import (
-    Base,
     DocumentRepository,
     IngestionJobRepository,
     KnowledgeBaseRepository,
     create_session_factory,
 )
-from sqlalchemy import create_engine, text
+from sqlalchemy import Engine, text
 
 SPEC = importlib.util.spec_from_file_location(
     "backend_drill", Path(__file__).parents[2] / "scripts" / "backend_drill.py"
@@ -57,9 +56,9 @@ def test_manifest_rejects_unsafe_object_keys(tmp_path: Path, key: str) -> None:
 
 def test_manifest_detects_object_corruption_missing_bytes_and_database_mismatch(
     tmp_path: Path,
+    postgres_engine: Engine,
 ) -> None:
-    engine = create_engine("sqlite://")
-    Base.metadata.create_all(engine)
+    engine = postgres_engine
     store = LocalObjectStore(root_path=tmp_path)
     try:
         with create_session_factory(engine)() as session:

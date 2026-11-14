@@ -1,5 +1,10 @@
 # Day 02: Run Lifecycle and Storage Foundation
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 ## Goal
 
 Start Phase 1 by turning the Day 1 domain model skeleton into the first real persisted Agent run lifecycle foundation.

@@ -164,13 +164,11 @@ does not add pgvector-native storage, and does not add live OpenAI calls to CI.
 
 Day 69 adds an optional pgvector-native storage and similarity-search path:
 
-- `AGENT_KERNEL_VECTOR_STORE=auto` uses pgvector on PostgreSQL and JSON-vector
-  fallback elsewhere.
-- `AGENT_KERNEL_VECTOR_STORE=json` always uses the SQLite-compatible JSON-vector
-  path.
-- `AGENT_KERNEL_VECTOR_STORE=pgvector` requires PostgreSQL and fails clearly on
-  other databases.
-- Migration `0013_pgvector_embeddings` is a no-op on SQLite and, on PostgreSQL,
+- `AGENT_KERNEL_VECTOR_STORE=auto` uses native pgvector.
+- `AGENT_KERNEL_VECTOR_STORE=json` explicitly selects JSON-vector similarity
+  within PostgreSQL, not a fallback database.
+- `AGENT_KERNEL_VECTOR_STORE=pgvector` uses the migrated native vector column.
+- Migration `0013_pgvector_embeddings` runs on the required PostgreSQL backend and
   installs the `vector` extension, adds `chunk_embeddings.vector_pg`, backfills
   it from the existing JSON `vector` column, and creates a cosine HNSW index.
 - `ChunkEmbeddingRepository.replace_for_document` keeps writing JSON vectors
@@ -381,7 +379,7 @@ Phase 3 establishes a tested RAG baseline:
 
 - Manual document upload, ingestion, chunking, indexing, and retrieval.
 - Deterministic mock embeddings.
-- SQLite-compatible JSON vector storage.
+- PostgreSQL JSON-vector storage (historical foundation; native pgvector is now the default).
 - Citation metadata for retrieved chunks.
 - `kb_search` as a read-only tool.
 - Explicit tool-request runtime integration.

@@ -2,10 +2,14 @@
 
 This directory tracks daily execution plans.
 
+The active authorized exception is [observability completion](../observability-completion-plan.md)
+(O1-O5). Use its single per-capability acceptance ledger, not another day-number sequence.
+
 Day 1-90 files are historical delivery records through the published v1.0.0
-release. Current post-v1.0 work uses the
-[capability hardening plan](../capability-hardening-plan.md), with separate
-implementation and verification gates; do not restart at an old daily prompt.
+release. Completed post-v1.0 implementation is recorded in the
+[capability hardening plan](../capability-hardening-plan.md). The next stage uses
+PV1-PV6 in the [real-scenario pilot plan](../real-scenario-pilot-plan.md);
+do not restart at an old daily prompt or create another day-number schedule.
 
 Use daily plans for short-lived implementation checklists. Use [Milestones](../milestones.md) for phase-level progress and [Development Plan](../development-plan.md) for the overall delivery method.
 

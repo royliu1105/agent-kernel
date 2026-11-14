@@ -141,13 +141,13 @@ class CancellationResistantProvider:
 
 @pytest.mark.asyncio
 async def test_active_deadline_fences_run_without_waiting_for_cancellation_resistant_provider(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = CancellationResistantProvider()
     tool = CountingTool()
     registry = ToolRegistry()
     registry.register(tool)
-    run_id = _queued(sqlite_session_factory)
+    run_id = _queued(postgres_session_factory)
     service = RunExecutionService(
         provider=provider,
         tool_registry=registry,
@@ -155,7 +155,7 @@ async def test_active_deadline_fences_run_without_waiting_for_cancellation_resis
         lease_ttl_seconds=1,
     )
     initial_tasks = asyncio.all_tasks()
-    execution = asyncio.create_task(_execute(sqlite_session_factory, service, run_id))
+    execution = asyncio.create_task(_execute(postgres_session_factory, service, run_id))
     try:
         await asyncio.wait_for(provider.entered.wait(), timeout=3)
         await asyncio.wait_for(provider.cancelled.wait(), timeout=3)
@@ -171,7 +171,7 @@ async def test_active_deadline_fences_run_without_waiting_for_cancellation_resis
         assert not provider.returned.is_set()
         assert provider.task is not None and not provider.task.done()
 
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             assert WorkerLeaseRepository(session).get_active(run_id=run_id) is None
             lease = session.scalars(
                 select(WorkerLeaseRecord).where(WorkerLeaseRecord.run_id == str(run_id))
@@ -180,7 +180,7 @@ async def test_active_deadline_fences_run_without_waiting_for_cancellation_resis
             with pytest.raises(ExecutionOwnershipError):
                 stale.save_execution_checkpoint(run_id, {"late": True})
             session.rollback()
-        before = _stored_snapshot(sqlite_session_factory, run_id)
+        before = _stored_snapshot(postgres_session_factory, run_id)
         assert before["tools"] == before["usage"] == []
         assert before["checkpoint"] is not None
         assert before["checkpoint"]["response"] is None
@@ -189,7 +189,7 @@ async def test_active_deadline_fences_run_without_waiting_for_cancellation_resis
         late = await asyncio.wait_for(asyncio.shield(provider.task), timeout=3)
         assert late.text == "late private provider response"
         await asyncio.sleep(0)
-        assert _stored_snapshot(sqlite_session_factory, run_id) == before
+        assert _stored_snapshot(postgres_session_factory, run_id) == before
         assert provider.calls == 1 and tool.calls == 0
         assert not (asyncio.all_tasks() - initial_tasks), "Leaked runtime/heartbeat task"
     finally:
@@ -212,7 +212,7 @@ async def test_active_deadline_fences_run_without_waiting_for_cancellation_resis
 @pytest.mark.parametrize("attempts", [1, 2])
 @pytest.mark.parametrize("hint", [0.75, 1.0, 1.01, 60.0])
 async def test_same_provider_fallback_obeys_final_attempt_retry_after(
-    sqlite_session_factory: sessionmaker[Session], attempts: int, hint: float
+    postgres_session_factory: sessionmaker[Session], attempts: int, hint: float
 ) -> None:
     trace: list[tuple[str, str | float]] = []
     primary_calls = 0
@@ -239,9 +239,9 @@ async def test_same_provider_fallback_obeys_final_attempt_retry_after(
         await asyncio.sleep(0)
         trace.append(("sleep_end", seconds))
 
-    run_id = _queued(sqlite_session_factory, fallback=True)
+    run_id = _queued(postgres_session_factory, fallback=True)
     result = await _execute(
-        sqlite_session_factory,
+        postgres_session_factory,
         RunExecutionService(
             provider=HintProvider(),
             retry_policy=RetryPolicy(provider_max_attempts=attempts),
@@ -256,7 +256,7 @@ async def test_same_provider_fallback_obeys_final_attempt_retry_after(
         expected.append(("call", "primary"))
         if attempt + 1 < attempts:
             expected.extend([("sleep_start", 0.125), ("sleep_end", 0.125)])
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         fallback_events = [
             event
             for event in RunRepository(session).list_events(run_id)
@@ -282,7 +282,7 @@ async def test_same_provider_fallback_obeys_final_attempt_retry_after(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("native", [False, True], ids=["terminal-answer", "native-tool-response"])
 async def test_normally_returned_usage_is_saved_before_active_time_failure(
-    sqlite_session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch, native: bool
+    postgres_session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch, native: bool
 ) -> None:
     clock = [0.0]
     monkeypatch.setattr(native_state, "monotonic", lambda: clock[0])
@@ -309,9 +309,9 @@ async def test_normally_returned_usage_is_saved_before_active_time_failure(
     tool = CountingTool()
     registry = ToolRegistry()
     registry.register(tool)
-    run_id = _queued(sqlite_session_factory)
+    run_id = _queued(postgres_session_factory)
     result = await _execute(
-        sqlite_session_factory,
+        postgres_session_factory,
         RunExecutionService(
             provider=ReturnedUsageProvider(),
             tool_registry=registry,
@@ -323,7 +323,7 @@ async def test_normally_returned_usage_is_saved_before_active_time_failure(
     assert result.error_type == "execution_active_time_limit"
     assert result.output is None
     assert len(requests) == 1 and tool.calls == 0
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         persisted = RunRepository(session).get(run_id)
         assert persisted is not None
         assert persisted.input_tokens_total == result.input_tokens_total == 11

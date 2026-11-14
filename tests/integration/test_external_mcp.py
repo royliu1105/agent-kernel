@@ -246,7 +246,7 @@ async def test_mcp_empty_configuration_preserves_registry() -> None:
 @pytest.mark.parametrize("transport", ["stdio", "http"])
 @pytest.mark.parametrize("kind", ["tool", "resource", "prompt"])
 async def test_mcp_binding_policy_has_persisted_approval_denial_and_audit(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     request: pytest.FixtureRequest,
     transport: str,
     kind: str,
@@ -290,7 +290,7 @@ async def test_mcp_binding_policy_has_persisted_approval_denial_and_audit(
             if kind == "tool"
             else ({"name": "Ada"} if kind == "prompt" else {})
         )
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             agent = AgentRepository(session).create(name="external-policy")
             repository = RunRepository(session)
             denied_run = repository.create(

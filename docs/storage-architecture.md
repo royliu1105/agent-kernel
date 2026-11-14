@@ -293,8 +293,8 @@ boundary:
 - The pgvector migration installs the `vector` extension, backfills
   `vector_pg`, and creates a cosine HNSW index.
 
-This preserves SQLite-friendly local development while giving production
-PostgreSQL deployments a native vector-search path.
+Current development, tests and production all use PostgreSQL. Explicit JSON
+similarity remains available within PostgreSQL; it is not SQLite compatibility.
 
 Full document content should not be stored in run events, logs, or metadata.
 
@@ -306,16 +306,11 @@ S3ObjectStore
 
 S3 is AWS's object storage service and a widely adopted API standard. MinIO is an open-source, self-hosted, S3-compatible object storage system.
 
-## SQLite Positioning
+## Supported Database
 
-SQLite may be supported later for:
-
-- Local development.
-- Single-user learning mode.
-- Tests.
-- Quickstart without Docker.
-
-It is not the default production storage path. The production/default path remains:
+PostgreSQL is the sole relational backend, including local development and tests.
+SQLite compatibility was removed after the Docker-only cutover. See
+[compatibility and isolated testing](postgresql-only.md). The default path is:
 
 ```text
 PostgreSQL + pgvector

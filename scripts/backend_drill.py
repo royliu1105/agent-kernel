@@ -28,7 +28,6 @@ from kernel_runtime.queue import QueueFullError, QueueUnavailableError
 from kernel_runtime.redis_support import RedisSettings, create_redis_client, create_run_queue
 from kernel_storage import (
     AgentRepository,
-    Base,
     ChunkEmbeddingRepository,
     DocumentChunkRepository,
     DocumentRepository,
@@ -43,6 +42,10 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL, Engine, make_url
 
 ROOT = Path(__file__).resolve().parents[1]
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(ROOT))
+from scripts.testing_database import isolated_database  # noqa: E402
+
 ALLOW_ENV = "AGENT_KERNEL_ALLOW_BACKEND_DRILL"
 
 
@@ -437,9 +440,7 @@ async def run_queue_drill(url: str) -> dict[str, Any]:
     client = create_redis_client(settings)
     queue = create_run_queue(settings, client=client)
     assert queue is not None
-    with TemporaryDirectory(prefix="agent-kernel-queue-drill-") as temporary:
-        engine = create_engine(f"sqlite:///{temporary}/runs.db")
-        Base.metadata.create_all(engine)
+    with isolated_database() as engine:
         sessions = create_session_factory(engine)
         try:
             with sessions() as session:
@@ -506,7 +507,7 @@ async def run_queue_drill(url: str) -> dict[str, Any]:
                 "queue_error_detected": outage_detected,
                 "worker_queue_fallbacks": int(fallback_count),
                 "malformed_hints": queue.malformed_items,
-                "durable_store": "sqlite-test-fixture",
+                "durable_store": "postgresql-test-schema",
             }
         finally:
             engine.dispose()

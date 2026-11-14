@@ -73,8 +73,8 @@ side-effecting or approval-protected tools never gain retries from this change.
   completed result and native reasoning; multiple approval rounds work.
 - Rejection, repeated resume, concurrency, cancellation, expired ownership and
   budget persistence cannot duplicate a completed external write.
-- Checkpoint migration/legacy compatibility and ownership guards on SQLite and
-  real PostgreSQL; API workspace boundary remains in force.
+- Checkpoint migration/legacy compatibility and ownership guards on real
+  PostgreSQL; API workspace boundary remains in force.
 - Deterministic delay tests cover caps, jitter, valid/invalid Retry-After,
   permanent errors, cancellation and no tool replay during model retries.
 - Update operator guides, regression scenarios and actual OpenAI wire fixtures;
@@ -84,6 +84,6 @@ No paid provider call is authorized by this spec. Full local and remote gates
 are separate statuses; fixture evidence is not live-model quality evidence.
 
 `make release-eval` includes credential-free bounded-loop, approval wire,
-backoff and deadline-edge contracts (SQLite subset); full CI/local backend tests
-also execute the PostgreSQL cases. API and Worker share the default route factory
+backoff and deadline-edge contracts on isolated PostgreSQL. Start the dedicated
+test service first. API and Worker share the default route factory
 so HTTP approval continuation can resolve the provider selected by the Worker.

@@ -1,6 +1,24 @@
 # Milestones
 
-## Current Capability Hardening
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
+## Active Follow-Up: Observability Completion
+
+[O1-O5](observability-completion-plan.md) are explicitly authorized; the ledger
+records per-capability evidence. Central logs, traces and SMTP delivery have independent
+verification gates. This is not a new day-number schedule.
+
+## Next Stage: Real-Scenario Acceptance and Controlled Pilot
+
+Status: planned, not started. The
+[pilot plan](real-scenario-pilot-plan.md) owns PV1-PV6 task status, priorities,
+evidence and go/no-go criteria. Foundation feature expansion is frozen.
+Start with PV1 scope/data/model/budget decisions; no new daily sequence or
+live-provider/pilot acceptance is implied by writing the plan.
+
+## Completed Capability Hardening
 
 Status: R1-R10 remediation passed scoped acceptance for implementation `d65e833`.
 The earlier blanket acceptance based on `6c9fa92` was withdrawn after audit.
@@ -9,8 +27,8 @@ verification for `cb25484`. See the canonical plan for evidence and explicit lim
 These changes are unreleased; v1.0.0 remains the published release.
 
 The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) owns the
-P0-P5 scope, R1-R10 remediation, N1-N5 follow-up and acceptance criteria. Update
-that checklist as work proceeds; update this summary at workstream boundaries.
+P0-P5 scope, R1-R10 remediation, N1-N5 follow-up and acceptance evidence.
+Keep that history; track new pilot work in PV1-PV6, not duplicated checklists here.
 
 The completed foundation tasks below reflect their original delivery scope.
 They do not certify full resource isolation, execution-path leasing/fencing,

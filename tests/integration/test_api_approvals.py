@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_approval_api_lists_gets_and_approves(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    approval_id = _create_requested_approval(sqlite_session_factory)
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    approval_id = _create_requested_approval(postgres_session_factory)
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     list_response = client.get("/v1/approvals")
     assert list_response.status_code == 200
@@ -44,10 +44,10 @@ def test_approval_api_lists_gets_and_approves(
 
 
 def test_approval_api_rejects_with_reason(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    approval_id = _create_requested_approval(sqlite_session_factory)
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    approval_id = _create_requested_approval(postgres_session_factory)
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     reject_response = client.post(
         f"/v1/approvals/{approval_id}/reject",
@@ -61,9 +61,9 @@ def test_approval_api_rejects_with_reason(
 
 
 def test_approval_api_returns_404_for_missing_approval(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     get_response = client.get(f"/v1/approvals/{missing_id}")

@@ -53,13 +53,13 @@ class ApprovedEcho(EchoTool):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("tool_name", ["missing", "echo"])
 async def test_usage_survives_native_failure_and_approval_resume(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tool_name: str,
 ) -> None:
     registry = ToolRegistry()
     registry.register(ApprovedEcho())
     service = RunExecutionService(provider=PaidNativeProvider(tool_name), tool_registry=registry)
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repo = RunRepository(session)
         agent = AgentRepository(session).create(name="cost")
         run = repo.create(agent_id=agent.id, input_payload={"task": "call tool"})

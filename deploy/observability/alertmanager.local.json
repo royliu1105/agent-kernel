@@ -1,0 +1,16 @@
+{
+  "global": {
+    "resolve_timeout": "1m", "smtp_smarthost": "mailpit:1025",
+    "smtp_from": "agent-kernel@local.invalid", "smtp_require_tls": false
+  },
+  "route": {
+    "receiver": "local-test-mailbox", "group_by": ["alertname", "job"],
+    "group_wait": "5s", "group_interval": "10s", "repeat_interval": "1h"
+  },
+  "receivers": [{"name": "local-test-mailbox", "email_configs": [{
+    "to": "operator@local.invalid", "send_resolved": true,
+    "headers": {"Subject": "[Agent Kernel {{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"},
+    "text": "{{ template \"agent_kernel.text\" . }}"
+  }]}],
+  "templates": ["/etc/alertmanager/email.tmpl"]
+}

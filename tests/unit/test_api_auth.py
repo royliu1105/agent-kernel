@@ -21,10 +21,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_healthz_stays_public_when_api_key_auth_is_enabled(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.get("/healthz")
@@ -34,18 +34,18 @@ def test_healthz_stays_public_when_api_key_auth_is_enabled(
 
 
 def test_metrics_requires_separate_monitoring_token_when_auth_is_enabled(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AGENT_KERNEL_MONITORING_TOKEN", "monitor-test-only")
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.get("/metrics")
 
     assert response.status_code == 401
-    tenant_key = _issue_api_key(sqlite_session_factory, "ak_monitor_denied")
+    tenant_key = _issue_api_key(postgres_session_factory, "ak_monitor_denied")
     assert (
         client.get("/metrics", headers={"Authorization": f"Bearer {tenant_key}"}).status_code == 401
     )
@@ -55,10 +55,10 @@ def test_metrics_requires_separate_monitoring_token_when_auth_is_enabled(
 
 
 def test_api_key_auth_rejects_missing_key(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post("/v1/agents", json={"name": "blocked"})
@@ -68,10 +68,10 @@ def test_api_key_auth_rejects_missing_key(
 
 
 def test_api_key_auth_rejects_invalid_key(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -101,11 +101,11 @@ def test_api_key_auth_enabled_from_env_parses_truthy_and_falsey_values(
 
 
 def test_api_key_auth_accepts_bearer_key_and_updates_last_used(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    plaintext_key = _issue_api_key(sqlite_session_factory, "ak_bearer_secret")
+    plaintext_key = _issue_api_key(postgres_session_factory, "ak_bearer_secret")
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -113,7 +113,7 @@ def test_api_key_auth_accepts_bearer_key_and_updates_last_used(
         json={"name": "authenticated"},
         headers={"Authorization": f"Bearer {plaintext_key}"},
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         authenticated_key = ApiKeyRepository(session).authenticate(plaintext_key)
 
     assert response.status_code == 201
@@ -123,11 +123,11 @@ def test_api_key_auth_accepts_bearer_key_and_updates_last_used(
 
 
 def test_api_key_auth_accepts_agent_kernel_api_key_header(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    plaintext_key = _issue_api_key(sqlite_session_factory, "ak_header_secret")
+    plaintext_key = _issue_api_key(postgres_session_factory, "ak_header_secret")
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -141,15 +141,15 @@ def test_api_key_auth_accepts_agent_kernel_api_key_header(
 
 
 def test_route_authorization_rejects_viewer_write(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key = _issue_api_key(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_viewer_secret",
         role=WorkspaceRole.VIEWER,
     )
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -163,20 +163,20 @@ def test_route_authorization_rejects_viewer_write(
 
 
 def test_route_authorization_allows_viewer_read(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key, workspace_id = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_viewer_read_secret",
         role=WorkspaceRole.VIEWER,
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(
             name="readable-agent",
             workspace_id=workspace_id,
         )
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.get(
@@ -189,15 +189,15 @@ def test_route_authorization_allows_viewer_read(
 
 
 def test_route_authorization_allows_operator_write(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key = _issue_api_key(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_operator_write_secret",
         role=WorkspaceRole.OPERATOR,
     )
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -211,16 +211,16 @@ def test_route_authorization_allows_operator_write(
 
 
 def test_route_authorization_rejects_viewer_approval_review(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key, workspace_id = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_viewer_approval_review",
         role=WorkspaceRole.VIEWER,
     )
-    _approval_id = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_id)
+    _approval_id = _create_requested_approval(postgres_session_factory, workspace_id=workspace_id)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.get(
@@ -233,15 +233,15 @@ def test_route_authorization_rejects_viewer_approval_review(
 
 
 def test_authenticated_agent_create_uses_api_key_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key, workspace_id = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_scoped_agent_secret",
         role=WorkspaceRole.OPERATOR,
     )
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -255,12 +255,12 @@ def test_authenticated_agent_create_uses_api_key_workspace(
 
 
 def test_agent_read_is_workspace_scoped(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    key_a = _issue_api_key(sqlite_session_factory, "ak_workspace_a")
-    key_b = _issue_api_key(sqlite_session_factory, "ak_workspace_b")
+    key_a = _issue_api_key(postgres_session_factory, "ak_workspace_a")
+    key_b = _issue_api_key(postgres_session_factory, "ak_workspace_b")
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
     created = client.post(
         "/v1/agents",
@@ -278,12 +278,12 @@ def test_agent_read_is_workspace_scoped(
 
 
 def test_run_create_requires_agent_in_current_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    key_a = _issue_api_key(sqlite_session_factory, "ak_run_workspace_a")
-    key_b = _issue_api_key(sqlite_session_factory, "ak_run_workspace_b")
+    key_a = _issue_api_key(postgres_session_factory, "ak_run_workspace_a")
+    key_b = _issue_api_key(postgres_session_factory, "ak_run_workspace_b")
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
     created = client.post(
         "/v1/agents",
@@ -302,12 +302,12 @@ def test_run_create_requires_agent_in_current_workspace(
 
 
 def test_run_read_is_workspace_scoped(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    key_a = _issue_api_key(sqlite_session_factory, "ak_run_read_workspace_a")
-    key_b = _issue_api_key(sqlite_session_factory, "ak_run_read_workspace_b")
+    key_a = _issue_api_key(postgres_session_factory, "ak_run_read_workspace_a")
+    key_b = _issue_api_key(postgres_session_factory, "ak_run_read_workspace_b")
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
     agent = client.post(
         "/v1/agents",
@@ -330,20 +330,20 @@ def test_run_read_is_workspace_scoped(
 
 
 def test_approval_list_is_workspace_scoped(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     key_a, workspace_a = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_approval_list_a",
     )
     _key_b, workspace_b = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_approval_list_b",
     )
-    approval_a = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_a)
-    _approval_b = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_b)
+    approval_a = _create_requested_approval(postgres_session_factory, workspace_id=workspace_a)
+    _approval_b = _create_requested_approval(postgres_session_factory, workspace_id=workspace_b)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.get(
@@ -356,20 +356,20 @@ def test_approval_list_is_workspace_scoped(
 
 
 def test_approval_get_and_decision_are_workspace_scoped(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     key_a, workspace_a = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_approval_decision_a",
     )
     key_b, workspace_b = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_approval_decision_b",
     )
-    approval_a = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_a)
-    approval_b = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_b)
+    approval_a = _create_requested_approval(postgres_session_factory, workspace_id=workspace_a)
+    approval_b = _create_requested_approval(postgres_session_factory, workspace_id=workspace_b)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     hidden_get = client.get(
@@ -404,19 +404,19 @@ def test_approval_get_and_decision_are_workspace_scoped(
 
 
 def test_approval_decision_records_authenticated_reviewer(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     plaintext_key, workspace_id = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_approval_reviewer",
     )
-    approval_id = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_id)
-    with sqlite_session_factory() as session:
+    approval_id = _create_requested_approval(postgres_session_factory, workspace_id=workspace_id)
+    with postgres_session_factory() as session:
         api_key = ApiKeyRepository(session).authenticate(plaintext_key)
         assert api_key is not None
         principal_id = api_key.principal_id
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -430,26 +430,26 @@ def test_approval_decision_records_authenticated_reviewer(
 
 
 def test_run_resume_rejects_cross_workspace_approval(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     key_a, workspace_a = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_resume_workspace_a",
     )
     _key_b, workspace_b = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         "ak_resume_workspace_b",
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="resume-agent", workspace_id=workspace_a)
         run = RunRepository(session).create(
             agent_id=agent.id,
             workspace_id=workspace_a,
             input_payload={"task": "resume"},
         )
-    approval_b = _create_requested_approval(sqlite_session_factory, workspace_id=workspace_b)
+    approval_b = _create_requested_approval(postgres_session_factory, workspace_id=workspace_b)
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -463,10 +463,10 @@ def test_run_resume_rejects_cross_workspace_approval(
 
 
 def test_api_key_auth_rejects_disabled_principal(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    plaintext_key = _issue_api_key(sqlite_session_factory, "ak_disabled_secret")
-    with sqlite_session_factory() as session:
+    plaintext_key = _issue_api_key(postgres_session_factory, "ak_disabled_secret")
+    with postgres_session_factory() as session:
         api_key = ApiKeyRepository(session).authenticate(plaintext_key)
         assert api_key is not None
         principal = PrincipalRepository(session).set_disabled(
@@ -476,7 +476,7 @@ def test_api_key_auth_rejects_disabled_principal(
         assert principal is not None
 
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     )
 
     response = client.post(
@@ -490,9 +490,9 @@ def test_api_key_auth_rejects_disabled_principal(
 
 
 def test_api_key_auth_is_disabled_by_default(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     response = client.post("/v1/agents", json={"name": "local-dev"})
 
@@ -501,16 +501,18 @@ def test_api_key_auth_is_disabled_by_default(
 
 
 def test_disabled_workspace_cannot_use_previously_valid_key(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    key, workspace_id = _issue_api_key_with_workspace(sqlite_session_factory, "disabled-workspace")
-    with sqlite_session_factory() as session:
+    key, workspace_id = _issue_api_key_with_workspace(
+        postgres_session_factory, "disabled-workspace"
+    )
+    with postgres_session_factory() as session:
         workspace = session.get(WorkspaceRecord, str(workspace_id))
         assert workspace is not None
         workspace.status = "disabled"
         session.commit()
     with TestClient(
-        create_app(session_factory=sqlite_session_factory, api_key_auth_enabled=True)
+        create_app(session_factory=postgres_session_factory, api_key_auth_enabled=True)
     ) as client:
         response = client.get("/v1/usage", headers={"Authorization": f"Bearer {key}"})
     assert response.status_code == 401
@@ -518,13 +520,13 @@ def test_disabled_workspace_cannot_use_previously_valid_key(
 
 
 def _issue_api_key(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     plaintext_key: str,
     *,
     role: WorkspaceRole = WorkspaceRole.OPERATOR,
 ) -> str:
     plaintext, _workspace_id = _issue_api_key_with_workspace(
-        sqlite_session_factory,
+        postgres_session_factory,
         plaintext_key,
         role=role,
     )
@@ -532,12 +534,12 @@ def _issue_api_key(
 
 
 def _issue_api_key_with_workspace(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     plaintext_key: str,
     *,
     role: WorkspaceRole = WorkspaceRole.OPERATOR,
 ) -> tuple[str, UUID]:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         principal = PrincipalRepository(session).create(
             type=PrincipalType.USER,
             display_name="API User",
@@ -559,11 +561,11 @@ def _issue_api_key_with_workspace(
 
 
 def _create_requested_approval(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     *,
     workspace_id: UUID,
 ) -> UUID:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(
             name="approval-agent",
             workspace_id=workspace_id,

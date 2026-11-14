@@ -76,8 +76,8 @@ POST /v1/documents/{document_id}/index
 GET  /v1/documents/{document_id}/embeddings
 ```
 
-Retrieval can use SQLite-compatible JSON vectors or pgvector depending on
-configuration.
+Retrieval uses PostgreSQL with native pgvector by default. Explicit JSON-vector
+similarity remains available within PostgreSQL.
 
 ### Memory
 

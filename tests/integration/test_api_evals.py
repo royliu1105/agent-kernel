@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_eval_run_api_persists_and_lists_reports(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     report = {
         "name": "rag-smoke",
         "passed": True,
@@ -63,9 +63,9 @@ def test_eval_run_api_persists_and_lists_reports(
 
 
 def test_eval_run_api_records_failed_reports(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     response = client.post(
         "/v1/evals/runs",
@@ -94,9 +94,9 @@ def test_eval_run_api_records_failed_reports(
 
 
 def test_eval_run_api_rejects_invalid_report_counts(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     response = client.post(
         "/v1/evals/runs",
@@ -118,9 +118,9 @@ def test_eval_run_api_rejects_invalid_report_counts(
 
 
 def test_eval_run_api_returns_404_for_missing_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     response = client.get(f"/v1/evals/runs/{missing_id}")

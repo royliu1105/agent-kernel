@@ -19,7 +19,7 @@ Required checks:
 - Fresh clone from the release branch or release candidate commit.
 - Python dependency install through `uv`.
 - Web dependency install through `npm`.
-- SQLite migration and local runtime path.
+- PostgreSQL migration and Docker runtime path.
 - Deterministic release evals.
 - Release smoke matrix.
 - Quick load/soak gate.
@@ -112,13 +112,12 @@ Expected:
 - Any vulnerability warnings are reviewed against
   [Dependency Audit Review](dependency-audit.md).
 
-## SQLite Quick Path
+## PostgreSQL Docker Path
 
-Run migrations without Docker:
+Start the Docker runtime; API startup applies migrations:
 
 ```bash
-unset DATABASE_URL
-uv run alembic upgrade head
+make docker-up
 ```
 
 Run core local checks:
@@ -133,17 +132,17 @@ Expected:
 - Migrations complete.
 - CLI and worker command surfaces load.
 
-Start the API on a rehearsal-specific port to avoid collisions with an existing
-development server:
+The default runtime is Docker-only. Do not start a second host API. Check the
+running API:
 
 ```bash
-AGENT_KERNEL_API_HOST=127.0.0.1 AGENT_KERNEL_API_PORT=8011 uv run agent-kernel-api
+make docker-status
 ```
 
 In another terminal:
 
 ```bash
-curl http://127.0.0.1:8011/healthz
+curl http://127.0.0.1:8000/healthz
 ```
 
 Expected:
@@ -152,7 +151,8 @@ Expected:
 {"status":"ok","service":"agent-kernel-api"}
 ```
 
-Stop the foreground API with `Ctrl-C`.
+Use `make docker-stop` to stop it without deleting data. For database tests use
+the separate disposable service from [PostgreSQL-only testing](postgresql-only.md).
 
 ## Release Gates
 

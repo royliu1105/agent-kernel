@@ -6,12 +6,18 @@ import sys
 import textwrap
 
 import pytest
+from sqlalchemy import Engine
+
+
+@pytest.fixture(autouse=True)
+def database_for_subprocess(postgres_engine: Engine) -> None:
+    """The PostgreSQL fixture exports this test's isolated schema URL."""
 
 
 def _run(script: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-c", textwrap.dedent(script)],
-        env={**os.environ, "DATABASE_URL": "sqlite://", "AGENT_KERNEL_OTEL_ENABLED": "false"},
+        env={**os.environ, "AGENT_KERNEL_OTEL_ENABLED": "false"},
         capture_output=True,
         text=True,
         timeout=20,
@@ -21,7 +27,7 @@ def _run(script: str) -> subprocess.CompletedProcess[str]:
 
 def test_default_uvicorn_entrypoint_redacts_actual_database_exception() -> None:
     result = _run("""
-        import asyncio, logging
+        import asyncio, logging, os
         from unittest.mock import Mock
         import h11
         import uvicorn
@@ -33,7 +39,7 @@ def test_default_uvicorn_entrypoint_redacts_actual_database_exception() -> None:
         def run(app, **kwargs):
             uvicorn.Config(app, **kwargs)
             async def failing(scope, receive, send):
-                with create_engine("sqlite://").connect() as connection:
+                with create_engine(os.environ["DATABASE_URL"]).connect() as connection:
                     connection.execute(text("INSERT INTO missing VALUES (:prompt, :secret)"),
                         {"prompt": "PRIVATE_PROMPT_SENTINEL", "secret": "SQL_SECRET_SENTINEL"})
             async def exercise():
@@ -57,7 +63,7 @@ def test_default_uvicorn_entrypoint_redacts_actual_database_exception() -> None:
         main.main()
     """)
     assert result.returncode == 0, result.stderr
-    assert "OperationalError" in result.stderr
+    assert "ProgrammingError" in result.stderr
     assert "PRIVATE_PROMPT_SENTINEL" not in result.stderr
     assert "SQL_SECRET_SENTINEL" not in result.stderr
     assert "URL_SECRET_SENTINEL" not in result.stderr

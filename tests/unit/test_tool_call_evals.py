@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 @pytest.mark.asyncio
 async def test_tool_call_eval_runner_passes_provider_native_runtime_cases(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     report = await ToolCallEvalRunner(name="native-tool-smoke").run(
         cases=(
@@ -87,7 +87,7 @@ async def test_tool_call_eval_runner_passes_provider_native_runtime_cases(
             ),
         ),
         execute=lambda case: _execute_native_tool_case(
-            sqlite_session_factory=sqlite_session_factory,
+            postgres_session_factory=postgres_session_factory,
             case=case,
         ),
     )
@@ -138,7 +138,7 @@ async def test_tool_call_eval_runner_reports_readable_failures() -> None:
 
 async def _execute_native_tool_case(
     *,
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     case: ToolCallEvalCase,
 ) -> ToolCallEvalObservation:
     provider = _provider_for_case(case.name)
@@ -147,7 +147,7 @@ async def _execute_native_tool_case(
         if case.name == "approval-native-tool"
         else create_default_tool_registry()
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name=f"{case.name}-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(

@@ -91,7 +91,7 @@ class RunConflictError(ValueError):
 
 
 def _lock_run(session: Session, run_id: UUID) -> RunRecord | None:
-    # The no-op update provides a row lock on Postgres and a write lock on SQLite.
+    # The no-op update acquires a PostgreSQL row lock until transaction completion.
     # All lease/state/event writers use this lock order: run, then lease/children.
     return session.scalar(
         update(RunRecord)
@@ -1782,7 +1782,7 @@ class ChunkEmbeddingRepository(_KnowledgeRepository):
             chunk = self._get_chunk(embedding.chunk_id)
             if chunk is None or chunk.document_id != str(document_id):
                 raise DocumentChunkingError("All embedding chunks must belong to the document.")
-        use_pgvector = _use_pgvector(self._session, self._vector_store_mode)
+        use_pgvector = _use_pgvector(self._vector_store_mode)
 
         self._session.query(ChunkEmbeddingRecord).filter(
             ChunkEmbeddingRecord.document_id == str(document_id),
@@ -1832,7 +1832,7 @@ class ChunkEmbeddingRepository(_KnowledgeRepository):
     ) -> list[tuple[ChunkEmbedding, float]]:
         if self._get_knowledge_base(knowledge_base_id) is None:
             return []
-        if _use_pgvector(self._session, self._vector_store_mode):
+        if _use_pgvector(self._vector_store_mode):
             return self._similarity_search_pgvector(
                 knowledge_base_id=knowledge_base_id,
                 query_vector=query_vector,
@@ -2454,17 +2454,10 @@ def _cosine_similarity(left: list[float], right: list[float]) -> float:
     return dot / (left_norm * right_norm)
 
 
-def _use_pgvector(session: Session, mode: str) -> bool:
-    dialect_name = session.get_bind().dialect.name
+def _use_pgvector(mode: str) -> bool:
     if mode == "json":
         return False
-    if mode == "auto":
-        return dialect_name == "postgresql"
-    if mode == "pgvector":
-        if dialect_name != "postgresql":
-            raise VectorStoreConfigError(
-                "AGENT_KERNEL_VECTOR_STORE=pgvector requires a PostgreSQL database."
-            )
+    if mode in {"auto", "pgvector"}:
         return True
     raise VectorStoreConfigError("AGENT_KERNEL_VECTOR_STORE must be one of: auto, json, pgvector.")
 

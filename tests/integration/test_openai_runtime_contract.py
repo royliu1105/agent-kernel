@@ -107,7 +107,7 @@ def _failure(kind: str, request: httpx.Request) -> httpx.Response:
     ],
 )
 async def test_native_tool_round_trip_uses_responses_wire_contract(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     reasoning_mode: str,
     failure_kind: str,
     failures: int,
@@ -216,15 +216,15 @@ async def test_native_tool_round_trip_uses_responses_wire_contract(
         base_url="https://other-provider.invalid/v1",
         transport=httpx.MockTransport(fallback_handler),
     )
-    run_id = _queue(sqlite_session_factory, fallback=True, fallback_ref="other:backup")
+    run_id = _queue(postgres_session_factory, fallback=True, fallback_ref="other:backup")
     service = RunExecutionService(
         router=ModelRouter({"openai": provider, "other": fallback_provider}),
         tool_registry=registry,
         retry_policy=RetryPolicy(provider_max_attempts=3),
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         result = await service.execute(run_id=run_id, repository=RunRepository(session))
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         stored = RunRepository(session).get(run_id)
         assert stored is not None
         (tool_call,) = ToolCallRepository(session).list_for_run(run_id)
@@ -300,7 +300,7 @@ async def test_native_tool_round_trip_uses_responses_wire_contract(
 )
 @pytest.mark.parametrize("outcome", ["retry_success", "fallback_success", "exhausted"])
 async def test_actual_adapter_retry_and_fallback_are_bounded_and_persisted(
-    sqlite_session_factory: sessionmaker[Session], kind: str, error_type: str, outcome: str
+    postgres_session_factory: sessionmaker[Session], kind: str, error_type: str, outcome: str
 ) -> None:
     requests: list[dict[str, Any]] = []
 
@@ -320,10 +320,10 @@ async def test_actual_adapter_retry_and_fallback_are_bounded_and_persisted(
         router=ModelRouter({"openai": provider}),
         retry_policy=RetryPolicy(provider_max_attempts=2),
     )
-    run_id = _queue(sqlite_session_factory, fallback=True)
-    with sqlite_session_factory() as session:
+    run_id = _queue(postgres_session_factory, fallback=True)
+    with postgres_session_factory() as session:
         await service.execute(run_id=run_id, repository=RunRepository(session))
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         runs = RunRepository(session)
         stored = runs.get(run_id)
         assert stored is not None
@@ -371,7 +371,7 @@ async def test_actual_adapter_retry_and_fallback_are_bounded_and_persisted(
     ],
 )
 async def test_nontransient_http_failure_never_retries_or_falls_back(
-    sqlite_session_factory: sessionmaker[Session], status: int, code: str, error_type: str
+    postgres_session_factory: sessionmaker[Session], status: int, code: str, error_type: str
 ) -> None:
     calls = 0
 
@@ -381,8 +381,8 @@ async def test_nontransient_http_failure_never_retries_or_falls_back(
         return httpx.Response(status, json={"error": {"code": code}})
 
     provider = OpenAIProvider(api_key="test", transport=httpx.MockTransport(handler))
-    run_id = _queue(sqlite_session_factory, fallback=True)
-    with sqlite_session_factory() as session:
+    run_id = _queue(postgres_session_factory, fallback=True)
+    with postgres_session_factory() as session:
         result = await RunExecutionService(provider=provider).execute(
             run_id=run_id, repository=RunRepository(session)
         )
@@ -410,7 +410,7 @@ async def test_nontransient_http_failure_never_retries_or_falls_back(
     ],
 )
 async def test_unreplayable_native_history_fails_before_tool_execution(
-    sqlite_session_factory: sessionmaker[Session], bad_item: dict[str, Any]
+    postgres_session_factory: sessionmaker[Session], bad_item: dict[str, Any]
 ) -> None:
     calls = 0
 
@@ -436,13 +436,13 @@ async def test_unreplayable_native_history_fails_before_tool_execution(
     tool = ContractTool()
     registry = ToolRegistry()
     registry.register(tool)
-    run_id = _queue(sqlite_session_factory, fallback=True)
+    run_id = _queue(postgres_session_factory, fallback=True)
     service = RunExecutionService(
         provider=OpenAIProvider(api_key="test", transport=httpx.MockTransport(handler)),
         tool_registry=registry,
         retry_policy=RetryPolicy(provider_max_attempts=3),
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         result = await service.execute(run_id=run_id, repository=RunRepository(session))
         assert result.status is RunStatus.FAILED
         assert result.error_type == "openai_invalid_tool_history"

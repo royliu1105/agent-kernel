@@ -148,9 +148,9 @@ wrong-type failures, and real connection refusal with bounded client timeouts.
 They never call FLUSHDB; cleanup deletes only generated
 test keys. The queue drill intentionally loses dequeued hints, rejects overflow,
 and injects a queue WRONGTYPE error, then proves database polling executes all
-persisted fixture runs. Its durable store is explicitly a disposable SQLite
-fixture: it does not claim PostgreSQL concurrency/lease coverage or actual
-network-partition coverage. Separate worker PostgreSQL contracts own that claim.
+persisted fixture runs. Its durable store is an isolated PostgreSQL schema selected
+by `AGENT_KERNEL_TEST_POSTGRES_URL`. It does not claim actual network-partition
+coverage; separate worker tests cover concurrency and lease contracts.
 
 Native pgvector contracts additionally exercise cosine ranking/top-k, model and
 dimension separation, replacing an existing model's vectors, retaining other

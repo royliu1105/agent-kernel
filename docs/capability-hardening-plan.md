@@ -1,5 +1,9 @@
 # Post-v1.0 Capability Hardening Plan
 
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
 ## Status and Authority
 
 Status: **R1-R10 remediation and N1-N5 bounded-execution follow-up accepted
@@ -17,7 +21,31 @@ Acceptance applies only to the documented self-hosted scope and explicit limits;
 it is not production certification or evidence that deferred capabilities exist.
 Retain the Python backend and TypeScript Web stack. This is not a new release.
 
-## Active Follow-Up: Bounded Agent Execution
+## Next Stage: Real-Scenario Acceptance and Controlled Pilot
+
+New explicit authorization (2026-11-14): implement centralized logs, a trace
+backend and SMTP notifications under the separate
+[observability completion plan](observability-completion-plan.md). O1-O5 track
+implementation, local acceptance and remaining gates separately. Historical
+scoped acceptance above did not deliver these backends
+or prove notification receipt. This authorized exception precedes pilot execution.
+
+The maintainer requested a validation/pilot plan on 2026-11-14, not more
+foundation features. [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
+is the canonical next-stage checklist (PV1-PV6, planned, execution not started).
+This document retains completed hardening evidence and limits. Do not reopen
+completed packages or treat deferred enhancements as automatically authorized.
+Live calls, pilot deployment/users and a new release have separate approvals.
+
+The later [reference-project comparison](reference-project-comparison.md)
+records source/test findings from the dirty 2026-11-14 working tree, including
+memory trust-boundary and product-integration gaps outside the historical scoped
+acceptance above. [Reference-informed follow-up](reference-follow-up-plan.md)
+owns CF1-CF8; none is implemented or accepted by that review. CF1/CF2 feed the
+PV1/PV2 entry checks, while CF3-CF8 remain deferred/conditional. This is a
+documentation-only plan, not permission to resume foundation feature expansion.
+
+## Completed Follow-Up: Bounded Agent Execution
 
 Authorized after the scoped R1-R10 closure: first correct current operator docs,
 then implement bounded multi-round execution, persisted approval continuation and
@@ -139,8 +167,10 @@ billing, paid-provider and deployment-capacity limits above still apply.
 GitHub reported non-blocking Action Node.js runtime and runner-image notices;
 upgrading those dependencies is separate maintenance, not a bypass of this gate.
 No tag, release, paid model call or production-capacity certification was made.
-The documentation-only evidence commit following this implementation must also
-pass its own CI; it does not alter the verified implementation's source code.
+The documentation-only evidence commit `d599fc2` also passed
+[CI 43468114477](https://github.com/royliu1105/agent-kernel/actions/runs/43468114477)
+for Python, Web and Compose. It did not alter the verified implementation's
+source code. Neither run proves live-model quality or user-pilot acceptance.
 
 Batch execution authorization (2026-11-13): the maintainer requested continuous
 implementation of the remaining 13 packages and approved parallel sub-agents.
@@ -157,8 +187,8 @@ Parent agent owns isolation,
 execution reliability, integration and final verification; delegated work owns
 observability, external tools, backend drills and regression tooling separately.
 
-This is the canonical execution plan for the capability completion work after
-v1.0. It translates the maintainer-supplied P0-P5 capability plan into testable
+This is the canonical implementation/acceptance record for the capability work
+after v1.0. It translates the maintainer-supplied P0-P5 capability plan into testable
 work packages. Keep the original P identifiers for traceability; their numbers
 do not determine execution order.
 
@@ -168,8 +198,8 @@ maintenance branch. Port behavior with tests, not directories or build outputs.
 
 The Day 1-90 plans remain historical delivery records. Their completed
 foundation tasks do not imply that the stronger guarantees below are complete.
-Update this document when scope or status changes; other planning documents
-link here instead of keeping a separate task list.
+Update this document when hardening evidence changes; other documents link here
+instead of duplicating that record. New pilot tasks/status belong only to PV1-PV6.
 
 ## Verified Starting Point
 
@@ -342,8 +372,9 @@ Implementation scope:
 - [x] Keep legacy unowned data inaccessible to authenticated workspaces until
   an operator explicitly assigns ownership. Document a safe assignment path;
   never silently assign all existing data to the first caller.
-- [x] Preserve the documented auth-disabled local SQLite/mock workflow. Local
-  operator access must not be presented as a workspace-isolated public API.
+- [x] Historically preserved the auth-disabled local SQLite/mock workflow;
+  current mainline replaces its database with Docker PostgreSQL. Local operator
+  access must not be presented as a workspace-isolated public API.
 - [x] Add cross-workspace repository, API and runtime tests and update the
   resource-scope matrix and upgrade instructions.
 
@@ -460,8 +491,8 @@ Environment and remaining acceptance evidence:
 
 Revisit only relevant deferred items each release cycle. Record the trigger,
 scope, tests and acceptance criteria before changing a decision. Keep advanced
-backends, telemetry and live provider tests opt-in; SQLite/mock first run stays
-lightweight. Monitor endpoints must not become public by default.
+backends, telemetry and live provider tests opt-in; the current first-run path is
+Docker PostgreSQL with mock models. Monitor endpoints must not become public by default.
 
 ## Working and Completion Rules
 
@@ -489,15 +520,22 @@ trial; it does not establish long-term operational maturity.
 Next handoff prompt:
 
 ```text
-Read the remediation ledger in docs/capability-hardening-plan.md and
-docs/hardening-verification.md. Preserve the Python backend and TypeScript Web.
-Do not restart implementation from P1.1 or treat the Day 1-90 records as proof.
-Check git status and the per-fix evidence. R1-R10 are accepted within documented
-scope for implementation d65e833, verified by CI 43375236175 and final scope
-review. Do not restart completed work or infer that deferred capabilities exist.
-Keep local, remote and live-provider evidence distinct. Any code changes after
-the verified implementation need their own regression evidence. Choose the next
-scope with the maintainer; live provider smoke needs explicit credentials/budget.
-Do not change VPN/proxy settings, create a tag or publish a release without new
-authorization. Scope acceptance is not release approval or production certification.
+Read docs/real-scenario-pilot-plan.md and this implementation evidence record.
+Read docs/pilot-learning-guide.md and the latest learning note when one exists.
+Coach in Chinese using the relevant source/tests. Before solving a meaningful
+exercise, ask for one learner prediction, evidence choice or assertion and wait
+for their response or request to demonstrate. Do not silently do the entire task.
+Record project results and actual learner participation separately; CI success
+does not prove learner mastery. Contain real incidents before teaching.
+Preserve the Python backend and TypeScript Web. R1-R10 and N1-N5 are accepted
+within their documented scope; baseline d599fc2 has green CI 43468114477.
+PV1-PV6 are planned, not started. When authorized to begin, start PV1 by recording
+the scenario, owners, candidate, dataset, model, budget and safety decisions.
+Do not expand foundation features or restart P1.1/Day 1-90. Use existing paths;
+only reproduced pilot blockers justify a minimal repair with regression evidence.
+Keep fixture, real-backend, live-provider and human-pilot outcomes separate.
+Missing approvals, budget, data or participants are blocked gates, not passes.
+Do not make paid requests, invite users, deploy, commit/push, change VPN/proxy
+settings, create a tag or publish a release without the corresponding approval.
+Scope acceptance is not release approval or production certification.
 ```

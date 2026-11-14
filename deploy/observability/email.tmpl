@@ -1,0 +1,12 @@
+{{ define "agent_kernel.text" }}Agent Kernel alert: {{ .Status }}
+{{ range .Alerts }}
+Alert: {{ .Labels.alertname }}
+Target: {{ .Labels.instance }}
+Service: {{ .Labels.job }}
+Severity: {{ .Labels.severity }}
+Summary: {{ .Annotations.summary }}
+Started: {{ .StartsAt }}
+Ended: {{ .EndsAt }}
+{{ end }}
+Use the private Grafana and run timeline to investigate. Never include task contents or credentials in notifications.
+{{ end }}

@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 @pytest.mark.asyncio
 async def test_api_created_run_is_executed_by_worker(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     agent_response = client.post("/v1/agents", json={"name": "e2e-agent"})
     assert agent_response.status_code == 201
@@ -28,7 +28,7 @@ async def test_api_created_run_is_executed_by_worker(
     assert queue_response.json()["status"] == "queued"
 
     worker = QueuedRunWorker(
-        session_factory=sqlite_session_factory,
+        session_factory=postgres_session_factory,
         execution_service=RunExecutionService(
             router=ModelRouter({"mock": MockLLMProvider(response_prefix="E2E")})
         ),

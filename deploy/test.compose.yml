@@ -1,0 +1,17 @@
+# Disposable tests only. Never share credentials or volumes with the local runtime.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: agent_kernel_test
+      POSTGRES_USER: agent_kernel
+      POSTGRES_PASSWORD: test-only
+    ports:
+      - "127.0.0.1:${AGENT_KERNEL_TEST_POSTGRES_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_kernel -d agent_kernel_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

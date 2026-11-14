@@ -25,6 +25,10 @@ The API creates and inspects state. The worker executes long-running agent runs.
 
 ## v0.1 Release Snapshot
 
+This section records v0.1 history, not current database support. Current mainline
+requires PostgreSQL in runtime and tests; see [PostgreSQL-only storage](postgresql-only.md)
+and [the current Docker runtime](docker-local.md).
+
 The v0.1 release shape is:
 
 ```text
@@ -38,8 +42,8 @@ Process responsibilities:
 - Worker owns queued run execution, tool execution, approval resume, retry, and fallback paths.
 - CLI owns local developer workflows and API-backed commands.
 - Web owns the Agent Workbench operator surface.
-- Postgres is the recommended production database.
-- SQLite remains the fastest local development path.
+- At v0.1, Postgres was the production database and SQLite was supported locally.
+  Current mainline has removed SQLite support.
 - Redis has a queue adapter foundation; default API/worker paths still keep
   scheduling conservative.
 - Object storage can use local filesystem storage or S3/MinIO-compatible

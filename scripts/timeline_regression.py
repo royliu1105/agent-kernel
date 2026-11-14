@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -37,7 +38,6 @@ from kernel_runtime import (
 from kernel_storage import (
     AgentRepository,
     ApprovalRepository,
-    Base,
     RunRepository,
     ToolCallRepository,
     WorkerLeaseRepository,
@@ -45,9 +45,11 @@ from kernel_storage import (
 )
 from kernel_tools import ToolExecutionContext, ToolMetadata, ToolRegistry
 from pydantic import ValidationError
-from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.testing_database import isolated_database
 
 DEFAULT_GOLDEN = Path(__file__).resolve().parents[1] / "evals/timelines/runtime-v1.json"
 SCENARIOS = frozenset(
@@ -211,16 +213,8 @@ class _FixtureTool:
 async def execute_scenario(name: str) -> TimelineObservation:
     if name not in SCENARIOS:
         raise ValueError(f"Unknown timeline fixture {name!r}.")
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    try:
-        Base.metadata.create_all(engine)
+    with isolated_database() as engine:
         return await _execute(name, create_session_factory(engine))
-    finally:
-        engine.dispose()
 
 
 async def _execute(name: str, factory: sessionmaker[Session]) -> TimelineObservation:

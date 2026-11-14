@@ -150,11 +150,11 @@ def test_openai_embedding_provider_rejects_malformed_response() -> None:
 
 
 def test_document_indexing_service_indexes_chunked_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = MockEmbeddingProvider()
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,
@@ -209,7 +209,7 @@ def test_document_indexing_service_indexes_chunked_document(
 
 
 def test_document_indexing_service_indexes_with_openai_embedding_provider(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = OpenAIEmbeddingProvider(
         api_key="sk-test",
@@ -227,7 +227,7 @@ def test_document_indexing_service_indexes_with_openai_embedding_provider(
         ),
     )
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,

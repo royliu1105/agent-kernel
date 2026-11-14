@@ -32,7 +32,7 @@ Initial entities:
 Day 2 storage contract:
 
 - IDs are UUIDs in the domain and API, stored as 36-character strings in the initial database
-  schema for SQLite/Postgres portability.
+  PostgreSQL schema to preserve the existing storage contract.
 - API request/response schemas are separate DTOs. Domain models stay infrastructure-free.
 - `RunEvent` is append-only timeline data scoped to a run.
 - Event `sequence` is monotonically increasing per run.

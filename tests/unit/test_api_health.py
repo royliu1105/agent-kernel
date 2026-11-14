@@ -5,8 +5,8 @@ from kernel_observability import InMemoryMetricsRecorder
 from sqlalchemy.orm import Session, sessionmaker
 
 
-def test_healthz() -> None:
-    client = TestClient(create_app())
+def test_healthz(postgres_session_factory: sessionmaker[Session]) -> None:
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     response = client.get("/healthz")
 
@@ -15,7 +15,7 @@ def test_healthz() -> None:
 
 
 def test_metrics_endpoint_exports_prometheus_text(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     metrics_recorder = InMemoryMetricsRecorder()
     metrics_recorder.increment(
@@ -28,7 +28,7 @@ def test_metrics_endpoint_exports_prometheus_text(
         labels={"provider": "mock", "model": "mock-default", "status": "succeeded"},
     )
     client = TestClient(
-        create_app(session_factory=sqlite_session_factory, metrics_recorder=metrics_recorder)
+        create_app(session_factory=postgres_session_factory, metrics_recorder=metrics_recorder)
     )
 
     response = client.get("/metrics")

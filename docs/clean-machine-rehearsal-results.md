@@ -1,5 +1,10 @@
 # Clean-Machine Rehearsal Results
 
+> Historical snapshot: SQLite references describe the earlier implementation, not
+> current support. Current mainline requires PostgreSQL in runtime and tests; see
+> `docs/postgresql-only.md` from the repository root. Previous verification counts
+> are historical and are not evidence for the PostgreSQL-only change.
+
 This document records v1.0 release candidate clean-machine rehearsal evidence.
 
 ## Day 85 Result

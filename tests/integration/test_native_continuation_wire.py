@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import httpx
 import pytest
@@ -23,7 +22,6 @@ from kernel_storage import (
     AgentRepository,
     ApiKeyRepository,
     ApprovalRepository,
-    Base,
     PrincipalRepository,
     RunRepository,
     ToolCallRepository,
@@ -32,47 +30,14 @@ from kernel_storage import (
 )
 from kernel_storage.models import ModelUsageRecord
 from kernel_tools import ToolMetadata, ToolRegistry
-from sqlalchemy import create_engine, select, text
-from sqlalchemy.engine import URL, make_url
+from sqlalchemy import Engine, create_engine, select
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session, sessionmaker
 
 
-@pytest.fixture(params=["sqlite", "postgres"])
-def native_wire_url(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[URL]:
-    admin = None
-    schema = f"test_native_wire_{uuid4().hex}"
-    if request.param == "postgres":
-        source = os.getenv("AGENT_KERNEL_TEST_POSTGRES_URL")
-        if not source:
-            pytest.skip("Set AGENT_KERNEL_TEST_POSTGRES_URL for PostgreSQL wire contracts.")
-        source_url = make_url(source)
-        assert source_url.get_backend_name() == "postgresql"
-        assert source_url.database and source_url.database.casefold() != "appdata"
-        admin = create_engine(source_url)
-        url = source_url.update_query_dict({"options": f"-csearch_path={schema}"})
-    else:
-        url = make_url(f"sqlite+pysqlite:///{tmp_path / 'native-wire.db'}")
-    schema_created = False
-    engine = create_engine(url)
-    try:
-        if admin is not None:
-            with admin.begin() as connection:
-                connection.execute(text(f'CREATE SCHEMA "{schema}"'))
-            schema_created = True
-            with engine.connect() as connection:
-                assert connection.scalar(text("SELECT current_schema()")) == schema
-        Base.metadata.create_all(engine)
-        engine.dispose()
-        yield url
-    finally:
-        engine.dispose()
-        if admin is not None:
-            try:
-                if schema_created:
-                    with admin.begin() as connection:
-                        connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-            finally:
-                admin.dispose()
+@pytest.fixture
+def native_wire_url(postgres_engine: Engine) -> Iterator[URL]:
+    yield postgres_engine.url
 
 
 def test_worker_native_approval_resumes_through_default_api_runner_with_scope_checks(

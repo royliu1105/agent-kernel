@@ -1,5 +1,11 @@
 # Observability Operations
 
+New backend/delivery work is tracked in the
+[observability completion plan](observability-completion-plan.md). Centralized
+logs, a trace backend and SMTP notifications are not accepted by the historical
+evidence below; local mailbox and external inbox delivery are separate gates.
+Setup and operational boundaries: [Observability Backends and SMTP](observability-backends.md).
+
 This is the P0 operational contract for the Python API and worker. It supersedes
 historical Day 25-73 notes where those describe unbounded samples, public metrics,
 millisecond Prometheus metrics, or an exporter without operation spans. It does
@@ -131,7 +137,7 @@ names, credentials, SQL, or a stack trace.
 | Database | Always required | `SELECT 1` and zero-row query of `runs`; verifies connection and baseline schema, not all migrations, write rights, pgvector dimensions, or storage capacity. |
 | Redis | Optional if `REDIS_URL` is set; otherwise disabled | Real authenticated `PING`; required if any workspace, principal or API-key quota is nonzero. |
 | S3 | Required when `AGENT_KERNEL_OBJECT_STORE_BACKEND=s3`; otherwise disabled | Real authenticated `HeadBucket` with the configured bucket, endpoint and region. |
-| pgvector | Required for explicit `pgvector`, or `auto` on PostgreSQL | Executes the vector cosine operator and a zero-row query of migrated `vector_pg`; explicit pgvector on SQLite fails. No tenant vectors are read. |
+| pgvector | Required for `pgvector` or `auto` | Executes the vector cosine operator and a zero-row query of migrated `vector_pg` on PostgreSQL. Missing native storage fails. No tenant vectors are read. |
 | Local storage | Required when local backend selected | Creates the root if needed; privately writes, reads and removes a temporary canary. Invalid/non-writable paths fail without exposing the path. |
 | OpenAI config | Required for `AGENT_KERNEL_EMBEDDING_PROVIDER=openai`; otherwise optional if an API key is present or disabled without one | Validates credential presence/header safety and embedding model/dimensions; no network calls, model invocation, quota or billing check. |
 
@@ -169,7 +175,8 @@ operator canary and real-backend tests. `HeadBucket` requires suitable bucket
 authorization; do not grant broad object access just to make a probe green.
 
 Production Redis and S3 checks need the already-optional `redis` and `boto3`
-clients in the image. They are not imported in the SQLite/mock startup path.
+clients in the image. They are not imported when their corresponding dependencies
+are disabled in a PostgreSQL/mock deployment.
 
 ## Logs and Traces
 
@@ -337,7 +344,7 @@ files. Inspect `/targets` after deployment and perform a controlled failure dril
 - Five subprocess entry-point tests pass, including actual Uvicorn SQL exception
   logging, Worker top-level failures, API initialization failures and malformed
   MCP SDK notifications through both API and Worker logging configuration.
-- Readiness tests cover selected pgvector on SQLite, local file canary cleanup,
+- Readiness tests cover missing native pgvector storage, local file canary cleanup,
   invalid provider configuration, and a required provider check with network
   calls prohibited. A real isolated PostgreSQL test passes: removing the native
   vector column leaves database connectivity healthy but makes readiness 503.

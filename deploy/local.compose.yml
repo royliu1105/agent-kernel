@@ -1,0 +1,70 @@
+# Default trusted-local profile. Never expose this unauthenticated profile publicly.
+x-local-logging: &local-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    restart: unless-stopped
+    ports: !reset []
+    logging: *local-logging
+  redis:
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    ports: !reset []
+    volumes: ["redis_data:/data"]
+    logging: *local-logging
+  api:
+    restart: unless-stopped
+    command: ["sh", "-c", "alembic upgrade head && exec agent-kernel-api"]
+    environment:
+      AGENT_KERNEL_ENV: development
+      AGENT_KERNEL_API_HOST: 0.0.0.0
+      AGENT_KERNEL_API_PORT: "8000"
+      AGENT_KERNEL_API_KEY_AUTH_ENABLED: "false"
+      AGENT_KERNEL_RUN_QUEUE_BACKEND: redis
+      AGENT_KERNEL_EMBEDDING_PROVIDER: mock
+      OPENAI_API_KEY: ""
+    ports: !override
+      - "127.0.0.1:${AGENT_KERNEL_API_PORT:-8000}:8000"
+    logging: *local-logging
+  worker:
+    environment:
+      AGENT_KERNEL_ENV: development
+      AGENT_KERNEL_RUN_QUEUE_BACKEND: redis
+      AGENT_KERNEL_EMBEDDING_PROVIDER: mock
+      OPENAI_API_KEY: ""
+    logging: *local-logging
+  web:
+    restart: unless-stopped
+    environment:
+      AGENT_KERNEL_API_URL: http://api:8000
+      NEXT_PUBLIC_AGENT_KERNEL_API_URL: http://127.0.0.1:${AGENT_KERNEL_API_PORT:-8000}
+    ports: !override
+      - "127.0.0.1:${AGENT_KERNEL_WEB_PORT:-3000}:3000"
+    logging: *local-logging
+  prometheus:
+    restart: unless-stopped
+    logging: *local-logging
+  grafana:
+    restart: unless-stopped
+    logging: *local-logging
+  blackbox:
+    restart: unless-stopped
+    logging: *local-logging
+  alloy:
+    logging: *local-logging
+  loki:
+    logging: *local-logging
+  tempo:
+    logging: *local-logging
+  alertmanager:
+    logging: *local-logging
+  mailpit:
+    restart: unless-stopped
+    logging: *local-logging
+
+volumes:
+  redis_data:

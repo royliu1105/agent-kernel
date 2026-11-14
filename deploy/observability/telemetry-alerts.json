@@ -1,0 +1,16 @@
+{
+  "groups": [{"name": "agent-kernel-telemetry", "rules": [
+    {
+      "alert": "AgentKernelTelemetryTargetDown",
+      "expr": "up{job=\"agent-kernel-telemetry\"} == 0", "for": "2m",
+      "labels": {"severity": "warning"},
+      "annotations": {"summary": "An observability backend or collector cannot be scraped."}
+    },
+    {
+      "alert": "AgentKernelEmailDeliveryFailure",
+      "expr": "sum(increase(alertmanager_notifications_failed_total{integration=\"email\"}[5m])) > 0",
+      "for": "1m", "labels": {"severity": "warning"},
+      "annotations": {"summary": "SMTP delivery failed; inspect Alertmanager and the mailbox separately."}
+    }
+  ]}]
+}

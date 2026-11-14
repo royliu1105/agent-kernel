@@ -15,7 +15,7 @@ body:
       label: What did you try?
       options:
         - README first-run path
-        - Quickstart with SQLite
+        - Docker quickstart with PostgreSQL
         - Quickstart with Postgres and Redis
         - Full Docker Compose stack
         - Mock agent run

@@ -9,15 +9,15 @@ from agent_kernel_api.readiness import (
     ReadinessChecker,
     create_readiness_checker,
 )
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 
 @pytest.mark.asyncio
 async def test_readiness_checks_real_database_and_disabled_dependencies(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    checker = create_readiness_checker(sqlite_session_factory, env={})
+    checker = create_readiness_checker(postgres_session_factory, env={})
     try:
         result = await checker.check()
         assert result.status_code == 200
@@ -27,7 +27,7 @@ async def test_readiness_checks_real_database_and_disabled_dependencies(
                 "database": {"required": True, "status": "ok"},
                 "redis": {"required": False, "status": "disabled"},
                 "s3": {"required": False, "status": "disabled"},
-                "pgvector": {"required": False, "status": "disabled"},
+                "pgvector": {"required": True, "status": "ok"},
                 "local_storage": {"required": True, "status": "ok"},
                 "openai": {"required": False, "status": "disabled"},
             },
@@ -37,8 +37,8 @@ async def test_readiness_checks_real_database_and_disabled_dependencies(
 
 
 @pytest.mark.asyncio
-async def test_connectivity_without_schema_is_not_ready() -> None:
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+async def test_connectivity_without_schema_is_not_ready(migration_engine: Engine) -> None:
+    engine = migration_engine
     checker = create_readiness_checker(sessionmaker(engine), env={})
     try:
         result = await checker.check()
@@ -52,19 +52,19 @@ async def test_connectivity_without_schema_is_not_ready() -> None:
 
 @pytest.mark.asyncio
 async def test_required_optional_and_missing_configuration_are_distinct(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     def failure() -> None:
         raise RuntimeError("postgres://user:password@host/private?token=SECRET")
 
     optional = create_readiness_checker(
-        sqlite_session_factory, env={"REDIS_URL": "redis://configured"}, redis_probe=failure
+        postgres_session_factory, env={"REDIS_URL": "redis://configured"}, redis_probe=failure
     )
     required = create_readiness_checker(
-        sqlite_session_factory, env={"AGENT_KERNEL_READINESS_REDIS": "required"}
+        postgres_session_factory, env={"AGENT_KERNEL_READINESS_REDIS": "required"}
     )
     s3 = create_readiness_checker(
-        sqlite_session_factory, env={"AGENT_KERNEL_OBJECT_STORE_BACKEND": "s3"}
+        postgres_session_factory, env={"AGENT_KERNEL_OBJECT_STORE_BACKEND": "s3"}
     )
     try:
         result = await optional.check()
@@ -81,11 +81,11 @@ async def test_required_optional_and_missing_configuration_are_distinct(
 
 @pytest.mark.asyncio
 async def test_auxiliary_s3_can_be_optional_but_selected_backend_cannot(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     for backend, mode, code in (("s3", "required", 503), ("local", "optional", 200)):
         checker = create_readiness_checker(
-            sqlite_session_factory,
+            postgres_session_factory,
             env={"AGENT_KERNEL_OBJECT_STORE_BACKEND": backend, "AGENT_KERNEL_READINESS_S3": mode},
             s3_probe=lambda: False,
         )
@@ -96,7 +96,7 @@ async def test_auxiliary_s3_can_be_optional_but_selected_backend_cannot(
     for mode in ("optional", "disabled"):
         with pytest.raises(ValueError, match="S3 readiness"):
             create_readiness_checker(
-                sqlite_session_factory,
+                postgres_session_factory,
                 env={
                     "AGENT_KERNEL_OBJECT_STORE_BACKEND": "s3",
                     "AGENT_KERNEL_READINESS_S3": mode,
@@ -104,7 +104,7 @@ async def test_auxiliary_s3_can_be_optional_but_selected_backend_cannot(
             )
         with pytest.raises(ValueError, match="Redis readiness"):
             create_readiness_checker(
-                sqlite_session_factory,
+                postgres_session_factory,
                 env={
                     "AGENT_KERNEL_RATE_LIMIT_REQUESTS": "100",
                     "AGENT_KERNEL_READINESS_REDIS": mode,
@@ -114,10 +114,10 @@ async def test_auxiliary_s3_can_be_optional_but_selected_backend_cannot(
 
 @pytest.mark.asyncio
 async def test_rate_limiter_makes_redis_a_required_dependency(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     checker = create_readiness_checker(
-        sqlite_session_factory, env={"AGENT_KERNEL_RATE_LIMIT_REQUESTS": "100"}
+        postgres_session_factory, env={"AGENT_KERNEL_RATE_LIMIT_REQUESTS": "100"}
     )
     try:
         result = await checker.check()
@@ -169,22 +169,25 @@ async def test_readiness_recovers_without_recreating_checker() -> None:
 
 
 def test_invalid_dependency_modes_fail_at_startup(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     with pytest.raises(ValueError, match="READINESS_REDIS"):
         create_readiness_checker(
-            sqlite_session_factory, env={"AGENT_KERNEL_READINESS_REDIS": "maybe"}
+            postgres_session_factory, env={"AGENT_KERNEL_READINESS_REDIS": "maybe"}
         )
     with pytest.raises(ValueError, match="database"):
         ReadinessChecker((DependencyCheck("database", "optional", lambda: True),))
 
 
 @pytest.mark.asyncio
-async def test_selected_pgvector_fails_on_sqlite(
-    sqlite_session_factory: sessionmaker[Session],
+async def test_selected_pgvector_fails_without_vector_column(
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
+    with postgres_session_factory() as session:
+        session.execute(text("ALTER TABLE chunk_embeddings DROP COLUMN vector_pg CASCADE"))
+        session.commit()
     checker = create_readiness_checker(
-        sqlite_session_factory, env={"AGENT_KERNEL_VECTOR_STORE": "pgvector"}
+        postgres_session_factory, env={"AGENT_KERNEL_VECTOR_STORE": "pgvector"}
     )
     try:
         result = await checker.check()
@@ -200,11 +203,11 @@ async def test_selected_pgvector_fails_on_sqlite(
 
 @pytest.mark.asyncio
 async def test_local_store_read_write_probe_and_invalid_root(
-    sqlite_session_factory: sessionmaker[Session], tmp_path: Path
+    postgres_session_factory: sessionmaker[Session], tmp_path: Path
 ) -> None:
     for root, expected in ((tmp_path / "objects", 200), (Path("/dev/null"), 503)):
         checker = create_readiness_checker(
-            sqlite_session_factory, env={"AGENT_KERNEL_OBJECT_STORE_ROOT": str(root)}
+            postgres_session_factory, env={"AGENT_KERNEL_OBJECT_STORE_ROOT": str(root)}
         )
         try:
             result = await checker.check()
@@ -225,10 +228,10 @@ async def test_local_store_read_write_probe_and_invalid_root(
     ],
 )
 async def test_required_provider_checks_configuration_without_billing(
-    sqlite_session_factory: sessionmaker[Session], configuration: dict[str, str]
+    postgres_session_factory: sessionmaker[Session], configuration: dict[str, str]
 ) -> None:
     checker = create_readiness_checker(
-        sqlite_session_factory,
+        postgres_session_factory,
         env={"AGENT_KERNEL_READINESS_OPENAI": "required", **configuration},
     )
     try:
@@ -241,14 +244,14 @@ async def test_required_provider_checks_configuration_without_billing(
 
 @pytest.mark.asyncio
 async def test_valid_required_provider_does_not_call_network(
-    sqlite_session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch
+    postgres_session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def forbidden(*args: object, **kwargs: object) -> None:
         raise AssertionError("Readiness must not invoke a paid model")
 
     monkeypatch.setattr("httpx.Client.send", forbidden)
     checker = create_readiness_checker(
-        sqlite_session_factory,
+        postgres_session_factory,
         env={
             "AGENT_KERNEL_READINESS_OPENAI": "required",
             "OPENAI_API_KEY": "sk-test-only",
@@ -263,10 +266,10 @@ async def test_valid_required_provider_does_not_call_network(
 
 @pytest.mark.asyncio
 async def test_selected_openai_embeddings_require_provider_readiness(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     checker = create_readiness_checker(
-        sqlite_session_factory,
+        postgres_session_factory,
         env={
             "AGENT_KERNEL_EMBEDDING_PROVIDER": "openai",
         },
@@ -281,7 +284,7 @@ async def test_selected_openai_embeddings_require_provider_readiness(
     for mode in ("optional", "disabled"):
         with pytest.raises(ValueError, match="must be required"):
             create_readiness_checker(
-                sqlite_session_factory,
+                postgres_session_factory,
                 env={
                     "AGENT_KERNEL_EMBEDDING_PROVIDER": "openai",
                     "AGENT_KERNEL_READINESS_OPENAI": mode,
@@ -289,7 +292,7 @@ async def test_selected_openai_embeddings_require_provider_readiness(
             )
     with pytest.raises(ValueError, match="embedding provider"):
         create_readiness_checker(
-            sqlite_session_factory,
+            postgres_session_factory,
             env={
                 "AGENT_KERNEL_EMBEDDING_PROVIDER": "unknown",
             },
@@ -302,10 +305,10 @@ async def test_selected_openai_embeddings_require_provider_readiness(
     ["AGENT_KERNEL_RATE_LIMIT_PRINCIPAL_REQUESTS", "AGENT_KERNEL_RATE_LIMIT_API_KEY_REQUESTS"],
 )
 async def test_principal_and_key_limiters_make_redis_required(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     setting: str,
 ) -> None:
-    checker = create_readiness_checker(sqlite_session_factory, env={setting: "10"})
+    checker = create_readiness_checker(postgres_session_factory, env={setting: "10"})
     try:
         result = await checker.check()
         assert result.status_code == 503

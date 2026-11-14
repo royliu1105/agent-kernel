@@ -44,11 +44,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 @pytest.mark.asyncio
 async def test_execution_service_completes_queued_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     metrics_recorder = InMemoryMetricsRecorder()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="research-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -123,10 +123,10 @@ async def test_execution_service_completes_queued_run(
 
 @pytest.mark.asyncio
 async def test_execution_service_injects_explicit_memory_context(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = CapturingProvider()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="memory-agent")
         memory = MemoryRepository(session).create(
             type=MemoryType.USER_PREFERENCE,
@@ -185,9 +185,9 @@ async def test_execution_service_injects_explicit_memory_context(
 
 @pytest.mark.asyncio
 async def test_execution_service_fails_invalid_memory_config(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="memory-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -219,9 +219,9 @@ async def test_execution_service_fails_invalid_memory_config(
 
 @pytest.mark.asyncio
 async def test_execution_service_marks_run_failed_on_provider_error(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="research-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(agent_id=agent.id, input_payload={"task": "summarize notes"})
@@ -255,9 +255,9 @@ async def test_execution_service_marks_run_failed_on_provider_error(
 
 @pytest.mark.asyncio
 async def test_execution_service_rejects_unqueued_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="research-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(agent_id=agent.id, input_payload={"task": "summarize notes"})
@@ -271,9 +271,9 @@ async def test_execution_service_rejects_unqueued_run(
 
 @pytest.mark.asyncio
 async def test_execution_service_can_execute_through_model_router(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="research-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -300,9 +300,9 @@ async def test_execution_service_can_execute_through_model_router(
 
 @pytest.mark.asyncio
 async def test_execution_service_retries_retryable_provider_error(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="retry-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -343,9 +343,9 @@ async def test_execution_service_retries_retryable_provider_error(
 
 @pytest.mark.asyncio
 async def test_provider_retry_events_remain_visible_after_session_reopen(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="durable-retry-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -368,7 +368,7 @@ async def test_provider_retry_events_remain_visible_after_session_reopen(
             repository=run_repository,
         )
 
-    with sqlite_session_factory() as reopened_session:
+    with postgres_session_factory() as reopened_session:
         reopened_repository = RunRepository(reopened_session)
         loaded = reopened_repository.get(run.id)
         events = reopened_repository.list_events(run.id)
@@ -391,9 +391,9 @@ async def test_provider_retry_events_remain_visible_after_session_reopen(
 
 @pytest.mark.asyncio
 async def test_execution_service_falls_back_after_retryable_provider_error(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="fallback-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -436,7 +436,7 @@ async def test_execution_service_falls_back_after_retryable_provider_error(
 
 @pytest.mark.asyncio
 async def test_execution_service_completes_provider_native_tool_loop(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = NativeToolLoopProvider(
         tool_call=LLMToolCall(
@@ -453,7 +453,7 @@ async def test_execution_service_completes_provider_native_tool_loop(
         final_text="final answer with tool result",
     )
     metrics_recorder = InMemoryMetricsRecorder()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="native-tool-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -513,7 +513,7 @@ async def test_execution_service_completes_provider_native_tool_loop(
 
 @pytest.mark.asyncio
 async def test_execution_service_pauses_provider_native_risky_tool_for_approval(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = NativeToolLoopProvider(
         tool_call=LLMToolCall(
@@ -524,7 +524,7 @@ async def test_execution_service_pauses_provider_native_risky_tool_for_approval(
         ),
         final_text="unused",
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="native-approval-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -559,7 +559,7 @@ async def test_execution_service_pauses_provider_native_risky_tool_for_approval(
 
 @pytest.mark.asyncio
 async def test_execution_service_fails_unknown_provider_native_tool(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     provider = NativeToolLoopProvider(
         tool_call=LLMToolCall(
@@ -570,7 +570,7 @@ async def test_execution_service_fails_unknown_provider_native_tool(
         ),
         final_text="unused",
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="native-unknown-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -602,11 +602,11 @@ async def test_execution_service_fails_unknown_provider_native_tool(
 
 @pytest.mark.asyncio
 async def test_execution_service_completes_safe_explicit_tool_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     metrics_recorder = InMemoryMetricsRecorder()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -670,13 +670,13 @@ async def test_execution_service_completes_safe_explicit_tool_run(
 
 @pytest.mark.asyncio
 async def test_execution_service_completes_explicit_kb_search_tool_run(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     knowledge_base_id, chunk_id = _create_indexed_document(
-        sqlite_session_factory,
+        postgres_session_factory,
         content="alpha deployment rollback checklist",
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="rag-tool-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -700,7 +700,7 @@ async def test_execution_service_completes_explicit_kb_search_tool_run(
         )
 
         completed = await RunExecutionService(
-            tool_registry=create_rag_tool_registry(session_factory=sqlite_session_factory)
+            tool_registry=create_rag_tool_registry(session_factory=postgres_session_factory)
         ).execute(run_id=run.id, repository=run_repository)
         events = run_repository.list_events(run.id)
         tool_calls = ToolCallRepository(session).list_for_run(run.id)
@@ -730,12 +730,12 @@ async def test_execution_service_completes_explicit_kb_search_tool_run(
 
 @pytest.mark.asyncio
 async def test_execution_service_retries_safe_tool_failure(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     registry = create_default_tool_registry()
     flaky_tool = FlakyReadOnlyTool()
     registry.register(flaky_tool)
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-retry-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -765,12 +765,12 @@ async def test_execution_service_retries_safe_tool_failure(
 
 @pytest.mark.asyncio
 async def test_tool_retry_events_remain_visible_after_session_reopen(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     registry = create_default_tool_registry()
     flaky_tool = FlakyReadOnlyTool()
     registry.register(flaky_tool)
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="durable-tool-retry-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -789,7 +789,7 @@ async def test_tool_retry_events_remain_visible_after_session_reopen(
             repository=run_repository,
         )
 
-    with sqlite_session_factory() as reopened_session:
+    with postgres_session_factory() as reopened_session:
         reopened_repository = RunRepository(reopened_session)
         loaded = reopened_repository.get(run.id)
         events = reopened_repository.list_events(run.id)
@@ -807,10 +807,10 @@ async def test_tool_retry_events_remain_visible_after_session_reopen(
 
 @pytest.mark.asyncio
 async def test_execution_service_does_not_retry_invalid_tool_arguments(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     metrics_recorder = InMemoryMetricsRecorder()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="tool-validation-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -850,10 +850,10 @@ async def test_execution_service_does_not_retry_invalid_tool_arguments(
 
 @pytest.mark.asyncio
 async def test_execution_service_pauses_risky_explicit_tool_for_approval(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="approval-tool-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -902,9 +902,9 @@ async def test_execution_service_pauses_risky_explicit_tool_for_approval(
 
 @pytest.mark.asyncio
 async def test_execution_service_resumes_approved_tool_with_persisted_arguments(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="approval-tool-agent")
         run_repository = RunRepository(session)
         approval_repository = ApprovalRepository(session)
@@ -950,9 +950,9 @@ async def test_execution_service_resumes_approved_tool_with_persisted_arguments(
 
 @pytest.mark.asyncio
 async def test_execution_service_fails_rejected_approval_on_resume(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="approval-tool-agent")
         run_repository = RunRepository(session)
         approval_repository = ApprovalRepository(session)
@@ -989,9 +989,9 @@ async def test_execution_service_fails_rejected_approval_on_resume(
 
 @pytest.mark.asyncio
 async def test_execution_service_rejects_resume_before_approval_decision(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="approval-tool-agent")
         run_repository = RunRepository(session)
         approval_repository = ApprovalRepository(session)
@@ -1166,11 +1166,11 @@ def _approval_tool_registry() -> ToolRegistry:
 
 
 def _create_indexed_document(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     *,
     content: str,
 ) -> tuple[UUID, UUID]:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         knowledge_base = KnowledgeBaseRepository(session).create(name="kb")
         document = DocumentRepository(session).create(
             knowledge_base_id=knowledge_base.id,

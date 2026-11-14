@@ -4,8 +4,6 @@ import ast
 from pathlib import Path
 from uuid import uuid4
 
-import pytest
-from alembic import command
 from alembic.config import Config
 from kernel_storage import (
     DocumentRepository,
@@ -15,8 +13,10 @@ from kernel_storage import (
     WorkspaceRepository,
     create_session_factory,
 )
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import Engine, inspect, text
 from sqlalchemy.engine.reflection import Inspector
+
+from scripts.testing_database import migrate
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_DIR = REPO_ROOT / "packages" / "kernel-storage" / "src" / "kernel_storage" / "migrations"
@@ -24,17 +24,11 @@ ALEMBIC_INI = REPO_ROOT / "alembic.ini"
 LATEST_REVISION = "0019_execution_checkpoint"
 
 
-def test_sqlite_migrations_upgrade_to_head(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+def test_postgres_migrations_upgrade_to_head(
+    migration_engine: Engine,
 ) -> None:
-    database_path = tmp_path / "agent_kernel.db"
-    database_url = f"sqlite:///{database_path}"
-    monkeypatch.setenv("DATABASE_URL", database_url)
-
-    command.upgrade(_alembic_config(), "head")
-
-    engine = create_engine(database_url)
+    engine = migration_engine
+    migrate(engine)
     try:
         inspector = inspect(engine)
         table_names = set(inspector.get_table_names())
@@ -77,14 +71,11 @@ def test_migration_revision_ids_fit_alembic_version_column() -> None:
         )
 
 
-def test_sqlite_knowledge_upgrade_preserves_unowned_rows(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+def test_postgres_knowledge_upgrade_preserves_unowned_rows(
+    migration_engine: Engine,
 ) -> None:
-    database_url = f"sqlite:///{tmp_path / 'legacy.db'}"
-    monkeypatch.setenv("DATABASE_URL", database_url)
-    command.upgrade(_alembic_config(), "0014_create_eval_runs")
-    engine = create_engine(database_url)
+    engine = migration_engine
+    migrate(engine, "0014_create_eval_runs")
     legacy_id = uuid4()
     document_id = uuid4()
     try:
@@ -128,7 +119,7 @@ def test_sqlite_knowledge_upgrade_preserves_unowned_rows(
                     "uri": f"object://local/knowledge-bases/{legacy_id}/documents/legacy.md",
                 },
             )
-        command.upgrade(_alembic_config(), "head")
+        migrate(engine)
         with create_session_factory(engine)() as session:
             local = KnowledgeBaseRepository(session).get(legacy_id)
             assert local is not None and local.workspace_id is None
@@ -154,19 +145,19 @@ def test_sqlite_knowledge_upgrade_preserves_unowned_rows(
             session.commit()
             assert scoped.get(legacy_id) is not None
             assert documents.get(document_id) is not None
-        command.downgrade(_alembic_config(), "0014_create_eval_runs")
+        migrate(engine, "0014_create_eval_runs", downgrade=True)
         assert "workspace_id" not in _column_names(inspect(engine), "knowledge_bases")
-        command.upgrade(_alembic_config(), "head")
+        migrate(engine)
     finally:
         engine.dispose()
 
 
-def test_pgvector_migration_is_guarded_for_postgres() -> None:
+def test_pgvector_migration_always_creates_native_storage() -> None:
     migration_file = MIGRATION_DIR / "versions" / "0013_pgvector_embeddings.py"
 
     content = migration_file.read_text()
 
-    assert 'bind.dialect.name != "postgresql"' in content
+    assert "dialect.name" not in content
     assert "CREATE EXTENSION IF NOT EXISTS vector" in content
     assert "vector_pg vector" in content
     assert "vector_pg::vector(1536)" in content

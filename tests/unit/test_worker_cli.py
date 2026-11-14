@@ -34,14 +34,14 @@ def test_worker_cli_rejects_multiple_modes(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_worker_cli_once_executes_persisted_queued_run(
     monkeypatch: pytest.MonkeyPatch,
-    sqlite_engine: Engine,
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_engine: Engine,
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    monkeypatch.setattr(worker_main, "create_engine_for_url", lambda: sqlite_engine)
+    monkeypatch.setattr(worker_main, "create_engine_for_url", lambda: postgres_engine)
     # The test borrows an in-memory engine and inspects it after CLI shutdown.
-    monkeypatch.setattr(sqlite_engine, "dispose", lambda: None)
+    monkeypatch.setattr(postgres_engine, "dispose", lambda: None)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-cli-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -57,7 +57,7 @@ def test_worker_cli_once_executes_persisted_queued_run(
 
     result = CliRunner().invoke(worker_main.app, ["--once", "--limit", "10"])
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         completed = RunRepository(session).get(run.id)
 
     assert result.exit_code == 0
@@ -70,13 +70,13 @@ def test_worker_cli_once_executes_persisted_queued_run(
 
 def test_worker_cli_recover_stuck_fails_expired_running_run(
     monkeypatch: pytest.MonkeyPatch,
-    sqlite_engine: Engine,
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_engine: Engine,
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    monkeypatch.setattr(worker_main, "create_engine_for_url", lambda: sqlite_engine)
-    monkeypatch.setattr(sqlite_engine, "dispose", lambda: None)
+    monkeypatch.setattr(worker_main, "create_engine_for_url", lambda: postgres_engine)
+    monkeypatch.setattr(postgres_engine, "dispose", lambda: None)
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="worker-cli-recovery-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(agent_id=agent.id, input_payload={"task": "recover"})
@@ -108,7 +108,7 @@ def test_worker_cli_recover_stuck_fails_expired_running_run(
 
     result = CliRunner().invoke(worker_main.app, ["--recover-stuck", "--limit", "10"])
 
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         failed = RunRepository(session).get(run.id)
         active_lease = WorkerLeaseRepository(session).get_active(run_id=run.id)
 

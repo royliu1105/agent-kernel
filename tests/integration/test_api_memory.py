@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_memory_api_creates_lists_inspects_and_deletes_memory(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     create_response = client.post(
         "/v1/memory",
@@ -44,9 +44,9 @@ def test_memory_api_creates_lists_inspects_and_deletes_memory(
 
 
 def test_memory_api_filters_by_type_and_limit(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     client.post(
         "/v1/memory",
         json={
@@ -73,9 +73,9 @@ def test_memory_api_filters_by_type_and_limit(
 
 
 def test_memory_api_returns_404_for_missing_memory(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     missing_id = "00000000-0000-0000-0000-000000000000"
 
     inspect_response = client.get(f"/v1/memory/{missing_id}")

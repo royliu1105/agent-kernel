@@ -9,11 +9,10 @@ from kernel_storage.config import prepare_database_url
 
 
 def create_engine_for_url(database_url: str | None = None) -> Engine:
-    """Create a SQLAlchemy engine and ensure local SQLite directories exist."""
+    """Create a PostgreSQL engine from explicit configuration."""
 
     url = prepare_database_url(database_url)
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    return create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+    return create_engine(url, pool_pre_ping=True)
 
 
 def create_session_factory(engine: Engine) -> sessionmaker[Session]:

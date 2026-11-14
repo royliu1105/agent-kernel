@@ -1,5 +1,9 @@
 # v1.0 Release Checklist
 
+> Current database contract: PostgreSQL only in runtime and tests; see
+> [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
+> earlier plans or verification, not current support or new acceptance evidence.
+
 This checklist records the historical gates and publication of Agent Kernel v1.0.
 
 Current status:

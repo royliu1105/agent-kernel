@@ -7,10 +7,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_memory_repository_creates_loads_and_filters_memory_items(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     source_run_id = UUID("00000000-0000-0000-0000-000000000123")
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = MemoryRepository(session)
         preference = repository.create(
             type=MemoryType.USER_PREFERENCE,
@@ -43,9 +43,9 @@ def test_memory_repository_creates_loads_and_filters_memory_items(
 
 
 def test_memory_repository_deletes_memory_item(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         repository = MemoryRepository(session)
         memory = repository.create(
             type=MemoryType.LONG_TERM,
@@ -63,10 +63,13 @@ def test_memory_repository_deletes_memory_item(
 
 
 def test_memory_repository_rejects_invalid_limit(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    with sqlite_session_factory() as session, pytest.raises(
-        ValueError,
-        match="limit must be at least 1",
+    with (
+        postgres_session_factory() as session,
+        pytest.raises(
+            ValueError,
+            match="limit must be at least 1",
+        ),
     ):
         MemoryRepository(session).list(limit=0)

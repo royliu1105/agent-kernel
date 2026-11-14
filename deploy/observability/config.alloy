@@ -1,0 +1,90 @@
+logging {
+  level = "warn"
+}
+
+loki.source.file "application" {
+  targets = [
+    {__path__ = "/var/log/agent-kernel/api.jsonl", job = "agent-kernel", service_name = "agent-kernel-api"},
+    {__path__ = "/var/log/agent-kernel/worker.jsonl", job = "agent-kernel", service_name = "agent-kernel-worker"},
+  ]
+  file_match {
+    enabled = true
+    sync_period = "1s"
+  }
+  forward_to = [loki.process.application.receiver]
+}
+
+loki.process "application" {
+  stage.json {
+    expressions = {event = "event", timestamp = "timestamp"}
+    drop_malformed = true
+  }
+  stage.drop {
+    source = "event"
+    expression = "^$"
+  }
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+  stage.label_drop {
+    values = ["filename"]
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+    batch_wait = "1s"
+    batch_size = "256KiB"
+    min_backoff_period = "500ms"
+    max_backoff_period = "30s"
+    max_backoff_retries = 10
+  }
+}
+
+otelcol.receiver.otlp "application" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces = [otelcol.processor.memory_limiter.application.input]
+  }
+}
+
+otelcol.processor.memory_limiter "application" {
+  check_interval = "1s"
+  limit = "128MiB"
+  output {
+    traces = [otelcol.processor.batch.application.input]
+  }
+}
+
+otelcol.processor.batch "application" {
+  timeout = "1s"
+  send_batch_size = 256
+  send_batch_max_size = 512
+  output {
+    traces = [otelcol.exporter.otlphttp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "http://tempo:4318"
+    timeout = "5s"
+  }
+  sending_queue {
+    enabled = true
+    num_consumers = 2
+    queue_size = 256
+  }
+  retry_on_failure {
+    enabled = true
+    initial_interval = "1s"
+    max_interval = "10s"
+    max_elapsed_time = "5m"
+  }
+}

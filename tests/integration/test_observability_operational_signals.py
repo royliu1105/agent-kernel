@@ -24,19 +24,19 @@ def _sample(text: str, metric: str) -> float:
 
 
 def test_api_queue_worker_eval_and_approval_signals_are_real_and_recover(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     api_metrics = AggregatingMetricsRecorder()
     worker_metrics = AggregatingMetricsRecorder()
     with TestClient(
-        create_app(session_factory=sqlite_session_factory, metrics_recorder=api_metrics)
+        create_app(session_factory=postgres_session_factory, metrics_recorder=api_metrics)
     ) as client:
         agent = client.post("/v1/agents", json={"name": "PRIVATE_AGENT_SENTINEL"}).json()
         run = client.post(
             f"/v1/agents/{agent['id']}/runs", json={"input": {"prompt": "PRIVATE_PROMPT_SENTINEL"}}
         ).json()
         assert client.post(f"/v1/runs/{run['id']}/queue").status_code == 200
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             session.execute(
                 update(RunEventRecord)
                 .where(RunEventRecord.type == "run_queued")
@@ -46,7 +46,7 @@ def test_api_queue_worker_eval_and_approval_signals_are_real_and_recover(
         before = client.get("/metrics").text
         assert _sample(before, "agent_kernel_queue_backlog") == 1
         assert 149 <= _sample(before, "agent_kernel_queue_oldest_wait_seconds") < 160
-        worker = _create_worker(session_factory=sqlite_session_factory, metrics=worker_metrics)
+        worker = _create_worker(session_factory=postgres_session_factory, metrics=worker_metrics)
         assert asyncio.run(worker.run_once()).succeeded_count == 1
         after = client.get("/metrics").text
         assert _sample(after, "agent_kernel_queue_backlog") == 0
@@ -75,7 +75,7 @@ def test_api_queue_worker_eval_and_approval_signals_are_real_and_recover(
             == 201
         )
         waiting = client.post(f"/v1/agents/{agent['id']}/runs", json={"input": {}}).json()
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             tool = ToolCallRepository(session).create_requested(
                 run_id=UUID(waiting["id"]),
                 tool_name="echo",
@@ -97,7 +97,7 @@ def test_api_queue_worker_eval_and_approval_signals_are_real_and_recover(
         assert _sample(before, "agent_kernel_approval_oldest_wait_seconds") >= 4000
         assert 'agent_kernel_evals{state="failed"} 1' in before
         assert 'agent_kernel_approvals{state="requested"} 1' in before
-        with sqlite_session_factory() as session:
+        with postgres_session_factory() as session:
             ApprovalRepository(session).approve(approval_id=approval.id)
         after = client.get("/metrics").text
         assert _sample(after, "agent_kernel_approval_oldest_wait_seconds") == 0
@@ -106,10 +106,10 @@ def test_api_queue_worker_eval_and_approval_signals_are_real_and_recover(
 
 
 def test_api_metrics_count_unmatched_auth_and_internal_errors_without_dynamic_labels(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     metrics = AggregatingMetricsRecorder()
-    app = create_app(session_factory=sqlite_session_factory, metrics_recorder=metrics)
+    app = create_app(session_factory=postgres_session_factory, metrics_recorder=metrics)
 
     @app.get("/fail")
     def fail() -> None:
@@ -127,7 +127,9 @@ def test_api_metrics_count_unmatched_auth_and_internal_errors_without_dynamic_la
         )
         assert "PRIVATE" not in output and "SECRET" not in output
     secured = create_app(
-        session_factory=sqlite_session_factory, metrics_recorder=metrics, api_key_auth_enabled=True
+        session_factory=postgres_session_factory,
+        metrics_recorder=metrics,
+        api_key_auth_enabled=True,
     )
     with TestClient(secured) as client:
         assert client.get("/v1/runs/00000000-0000-0000-0000-000000000000").status_code == 401
@@ -145,12 +147,12 @@ def test_any_quota_requires_authentication(mode: str, monkeypatch: pytest.Monkey
 
 
 def test_default_worker_kb_search_emits_retrieval_metrics(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     metrics = AggregatingMetricsRecorder()
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="observed")
-    with TestClient(create_app(session_factory=sqlite_session_factory)) as client:
+    with TestClient(create_app(session_factory=postgres_session_factory)) as client:
         agent = client.post("/v1/agents", json={"name": "observed"}).json()
         run = client.post(
             f"/v1/agents/{agent['id']}/runs",
@@ -167,7 +169,7 @@ def test_default_worker_kb_search_emits_retrieval_metrics(
             },
         ).json()
         assert client.post(f"/v1/runs/{run['id']}/queue").status_code == 200
-        worker = _create_worker(session_factory=sqlite_session_factory, metrics=metrics)
+        worker = _create_worker(session_factory=postgres_session_factory, metrics=metrics)
         assert asyncio.run(worker.run_once()).succeeded_count == 1
     output = metrics.prometheus_text()
     assert (
@@ -179,7 +181,7 @@ def test_default_worker_kb_search_emits_retrieval_metrics(
 
 
 def test_api_registry_reuses_injected_retriever_and_recorder(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from agent_kernel_api import main
@@ -190,7 +192,7 @@ def test_api_registry_reuses_injected_retriever_and_recorder(
 
     metrics = AggregatingMetricsRecorder()
     retriever = Retriever(embedding_provider=BrokenEmbedding(), metrics_recorder=metrics)
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="observed")
     captured: list[ToolRegistry] = []
     factory = create_rag_tool_registry
@@ -206,7 +208,7 @@ def test_api_registry_reuses_injected_retriever_and_recorder(
     with (
         TestClient(
             create_app(
-                session_factory=sqlite_session_factory,
+                session_factory=postgres_session_factory,
                 metrics_recorder=metrics,
                 retriever=retriever,
             )
@@ -228,7 +230,7 @@ def test_api_registry_reuses_injected_retriever_and_recorder(
 
 
 def test_segment_metric_sink_failure_does_not_interrupt_worker_cleanup(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     class FaultyRecorder(AggregatingMetricsRecorder):
         def increment(
@@ -238,10 +240,10 @@ def test_segment_metric_sink_failure_does_not_interrupt_worker_cleanup(
                 raise RuntimeError("Metric sink unavailable")
             super().increment(name, value=value, labels=labels)
 
-    with TestClient(create_app(session_factory=sqlite_session_factory)) as client:
+    with TestClient(create_app(session_factory=postgres_session_factory)) as client:
         agent = client.post("/v1/agents", json={"name": "observed"}).json()
         run = client.post(f"/v1/agents/{agent['id']}/runs", json={"input": {}}).json()
         client.post(f"/v1/runs/{run['id']}/queue")
-        worker = _create_worker(session_factory=sqlite_session_factory, metrics=FaultyRecorder())
+        worker = _create_worker(session_factory=postgres_session_factory, metrics=FaultyRecorder())
         assert asyncio.run(worker.run_once()).succeeded_count == 1
         assert client.get(f"/v1/runs/{run['id']}").json()["status"] == "succeeded"

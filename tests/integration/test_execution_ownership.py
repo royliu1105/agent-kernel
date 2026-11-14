@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from datetime import timedelta
 from threading import Barrier
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from kernel_core import RiskLevel, RunEventType, RunStatus, ToolCallStatus, utc_now
@@ -22,56 +22,26 @@ from kernel_storage import (
     RunRepository,
     ToolCallRepository,
     WorkerLeaseRepository,
-    create_session_factory,
 )
 from kernel_storage.base import Base
 from kernel_storage.models import WorkerLeaseRecord
 from kernel_tools import ToolMetadata, ToolRegistry
 from sqlalchemy import create_engine, inspect, select, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 
-@pytest.fixture(params=["sqlite", "postgres"])
-def ownership_db(request: pytest.FixtureRequest, tmp_path: Any) -> Iterator[sessionmaker[Session]]:
-    if request.param == "sqlite":
-        engine = create_engine(f"sqlite+pysqlite:///{tmp_path / 'ownership.db'}")
-        Base.metadata.create_all(engine)
-        try:
-            yield create_session_factory(engine)
-        finally:
-            engine.dispose()
-        return
-    url = os.getenv("AGENT_KERNEL_TEST_POSTGRES_URL")
-    if not url:
-        pytest.skip("Set AGENT_KERNEL_TEST_POSTGRES_URL for PostgreSQL concurrency contracts.")
-    schema = f"test_ownership_{uuid4().hex}"
-    admin = create_engine(url)
-    with admin.begin() as connection:
-        connection.execute(text(f'CREATE SCHEMA "{schema}"'))
-    engine = create_engine(
-        # No public fallback: create_all must not discover another schema's tables.
-        make_url(url).update_query_dict({"options": f"-csearch_path={schema}"})
-    )
-    try:
-        Base.metadata.create_all(engine)
-        yield create_session_factory(engine)
-    finally:
-        engine.dispose()
-        with admin.begin() as connection:
-            connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-        admin.dispose()
+@pytest.fixture
+def ownership_db(
+    postgres_session_factory: sessionmaker[Session],
+) -> Iterator[sessionmaker[Session]]:
+    yield postgres_session_factory
 
 
 def test_ownership_tables_belong_to_current_schema(ownership_db: sessionmaker[Session]) -> None:
     with ownership_db() as session:
         engine = session.get_bind()
         inspector = inspect(engine)
-        schema = (
-            session.scalar(text("SELECT current_schema()"))
-            if engine.dialect.name == "postgresql"
-            else None
-        )
+        schema = session.scalar(text("SELECT current_schema()"))
         assert set(Base.metadata.tables) <= set(inspector.get_table_names(schema=schema))
 
 

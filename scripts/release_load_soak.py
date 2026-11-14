@@ -5,18 +5,23 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from time import perf_counter
 from uuid import UUID
 
 from kernel_core import RunEventType, RunStatus
 from kernel_providers import MockLLMProvider
 from kernel_runtime import ModelRouter, QueuedRunWorker, RunExecutionService
-from kernel_storage import AgentRepository, Base, RunRepository, create_session_factory
+from kernel_storage import AgentRepository, RunRepository, create_session_factory
 from kernel_storage import models as storage_models
-from sqlalchemy import create_engine
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.testing_database import isolated_database
 
 _ = storage_models
 
@@ -50,14 +55,12 @@ PROFILES = {
 
 
 async def run_worker_burst(profile: LoadSoakProfile) -> LoadSoakReport:
-    """Run a deterministic queued-run worker burst against in-memory SQLite."""
+    """Run a deterministic queued-run worker burst in an isolated PostgreSQL schema."""
+    with isolated_database() as engine:
+        return await _run_worker_burst(profile, engine)
 
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
+
+async def _run_worker_burst(profile: LoadSoakProfile, engine: Engine) -> LoadSoakReport:
     session_factory = create_session_factory(engine)
     run_ids = _create_queued_runs(session_factory=session_factory, runs=profile.runs)
 
@@ -98,9 +101,6 @@ async def run_worker_burst(profile: LoadSoakProfile) -> LoadSoakReport:
         and remaining_queued_count == 0
         and elapsed_ms <= profile.max_elapsed_ms
     )
-
-    Base.metadata.drop_all(engine)
-    engine.dispose()
 
     return LoadSoakReport(
         profile=profile.name,

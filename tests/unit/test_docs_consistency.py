@@ -24,6 +24,8 @@ STATUS_GUIDES = (
     "docs/daily/day-90.md",
     "docs/hardening-verification.md",
     "docs/capability-hardening-plan.md",
+    "docs/real-scenario-pilot-plan.md",
+    "docs/pilot-learning-guide.md",
 )
 
 
@@ -87,6 +89,34 @@ def test_env_example_variables_are_documented() -> None:
     missing_vars = sorted(env_var for env_var in env_vars if f"`{env_var}`" not in documented)
 
     assert missing_vars == []
+
+
+def test_postgresql_only_contract_is_documented() -> None:
+    guide = (DOCS_ROOT / "postgresql-only.md").read_text()
+    for term in (
+        "DATABASE_URL",
+        "AGENT_KERNEL_TEST_POSTGRES_URL",
+        "make test-db-up",
+        "make test-db-down",
+        "No new schema revision",
+        "unreleased compatibility change",
+    ):
+        assert term in guide
+    for relative in ("README.md", "CONTRIBUTING.md", "docs/development-environment.md"):
+        content = (REPO_ROOT / relative).read_text()
+        assert "make test-db-up" in content
+        assert "postgresql-only.md" in content
+    for relative in ("examples/README.md", "examples/public-alpha-walkthrough.md"):
+        content = (REPO_ROOT / relative).read_text()
+        assert "make docker-up" in content
+        assert "unset DATABASE_URL" not in content
+        assert "npm run web:dev" not in content
+    ci = (REPO_ROOT / ".github/workflows/ci.yml").read_text()
+    assert "AGENT_KERNEL_TEST_POSTGRES_URL" in ci
+    assert "POSTGRES_DB: agent_kernel_test" in ci
+    assert "sqlite" not in ci.lower()
+    for link in _local_markdown_links(DOCS_ROOT / "postgresql-only.md"):
+        assert _resolve_markdown_link(DOCS_ROOT / "postgresql-only.md", link).is_file()
 
 
 @pytest.mark.parametrize("filename", CURRENT_GUIDES)
@@ -299,6 +329,7 @@ def test_readme_distinguishes_published_release_from_current_hardening() -> None
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     assert "releases/tag/v1.0.0" in readme
     assert "docs/capability-hardening-plan.md" in readme
+    assert "docs/real-scenario-pilot-plan.md" in readme
     assert "unreleased changes" in readme
     assert "post-v1.0 capability hardening" in readme
     assert "Current v0.1 shape" not in readme
@@ -359,9 +390,136 @@ def test_phase_summaries_are_explicitly_historical(filename: str) -> None:
 
 def test_delivery_plan_no_longer_points_to_alpha_as_next_work() -> None:
     plan = (DOCS_ROOT / "post-v0.1-plan.md").read_text(encoding="utf-8")
-    assert "Current track: Post-v1.0 capability hardening (unreleased)" in plan
+    assert "Current track: Real-scenario acceptance and controlled pilot (planned)" in plan
+    assert "Current branch enhancements: Unreleased" in plan
     assert "## Historical Kickoff" in plan
     assert "## Next Daily Work" not in plan
     stage = _section("development-plan.md", "Stage 9: Day 76-90 v1.0 Release Candidate")
     assert "published 2026-08-07" in stage
     assert "- [ ] clean-machine" not in stage
+
+
+@pytest.mark.parametrize(
+    "filename",
+    (
+        "README.md",
+        "ROADMAP.md",
+        "docs/README.md",
+        "docs/development-plan.md",
+        "docs/milestones.md",
+        "docs/post-v0.1-plan.md",
+        "docs/daily/README.md",
+        "docs/capability-hardening-plan.md",
+    ),
+)
+def test_current_planning_entries_link_to_the_pilot_plan(filename: str) -> None:
+    text = (REPO_ROOT / filename).read_text(encoding="utf-8")
+    assert "real-scenario-pilot-plan.md" in text
+
+
+def test_pilot_plan_has_one_complete_task_ledger() -> None:
+    plan = (DOCS_ROOT / "real-scenario-pilot-plan.md").read_text(encoding="utf-8")
+    task_ids = re.findall(r"^\| (PV[1-6]) \|", plan, flags=re.MULTILINE)
+    assert task_ids == [f"PV{index}" for index in range(1, 7)]
+    for task_id in task_ids:
+        assert f"### {task_id}:" in plan
+    progress = _section("real-scenario-pilot-plan.md", "Priority and Progress")
+    assert "dependency" in progress
+    assert "evidence" in progress
+
+
+def test_pilot_plan_keeps_expansion_and_paid_execution_boundaries() -> None:
+    scope = _section("real-scenario-pilot-plan.md", "Objective and Scope Freeze")
+    assert "do not start another foundation-development phase" in scope
+    assert "no production writes" in scope
+    assert "separate scope decision" in scope
+    budget = _section("real-scenario-pilot-plan.md", "Budget, Privacy and Stop Conditions")
+    for anchor in (
+        "estimated_cost=0",
+        "not billing enforcement",
+        "explicit approval",
+        "80%",
+        "usage is unknown",
+        "immediately pause",
+        "cannot undo remote effects or charges",
+    ):
+        assert _normalized(anchor) in budget
+
+
+def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:
+    evidence = _section("real-scenario-pilot-plan.md", "Authority, Owners and Evidence")
+    for anchor in ("fixture", "live", "human_pilot", "not live proof", "no secrets"):
+        assert anchor in evidence
+    scoring = _section("real-scenario-pilot-plan.md", "Scoring and Measurement Rules")
+    assert "not previously measured results" in scoring
+    assert "do not average a failed safety cohort" in scoring
+    changes = _section("real-scenario-pilot-plan.md", "Defect Handling and Change Control")
+    assert "new capabilities require a separate proposal and authorization" in changes
+    assert "writing this plan does not pass pv1" in changes
+
+
+@pytest.mark.parametrize(
+    "filename",
+    (
+        "real-scenario-pilot-plan.md",
+        "development-plan.md",
+        "capability-hardening-plan.md",
+        "README.md",
+    ),
+)
+def test_pilot_entry_points_include_the_learning_mechanism(filename: str) -> None:
+    text = (DOCS_ROOT / filename).read_text(encoding="utf-8")
+    assert "pilot-learning-guide.md" in text
+
+
+def test_learning_guide_keeps_participation_and_safety_boundaries() -> None:
+    contract = _section("pilot-learning-guide.md", "Collaboration Contract")
+    for anchor in (
+        "Chinese explanations",
+        "one main learning question",
+        "wait for the learner's response",
+        "record that assistance",
+        "AI assistance is allowed",
+        "contain the risk first",
+        "does not authorize paid requests",
+    ):
+        assert _normalized(anchor) in contract
+    testing = _section("pilot-learning-guide.md", "Test Verification")
+    for anchor in (
+        "fails on the defective behavior for the intended reason",
+        "passes after the minimal fix",
+        "negative case",
+        "do not break the main branch",
+        "existing negative regression",
+    ):
+        assert _normalized(anchor) in testing
+
+
+def test_learning_guide_does_not_treat_task_completion_as_proficiency() -> None:
+    evidence = _section("pilot-learning-guide.md", "Separate Evidence Tracks")
+    for anchor in (
+        "separate tracks",
+        "cannot waive a failed project safety or acceptance gate",
+        "Not practiced",
+        "Demonstrated by Codex",
+        "Practiced with guidance",
+        "Observed independent on this task",
+        "Revisit",
+        "not proof of general mastery",
+        "never write a learner answer on their behalf",
+    ):
+        assert _normalized(anchor) in evidence
+    handoff = _section("pilot-learning-guide.md", "Session Record and Handoff")
+    assert "docs/pilots/<pilot-id>.md" in handoff
+    assert "no separate learning database" in handoff
+    assert "do not publish personal learning notes without the learner's agreement" in handoff
+
+
+def test_learning_focus_uses_existing_pilot_gates_without_new_tasks() -> None:
+    guide = (DOCS_ROOT / "pilot-learning-guide.md").read_text(encoding="utf-8")
+    assert re.findall(r"^\| (PV[1-6]) \|", guide, flags=re.MULTILINE) == [
+        f"PV{index}" for index in range(1, 7)
+    ]
+    focus = _section("pilot-learning-guide.md", "Learning Focus by Pilot Gate")
+    assert "not a second completion checklist" in focus
+    assert "do not coach participants" in focus

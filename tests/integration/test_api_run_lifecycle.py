@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 def test_create_agent_run_and_inspect_timeline(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     agent_response = client.post(
         "/v1/agents",
@@ -58,9 +58,9 @@ def test_create_agent_run_and_inspect_timeline(
 
 
 def test_create_run_for_missing_agent_returns_404(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+    client = TestClient(create_app(session_factory=postgres_session_factory))
 
     response = client.post(
         "/v1/agents/00000000-0000-0000-0000-000000000000/runs",
@@ -71,8 +71,8 @@ def test_create_run_for_missing_agent_returns_404(
     assert response.json() == {"detail": "Agent not found"}
 
 
-def test_queue_and_cancel_run_transitions(sqlite_session_factory: sessionmaker[Session]) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+def test_queue_and_cancel_run_transitions(postgres_session_factory: sessionmaker[Session]) -> None:
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     agent = client.post("/v1/agents", json={"name": "ops-agent"}).json()
     run = client.post(
         f"/v1/agents/{agent['id']}/runs",
@@ -98,8 +98,10 @@ def test_queue_and_cancel_run_transitions(sqlite_session_factory: sessionmaker[S
     assert {event["trace_id"] for event in events} == {run["trace_id"]}
 
 
-def test_invalid_api_transition_returns_409(sqlite_session_factory: sessionmaker[Session]) -> None:
-    client = TestClient(create_app(session_factory=sqlite_session_factory))
+def test_invalid_api_transition_returns_409(
+    postgres_session_factory: sessionmaker[Session],
+) -> None:
+    client = TestClient(create_app(session_factory=postgres_session_factory))
     agent = client.post("/v1/agents", json={"name": "ops-agent"}).json()
     run = client.post(f"/v1/agents/{agent['id']}/runs", json={"input": {}}).json()
 
@@ -111,15 +113,15 @@ def test_invalid_api_transition_returns_409(sqlite_session_factory: sessionmaker
     assert "Cannot transition run from canceled to queued" in queue_response.json()["detail"]
 
 
-def test_resume_waiting_run_through_api(sqlite_session_factory: sessionmaker[Session]) -> None:
+def test_resume_waiting_run_through_api(postgres_session_factory: sessionmaker[Session]) -> None:
     execution_service = RunExecutionService(tool_registry=_approval_tool_registry())
     client = TestClient(
         create_app(
-            session_factory=sqlite_session_factory,
+            session_factory=postgres_session_factory,
             execution_service=execution_service,
         )
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="api-resume-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(
@@ -154,16 +156,16 @@ def test_resume_waiting_run_through_api(sqlite_session_factory: sessionmaker[Ses
 
 
 def test_resume_requested_approval_returns_409(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     execution_service = RunExecutionService(tool_registry=_approval_tool_registry())
     client = TestClient(
         create_app(
-            session_factory=sqlite_session_factory,
+            session_factory=postgres_session_factory,
             execution_service=execution_service,
         )
     )
-    with sqlite_session_factory() as session:
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="api-resume-agent")
         run_repository = RunRepository(session)
         run = run_repository.create(

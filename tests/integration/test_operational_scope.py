@@ -19,13 +19,13 @@ from test_knowledge_workspace_isolation import _client
 
 
 def test_usage_audit_and_tool_records_are_workspace_scoped(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
 ) -> None:
     store = LocalObjectStore(root_path=tmp_path)
-    a, wa = _client(sqlite_session_factory, store)
-    b, wb = _client(sqlite_session_factory, store)
-    with sqlite_session_factory() as session:
+    a, wa = _client(postgres_session_factory, store)
+    b, wb = _client(postgres_session_factory, store)
+    with postgres_session_factory() as session:
         agent = AgentRepository(session).create(name="a", workspace_id=wa)
         repo = RunRepository(session)
         run = repo.create(agent_id=agent.id, workspace_id=wa, input_payload={})
@@ -66,19 +66,19 @@ class StubLimiter(RedisWorkspaceRateLimiter):
 
 
 def test_admission_uses_authenticated_workspace_and_fails_closed(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "1")
     # Issue credentials before enabling the test middleware.
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "0")
-    issued, workspace = _client(sqlite_session_factory, LocalObjectStore(root_path=tmp_path))
+    issued, workspace = _client(postgres_session_factory, LocalObjectStore(root_path=tmp_path))
     monkeypatch.setenv("AGENT_KERNEL_RATE_LIMIT_REQUESTS", "1")
     limiter = StubLimiter()
     with TestClient(
         create_app(
-            session_factory=sqlite_session_factory,
+            session_factory=postgres_session_factory,
             api_key_auth_enabled=True,
             rate_limiter=limiter,
         ),
@@ -103,20 +103,22 @@ class BrokenQueue(InMemoryRunQueue):
 
 @pytest.mark.asyncio
 async def test_committed_run_survives_redis_outage_and_lost_hints(
-    sqlite_session_factory: sessionmaker[Session],
+    postgres_session_factory: sessionmaker[Session],
 ) -> None:
     from kernel_providers import MockLLMProvider
     from kernel_runtime import QueuedRunWorker
 
     queue = BrokenQueue()
-    with TestClient(create_app(session_factory=sqlite_session_factory, run_queue=queue)) as client:
+    with TestClient(
+        create_app(session_factory=postgres_session_factory, run_queue=queue)
+    ) as client:
         agent = client.post("/v1/agents", json={"name": "a"}).json()
         run = client.post(
             f"/v1/agents/{agent['id']}/runs", json={"input": {"task": "hello"}}
         ).json()
         assert client.post(f"/v1/runs/{run['id']}/queue").status_code == 200
         worker = QueuedRunWorker(
-            session_factory=sqlite_session_factory,
+            session_factory=postgres_session_factory,
             run_queue=queue,
             execution_service=RunExecutionService(provider=MockLLMProvider()),
         )

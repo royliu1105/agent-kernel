@@ -1,0 +1,17 @@
+# Explicit test-only SMTP capture. No relay/release configuration or published SMTP.
+services:
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    profiles: [observability]
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: "200"
+      MP_MAX_AGE: "3d"
+      MP_DISABLE_VERSION_CHECK: "true"
+    volumes:
+      - mailpit_data:/data
+    ports: ["127.0.0.1:${AGENT_KERNEL_MAILPIT_PORT:-8025}:8025"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+volumes:
+  mailpit_data:

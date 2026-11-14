@@ -284,7 +284,7 @@ Auth and RBAC test anchors:
 | Knowledge API / runtime / worker / approval-resume isolation | `tests/integration/test_knowledge_workspace_isolation.py` |
 | Model workspace spoofing | `tests/unit/test_kb_search_tool.py` |
 | CLI key transport | `tests/unit/test_cli_commands.py` |
-| SQLite upgrade and ownership assignment | `tests/unit/test_migrations.py` |
+| PostgreSQL legacy upgrade and ownership assignment | `tests/unit/test_migrations.py` |
 | Real pgvector scope, fresh/legacy upgrade | `tests/integration/test_pgvector_workspace_scope.py` (opt-in locally; required in CI) |
 | Memory/eval isolation, legacy quarantine, and trusted runtime memory scope | `tests/integration/test_memory_eval_isolation.py` |
 | Run-derived tool/event isolation and workspace usage | `tests/integration/test_operational_scope.py` |

@@ -4,10 +4,11 @@ const DEFAULT_API_URL = "http://127.0.0.1:8000";
 const HEALTH_TIMEOUT_MS = 1500;
 
 export async function GET() {
-  const baseUrl = (process.env.NEXT_PUBLIC_AGENT_KERNEL_API_URL ?? DEFAULT_API_URL).replace(
-    /\/$/,
-    "",
-  );
+  const baseUrl = (
+    process.env.AGENT_KERNEL_API_URL ??
+    process.env.NEXT_PUBLIC_AGENT_KERNEL_API_URL ??
+    DEFAULT_API_URL
+  ).replace(/\/$/, "");
   const checkedAt = new Date().toISOString();
   const startedAt = Date.now();
 

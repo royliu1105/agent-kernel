@@ -105,7 +105,7 @@ The Day 59-63 recovery policy is conservative:
 
 The worker still polls the database for queued runs by default:
 
-- Postgres or SQLite remains authoritative for run state.
+- PostgreSQL remains authoritative for run state.
 - Redis queue entries are hints and coordination records only.
 - A future worker can use Redis wakeups while still verifying database state
   before execution.

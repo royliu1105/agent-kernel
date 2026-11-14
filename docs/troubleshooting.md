@@ -3,6 +3,12 @@
 This guide covers common local development and release-verification failures for
 Agent Kernel.
 
+The current default is Docker-only. Start troubleshooting with `make docker-status`,
+`make docker-logs SERVICE=api`, `make docker-logs SERVICE=worker`, and
+`make docker-check`. Use [Docker operations](docker-local.md) for the canonical
+startup/configuration paths. Host-runtime instructions below are for explicit
+debugging exceptions, not a reason to start duplicate host services.
+
 Use this together with:
 
 - [Quickstart](quickstart.md)
@@ -181,25 +187,17 @@ or Homebrew Python.
 
 ### Migrations Fail
 
-For SQLite local development:
+For the default Docker PostgreSQL runtime:
 
 ```bash
-unset DATABASE_URL
-uv run alembic upgrade head
-```
-
-For local Postgres:
-
-```bash
-docker compose up -d postgres redis
-DATABASE_URL=postgresql+psycopg://agent_kernel:agent_kernel@localhost:5432/agent_kernel \
-  uv run alembic upgrade head
+make docker-status
+make docker-logs SERVICE=api
 ```
 
 If Postgres is still starting, wait until it is healthy:
 
 ```bash
-docker compose ps postgres
+make docker-status
 ```
 
 If Postgres reports:

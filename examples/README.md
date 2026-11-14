@@ -4,7 +4,7 @@ Examples are copyable workflows that exercise real Agent Kernel runtime paths.
 
 They are not toy applications. Each example maps to a product capability that
 exists in the current runtime and should be runnable from a local checkout with
-mock models and SQLite.
+mock models and Docker PostgreSQL.
 
 ## Start Here
 
@@ -18,19 +18,10 @@ Use the request collection when you prefer an HTTP client:
 
 ## Prerequisites
 
-Install dependencies and prepare local SQLite storage:
+Start the Docker runtime (including migrations and the continuous Worker):
 
 ```bash
-uv sync
-npm install
-unset DATABASE_URL
-uv run alembic upgrade head
-```
-
-Start the API in one terminal:
-
-```bash
-uv run agent-kernel-api
+make docker-up
 ```
 
 Verify:
@@ -51,12 +42,12 @@ This workflow creates an agent, creates a mock-model run, queues it, executes it
 and inspects the timeline.
 
 ```bash
-uv run agent-kernel agent create --name "Example Agent"
-uv run agent-kernel run create <agent-id> --input @examples/mock-run.json
-uv run agent-kernel run queue <run-id>
-uv run agent-kernel-worker --once --limit 10
-uv run agent-kernel run inspect <run-id>
-uv run agent-kernel run events <run-id>
+sh scripts/local-stack.sh exec -T api agent-kernel agent create --name "Example Agent"
+sh scripts/local-stack.sh exec -T api agent-kernel run create <agent-id> --input @examples/mock-run.json
+sh scripts/local-stack.sh exec -T api agent-kernel run queue <run-id>
+# The Docker Worker processes queued runs automatically.
+sh scripts/local-stack.sh exec -T api agent-kernel run inspect <run-id>
+sh scripts/local-stack.sh exec -T api agent-kernel run events <run-id>
 ```
 
 Expected run status:
@@ -82,19 +73,19 @@ This workflow uploads the included Markdown document and searches it through the
 RAG retrieval path.
 
 ```bash
-uv run agent-kernel kb create \
+sh scripts/local-stack.sh exec -T api agent-kernel kb create \
   --name "Example Handbook" \
   --description "Deployment runbook used by Public Alpha examples"
 
-uv run agent-kernel document upload \
+sh scripts/local-stack.sh exec -T api agent-kernel document upload \
   <knowledge-base-id> \
   examples/docs/deployment-playbook.md
 
-uv run agent-kernel document ingest <document-id>
-uv run agent-kernel document chunk <document-id>
-uv run agent-kernel document index <document-id>
+sh scripts/local-stack.sh exec -T api agent-kernel document ingest <document-id>
+sh scripts/local-stack.sh exec -T api agent-kernel document chunk <document-id>
+sh scripts/local-stack.sh exec -T api agent-kernel document index <document-id>
 
-uv run agent-kernel kb search \
+sh scripts/local-stack.sh exec -T api agent-kernel kb search \
   <knowledge-base-id> \
   --query "How should rollback work?"
 ```
@@ -122,12 +113,12 @@ panel and submit the same query.
 This workflow creates a user preference memory item and lists it.
 
 ```bash
-uv run agent-kernel memory create \
+sh scripts/local-stack.sh exec -T api agent-kernel memory create \
   --type user_preference \
   --scope user:example \
   --content @examples/memory-user-preference.json
 
-uv run agent-kernel memory list --scope user:example
+sh scripts/local-stack.sh exec -T api agent-kernel memory list --scope user:example
 ```
 
 Expected fields include:
@@ -143,7 +134,7 @@ content.language: en
 This workflow runs the deterministic RAG smoke eval used by CI.
 
 ```bash
-uv run agent-kernel eval report evals/rag-smoke.json
+sh scripts/local-stack.sh exec -T api agent-kernel eval report evals/rag-smoke.json
 ```
 
 Expected shape:
@@ -154,11 +145,7 @@ Expected shape:
 
 ## Example 5: Web Workbench
 
-Start the Web Workbench in another terminal:
-
-```bash
-npm run web:dev
-```
+The Web Workbench is already running in Docker after `make docker-up`.
 
 Open:
 

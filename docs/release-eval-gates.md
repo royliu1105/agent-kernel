@@ -11,8 +11,13 @@ tests, Web smoke tests, migration smoke tests, and clean-machine rehearsals.
 Run all blocking eval gates with:
 
 ```bash
+make test-db-up
 make release-eval
 ```
+
+Database-backed gates require isolated PostgreSQL. Make supplies its test URL;
+for direct commands below set `AGENT_KERNEL_TEST_POSTGRES_URL` as described in
+[PostgreSQL-only testing](postgresql-only.md). No provider credentials are needed.
 
 The command currently runs:
 
@@ -20,6 +25,7 @@ The command currently runs:
 uv run agent-kernel eval report evals/rag-smoke.json
 uv run agent-kernel eval report evals/release-rag-gate.json
 uv run pytest tests/unit/test_tool_call_evals.py
+uv run pytest -q tests/integration/test_bounded_native_execution.py tests/integration/test_runtime_backoff.py tests/integration/test_native_continuation_wire.py tests/integration/test_execution_budget_edges.py
 uv run python scripts/timeline_regression.py
 ```
 
@@ -92,7 +98,8 @@ Current behavior cases:
 | `unknown-native-tool` | Unknown native tools fail safely before a follow-up model call. |
 
 This gate is runtime-backed but deterministic. It uses mock providers, local
-SQLite-backed test storage, and built-in tools.
+isolated PostgreSQL test storage, and built-in tools. Start `make test-db-up`
+before running database-backed gates; see [test isolation](postgresql-only.md).
 
 ## Runtime Timeline Gate
 

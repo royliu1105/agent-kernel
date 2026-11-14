@@ -2,11 +2,27 @@
 
 ## Current Follow-Up
 
-Use the [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
-for current work and status. R1-R10 remediation passed scoped acceptance for
+The explicitly authorized [observability completion](docs/observability-completion-plan.md)
+is tracked in O1-O5. Logs, trace backend and SMTP delivery have
+separate implementation/local/external gates; real email setup is not available.
+
+Use the [Real-Scenario Acceptance and Controlled Pilot Plan](docs/real-scenario-pilot-plan.md)
+for subsequent pilot work and status. PV1-PV6 are planned, not started. Other foundation
+feature expansion is frozen; prioritize scoped safety/effectiveness evidence,
+operational drills and actual user feedback, not new infrastructure.
+
+The [reference comparison](docs/reference-project-comparison.md) and
+[reference follow-up plan](docs/reference-follow-up-plan.md) record later
+code/test findings and proposed completion work. CF1/CF2 feed pilot entry;
+CF3-CF8 remain deferred/conditional. CF1 has read-only review evidence, not an
+accepted repair or pilot-entry gate. No new calendar phase or feature expansion
+is authorized.
+
+The [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
+retains implementation evidence. R1-R10 remediation passed scoped acceptance for
 `d65e833` after the earlier blanket acceptance was withdrawn. Subsequent N1-N5
 bounded-execution work passed local and exact-commit remote verification for
-`cb25484`. Evidence and explicit limits live in the canonical plan.
+`cb25484`. Evidence and explicit limits live in that completed workstream record.
 No new release is implied. The earlier release targets below are historical scope, not
 evidence that every production guarantee is already implemented.
 
