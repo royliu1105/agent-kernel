@@ -8,9 +8,9 @@ local SMTP and real inbox acceptance separated. This does not start PV1-PV6 or
 authorize external email before its intended sender/recipient are configured.
 
 This is the canonical plan for the next stage, PV1-PV6. The maintainer has
-authorized documenting this plan, not running paid requests, inviting users,
-deploying a pilot, committing/pushing, or publishing a release. Those actions
-require the corresponding explicit authorization. Planning is not acceptance.
+authorized documenting this plan. The plan alone does not authorize paid requests,
+inviting users, pilot deployment, commit/push or release; those actions require
+corresponding explicit authorization. Planning is not acceptance.
 
 The [capability hardening plan](capability-hardening-plan.md) remains the record
 of completed implementation and its limits. Baseline: `d599fc2`, following
@@ -24,7 +24,8 @@ results are not pilot acceptance or current-commit remote CI. The
 [reference follow-up plan](reference-follow-up-plan.md) owns CF1-CF8: CF1/CF2
 feed the entry checks below; CF3-CF8 remain deferred/conditional proposals.
 The maintainer subsequently authorized only the minimal CF1 repair and its
-regressions, tracked in the [repair record](reviews/2026-11-14-cf1-minimal-repair.md).
+regressions, then review, baseline/CF1 commits, push and CI tracking, recorded in
+the [repair record](reviews/2026-11-14-cf1-minimal-repair.md).
 This does not authorize pilot admission or mean the running Docker images contain
 the repair. PV1-PV6 are still not started; the foundation-feature freeze remains.
 

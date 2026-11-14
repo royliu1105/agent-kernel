@@ -1,6 +1,6 @@
 # CF1 Minimal Repair Verification
 
-Date: **2026-11-14**. Status: **code review and local verification passed; CI/deployment pending**.
+Date: **2026-11-14**. Status: **code review, local verification and candidate CI passed; deployment/pilot pending**.
 The [follow-up ledger](../reference-follow-up-plan.md) owns CF1 acceptance.
 This follows the [historical read-only review](2026-11-14-cf1-memory-boundary.md),
 not a rewrite of its evidence. The maintainer authorized the minimal repair,
@@ -33,7 +33,7 @@ and user admission remain outside this authorization.
 - [x] Codex code review: repair the validation-error response finding below;
   no remaining blocking finding in the reviewed CF1 change. This is not an
   independent security audit or live-model safety acceptance.
-- [ ] Record candidate commit and exact-revision remote CI.
+- [x] Record candidate `5952ba7` and exact-revision remote CI: all four jobs passed.
 - [ ] Maintainer disposition of residual risk for the intended deployment/pilot.
 - [ ] Deploy the approved candidate to the intended environment and verify it there.
 
@@ -108,7 +108,38 @@ documentation, secrets, runtime data and `resource/`. Existing PostgreSQL-only,
 observability and Docker changes are retained as the separate baseline commit.
 Baseline commit: `8f87473`; an exported staged snapshot passed **1085 tests,
 35 skipped in 216.21 s** independently of CF1. Its pre-commit checks passed.
-Candidate commit and exact-revision CI remain pending until actually recorded.
+CF1 candidate: `5952ba75f2adeca101b938a9402292811ea56afc`, including that baseline.
+Both commits were pushed normally to `origin/master`, without a tag or release.
+
+## Exact-Candidate CI Evidence
+
+[GitHub Actions run 43590573645](https://github.com/royliu1105/agent-kernel/actions/runs/43590573645)
+completed successfully for `5952ba75f2adeca101b938a9402292811ea56afc`.
+The `python`, `web`, `compose` and `observability` jobs all passed on 2026-11-14.
+
+| Gate | Recorded result |
+| --- | --- |
+| Python migration smoke | 27 passed. |
+| Python regression | 1165 passed, 15 opt-in deployment cases skipped; separate deployment jobs ran their profiles below. |
+| Disposable PostgreSQL restore drill | 1 passed. |
+| Ruff / mypy | Passed / 230 source files. |
+| Release eval gates | RAG 3/3 and 4/4; tools 2/2; bounded execution 71/71; persisted timeline 7/7. |
+| Web | Typecheck/build passed; Playwright 2 passed, 1 Docker-only browser case skipped in the managed-server job. |
+| Compose deployment | HTTP smoke 1 passed; monitoring 3 passed; owned deployment cleanup succeeded. |
+| Full observability | Native validators and 8 log/trace/local-SMTP E2E tests passed in 304.50 s; disposable cleanup succeeded. |
+| Default Docker runtime | `make docker-up` on the isolated CI runner and 4 real runtime/Web proxy tests passed; stack teardown succeeded. |
+
+This is exact-candidate fixture and disposable-deployment evidence, not a claim
+about live provider safety, external mailbox delivery or pilot usefulness.
+The CI Web proxy checks do not replace a new live browser user-path rehearsal.
+Nonblocking Action Node-runtime deprecation and runner-image transition notices
+remain maintenance items; they did not fail these jobs.
+
+Locally, the test schema count was zero before removing only the temporary
+`agent-kernel-test` service/network. The active API/Worker/Web/PostgreSQL IDs and
+start times still matched the pre-review check. No active Docker rebuild, restart,
+migration or data cleanup was performed. The post-CI documentation commit records
+this candidate's results; it does not retroactively change the tested SHA.
 
 ## Pre-Commit Code Review
 

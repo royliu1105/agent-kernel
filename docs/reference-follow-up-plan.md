@@ -1,6 +1,6 @@
 # Reference-Informed Follow-Up Plan
 
-Status: **CF1 code review and local verification passed; CI/deployment acceptance pending (2026-11-14)**.
+Status: **CF1 code review, local verification and candidate CI passed; deployment/pilot acceptance pending (2026-11-14)**.
 
 The original authorization covered recording the [comparison](reference-project-comparison.md)
 and this plan only. The maintainer subsequently authorized the minimal CF1 repair:
@@ -54,7 +54,7 @@ need and separate scope decision are required. None means complete.
 
 | ID | Priority | Delivery | Prerequisite / pilot relationship | Current status | Acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification passed; CI/deployment pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): 1146 passed, 35 optional skips; not deployed/CI/pilot acceptance |
+| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification/candidate CI passed; deployment and risk disposition pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): local 1146 passed, 35 optional skips; candidate `5952ba7` CI passed; not active-local deployment/pilot acceptance |
 | CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Not started | None; source inventory is not a user-path rehearsal |
 | CF3 | P1: reproducibility | Effective prompt-version binding to Run/checkpoint/eval | After PV6 prioritization or explicit earlier scope approval; CF1 context contract | Deferred; not started | None |
 | CF4 | P1: product journey | Scoped session/task submission and resumable streaming Web flow | After pilot evidence/scope approval; CF3 or an explicitly approved equivalent provenance contract | Deferred; not started | None |
@@ -112,11 +112,13 @@ not an authorization mechanism or a live-model safety guarantee.
   lint/typecheck, docs and temporary-test-database cleanup.
 - [x] Complete code review and repair the reproduced validation-response issue;
   no remaining blocking finding in the reviewed CF1 scope.
-- [ ] Record candidate commit, exact-revision CI and reviewer disposition.
+- [x] Record candidate `5952ba7` and its exact-revision CI: all four jobs passed.
+- [ ] Record maintainer residual-risk disposition for deployment/pilot admission.
 - [ ] Verify the approved implementation in the intended deployed environment.
 
-Checked items above mean local implementation/focused fixture verification only,
-not CF1 accepted. Commit/push and CI tracking are authorized; deployment is not.
+Checked items above mean implementation, review and scoped local/CI verification,
+not CF1 accepted. Commit/push and CI tracking are authorized; active local
+deployment and pilot admission are not.
 
 Acceptance: unit/request-capture tests establish data placement and bounds;
 actual runtime tests show no unauthorized data access or tool side effect, no

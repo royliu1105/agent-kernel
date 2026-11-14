@@ -1,13 +1,15 @@
 # Observability Completion Plan
 
-Status: **Local single-host scope verified; external email and remote CI pending (2026-11-14)**.
+Status: **Local single-host scope and candidate remote CI verified; external email blocked (2026-11-14)**.
 
 This is the canonical O1-O5 ledger for the explicitly authorized follow-up:
 centralized logs, a trace backend and alert notification delivery. It is a narrow
 exception to the pilot's foundation-feature freeze, not a new Day 1-90 schedule.
 PV1-PV6 remain planned and unexecuted. Historical R1-R10/N1-N5 acceptance did not
 include these backend/delivery guarantees and is not evidence for this work.
-No commit, push, paid model call, external message, tag or release is implied.
+This plan alone authorizes no paid model call, external message, tag or release.
+The later baseline/CF1 commit, push and CI tracking were explicitly authorized;
+their exact-candidate evidence is recorded below.
 
 ## Baseline and Scope
 
@@ -36,7 +38,7 @@ confirmed at the intended inbox. Never paste credentials into chat or Git.
 | O2 | P1 | Safe bounded file sink, Alloy collection, Loki storage, Grafana search | Implemented | Passed: search, privacy, rotation/restart | No hosted/HA claim |
 | O3 | P1 | OTLP receiver, Tempo storage, Grafana traces and log correlation | Implemented | Passed: model/tool spans, correlation, restart/outage | No hosted/HA claim |
 | O4 | P1 | Alertmanager SMTP, grouping/deduplication, firing/recovery emails | Implemented | Passed: real fault, local firing/resolved, SMTP retry, grouping/deduplication | Blocked: SMTP settings and inbox confirmation absent |
-| O5 | P0 | Security/recovery regressions, clean deployment, docs and final review | Locally verified | Fresh 8-test deployment passed and cleaned up; regression evidence below | Remote CI not authorized/run |
+| O5 | P0 | Security/recovery regressions, clean deployment, docs and final review | Locally and candidate-CI verified | Fresh 8-test deployment passed and cleaned up; regression evidence below | Candidate `5952ba7` CI passed; no production/HA or real-mailbox claim |
 
 Update one row only after its evidence exists. Report implementation, local
 verification, remote CI and external delivery independently. A blocked external
@@ -90,6 +92,7 @@ Mailpit receipt and SMTP server acceptance are not proof of external inbox arriv
 - [x] Preserve user's running experience data; fault drills use disposable targets.
 - [x] Document start/stop, endpoints, private credentials, troubleshooting and retention.
 - [x] Record exact commands/results, failure fixes and unresolved gates below.
+- [x] Verify the committed candidate in remote CI, including full-stack and default Docker profiles.
 
 ## Estimate and Tradeoffs
 
@@ -186,11 +189,21 @@ running-state snapshot: the legacy processes/metrics stack are stopped with data
 backed up; all 13 services, including these backends and Web, now run together in
 `agent-kernel-local`. The existing unrelated database was not modified.
 
-Remaining gates: approved real SMTP configuration and inbox proof, exact-commit
-remote CI after an authorized commit/push, and deployment-specific operational
+Remaining gates: approved real SMTP configuration and inbox proof, and deployment-specific operational
 hardening for any shared/production host. Long-duration retention, abrupt-crash
 loss guarantees, HA, external inbox delivery and a user pilot are not certified
-by these tests. This work remains uncommitted/unreleased; no new release is implied.
+by these tests. This work is committed but unreleased; no new release is implied.
+
+## Subsequent Remote Evidence
+
+Baseline `8f87473` and CF1 candidate `5952ba75f2adeca101b938a9402292811ea56afc`
+were pushed with explicit authorization. [CI run 43590573645](https://github.com/royliu1105/agent-kernel/actions/runs/43590573645)
+passed all four jobs on 2026-11-14. The observability job passed native validators,
+**8 full-stack E2E tests in 304.50 s**, cleanup, default `make docker-up`, and
+**4 runtime/Web proxy tests**. The separate compose job passed HTTP and monitoring
+rehearsals. See the [candidate record](reviews/2026-11-14-cf1-minimal-repair.md)
+for all profiles and exact SHA. These disposable runner results do not mean the
+maintainer's active Docker images were updated, or that real email is accepted.
 
 References: [observability operations](observability-operations.md),
 [backend/SMTP runbook](observability-backends.md),

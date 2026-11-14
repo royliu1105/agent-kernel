@@ -20,7 +20,7 @@ Current development:
   alerts. Implementation/verification are tracked separately; external email
   delivery is not accepted without inbox evidence.
   The optional single-host Loki/Tempo/Alertmanager/Mailpit profile has passed
-  local end-to-end verification; exact-commit remote CI is still pending.
+  local end-to-end verification and exact-commit remote CI; see the ledger for evidence.
 - [Real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
   remains planned, not yet executed. Other foundation feature expansion is frozen.
 - [Reference comparison](docs/reference-project-comparison.md) records the
@@ -28,7 +28,8 @@ Current development:
   pilot-entry checks and deferred enhancements. CF1's minimal memory-context
   repair passed code review and local regressions, with acceptance still pending;
   see its [verification record](docs/reviews/2026-11-14-cf1-minimal-repair.md).
-  It is not yet deployed or verified by remote CI. CF2-CF8 are unchanged.
+  Its candidate CI passed, but the active local Docker stack has not been updated
+  with CF1. Deployment/pilot acceptance is still pending. CF2-CF8 are unchanged.
 - Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)
   retains the implementation evidence and explicit limits.
 - `master` contains unreleased changes beyond the `v1.0.0` tag. Historical

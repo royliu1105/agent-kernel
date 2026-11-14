@@ -88,7 +88,7 @@ content cannot grant permissions; policy/approval still controls tool effects.
 API/repository admission and runtime recall enforce capacity limits. Old unsafe
 memory-bearing checkpoints fail closed before any resumed tool/provider call.
 The [repair record](reviews/2026-11-14-cf1-minimal-repair.md) tracks verification;
-working-tree code is not yet active Docker deployment or live-model acceptance.
+candidate CI is not active local Docker deployment or live-model acceptance.
 Workspace-shared memory is not per-user ACL storage, and deleting a memory does
 not erase copies already present in private checkpoints, requests or backups.
 

@@ -15,8 +15,8 @@ The [reference comparison](docs/reference-project-comparison.md) and
 [reference follow-up plan](docs/reference-follow-up-plan.md) record later
 code/test findings and proposed completion work. CF1/CF2 feed pilot entry;
 CF3-CF8 remain deferred/conditional. The explicitly authorized CF1 minimal repair
-now has implementation, code review and regression evidence; final acceptance,
-candidate CI and deployment remain separately tracked in its
+now has implementation, code review, regression and candidate CI evidence; final
+acceptance and deployment remain separately tracked in its
 [repair record](docs/reviews/2026-11-14-cf1-minimal-repair.md). CF2 has not started.
 No new calendar phase, broader foundation expansion or pilot admission is authorized.
 

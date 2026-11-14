@@ -1,6 +1,6 @@
 # Docker-Only Local Runtime
 
-Status: **Local cutover and default startup verified (2026-11-14); remote CI not run**.
+Status: **Local cutover/default startup and candidate remote CI verified (2026-11-14)**.
 This is the default local startup contract, replacing the mixed host/Docker
 experience. It does not change the language stack or claim production acceptance.
 
@@ -175,3 +175,14 @@ are unchanged. The database/object backup location and the transient Loki
 readiness observation are recorded in the
 [PostgreSQL-only update evidence](postgresql-only.md#active-local-update).
 This update did not pull remote changes, commit, push or run remote CI.
+
+## Subsequent Remote Verification
+
+Baseline `8f87473` and CF1 candidate `5952ba7` were later committed/pushed with
+authorization. [CI run 43590573645](https://github.com/royliu1105/agent-kernel/actions/runs/43590573645)
+passed all four jobs, including a fresh default Docker stack and **4 runtime/Web
+proxy tests**, plus the separate **8-test** full observability rehearsal.
+This happened on disposable GitHub runners. The review/push did not rebuild,
+restart or migrate this machine's active containers; its CF1 code is not deployed.
+See the [candidate record](reviews/2026-11-14-cf1-minimal-repair.md) for the exact
+SHA, test profiles and remaining gates. Historical cutover evidence above is unchanged.

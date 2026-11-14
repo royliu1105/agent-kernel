@@ -1,7 +1,7 @@
 # Bounded Untrusted Memory Context
 
 Contract version: **1**, introduced by the unreleased CF1 minimal repair.
-Implementation is in the working tree; verification and remaining acceptance
+Implementation is committed; verification and remaining acceptance
 gates are recorded in the [CF1 repair record](../reviews/2026-11-14-cf1-minimal-repair.md).
 The [follow-up ledger](../reference-follow-up-plan.md) owns CF1 status.
 

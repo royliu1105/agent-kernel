@@ -1,7 +1,9 @@
 # PostgreSQL-Only Storage
 
-Status: local implementation, verification and active Docker update complete
-(2026-11-14); not committed and remote CI not run. This supersedes
+Status: local implementation, verification and active PostgreSQL-only Docker update
+complete (2026-11-14); committed in `8f87473` and verified by candidate CI at `5952ba7`.
+See the [review/CI record](reviews/2026-11-14-cf1-minimal-repair.md); CF1 itself is
+not deployed to the active local runtime. This supersedes
 SQLite support claims in earlier daily plans, release snapshots and acceptance
 records; those historical results are not rewritten as PostgreSQL evidence.
 
