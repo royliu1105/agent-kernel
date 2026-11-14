@@ -1,12 +1,22 @@
 # Reference-Informed Follow-Up Plan
 
-Status: **CF1 read-only review recorded; repair and acceptance pending (2026-11-14)**.
+Status: **CF1 code review and local verification passed; CI/deployment acceptance pending (2026-11-14)**.
 
-This ledger records the [comparison](reference-project-comparison.md) and follow-up plan.
-Baseline triage, read-only CF1 analysis and temporary fixture observations are
-recorded in the [CF1 review](reviews/2026-11-14-cf1-memory-boundary.md).
-The maintainer requested a professional demonstration, not a mastery claim.
-No CF repair or pilot admission is accepted by this planning baseline.
+The original authorization covered recording the [comparison](reference-project-comparison.md)
+and this plan only. The maintainer subsequently authorized the minimal CF1 repair:
+untrusted memory context, input capacity limits, old-checkpoint handling,
+regression tests and documentation, followed by review, separate baseline/CF1
+commits, push and CI tracking. Preserve current Docker data and do not update
+its running environment. This does not authorize CF2-CF8 implementation, paid
+requests, pilot admission, tag or release. Identifying a gap is not fixing it; existing passing tests are
+not acceptance of a missing capability.
+
+Earlier continuation authorized baseline triage, read-only CF1 analysis and
+temporary fixture observations. See the [CF1 review record](reviews/2026-11-14-cf1-memory-boundary.md).
+The maintainer requested a demonstration at the learning checkpoint. That review
+did not authorize a repair. The later explicit authorization above now governs
+the minimal implementation. Commit/push and CI tracking are now explicitly
+authorized; paid execution, deployment and pilot admission remain excluded.
 
 ## Authority and Relationship to Existing Work
 
@@ -27,7 +37,9 @@ No CF repair or pilot admission is accepted by this planning baseline.
   disposable databases for tests; preserve the active runtime's data/credentials.
   `resource/` stays read-only and outside maintained build contexts.
 - The maintainer owns scope decisions. Assign an implementer and reviewer
-  before starting each authorized task; this planning baseline assigns neither.
+  before starting each authorized task. CF1 implementation and code review: Codex;
+  deployment/pilot residual-risk disposition: maintainer, pending. The code
+  review is not an independent security audit. Other tasks have not been assigned.
   Follow the [learning guide](pilot-learning-guide.md) for tradeoff, failure
   diagnosis and assertion exercises, without claiming learner mastery from CI.
 
@@ -42,7 +54,7 @@ need and separate scope decision are required. None means complete.
 
 | ID | Priority | Delivery | Prerequisite / pilot relationship | Current status | Acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| CF1 | P0: safety gate | Memory/context trust-boundary review and minimal repair if required | CUR-1; before memory-bearing pilot admission | In progress: read-only review; repair pending | [Review evidence](reviews/2026-11-14-cf1-memory-boundary.md); not acceptance |
+| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification passed; CI/deployment pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): 1146 passed, 35 optional skips; not deployed/CI/pilot acceptance |
 | CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Not started | None; source inventory is not a user-path rehearsal |
 | CF3 | P1: reproducibility | Effective prompt-version binding to Run/checkpoint/eval | After PV6 prioritization or explicit earlier scope approval; CF1 context contract | Deferred; not started | None |
 | CF4 | P1: product journey | Scoped session/task submission and resumable streaming Web flow | After pilot evidence/scope approval; CF3 or an explicitly approved equivalent provenance contract | Deferred; not started | None |
@@ -81,17 +93,41 @@ chat-only workflow, record a separate scope decision and new acceptance baseline
 
 ### CF1: Memory and Context Trust Boundary
 
-Current gap: stored memory reaches SYSTEM context. Existing workspace-isolation
-tests do not establish resistance to instruction-like stored content.
+Original gap: `_request_from_run` injected stored memory as SYSTEM content;
+existing isolation tests did not establish the instruction boundary. The minimal
+repair separates fixed policy from bounded untrusted data and validates saved
+context. See the [version-1 contract](specs/memory-context-safety.md). Labeling is
+not an authorization mechanism or a live-model safety guarantee.
 
-- [ ] Freeze the admitted trust model for writers, retrieval, tool policy and resume.
-- [ ] Reproduce adversarial inputs and implement only an explicitly authorized minimal repair.
-- [ ] Cover capacity, provenance, instruction-like text, workspace mismatch and old checkpoints.
-- [ ] Assert no denied/unapproved tool effects using counters and persisted events.
+- [x] Trace memory writers, request permissions, retrieval, prompt placement,
+  tool policy and checkpoint/resume; document the admitted trust model.
+- [x] Reproduce boundary behavior with adversarial fixtures, then implement only
+  the minimal authorized repair. Keep source/provenance and bounded context;
+  do not add automatic extraction, a new policy engine or a general sandbox.
+- [x] Cover instruction-like memories, forged delimiters, external tool results,
+  oversized context, workspace mismatch, approval rejection and resume.
+- [x] Verify disallowed or unapproved tool calls are blocked independently of
+  what the model says; inspect downstream invocation counters and audit records.
+- [x] Complete broad local verification: full Python suite, release evals,
+  lint/typecheck, docs and temporary-test-database cleanup.
+- [x] Complete code review and repair the reproduced validation-response issue;
+  no remaining blocking finding in the reviewed CF1 scope.
+- [ ] Record candidate commit, exact-revision CI and reviewer disposition.
+- [ ] Verify the approved implementation in the intended deployed environment.
 
-Acceptance requires scoped runtime/PostgreSQL regressions and reviewer disposition.
-Prompt delimiters alone are insufficient; live behavior belongs to PV3.
-See the [read-only evidence](reviews/2026-11-14-cf1-memory-boundary.md).
+Checked items above mean local implementation/focused fixture verification only,
+not CF1 accepted. Commit/push and CI tracking are authorized; deployment is not.
+
+Acceptance: unit/request-capture tests establish data placement and bounds;
+actual runtime tests show no unauthorized data access or tool side effect, no
+cross-workspace content and no approval bypass in the frozen cases. Scoped
+PostgreSQL/continuation regressions pass. Prompt wording alone is insufficient;
+live injection behavior still belongs to PV3. Existing tests passing before this
+work do not close CUR-1. Review the residual risk before admitting memory-bearing tasks.
+
+The [initial review](reviews/2026-11-14-cf1-memory-boundary.md) preserves the
+pre-repair evidence. The [repair record](reviews/2026-11-14-cf1-minimal-repair.md)
+owns new verification details and remaining gates; neither is PV acceptance.
 
 ### CF2: Truthful Workflow and Pilot Provenance
 

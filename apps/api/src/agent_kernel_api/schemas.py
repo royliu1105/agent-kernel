@@ -17,7 +17,13 @@ from kernel_core import (
     RunEventType,
     RunStatus,
 )
-from pydantic import BaseModel, ConfigDict, Field
+from kernel_core.memory_limits import (
+    MEMORY_CONTENT_BYTES,
+    MEMORY_METADATA_BYTES,
+    bounded_memory_json,
+)
+from kernel_core.models import MemorySelection
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ApiModel(BaseModel):
@@ -45,6 +51,13 @@ class AgentResponse(ApiModel):
 
 class RunCreateRequest(ApiModel):
     input: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("input")
+    @classmethod
+    def validate_memory_selection(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if value.get("memory") is not None:
+            MemorySelection.model_validate(value["memory"])
+        return value
 
 
 class RunResumeRequest(ApiModel):
@@ -241,6 +254,18 @@ class MemoryCreateRequest(ApiModel):
     source_run_id: UUID | None = None
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("content")
+    @classmethod
+    def validate_content_capacity(cls, value: dict[str, Any]) -> dict[str, Any]:
+        bounded_memory_json(value, max_bytes=MEMORY_CONTENT_BYTES)
+        return value
+
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata_capacity(cls, value: dict[str, Any]) -> dict[str, Any]:
+        bounded_memory_json(value, max_bytes=MEMORY_METADATA_BYTES)
+        return value
 
 
 class MemoryResponse(ApiModel):

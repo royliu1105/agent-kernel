@@ -14,6 +14,7 @@ from uuid import UUID
 
 import uvicorn
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from kernel_core import (
     Agent,
@@ -233,6 +234,16 @@ def create_app(
     indexer = indexing_service or DocumentIndexingService(
         embedding_provider=retrieval_service.embedding_provider
     )
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(request: Request, error: RequestValidationError) -> Response:
+        # Raw input/exception context can contain private data or non-JSON values.
+        details = [{key: item[key] for key in ("loc", "msg", "type")} for item in error.errors()]
+        return Response(
+            status_code=422,
+            content=json.dumps({"detail": details}, ensure_ascii=True, allow_nan=False),
+            media_type="application/json",
+        )
 
     @app.exception_handler(ExecutionOwnershipError)
     @app.exception_handler(RunConflictError)

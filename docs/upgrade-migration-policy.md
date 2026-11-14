@@ -27,6 +27,22 @@ database backups accordingly; they are private storage, not Run API fields or
 log/metric payloads. Current continuation requires the original provider route
 and tool contracts. Changing either can deliberately prevent a pending resume.
 
+The unreleased CF1 [memory context version-1 contract](specs/memory-context-safety.md)
+does not add an Alembic revision. It changes new memory-bearing requests and
+validates saved context on resume. Legacy SYSTEM-memory checkpoints (even empty
+recall) are not automatically converted: resume fails before tool/model effects
+with `unsupported_memory_checkpoint`, or `invalid_execution_checkpoint` for
+invalid overall state. Review existing effects before deliberately creating a
+new Run. Legacy checkpoints without memory remain compatible; new safe snapshots
+survive memory-row deletion and are not refetched on resume.
+
+Review pending memory approvals, stop old executors, back up and replace API and
+Worker together. Never edit a checkpoint version to bypass validation or mix old
+and new execution code. Oversized legacy memory rows stay inspectable/deletable;
+selecting them fails before model invocation, with no silent data cleanup.
+This repair has not rebuilt the active Docker stack. See its
+[verification record](reviews/2026-11-14-cf1-minimal-repair.md) before deployment.
+
 Real embeddings now require explicit `AGENT_KERNEL_EMBEDDING_PROVIDER=openai`
 on both API and Worker. Default mock behavior is preserved. Switching provider,
 model or dimensions does not convert existing vectors: reindex the affected

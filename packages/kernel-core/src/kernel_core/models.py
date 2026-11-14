@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from kernel_core.memory_limits import MEMORY_MAX_ITEMS, MEMORY_MAX_SCOPES
 
 
 def utc_now() -> datetime:
@@ -144,6 +146,14 @@ class KernelModel(BaseModel):
     """Base model for domain objects."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class MemorySelection(KernelModel):
+    scopes: tuple[Annotated[str, Field(min_length=1, max_length=255)], ...] = Field(
+        min_length=1, max_length=MEMORY_MAX_SCOPES
+    )
+    types: tuple[MemoryType, ...] | None = Field(default=None, max_length=len(MemoryType))
+    limit: int = Field(default=10, ge=1, le=MEMORY_MAX_ITEMS, strict=True)
 
 
 class Agent(KernelModel):

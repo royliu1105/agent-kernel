@@ -19,7 +19,6 @@ from uuid import UUID, uuid4
 from kernel_core import (
     Approval,
     ApprovalStatus,
-    MemoryType,
     RiskLevel,
     Run,
     RunEventType,
@@ -27,7 +26,9 @@ from kernel_core import (
     ToolCall,
     ToolCallStatus,
 )
+from kernel_core.models import MemorySelection
 from kernel_memory import MemoryContext, MemoryRetrievalService
+from kernel_memory.retrieval import MEMORY_CONTEXT_POLICY, MEMORY_CONTEXT_VERSION
 from kernel_observability import (
     LatencyTimer,
     MetricsRecorder,
@@ -114,15 +115,6 @@ class ExplicitToolRequest:
 
     name: str
     arguments: dict[str, Any]
-
-
-@dataclass(frozen=True)
-class ExplicitMemoryRequest:
-    """Explicit memory retrieval request embedded directly in run input."""
-
-    scopes: tuple[str, ...]
-    types: tuple[MemoryType, ...] | None = None
-    limit: int = 10
 
 
 @dataclass(frozen=True)
@@ -424,6 +416,17 @@ class RunExecutionService:
                     error_type="invalid_execution_checkpoint",
                     error_message="Invalid saved continuation; review and create a new run.",
                 )
+            try:
+                state.validate_memory_context(run)
+            except ValueError:
+                return self._fail_running_run(
+                    running=run,
+                    repository=repository,
+                    error_type="unsupported_memory_checkpoint",
+                    error_message=(
+                        "Saved memory context is legacy or invalid; review and create a new run."
+                    ),
+                )
             if state.pending_tool_ids[state.next_tool_index] != approval.tool_call_id:
                 raise RunExecutionError("Approval does not match the pending checkpoint call.")
         if pending_tool.status is not ToolCallStatus.WAITING_APPROVAL:
@@ -567,6 +570,7 @@ class RunExecutionService:
                 request=request,
                 model_ref=refs[0],
                 memory_output=memory.to_output_payload() if memory is not None else None,
+                memory_context_version=MEMORY_CONTEXT_VERSION if memory is not None else None,
                 tool_contracts=self._tool_contracts(),
             )
             budget = ExecutionBudget(state)
@@ -1692,9 +1696,18 @@ def _request_from_run(
         messages = (
             LLMMessage(
                 role=MessageRole.SYSTEM,
+                content=MEMORY_CONTEXT_POLICY,
+                name="memory_policy",
+            ),
+            LLMMessage(
+                role=MessageRole.USER,
                 content=memory_context.to_prompt_text(),
                 name="memory_context",
-                metadata={"memory_item_ids": [str(item_id) for item_id in memory_context.item_ids]},
+                metadata={
+                    "memory_item_ids": [str(item_id) for item_id in memory_context.item_ids],
+                    "trust": "untrusted",
+                    "memory_context_version": MEMORY_CONTEXT_VERSION,
+                },
             ),
             *messages,
         )
@@ -1800,51 +1813,16 @@ def _explicit_tool_request_from_run(run: Run) -> ExplicitToolRequest | None:
     return ExplicitToolRequest(name=raw_name, arguments=raw_arguments)
 
 
-def _explicit_memory_request_from_run(run: Run) -> ExplicitMemoryRequest | None:
+def _explicit_memory_request_from_run(run: Run) -> MemorySelection | None:
     raw_memory = run.input.get("memory")
     if raw_memory is None:
         return None
-    if not isinstance(raw_memory, dict):
-        raise RunExecutionError("Run input field 'memory' must be a JSON object.")
-
-    raw_scopes = raw_memory.get("scopes")
-    if not isinstance(raw_scopes, list) or not raw_scopes:
-        raise RunExecutionError("Run input field 'memory.scopes' must be a non-empty list.")
-    scopes: list[str] = []
-    for index, scope in enumerate(raw_scopes):
-        if not isinstance(scope, str) or scope == "":
-            raise RunExecutionError(
-                f"Run input field 'memory.scopes[{index}]' must be a non-empty string."
-            )
-        scopes.append(scope)
-
-    raw_types = raw_memory.get("types")
-    memory_types: list[MemoryType] | None = None
-    if raw_types is not None:
-        if not isinstance(raw_types, list):
-            raise RunExecutionError("Run input field 'memory.types' must be a list.")
-        memory_types = []
-        for index, raw_type in enumerate(raw_types):
-            if not isinstance(raw_type, str):
-                raise RunExecutionError(
-                    f"Run input field 'memory.types[{index}]' must be a string."
-                )
-            try:
-                memory_types.append(MemoryType(raw_type))
-            except ValueError as error:
-                raise RunExecutionError(
-                    f"Run input field 'memory.types[{index}]' has unsupported value {raw_type!r}."
-                ) from error
-
-    raw_limit = raw_memory.get("limit", 10)
-    if not isinstance(raw_limit, int) or raw_limit < 1:
-        raise RunExecutionError("Run input field 'memory.limit' must be an integer >= 1.")
-
-    return ExplicitMemoryRequest(
-        scopes=tuple(scopes),
-        types=tuple(memory_types) if memory_types is not None else None,
-        limit=raw_limit,
-    )
+    try:
+        return MemorySelection.model_validate(raw_memory)
+    except ValidationError as error:
+        raise RunExecutionError(
+            "Invalid memory selection: check memory.scopes, memory.types and memory.limit."
+        ) from error
 
 
 def _resolve_resume_approval(

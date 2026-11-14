@@ -523,3 +523,34 @@ def test_learning_focus_uses_existing_pilot_gates_without_new_tasks() -> None:
     focus = _section("pilot-learning-guide.md", "Learning Focus by Pilot Gate")
     assert "not a second completion checklist" in focus
     assert "do not coach participants" in focus
+
+
+def test_memory_safety_contract_records_limits_and_resume_boundaries() -> None:
+    text = _normalized((DOCS_ROOT / "specs/memory-context-safety.md").read_text(encoding="utf-8"))
+    for required in (
+        "16 KiB",
+        "4 KiB",
+        "64 KiB",
+        "1-8 strings",
+        "1-20",
+        "4096",
+        "workspace-shared",
+        "not per-user ACLs",
+        "USER message",
+        "unsupported_memory_checkpoint",
+        "invalid_execution_checkpoint",
+        "without memory remain compatible",
+        "no schema migration",
+        "does not prove",
+        "HTTP/proxy body-size limits",
+    ):
+        assert _normalized(required) in text
+    for filename in (
+        "README.md",
+        "specs/memory.md",
+        "security-hardening.md",
+        "configuration.md",
+        "upgrade-migration-policy.md",
+        "reference-follow-up-plan.md",
+    ):
+        assert "memory-context-safety.md" in (DOCS_ROOT / filename).read_text(encoding="utf-8")

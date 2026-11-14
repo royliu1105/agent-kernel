@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 from kernel_core import MemoryType, RunEventType, RunStatus
-from kernel_providers import MockLLMProvider
 from kernel_rag import LocalObjectStore
-from kernel_runtime import ModelRouter, RunExecutionService
+from kernel_runtime import RunExecutionService
 from kernel_storage import AgentRepository, EvalRunRepository, MemoryRepository, RunRepository
 from sqlalchemy.orm import Session, sessionmaker
+from test_bounded_native_execution import ScriptedProvider, reply
 from test_knowledge_workspace_isolation import _client
 
 
@@ -80,6 +80,7 @@ async def test_runtime_memory_scope_is_not_an_authorization_override(
     store = LocalObjectStore(root_path=tmp_path)
     _, a = _client(postgres_session_factory, store)
     _, b = _client(postgres_session_factory, store)
+    provider = ScriptedProvider([reply(text="done")])
     with postgres_session_factory() as session:
         MemoryRepository(session, workspace_id=b).create(
             type=MemoryType.USER_PREFERENCE, scope="shared-label", content={"value": "SECRET-B"}
@@ -91,6 +92,7 @@ async def test_runtime_memory_scope_is_not_an_authorization_override(
             workspace_id=a,
             input_payload={
                 "task": "hello",
+                "model": "scripted:small",
                 "memory": {"scopes": ["shared-label"]},
                 "workspace_id": str(b),
             },
@@ -98,9 +100,7 @@ async def test_runtime_memory_scope_is_not_an_authorization_override(
         repo.apply_transition(
             run_id=run.id, status=RunStatus.QUEUED, event_type=RunEventType.RUN_QUEUED, payload={}
         )
-        done = await RunExecutionService(router=ModelRouter({"mock": MockLLMProvider()})).execute(
-            run_id=run.id, repository=repo
-        )
+        done = await RunExecutionService(provider=provider).execute(run_id=run.id, repository=repo)
         assert done.status is RunStatus.SUCCEEDED
         events = repo.list_events(run.id)
         memory_event = next(
@@ -108,3 +108,4 @@ async def test_runtime_memory_scope_is_not_an_authorization_override(
         )
         assert memory_event.payload["item_count"] == 0
         assert "SECRET-B" not in str(done.output)
+        assert "SECRET-B" not in provider.requests[0].model_dump_json()

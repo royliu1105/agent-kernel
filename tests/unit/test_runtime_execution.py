@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any
 from uuid import UUID
@@ -169,9 +170,12 @@ async def test_execution_service_injects_explicit_memory_context(
     }
     assert provider.last_request is not None
     assert provider.last_request.messages[0].role.value == "system"
-    assert provider.last_request.messages[0].name == "memory_context"
-    assert "type=user_preference" in provider.last_request.messages[0].content
-    assert '"language": "zh"' in provider.last_request.messages[0].content
+    assert provider.last_request.messages[0].name == "memory_policy"
+    data = provider.last_request.messages[1]
+    assert data.role.value == "user" and data.name == "memory_context"
+    item = json.loads(data.content)["items"][0]
+    assert item["type"] == "user_preference"
+    assert item["content"] == {"language": "zh", "style": "concise"}
     assert [event.type for event in events] == [
         RunEventType.RUN_CREATED,
         RunEventType.RUN_QUEUED,

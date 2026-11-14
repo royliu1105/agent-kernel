@@ -1,5 +1,11 @@
 # Feature Spec: Memory
 
+Current unreleased trust/capacity/resume behavior is defined by
+[Bounded Untrusted Memory Context](memory-context-safety.md). The Day 22/23
+sections below record historical scope; their SYSTEM-data injection is superseded
+by fixed SYSTEM policy plus untrusted USER JSON data. CF1 acceptance remains in
+the [follow-up ledger](../reference-follow-up-plan.md), not this historical plan.
+
 ## Goal
 
 Provide a clear memory system covering short-term context, task context, user preferences, and long-term memory without making memory behavior opaque.
@@ -134,7 +140,8 @@ Implemented Day 23 behavior:
 
 - Retrieve memory by one or more exact scopes.
 - Optionally filter retrieved memory by memory type.
-- Render retrieved memory into a deterministic system message.
+- Historically rendered retrieved memory into a deterministic system message;
+  superseded by the version-1 untrusted-context contract linked above.
 - Append `memory_retrieved` run events with requested scopes, requested types, limit, item count, and item IDs.
 - Include memory usage metadata in model run output.
 - Fail clearly when memory config is invalid.

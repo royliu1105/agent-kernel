@@ -20,9 +20,10 @@ learning separately from technical acceptance.
 The [reference-project comparison](reference-project-comparison.md) records the
 2026-11-14 code/test review; the [reference follow-up plan](reference-follow-up-plan.md)
 owns CF1-CF8 priorities, tasks and acceptance. CF1/CF2 feed pilot-entry checks;
-CF3-CF8 are deferred/conditional. CF1 has
-[read-only review evidence](reviews/2026-11-14-cf1-memory-boundary.md);
-repair and acceptance remain pending.
+CF3-CF8 are deferred/conditional. The explicitly authorized CF1 minimal repair
+has implementation, code review and regressions; its
+[verification record](reviews/2026-11-14-cf1-minimal-repair.md) separates local
+evidence from pending CI/deployment acceptance. CF2 has not started and CF1 is not accepted.
 Completed implementation evidence remains in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
 R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier
@@ -45,6 +46,7 @@ Current hardening operator guides:
 - [Guided Learning During Pilot Acceptance](pilot-learning-guide.md)
 - [Reference Project Comparison](reference-project-comparison.md)
 - [Reference-Informed Follow-Up Plan](reference-follow-up-plan.md)
+- [Bounded Untrusted Memory Context](specs/memory-context-safety.md)
 - [Execution Ownership and Recovery](execution-ownership.md)
 - [Bounded Native Execution](specs/bounded-native-execution.md)
 - [Observability Operations](observability-operations.md)

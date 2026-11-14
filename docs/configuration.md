@@ -1,5 +1,10 @@
 # Versioned Configuration Reference
 
+The unreleased [memory context contract](specs/memory-context-safety.md) adds
+fixed admission limits (16 KiB content, 4 KiB metadata, 8 scopes, 20 recalled
+items, 64 KiB context). These are not environment variables or Run-overridable
+budgets. Existing execution budgets still apply independently.
+
 ## Post-v1.0 Hardening Additions
 
 These additions are unreleased; apply the migration and compatibility guidance

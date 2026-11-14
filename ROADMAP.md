@@ -14,9 +14,11 @@ operational drills and actual user feedback, not new infrastructure.
 The [reference comparison](docs/reference-project-comparison.md) and
 [reference follow-up plan](docs/reference-follow-up-plan.md) record later
 code/test findings and proposed completion work. CF1/CF2 feed pilot entry;
-CF3-CF8 remain deferred/conditional. CF1 has read-only review evidence, not an
-accepted repair or pilot-entry gate. No new calendar phase or feature expansion
-is authorized.
+CF3-CF8 remain deferred/conditional. The explicitly authorized CF1 minimal repair
+now has implementation, code review and regression evidence; final acceptance,
+candidate CI and deployment remain separately tracked in its
+[repair record](docs/reviews/2026-11-14-cf1-minimal-repair.md). CF2 has not started.
+No new calendar phase, broader foundation expansion or pilot admission is authorized.
 
 The [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
 retains implementation evidence. R1-R10 remediation passed scoped acceptance for

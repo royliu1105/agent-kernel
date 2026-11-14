@@ -95,7 +95,8 @@ create memory -> list/inspect/delete -> explicit scoped retrieval -> model conte
 - Optional memory type filtering.
 - Deterministic memory prompt rendering.
 - Explicit runtime memory config parsing.
-- Agent model context injection through a system message.
+- Historical Agent model context injection through a system message, superseded
+  by the unreleased [CF1 untrusted-context contract](specs/memory-context-safety.md).
 - `memory_retrieved` run event visibility.
 - Model run output metadata showing memory item IDs used.
 

@@ -37,6 +37,8 @@ from kernel_core import (
     WorkerLease,
     utc_now,
 )
+from kernel_core.memory_limits import validate_memory_payload
+from kernel_core.models import MemorySelection
 from kernel_identity import (
     ApiKey,
     ApiKeyCredential,
@@ -2015,6 +2017,7 @@ class MemoryRepository:
         confidence: float = 1.0,
         metadata: dict[str, Any] | None = None,
     ) -> MemoryItem:
+        validate_memory_payload(content, metadata if metadata is not None else {})
         if source_run_id is not None and self._workspace_id is not None:
             source = RunRepository(self._session).get(
                 source_run_id, workspace_id=self._workspace_id
@@ -2060,6 +2063,20 @@ class MemoryRepository:
         if type is not None:
             statement = statement.where(MemoryItemRecord.type == type.value)
         statement = statement.order_by(MemoryItemRecord.created_at).limit(limit)
+        return [_memory_item_from_record(record) for record in self._session.scalars(statement)]
+
+    def recall(self, *, selection: MemorySelection) -> builtins.list[MemoryItem]:
+        """Select the newest bounded context in one workspace-scoped query."""
+        statement = select(MemoryItemRecord).where(MemoryItemRecord.scope.in_(selection.scopes))
+        if self._workspace_id is not None:
+            statement = statement.where(MemoryItemRecord.workspace_id == str(self._workspace_id))
+        if selection.types is not None:
+            statement = statement.where(
+                MemoryItemRecord.type.in_([kind.value for kind in selection.types])
+            )
+        statement = statement.order_by(
+            MemoryItemRecord.created_at.desc(), MemoryItemRecord.id.desc()
+        ).limit(selection.limit)
         return [_memory_item_from_record(record) for record in self._session.scalars(statement)]
 
     def delete(self, memory_id: UUID) -> bool:

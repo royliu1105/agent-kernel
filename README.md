@@ -25,8 +25,10 @@ Current development:
   remains planned, not yet executed. Other foundation feature expansion is frozen.
 - [Reference comparison](docs/reference-project-comparison.md) records the
   code/test review. Its [follow-up plan](docs/reference-follow-up-plan.md) owns
-  pilot-entry checks and deferred enhancements. CF1 has read-only review evidence;
-  repair and acceptance remain pending. CF2-CF8 have not started.
+  pilot-entry checks and deferred enhancements. CF1's minimal memory-context
+  repair passed code review and local regressions, with acceptance still pending;
+  see its [verification record](docs/reviews/2026-11-14-cf1-minimal-repair.md).
+  It is not yet deployed or verified by remote CI. CF2-CF8 are unchanged.
 - Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)
   retains the implementation evidence and explicit limits.
 - `master` contains unreleased changes beyond the `v1.0.0` tag. Historical

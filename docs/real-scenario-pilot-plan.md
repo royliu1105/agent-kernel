@@ -23,8 +23,10 @@ examined a later, dirty working tree, not just that baseline SHA. Its local test
 results are not pilot acceptance or current-commit remote CI. The
 [reference follow-up plan](reference-follow-up-plan.md) owns CF1-CF8: CF1/CF2
 feed the entry checks below; CF3-CF8 remain deferred/conditional proposals.
-Only documentation was authorized for this follow-up. PV1-PV6 are still not
-started, and the foundation-feature freeze remains in effect.
+The maintainer subsequently authorized only the minimal CF1 repair and its
+regressions, tracked in the [repair record](reviews/2026-11-14-cf1-minimal-repair.md).
+This does not authorize pilot admission or mean the running Docker images contain
+the repair. PV1-PV6 are still not started; the foundation-feature freeze remains.
 
 ## Guided Learning During Execution
 
@@ -87,7 +89,7 @@ a separate scope decision; do not silently implement queued resume or sandboxing
 
 Before PV2 passes, resolve the admitted path's memory/context trust boundary
 under CF1 and verify the live/preview workflow and prompt provenance under CF2.
-The observed SYSTEM-memory injection is a static risk, not a proven live-model
+The originally observed SYSTEM-memory injection was a static risk, not a proven live-model
 exploit; existing workspace-isolation tests do not resolve it. If memory is
 excluded, verify that participants cannot enable it through their actual access
 path, including crafted requests/resume. An omitted sample field is not a guard.

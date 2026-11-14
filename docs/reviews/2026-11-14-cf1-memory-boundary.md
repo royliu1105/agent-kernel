@@ -1,5 +1,9 @@
 # CF1 Baseline and Memory Boundary Review
 
+Historical pre-repair snapshot. The subsequent authorized implementation and
+verification are in the [CF1 minimal repair record](2026-11-14-cf1-minimal-repair.md).
+Statements below describe the source reviewed at that time, not the repaired tree.
+
 Date: **2026-11-14**. Scope: read-only source review, temporary fixture probes and
 existing regressions. **No business implementation changed, no repair accepted.**
 The canonical CF1 status remains in the [follow-up ledger](../reference-follow-up-plan.md).

@@ -10,7 +10,12 @@ from typing import Any, Literal
 from uuid import UUID
 
 from kernel_core import Run
-from kernel_providers import LLMRequest, LLMResponse
+from kernel_memory.retrieval import (
+    MEMORY_CONTEXT_POLICY,
+    MEMORY_CONTEXT_VERSION,
+    parse_memory_context,
+)
+from kernel_providers import LLMRequest, LLMResponse, MessageRole
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -61,6 +66,7 @@ class NativeState(BaseModel):
     model_ref: str
     provider_name: str = ""
     memory_output: dict[str, Any] | None = None
+    memory_context_version: int | None = Field(default=None, ge=1, le=1, strict=True)
     tool_contracts: dict[str, str] = Field(default_factory=dict)
     model_calls: int = Field(default=0, ge=0)
     tool_calls: int = Field(default=0, ge=0)
@@ -72,6 +78,44 @@ class NativeState(BaseModel):
     next_tool_index: int = Field(default=0, ge=0)
     seen_call_ids: list[str] = Field(default_factory=list)
     last_tool_summary: dict[str, Any] | None = None
+
+    def validate_memory_context(self, run: Run) -> None:
+        memory_messages = [
+            message
+            for message in self.request.messages
+            if message.name in {"memory_policy", "memory_context"}
+            or "memory_item_ids" in message.metadata
+        ]
+        if not (
+            memory_messages
+            or self.memory_output is not None
+            or run.input.get("memory") is not None
+            or self.memory_context_version is not None
+        ):
+            return
+        if self.memory_context_version != MEMORY_CONTEXT_VERSION or len(memory_messages) != 2:
+            raise ValueError("Unsupported memory continuation.")
+        policy, data = memory_messages
+        if (
+            self.request.messages[:2] != (policy, data)
+            or policy.role is not MessageRole.SYSTEM
+            or policy.name != "memory_policy"
+            or policy.content != MEMORY_CONTEXT_POLICY
+            or data.role is not MessageRole.USER
+            or data.name != "memory_context"
+            or data.metadata.get("trust") != "untrusted"
+            or type(data.metadata.get("memory_context_version")) is not int
+            or data.metadata["memory_context_version"] != MEMORY_CONTEXT_VERSION
+        ):
+            raise ValueError("Invalid memory continuation boundary.")
+        envelope = parse_memory_context(data.content)
+        ids = [str(item.id) for item in envelope.items]
+        if data.metadata.get("memory_item_ids") != ids or self.memory_output != {
+            "used": bool(ids),
+            "item_count": len(ids),
+            "item_ids": ids,
+        }:
+            raise ValueError("Invalid memory continuation provenance.")
 
     def serialized(self) -> dict[str, Any]:
         payload = self.model_dump(mode="json")
