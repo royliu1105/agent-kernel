@@ -50,6 +50,7 @@ Current hardening operator guides:
 - [Observability Backends and SMTP](observability-backends.md)
 - [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
 - [PV1 Runbook Assistant Contract Draft](pilots/pv1-2026-11-15-runbook-assistant.md)
+- [PV1 Local Corpus and Expected Answers (Unapproved)](pilots/pv1-materials/README.md)
 - [DeepSeek and Alibaba Embedding Pilot Profile](provider-compatibility.md)
 - [Pilot Provider Compatibility Contract](specs/pilot-provider-compatibility.md)
 - [Guided Learning During Pilot Acceptance](pilot-learning-guide.md)

@@ -1,0 +1,390 @@
+{
+  "version": "pv1-local-draft-1",
+  "status": "prepared_not_approved",
+  "source_commit": "cb4ba4cfc4f59aade88897900c9deb4530e47ec0",
+  "preparation_authorized": true,
+  "corpus_approved": false,
+  "transmission_authorized": false,
+  "spending_authorized_usd": 0,
+  "budget_ceiling_usd": 10,
+  "pv1_complete": false,
+  "pending": [
+    "accounts_and_region",
+    "participants_and_dates",
+    "real_read_only_tool_target",
+    "human_corpus_and_answer_review",
+    "provider_transmission_terms",
+    "budget_allocation",
+    "isolated_deployment_and_web_auth_scope",
+    "risk_and_contract_signoff"
+  ],
+  "corpus": [
+    {
+      "id": "D01",
+      "path": "corpus/D01-docker-local.md",
+      "sha256": "dd90cab6e642d8196e82deefeab943555880f9428ac266d57d34d38bd82b4e68",
+      "source_path": "docs/docker-local.md",
+      "source_sha256": "32e8e5c7375f5eff28772ea174c658f1c0e00c82c36b8eba22ed5eeefa8107f4",
+      "source_line_ranges": [
+        [
+          7,
+          84
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D01-S1",
+        "D01-S2",
+        "D01-S3"
+      ],
+      "omissions_and_editorial_notes": "移除本机备份路径、样本标识、历史验收散列和变更流水；保留公开默认端口和项目名称，非真实服务访问授权。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D02",
+      "path": "corpus/D02-postgresql-only.md",
+      "sha256": "4930216a5cf1326f4493ad37a133bae4945ab517d512b3dd95aaf64e76daba6b",
+      "source_path": "docs/postgresql-only.md",
+      "source_sha256": "9c127d6df2e6f996ae571f6a9f6b238206a1dc8c38a7e810ae56b0a99a0532b4",
+      "source_line_ranges": [
+        [
+          10,
+          60
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D02-S1",
+        "D02-S2",
+        "D02-S3"
+      ],
+      "omissions_and_editorial_notes": "移除真实备份证据、历史散列与含口令的示例连接串；保留无秘密的变量名和隔离规则。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D03",
+      "path": "corpus/D03-production-config.md",
+      "sha256": "4b42c4b6655aee82f72522aaab558dec512b5d2900ad2c345c16f4767b05ccdb",
+      "source_path": "docs/production-config.md",
+      "supporting_sources": [
+        {
+          "path": "docs/upgrade-migration-policy.md",
+          "sha256": "1bb83cddab08a9645d0ac18cbd042c070ac566492870ad5195f8c9b20939dad0",
+          "line_ranges": [[48, 49]],
+          "reason": "Changing embedding configuration does not convert old vectors; reindex before querying."
+        }
+      ],
+      "source_sha256": "3d94922ec17432c10b677cf55ce6347e4350419f44aa9434f1bd76e636449a72",
+      "source_line_ranges": [
+        [
+          15,
+          36
+        ],
+        [
+          80,
+          97
+        ],
+        [
+          146,
+          169
+        ],
+        [
+          296,
+          345
+        ],
+        [
+          361,
+          378
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D03-S1",
+        "D03-S2",
+        "D03-S3",
+        "D03-S4"
+      ],
+      "omissions_and_editorial_notes": "移除秘密示例、可执行部署块及无关旧 release 清单；概括当前运行位置与向量一致性，不复制整个配置表。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D04",
+      "path": "corpus/D04-auth-rbac.md",
+      "sha256": "0fc3685ea097bcf1b9657fe8f8b8b88c840262151706feecfe3cb05d8fefa383",
+      "source_path": "docs/auth-rbac.md",
+      "source_sha256": "a158dbea846a379f12113cb53b52e32bc28091e9a0842981165a4e280244cda7",
+      "source_line_ranges": [
+        [
+          64,
+          91
+        ],
+        [
+          121,
+          185
+        ],
+        [
+          250,
+          267
+        ],
+        [
+          311,
+          339
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D04-S1",
+        "D04-S2",
+        "D04-S3"
+      ],
+      "omissions_and_editorial_notes": "移除 API key 示例值、身份创建命令和样本对象标识；保留权限与工作区语义。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D05",
+      "path": "corpus/D05-external-tools.md",
+      "sha256": "ce62632c1ec69d64320c88fbd2915ebf30a99d5107ff61f7772f39487ba27f32",
+      "source_path": "docs/external-tools.md",
+      "source_sha256": "b83ef4b261ffc34ae97e046624a76e3afb310b280ba7d745e0d9749129418f49",
+      "source_line_ranges": [
+        [
+          47,
+          90
+        ],
+        [
+          154,
+          185
+        ],
+        [
+          232,
+          243
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D05-S1",
+        "D05-S2",
+        "D05-S3"
+      ],
+      "omissions_and_editorial_notes": "移除外部端点、workspace UUID、MCP 启动与写操作示例；只保留已存在的可信配置边界，无真实工具目标。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D06",
+      "path": "corpus/D06-backup-restore.md",
+      "sha256": "6cf61d584fffaa2d723d25a2d0b497c457edd2652d40e998dfaa8044f04b9700",
+      "source_path": "docs/backup-restore.md",
+      "source_sha256": "4a6624ed2c1b3e062ad1c9c7e55c73e8bd7f978eb7ae03473fdee153b5e5cf09",
+      "source_line_ranges": [
+        [
+          77,
+          99
+        ],
+        [
+          230,
+          280
+        ],
+        [
+          333,
+          361
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D06-S1",
+        "D06-S2",
+        "D06-S3"
+      ],
+      "omissions_and_editorial_notes": "移除命令中的凭据、bucket/路径与具体备份材料；保留协调恢复和安全条件；不包含恢复执行脚本。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D07",
+      "path": "corpus/D07-upgrade-policy.md",
+      "sha256": "a5789058d1ded7d8cc5b62d68868a55e32bec1817e9464d3b20f62026d26a170",
+      "source_path": "docs/upgrade-migration-policy.md",
+      "source_sha256": "1bb83cddab08a9645d0ac18cbd042c070ac566492870ad5195f8c9b20939dad0",
+      "source_line_ranges": [
+        [
+          3,
+          42
+        ],
+        [
+          118,
+          156
+        ],
+        [
+          286,
+          308
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D07-S1",
+        "D07-S2",
+        "D07-S3"
+      ],
+      "omissions_and_editorial_notes": "移除历史交付状态、迁移 SQL 和执行命令；保留新旧执行器及旧检查点风险。旧段落只要求 openai 的表述不收入，当前 provider 说明见 D03。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D08",
+      "path": "corpus/D08-observability.md",
+      "sha256": "a8f695de461258c477586b7086159b7327549b3c71d163a6c487b9f6f6dd26a6",
+      "source_path": "docs/observability-operations.md",
+      "supporting_sources": [
+        {
+          "path": "docs/docker-local.md",
+          "sha256": "32e8e5c7375f5eff28772ea174c658f1c0e00c82c36b8eba22ed5eeefa8107f4",
+          "line_ranges": [[69, 73]],
+          "reason": "Mailpit is local capture, not proof of external mailbox delivery."
+        }
+      ],
+      "source_sha256": "47604b8cef2d02a40767af1d6ef4c1e59d8115ef4930ab8c11740839cc3f6043",
+      "source_line_ranges": [
+        [
+          15,
+          45
+        ],
+        [
+          181,
+          259
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D08-S1",
+        "D08-S2",
+        "D08-S3"
+      ],
+      "omissions_and_editorial_notes": "移除历史版本结果、示例运行 ID、SDK 安装和单独启动 overlay 命令；保留隐私及关联边界。邮件论断结合 D01-S3，不把历史未实现状态当现状。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D09",
+      "path": "corpus/D09-execution-ownership.md",
+      "sha256": "2ab65a85ce157e4e8aa55096d924bb823d9f9b8f2c99275ec9bdd7881c5ab75b",
+      "source_path": "docs/execution-ownership.md",
+      "source_sha256": "0bb2d526f7d74be95ed95e8e65159bbd10f6ae0990d1878d7f16e9b2058cda19",
+      "source_line_ranges": [
+        [
+          7,
+          73
+        ],
+        [
+          75,
+          87
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D09-S1",
+        "D09-S2",
+        "D09-S3",
+        "D09-S4"
+      ],
+      "omissions_and_editorial_notes": "移除版本号、迁移标识和测试文件列表；保留租约、审批、恢复与 exactly-once 限制。审批决策不等于工具执行是这些约定的解释性总结。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D10",
+      "path": "corpus/D10-backend-operations.md",
+      "sha256": "4ab5629fefa76611be95d5b2e73de959e38c7935c7390d8e22cf163f7cecb297",
+      "source_path": "docs/backend-operations.md",
+      "source_sha256": "456212b84cc02d54fa3befdcbe8bb5dd39ad9dea27dcb16010c6d971bb09eaf4",
+      "source_line_ranges": [
+        [
+          3,
+          41
+        ],
+        [
+          88,
+          116
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D10-S1",
+        "D10-S2",
+        "D10-S3"
+      ],
+      "omissions_and_editorial_notes": "移除 Redis URL、队列键、ACL 命令列表及测试服务启动方式；保留权威状态与两类故障策略。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D11",
+      "path": "corpus/D11-troubleshooting.md",
+      "sha256": "60ee286950a2944d4eb80547e43f95ad151e7f687b43655ad472c1e64a5d767a",
+      "source_path": "docs/troubleshooting.md",
+      "supporting_sources": [
+        {
+          "path": "docs/production-config.md",
+          "sha256": "3d94922ec17432c10b677cf55ce6347e4350419f44aa9434f1bd76e636449a72",
+          "line_ranges": [[80, 97], [146, 169]],
+          "reason": "Mock evidence and current provider configuration boundaries."
+        }
+      ],
+      "source_sha256": "8c96df1b1c05182131bbc45a1dac6f80906949dc6f8bfa0c920b186fa62265f6",
+      "source_line_ranges": [
+        [
+          6,
+          10
+        ],
+        [
+          71,
+          105
+        ],
+        [
+          335,
+          369
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D11-S1",
+        "D11-S2",
+        "D11-S3"
+      ],
+      "omissions_and_editorial_notes": "移除宿主机启动、旧 NEXT_PUBLIC API 地址和只提 OpenAI 的历史指令；保留 Docker-first 排查。D11-S3 是资料覆盖范围声明，不是某次事故记录。",
+      "human_review": "pending"
+    },
+    {
+      "id": "D12",
+      "path": "corpus/D12-bounded-execution.md",
+      "sha256": "0cee188b827c0882fdf1b3fadf2f830cecaee9e936a38dfad7342f2495516792",
+      "source_path": "docs/specs/bounded-native-execution.md",
+      "source_sha256": "166529aed0b1501f377e1ded51772a294fd081ba419dc5fe1230dc9eb0111a02",
+      "source_line_ranges": [
+        [
+          7,
+          68
+        ]
+      ],
+      "transformation": "reviewed_excerpts_rephrased_as_chinese_summary",
+      "sections": [
+        "D12-S1",
+        "D12-S2",
+        "D12-S3"
+      ],
+      "omissions_and_editorial_notes": "移除历史提交号、完成标签和测试运行命令；保留执行限制、重试和费用边界，不把试点提议的数值写成有效配置。",
+      "human_review": "pending"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "questions.json",
+      "sha256": "650cc02610a864e4203c02c633e05a185f7706b1c20700f1ac8816448a064ffc",
+      "use": "questions_only_not_corpus"
+    },
+    {
+      "path": "reviewer/answer-key.json",
+      "sha256": "d0ccea7184c128c60f38756f85d65c60c9fe4fd06bf31a30ca60bc4341efa0ee",
+      "use": "reviewer_only_never_ingest"
+    },
+    {
+      "path": "reviewer/expected-answers.md",
+      "sha256": "4c528506b39f9c3157b58a7b91eae3ff0e31b556cf9838978792d24d379afba4",
+      "use": "reviewer_only_never_ingest"
+    }
+  ]
+}

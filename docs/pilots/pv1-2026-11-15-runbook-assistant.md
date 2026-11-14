@@ -1,7 +1,8 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-4; scenario and DeepSeek/DashScope selected, budget
+Record revision: **draft-5; local corpus and expected-answer drafts prepared;
+scenario and DeepSeek/DashScope selected, budget
 ceiling USD 10; reviewed implementation/local/remote CI verified,
 live/contract gates pending**.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
@@ -45,6 +46,15 @@ corpus and permission hashes still need a later freeze and sign-off. No pilot
 checklist item is accepted by this result, and current Docker was not updated.
 
 ## Selected Scenario and Proposed Participants
+
+The preparation instruction authorized 12 sanitized runbooks and 30 expected-answer
+cases. The subsequent instruction authorizes review, scoped commit/push and
+exact-commit CI tracking. See [local review materials](pv1-materials/README.md)
+and the [review record](../reviews/2026-11-15-pv1-materials-review.md).
+Accounts/regions, participants and the real read-only tool target remain pending.
+This does not approve data transmission, paid execution, current Docker updates,
+deployment or PV1 sign-off. Git publication of the reviewed repository artifacts
+is authorized; provider transmission/ingestion remains a separate pending gate.
 
 **Agent Kernel deployment and operations runbook assistant**, a concrete instance
 of the already planned team-runbook scenario. A participant asks an operational
@@ -96,9 +106,11 @@ These are candidate sources, not an approved corpus or evidence of their accurac
 Before freeze, review current versus historical instructions, omit private paths,
 IDs, local evidence references and irrelevant release history from the corpus copy,
 and record every selection/redaction. Do not silently fix source contradictions
-by changing gold answers after a model run. Source SHA, selected bytes, source
-sections, document owners, corpus manifest/hash and approval reference are **TBD**.
-No corpus copy, upload, embedding or access credential was created in this step.
+by changing gold answers after a model run. Local draft summaries, source SHA,
+source line ranges and content hashes are now in the
+[manifest](pv1-materials/manifest.json). They are not an approved/frozen corpus;
+document-owner confirmation, human review and transmission permission remain **TBD**.
+No upload, embedding, access credential or runtime ingestion was created.
 `resource/`, private runtime files, customer data and secrets are excluded.
 
 Suggested local evidence retention: delete raw pilot evidence 30 days after
@@ -251,9 +263,11 @@ third-party lookup charge also needs explicit admission before that target is us
 
 The 30-case split is unchanged: **18 answerable, 6 unsupported/ambiguous,
 3 document-injection, 3 cross-workspace/out-of-scope**. Run each twice in PV3 as
-60 independent attempts. The following are **question ideas only**, not a frozen,
-scored or model-executed dataset. Expected facts, exact source spans, permitted
-tool effects and reviewer approval must be filled before any scored model output.
+60 independent attempts. The original table below records **question ideas only**.
+The [expected-answer draft](pv1-materials/reviewer/expected-answers.md) now supplies
+30 corresponding questions, expected facts, sanitized source sections, failure
+conditions and required effect evidence. It is not a frozen, scored or
+model-executed dataset; human review remains pending before any scored output.
 
 | ID | Proposed question or negative case | Evidence to label before freeze |
 | --- | --- | --- |
@@ -327,12 +341,12 @@ out of public evidence. Credentials must later go into ignored private files.
 
 | ID | Decision needed | Proposed answer / missing input |
 | --- | --- | --- |
-| Q1 | Scenario and sources | Repository-runbook scenario selected; approve exact 12-document manifest/redactions before freeze |
+| Q1 | Scenario and sources | Local 12-document summaries and manifest prepared with authorization; human approval of exact content/redactions still pending |
 | Q2 | Data permission and retention | Approve selected/redacted content, questions and tool outputs for provider transmission; confirm local retention and account terms |
-| Q3 | Model and account | DeepSeek + Alibaba v3 selected; minimal compatibility authorized. Freeze actual candidate/config; account/model availability and live continuation remain unverified. No keys in chat or paid calls in this step |
+| Q3 | Model and account | Explicitly left pending: account ownership/region/access. DeepSeek + Alibaba v3 selected; freeze actual candidate/config later. Model availability/live continuation unverified; no paid calls |
 | Q4 | Budget | USD 10 ceiling selected; confirm USD 0.25 task / first USD 2 batch proposals, allocation and billing controls. Execution approval remains separate |
-| Q5 | Human roles and window | Confirm operator/reviewer, P1/P2 availability, incident contact and intended dates/end date |
-| Q6 | Read-only target | Identify an existing approved MCP/OpenAPI staging lookup and independent effect evidence; say unavailable if none |
+| Q5 | Human roles and window | Explicitly left pending: operator/reviewer, P1/P2 availability, incident contact and dates |
+| Q6 | Read-only target | Explicitly left pending: real approved MCP/OpenAPI lookup and independent effect evidence; synthetic case designs do not satisfy this gate |
 | Q7 | Workflow and environment | Confirm isolated Docker proposal, no active-stack update, and disposition of the still-open authenticated Web path |
 | Q8 | Acceptance and risk | Confirm unchanged scoring, proposed RTO/RPO, bounded memory scope and residual billing risk disposition |
 
@@ -343,6 +357,14 @@ automatically. A new function or relaxed gate is not a substitute for a missing
 target, participant, permission or budget.
 
 ## Learning and Preparation Evidence
+
+The later local-material preparation produced 12 sanitized Chinese summaries and
+30 expected-answer cases with source ranges, hashes and separate reviewer-only
+fixtures. Materials/document consistency: 88 passed; Ruff and mypy (238 files)
+passed. This verifies artifact integrity, not human approval or live results.
+No Docker/service startup, database use, paid call, ingestion or new commit/push
+was performed for that preparation. Accounts, participants and real tool target
+remain explicitly pending; all PV1 checklist items remain unchecked.
 
 The following is the earlier documentation-preparation checkpoint. Subsequent
 compatibility implementation and isolated PostgreSQL/HTTP-fixture verification

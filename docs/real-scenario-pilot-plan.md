@@ -148,7 +148,7 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; required decisions pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md); no accepted/live result |
+| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; required decisions pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [local corpus and expected answers](pilots/pv1-materials/README.md); not signed off or live-tested |
 | PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
 | PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
