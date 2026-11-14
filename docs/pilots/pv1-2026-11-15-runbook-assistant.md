@@ -1,7 +1,8 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-5; local corpus and expected-answer drafts prepared;
+Record revision: **draft-6; content frozen by maintainer; GitHub CI lookup selected
+as candidate only; account ownership/Alibaba region reported by maintainer;
 scenario and DeepSeek/DashScope selected, budget
 ceiling USD 10; reviewed implementation/local/remote CI verified,
 live/contract gates pending**.
@@ -47,11 +48,42 @@ checklist item is accepted by this result, and current Docker was not updated.
 
 ## Selected Scenario and Proposed Participants
 
-The preparation instruction authorized 12 sanitized runbooks and 30 expected-answer
+### Latest Maintainer Decisions
+
+The maintainer accepted the current 12 summaries and 30 expected-answer cases
+without changes. The immutable content baseline is commit
+`20b8dc8a41bc3ada5386566fcc346392fd599324`, version `pv1-local-draft-1`, with
+`pv1-materials/manifest.json` SHA-256
+`1e82f556cf3972e80881d66f254deeb2ad3db8758b6d79b4a3abca0082b15224`.
+That manifest pins all 12 corpus files and the three question/answer artifacts.
+Their preparation-time `prepared_not_approved`/pending labels are retained as
+historical snapshot metadata; this later content acceptance supersedes those
+labels, not the `not_run` results. No frozen bytes or hashes are rewritten.
+Content changes require a new version and renewed acceptance before scoring.
+
+The maintainer reports ownership of both provider accounts and confirms both
+reference keys were personally created in those accounts. The Alibaba key is
+reported to belong to North China 2 (Beijing). This is maintainer attestation,
+not credential authentication or account/region/model-entitlement verification.
+No private key was read, copied or tested for this confirmation.
+
+GitHub CI status for this project is now the selected read-only **candidate**.
+The unrelated `rm-assignment` proposal is withdrawn, not an additional pilot
+track. The design instruction authorized documenting the minimal contract only:
+no API invocation, login, Docker update, paid model call or implementation.
+The subsequent instruction authorizes review, scoped commit/push and tracking
+this submission's CI. CI management queries are solely submission verification,
+not invocation or acceptance of the proposed `github_ci_run_status` tool.
+No candidate endpoint test, current Docker update or paid model call is authorized.
+See the [candidate design review](../reviews/2026-11-15-pv1-ci-candidate-review.md).
+PV1 remains in progress; PV2-PV6 have not begun.
+
+The earlier preparation instruction authorized 12 sanitized runbooks and 30 expected-answer
 cases. The subsequent instruction authorizes review, scoped commit/push and
 exact-commit CI tracking. See [local review materials](pv1-materials/README.md)
 and the [review record](../reviews/2026-11-15-pv1-materials-review.md).
-Accounts/regions, participants and the real read-only tool target remain pending.
+At that review checkpoint, accounts/regions, participants and the tool target
+were pending; the later decisions above supersede only the specified fields.
 This does not approve data transmission, paid execution, current Docker updates,
 deployment or PV1 sign-off. Git publication of the reviewed repository artifacts
 is authorized; provider transmission/ingestion remains a separate pending gate.
@@ -59,8 +91,8 @@ is authorized; provider transmission/ingestion remains a separate pending gate.
 **Agent Kernel deployment and operations runbook assistant**, a concrete instance
 of the already planned team-runbook scenario. A participant asks an operational
 question, receives an answer grounded in approved passages, or a clear statement
-that evidence is missing. A fixed read-only staging lookup may be requested only
-through the existing approval flow; its real target is still unresolved.
+that evidence is missing. A fixed read-only CI lookup may be requested only
+through the existing approval flow; its access and evidence gates below remain open.
 
 The maintainer selected the repository-runbook scenario during PV1 preparation.
 This selects the source collection, not permission to transmit its contents,
@@ -84,9 +116,11 @@ reference text, not permission to execute them. No new connector or UI is planne
 
 The maintainer selected repository runbooks. Propose the following **12 maintained
 Markdown runbooks** from the candidate above. This avoids
-introducing parsers or sourcing private company data, but the maintainer must
-still approve selection, ownership, redaction and provider transmission.
-These are candidate sources, not an approved corpus or evidence of their accuracy.
+introducing parsers or sourcing private company data. The maintainer accepted
+the derived content selection/redaction; provider transmission remains pending.
+These source documents identify provenance. The derived summaries and expected
+answers are now accepted as the frozen content baseline, not as live evidence
+or permission to transmit source documents in full.
 
 | ID | Candidate source | Intended coverage |
 | --- | --- | --- |
@@ -103,13 +137,11 @@ These are candidate sources, not an approved corpus or evidence of their accurac
 | D11 | [Troubleshooting](../troubleshooting.md) | Diagnosing common setup/run failures |
 | D12 | [Bounded execution](../specs/bounded-native-execution.md) | Execution and retry limits |
 
-Before freeze, review current versus historical instructions, omit private paths,
-IDs, local evidence references and irrelevant release history from the corpus copy,
-and record every selection/redaction. Do not silently fix source contradictions
-by changing gold answers after a model run. Local draft summaries, source SHA,
-source line ranges and content hashes are now in the
-[manifest](pv1-materials/manifest.json). They are not an approved/frozen corpus;
-document-owner confirmation, human review and transmission permission remain **TBD**.
+Preparation reviewed current versus historical instructions and recorded selected
+passages/redactions. Source SHA, line ranges and frozen content hashes are in the
+[manifest](pv1-materials/manifest.json); the later content acceptance is recorded
+above. Do not change gold answers after observing model output. Provider
+transmission permission, execution reviewers and full-contract sign-off remain **TBD**.
 No upload, embedding, access credential or runtime ingestion was created.
 `resource/`, private runtime files, customer data and secrets are excluded.
 
@@ -226,17 +258,149 @@ and full CF2/PV2 remains open until the admitted browser path is resolved or the
 maintainer explicitly signs off a separately labeled API/CLI-only subset.
 An API/CLI-only subset does not silently complete the original full gate.
 
-The approved-lookup target must already exist and fit the maintained MCP/OpenAPI
-adapter: one fixed read-only operation, operator-owned binding, workspace allowlist,
-mandatory approval, and an independent invocation counter/access log. Target URL
-or command, operation/schema, owner, argument bounds and credential location are
-**TBD**. Do not point the drill at the current Docker environment, infer approval
-for private network access, add a connector, or call the CF2 synthetic inventory
-fixture a real business lookup. No target means the full approval track is blocked.
+The selected GitHub CI candidate fits the operational scenario. Its minimal
+contract below preserves one fixed operation, trusted binding, workspace scope,
+mandatory approval and independent invocation evidence. Candidate selection is
+not access authorization or acceptance. Do not use the active Docker environment
+as a drill target, add a connector, or substitute the CF2 synthetic fixture for
+the real lookup. Missing evidence still blocks the full approval track.
 
 CF1 deployment and residual-risk disposition remain open. Omitting `input.memory`
 from examples is not enforced exclusion of memory. No pilot user is admitted
 before the applicable CF1/CF2 and PV2/PV4 gates pass.
+
+## GitHub CI Read-Only Candidate
+
+Status: **candidate selected; minimal design documented; not configured,
+implemented, invoked or accepted**. This supports deployment/release readiness
+questions, not customer-assignment business operations. The frozen 30-case RAG
+set is unchanged; live lookup/approval evidence is a separate existing pilot gate.
+
+### Operation and Access
+
+| Item | Minimal contract |
+| --- | --- |
+| Tool name | Proposed `github_ci_run_status` |
+| Fixed repository | `royliu1105/agent-kernel`; owner/repository are trusted literals, not model arguments |
+| Method/path | Only `GET /repos/royliu1105/agent-kernel/actions/runs/{run_id}` on `https://api.github.com` |
+| Input | Positive integer `run_id`, restricted by schema enum to operator-approved IDs; actual IDs and expected SHA/attempt remain TBD |
+| Query | Required `exclude_pull_requests` boolean with schema enum `[true]`; no freely selectable query/header/URL |
+| Policy | `read_only=true`, `idempotent=true`, `retry_safe=false`, explicit `require_approval`; authenticated pilot workspace allowlist, `allow_unscoped=false` |
+| Bounds | Propose 10-second tool timeout and 32768-byte HTTP response cap; existing 65536-byte serialized result limit still applies; no automatic retries/polling/fallback |
+| Forbidden | Dispatch, rerun, cancel, approve GitHub workflows, writes, logs, artifacts, jobs enumeration or following links from returned JSON |
+
+Use the maintained OpenAPI adapter with a small local JSON operation definition,
+not the full GitHub schema or a new connector. Trusted endpoint headers pin the
+GitHub media type and a supported API version before activation. Preserve TLS,
+DNS validation, no redirects, no ambient proxies and no private-network opt-in.
+No specification file or runtime binding is created by this documentation step.
+The adapter's arguments contain `path.run_id` and the required constant
+`query.exclude_pull_requests`; only the allowlisted ID varies. A schema default
+alone is insufficient because the adapter does not inject omitted defaults.
+
+The minimal access choice is **anonymous read of public repository metadata**.
+The [GitHub operation documentation](https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run)
+permits this for public resources; authenticated fine-grained access requires
+Actions read permission. Public visibility and anonymous access must be confirmed
+later under explicit request authorization, not inferred from old successful CI.
+On 401/403/404/429, stop and record the error; do not borrow the operator's `gh`
+token, use browser cookies, retry or auto-create a credential. If anonymous access
+is unsuitable, obtain a separate decision for a repository-restricted, expiring
+Actions-read credential in ignored private configuration. No such credential is
+currently requested or created. Anonymous lookup tests Agent Kernel's workspace
+and approval policy, not GitHub private-repository authorization.
+
+### Response Boundary
+
+Keep the upstream operation to a single workflow run, not logs or a run list.
+The present adapter returns the full bounded JSON inside an `untrusted` result;
+it does **not** enforce output-field projection, and OpenAPI response schemas do
+not add that missing behavior. The minimal plan retains this existing behavior
+only for a reviewed public response. Actor/repository/commit metadata may still
+be present even with pull requests excluded. Do not claim that only the answer
+fields below reach the model or its persisted checkpoint.
+
+The answer/report field allowlist is repository, `id`, `workflow_id`, `head_sha`,
+`run_attempt`, `status`, nullable `conclusion`, `updated_at`, `html_url` and the
+observer's UTC fetch time. This is a presentation/scoring contract, **not a data
+redaction boundary**. Do not infer individual job results or a failure cause from
+the overall conclusion. `completed` alone is not `success`; null/unknown values
+remain unknown. Pin a completed CI run and expected SHA/attempt for the first
+rehearsal. A mismatch or changed attempt makes that observation inconclusive;
+do not silently select "latest" or rerun the workflow.
+
+Before live model use, inspect an explicitly authorized response without sending
+it to a model, and approve the actual full payload for provider transmission.
+No inspection is authorized now. Reject oversized, malformed, unexpected or
+unacceptable payloads; do not silently raise limits or add a projection feature.
+If full public JSON is not acceptable, the candidate stays blocked pending a
+separate scoped decision. Treat text fields as untrusted data, never instructions;
+links are evidence text only, not authorization to make more requests.
+
+### Independent Invocation Evidence
+
+Use a **test-harness-only HTTP dispatch observer**, separate from Run events,
+tool-result rows and model output. It records the actual guarded HTTP transport
+dispatch, not merely entry into `tool.execute`. It must delegate to the real
+transport/real GitHub response for live evidence; replacing the response with a
+fixture proves only the offline observer tests. No proxy service, GitHub backend
+change or general-purpose production telemetry feature is proposed.
+
+This observer does not exist yet. A later separately authorized harness change
+must preserve the guarded client and cover every API/Worker executor used by the
+case, including resumed/new executors. Missing instrumentation blocks the case;
+it must not produce a false zero. Bind trusted case ID, Agent Kernel run ID and
+persisted tool_call_id to the dispatch out of band, never from model arguments.
+Store a durable append-only case journal outside the executor lifecycle, with
+distinct attempt IDs, UTC timestamps, method, fixed path, dispatch start,
+completion/error, HTTP status and allowlisted GitHub request ID if returned.
+Do not record Authorization/Cookie headers, response bodies or arbitrary errors.
+Initialization or pre-dispatch journal failure must prevent dispatch. Failure to
+record completion cannot undo an already dispatched request: stop further calls,
+mark the case evidence incomplete/unknown, retain its attempt and do not retry.
+A crash between a durable dispatch-start record and actual send is likewise
+unknown, not proof that GitHub received it or that no request occurred. Response
+headers alone do not prove a complete response: correlate body consumption and
+adapter validation outcome, without storing the body in the journal. Retention
+follows the pending pilot policy.
+
+Validate the observer offline first: synthetic known dispatches must be counted,
+a duplicate must be detected, uninstrumented executors must fail setup, and a
+recording failure must prevent dispatch. Keep these controls in separate case
+records; never include them in the live case's zero/one count. Freeze and hash
+the harness/config, establish start/end markers and prohibit manual `gh`/browser
+refreshes in the case window. Cover each participating executor, not just one
+winning resume. No current application or host service is started by this plan.
+
+| Exercised case | Required evidence, per persisted tool call |
+| --- | --- |
+| Before approval (no decision) | Observer active for the full window; zero GitHub dispatches, no successful lookup result; Run and tool remain waiting for approval |
+| Rejected approval followed by resume | Zero GitHub dispatches, no successful lookup result; Run failed with approval_rejected and matching tool denied after resume |
+| Approved resume | One dispatch plus one successful matching response, correlated persisted tool/result/events; approved without a response is not success |
+| Repeated/concurrent resume | Combined journal across all participating executors still contains one dispatch for that tool_call_id |
+| New executor after approval wait | Shared journal retains prior evidence; one authorized dispatch without replaying completed earlier calls |
+| A second legitimate approved tool call | A distinct tool_call_id and its own zero/one evidence; do not suppress a legitimate call to make totals look smaller |
+| Timeout, crash, rate limit or observer gap | Record failure/unknown as applicable; no automatic replay or acceptance |
+
+Reconcile the journal with persisted approval/tool events and returned
+repository/run/SHA/attempt identity. A GitHub UI page proves CI state, not API
+call count; a rate-limit counter or one request ID does not prove absence of
+extra requests. The observer establishes dispatch attempts at our controlled
+boundary, **not GitHub's internal processing count or global exactly-once**.
+If downstream-server access logs are required as a stronger interpretation of
+the acceptance gate, this candidate cannot satisfy that requirement by itself;
+obtain explicit disposition, never silently relabel client evidence as server logs.
+
+### Remaining Entry Decisions
+
+The candidate/minimal design is recorded, not accepted execution evidence.
+Before PV1 sign-off, confirm the observer's explicitly limited evidence standard,
+the proposed bounds, permitted public response scope, exact run IDs/SHA/attempts,
+owner/access authorization, retention and provider transmission. Before any
+execution, separately authorize isolated harness/config implementation and
+credential-free rehearsal; real HTTP access and paid model use each require
+their own authorization. PV2/PV3 remain not started. This does not introduce
+new frozen questions, a new connector, or an extra business-system track.
 
 ## Proposed Budget, Not Spending Approval
 
@@ -266,8 +430,9 @@ The 30-case split is unchanged: **18 answerable, 6 unsupported/ambiguous,
 60 independent attempts. The original table below records **question ideas only**.
 The [expected-answer draft](pv1-materials/reviewer/expected-answers.md) now supplies
 30 corresponding questions, expected facts, sanitized source sections, failure
-conditions and required effect evidence. It is not a frozen, scored or
-model-executed dataset; human review remains pending before any scored output.
+conditions and required effect evidence. Its content is now frozen by the
+maintainer, but it is not scored or model-executed; the actual scoring reviewer
+and execution permissions remain pending.
 
 | ID | Proposed question or negative case | Evidence to label before freeze |
 | --- | --- | --- |
@@ -334,19 +499,20 @@ No threshold is relaxed here:
 ## Maintainer Confirmation Sheet
 
 The scenario/source collection, DeepSeek/DashScope providers and USD 10 ceiling have been selected.
-The contract and all remaining decisions below are **pending**;
-recommendations are not preapproved.
+Content freezing, account attestations and candidate selection are recorded
+below; the full contract and the remaining permissions are **pending**.
+Recommendations are not execution approvals.
 Reply with IDs and decisions; keep names, contact details, keys and private URLs
 out of public evidence. Credentials must later go into ignored private files.
 
 | ID | Decision needed | Proposed answer / missing input |
 | --- | --- | --- |
-| Q1 | Scenario and sources | Local 12-document summaries and manifest prepared with authorization; human approval of exact content/redactions still pending |
+| Q1 | Scenario and sources | Maintainer accepted current 12 summaries and 30 answers; immutable content baseline pinned above. Provider transmission and live scoring are not approved by this freeze |
 | Q2 | Data permission and retention | Approve selected/redacted content, questions and tool outputs for provider transmission; confirm local retention and account terms |
-| Q3 | Model and account | Explicitly left pending: account ownership/region/access. DeepSeek + Alibaba v3 selected; freeze actual candidate/config later. Model availability/live continuation unverified; no paid calls |
+| Q3 | Model and account | Maintainer confirms ownership of both accounts/reference keys and Alibaba North China 2 (Beijing); credential validity, entitlement, model availability and live continuation remain unverified |
 | Q4 | Budget | USD 10 ceiling selected; confirm USD 0.25 task / first USD 2 batch proposals, allocation and billing controls. Execution approval remains separate |
 | Q5 | Human roles and window | Explicitly left pending: operator/reviewer, P1/P2 availability, incident contact and dates |
-| Q6 | Read-only target | Explicitly left pending: real approved MCP/OpenAPI lookup and independent effect evidence; synthetic case designs do not satisfy this gate |
+| Q6 | Read-only target | GitHub CI status selected as candidate; anonymous fixed-repository GET, bounded public JSON and independent harness dispatch journal designed below the workflow section. Exact IDs/access/payload/evidence-standard sign-off and implementation/real validation remain pending; rm-assignment withdrawn |
 | Q7 | Workflow and environment | Confirm isolated Docker proposal, no active-stack update, and disposition of the still-open authenticated Web path |
 | Q8 | Acceptance and risk | Confirm unchanged scoring, proposed RTO/RPO, bounded memory scope and residual billing risk disposition |
 
@@ -358,13 +524,29 @@ target, participant, permission or budget.
 
 ## Learning and Preparation Evidence
 
+The later GitHub candidate documentation update ran materials/document consistency
+checks: **90 passed**, including the immutable manifest hash and the candidate's
+pending access/response/evidence gates. Ruff and mypy (238 source files) passed.
+These are static/offline checks, not a request observer implementation or live
+lookup. No business code, frozen corpus/answer bytes, current Docker data or
+credentials changed; no API/model request, deployment, commit or push was made
+for this documentation update.
+
+The later submission review separates pre-dispatch recording failures from
+post-dispatch evidence loss, distinguishes waiting from rejected terminal states,
+and clarifies complete-response evidence. A targeted documentation guard failed
+before the correction, then passed with the corrected contract. This is a
+documentation regression check, not a fault-injected observer implementation.
+Current review verification is recorded in the linked candidate design review.
+
 The later local-material preparation produced 12 sanitized Chinese summaries and
 30 expected-answer cases with source ranges, hashes and separate reviewer-only
 fixtures. Materials/document consistency: 88 passed; Ruff and mypy (238 files)
 passed. This verifies artifact integrity, not human approval or live results.
 No Docker/service startup, database use, paid call, ingestion or new commit/push
-was performed for that preparation. Accounts, participants and real tool target
-remain explicitly pending; all PV1 checklist items remain unchecked.
+was performed for that preparation. At that checkpoint, accounts, participants
+and the real tool target were pending. Later content/account/candidate decisions
+are recorded above; full PV1 checklist items remain unchecked.
 
 The following is the earlier documentation-preparation checkpoint. Subsequent
 compatibility implementation and isolated PostgreSQL/HTTP-fixture verification

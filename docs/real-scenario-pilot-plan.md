@@ -9,6 +9,15 @@ updating the active Docker environment. The
 repository-runbook scenario, USD 10 budget ceiling and unresolved decisions.
 No paid execution, data transmission, deployment or user admission is authorized.
 
+Later maintainer decisions freeze the existing 12-document/30-answer content
+baseline, attest ownership of the selected provider accounts/keys and Alibaba
+Beijing region, and select this project's GitHub CI status as the read-only
+candidate. The [minimal tool design](pilots/pv1-2026-11-15-runbook-assistant.md#github-ci-read-only-candidate)
+defines access, response and independent dispatch evidence, with implementation,
+evidence-standard sign-off and real verification still pending. The rejected
+customer-assignment candidate is not an added pilot track. These decisions do
+not authorize API access or close PV1.
+
 The subsequent explicit exception authorizes minimal DeepSeek/Alibaba Embedding
 compatibility with tests/docs under the
 [scoped contract](specs/pilot-provider-compatibility.md). It does not authorize
@@ -148,7 +157,7 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; required decisions pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [local corpus and expected answers](pilots/pv1-materials/README.md); not signed off or live-tested |
+| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; content frozen, CI lookup candidate selected, remaining decisions pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
 | PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
 | PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |

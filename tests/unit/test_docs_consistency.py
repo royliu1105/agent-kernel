@@ -480,6 +480,36 @@ def test_pv1_draft_records_decisions_without_implying_paid_or_runtime_acceptance
     assert "no credential was copied, exported, submitted to a service" in models
 
 
+def test_pv1_github_candidate_preserves_access_and_evidence_gates() -> None:
+    section = " ".join(
+        _section("pilots/pv1-2026-11-15-runbook-assistant.md", heading)
+        for heading in (
+            "GitHub CI Read-Only Candidate",
+            "Operation and Access",
+            "Response Boundary",
+            "Independent Invocation Evidence",
+            "Remaining Entry Decisions",
+        )
+    )
+    for phrase in (
+        "candidate selected; minimal design documented",
+        "get /repos/royliu1105/agent-kernel/actions/runs/{run_id}",
+        "anonymous read of public repository metadata",
+        "retry_safe=false",
+        "require_approval",
+        "does **not** enforce output-field projection",
+        "this observer does not exist yet",
+        "initialization or pre-dispatch journal failure must prevent dispatch",
+        "cannot undo an already dispatched request",
+        "response headers alone do not prove a complete response",
+        "before approval (no decision)",
+        "rejected approval followed by resume",
+        "not github's internal processing count or global exactly-once",
+        "pv2/pv3 remain not started",
+    ):
+        assert _normalized(phrase) in section
+
+
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:
     evidence = _section("real-scenario-pilot-plan.md", "Authority, Owners and Evidence")
     for anchor in ("fixture", "live", "human_pilot", "not live proof", "no secrets"):

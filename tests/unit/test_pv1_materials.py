@@ -1,4 +1,4 @@
-"""Offline draft-integrity checks; these do not score a model or approve a pilot."""
+"""Offline snapshot integrity; later content acceptance does not approve a pilot."""
 
 import hashlib
 import json
@@ -7,6 +7,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PACK = ROOT / "docs/pilots/pv1-materials"
+
+
+def test_pv1_frozen_content_manifest_is_unchanged() -> None:
+    # Preserve preparation labels/bytes; the contract records the later acceptance.
+    frozen_hash = "1e82f556cf3972e80881d66f254deeb2ad3db8758b6d79b4a3abca0082b15224"
+    assert hashlib.sha256((PACK / "manifest.json").read_bytes()).hexdigest() == frozen_hash
+    contract = (ROOT / "docs/pilots/pv1-2026-11-15-runbook-assistant.md").read_text()
+    assert frozen_hash in contract
+    assert "20b8dc8a41bc3ada5386566fcc346392fd599324" in contract
 
 
 def test_pv1_manifest_integrity_and_source_ranges() -> None:
