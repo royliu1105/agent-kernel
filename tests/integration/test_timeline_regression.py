@@ -43,6 +43,32 @@ async def test_golden_matches_persisted_runtime_behavior(name: str) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("mutation", ["waiting_tool", "missing_tool_event"])
+async def test_rejected_tool_terminal_regression_fails_golden(mutation: str) -> None:
+    dataset = load_timeline_dataset(harness.DEFAULT_GOLDEN)
+    case = next(case for case in dataset.cases if case.name == "approval-rejected")
+    actual = await harness.execute_scenario(case.name)
+    assert compare_timeline(case, actual).passed
+    if mutation == "waiting_tool":
+        changed = actual.model_copy(
+            update={"facts": {**actual.facts, "tool_statuses": ["waiting_approval"]}}
+        )
+        expected_failure = "facts.tool_statuses"
+    else:
+        changed = actual.model_copy(
+            update={
+                "events": tuple(item for item in actual.events if item.type != "tool_call_failed")
+            }
+        )
+        expected_failure = "event_order"
+    result = compare_timeline(case, changed)
+    assert not result.passed
+    assert expected_failure in {
+        assertion.name for assertion in result.assertions if not assertion.passed
+    }
+
+
+@pytest.mark.asyncio
 async def test_real_retry_behavior_regression_fails_golden(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -17,7 +17,10 @@ code/test findings and proposed completion work. CF1/CF2 feed pilot entry;
 CF3-CF8 remain deferred/conditional. The explicitly authorized CF1 minimal repair
 now has implementation, code review, regression and candidate CI evidence; final
 acceptance and deployment remain separately tracked in its
-[repair record](docs/reviews/2026-11-14-cf1-minimal-repair.md). CF2 has not started.
+[repair record](docs/reviews/2026-11-14-cf1-minimal-repair.md). CF2 has a verified
+[isolated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
+with offline provider fixtures and private request/config evidence. Authenticated
+Web, a frozen pilot profile and residual-risk review remain open; CF2 is not closed.
 No new calendar phase, broader foundation expansion or pilot admission is authorized.
 
 The [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)

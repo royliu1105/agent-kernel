@@ -1,11 +1,17 @@
 # Guided Learning During Pilot Acceptance
 
-Status: **Mechanism documented; CF1 demonstration recorded, independent learner
+Status: **Mechanism documented; CF1/CF2 demonstrations recorded, independent learner
 practice not established; PV1-PV6 sessions not started (2026-11-14)**.
 
 The pre-pilot [CF1 review](reviews/2026-11-14-cf1-memory-boundary.md) records a
 maintainer-requested demonstration of assertions and temporary fixture checks.
 It does not establish learner mastery or technical acceptance of CF1.
+The later [CF2 API/CLI rehearsal](reviews/2026-11-14-cf2-workflow-inventory.md#remaining-gates-and-learning)
+records the requested approval/effect/persistence demonstration. It is not an
+independent learner assessment or a completed PV2 session.
+The [rejected-approval repair demonstration](reviews/2026-11-14-approval-rejection-repair.md#learning-note)
+extends this evidence with transaction visibility, injected rollback, safe retry
+and timeline mutation tests. It does not establish independent learner mastery.
 
 Use this guide alongside the [PV1-PV6 pilot plan](real-scenario-pilot-plan.md).
 It defines how Codex and the maintainer work together, not another feature

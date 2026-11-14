@@ -23,7 +23,12 @@ owns CF1-CF8 priorities, tasks and acceptance. CF1/CF2 feed pilot-entry checks;
 CF3-CF8 are deferred/conditional. The explicitly authorized CF1 minimal repair
 has implementation, code review, regressions and exact-candidate CI; its
 [verification record](reviews/2026-11-14-cf1-minimal-repair.md) separates those
-results from pending deployment/pilot acceptance. CF2 has not started and CF1 is not accepted.
+results from pending deployment/pilot acceptance. CF1 is not accepted. CF2 has
+[isolated API/CLI and manual provenance evidence](reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
+for offline fixtures, not authenticated Web or a frozen user-pilot profile.
+The subsequently authorized [rejected-approval repair](reviews/2026-11-14-approval-rejection-repair.md)
+passed full local regression and isolated Docker checks; it is not deployed to
+the active runtime and does not close CF2.
 Completed implementation evidence remains in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
 R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier

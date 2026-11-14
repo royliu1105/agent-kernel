@@ -37,9 +37,11 @@ and user admission remain outside this authorization.
 - [ ] Maintainer disposition of residual risk for the intended deployment/pilot.
 - [ ] Deploy the approved candidate to the intended environment and verify it there.
 
-Deployment and pilot admission are not implicitly authorized by code review. CF2 and
-PV1-PV6 have not started; CF3-CF8 remain deferred/conditional. Live injection/
-quality evidence belongs to PV3, not these fixture tests.
+Deployment and pilot admission are not implicitly authorized by code review.
+At this CF1 checkpoint, CF2 and PV1-PV6 had not started. The later
+[CF2 inventory and isolated rehearsal](2026-11-14-cf2-workflow-inventory.md) is not
+pilot admission. CF3-CF8 remain deferred/conditional. Live injection/quality
+evidence belongs to PV3, not these fixture tests.
 
 ## Reproduction and Verification Method
 

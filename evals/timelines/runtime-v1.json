@@ -63,11 +63,13 @@
           {"type": "approval_requested"},
           {"type": "run_waiting_approval", "payload": {"to_status": "waiting_approval"}},
           {"type": "approval_rejected"},
+          {"type": "tool_call_failed", "payload": {"tool_name": "fixture_write", "error_type": "approval_rejected"}},
           {"type": "run_failed", "payload": {"from_status": "waiting_approval", "to_status": "failed", "error_type": "approval_rejected"}}
         ],
         "facts": {
           "paused_status": "waiting_approval", "tool_calls_before_decision": 0,
           "model_calls": 0, "tool_executions": 0, "approval_statuses": ["rejected"],
+          "tool_statuses": ["denied"],
           "tool_results": [null], "contiguous_sequence": true, "trace_consistent": true
         }
       }

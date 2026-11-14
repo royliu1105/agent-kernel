@@ -53,6 +53,7 @@ from kernel_storage import (
     ApprovalRepository,
     ExecutionOwnershipError,
     MemoryRepository,
+    RunConflictError,
     RunRepository,
     ToolCallRepository,
     WorkerLeaseRepository,
@@ -1638,7 +1639,13 @@ class RunExecutionService:
         repository: RunRepository,
         approval: Approval,
     ) -> Run:
-        fail_transition = self._state_machine.fail(waiting)
+        self._state_machine.fail(waiting)
+        try:
+            failed = repository.fail_rejected_approval(run_id=waiting.id, approval_id=approval.id)
+        except RunConflictError as error:
+            raise RunExecutionError(str(error)) from error
+        if failed is None:
+            raise RunNotFoundError(f"Run {waiting.id} was not found.")
         log_event(
             LOGGER,
             level=logging.ERROR,
@@ -1651,21 +1658,6 @@ class RunExecutionService:
             status=RunStatus.FAILED.value,
             error_type="approval_rejected",
         )
-        failed = repository.fail(
-            run_id=waiting.id,
-            error_type="approval_rejected",
-            error_message=approval.decision_note or f"Approval {approval.id} was rejected.",
-            event_payload={
-                "from_status": fail_transition.from_status.value,
-                "to_status": fail_transition.to_status.value,
-                "approval_id": str(approval.id),
-                "tool_call_id": str(approval.tool_call_id),
-                "error_type": "approval_rejected",
-                "error_message": approval.decision_note,
-            },
-        )
-        if failed is None:
-            raise RunNotFoundError(f"Run {waiting.id} was not found.")
         return failed
 
 

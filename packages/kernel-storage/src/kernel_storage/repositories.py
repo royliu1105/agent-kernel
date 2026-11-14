@@ -571,6 +571,69 @@ class RunRepository:
         self._session.commit()
         return _run_from_record(record)
 
+    def fail_rejected_approval(self, *, run_id: UUID, approval_id: UUID) -> Run | None:
+        """Atomically deny the reviewed call and fail its waiting Run under a live lease."""
+        if self.lease_token is None:
+            raise ExecutionOwnershipError("Rejection finalization requires an execution lease.")
+        record = _guard_run_write(self._session, run_id, self.lease_token)
+        if record is None:
+            return None
+        approval = self._session.get(ApprovalRecord, str(approval_id), populate_existing=True)
+        if (
+            record.status != RunStatus.WAITING_APPROVAL.value
+            or approval is None
+            or approval.run_id != record.id
+            or approval.status != ApprovalStatus.REJECTED.value
+        ):
+            raise RunConflictError("Run no longer has the expected rejected approval.")
+        tool = self._session.get(ToolCallRecord, approval.tool_call_id, populate_existing=True)
+        if (
+            tool is None
+            or tool.run_id != record.id
+            or tool.approval_id != approval.id
+            or tool.status != ToolCallStatus.WAITING_APPROVAL.value
+        ):
+            raise RunConflictError("Rejected approval no longer matches a waiting tool call.")
+
+        message = approval.decision_note or f"Approval {approval.id} was rejected."
+        tool.status = ToolCallStatus.DENIED.value
+        tool.error_type = "approval_rejected"
+        tool.error_message = message
+        _apply_status(record, RunStatus.FAILED)
+        record.error_type = "approval_rejected"
+        record.error_message = message
+        linkage = {
+            "approval_id": approval.id,
+            "tool_call_id": tool.id,
+            "error_type": "approval_rejected",
+            "error_message": message,
+        }
+        self._add_event_record(
+            run_id=run_id,
+            event_type=RunEventType.TOOL_CALL_FAILED,
+            payload={
+                **linkage,
+                "tool_name": tool.tool_name,
+                "status": ToolCallStatus.DENIED.value,
+                "execution_skipped": True,
+            },
+            trace_id=record.trace_id,
+        )
+        # Flush for the next event sequence, but commit both states/events together.
+        self._session.flush()
+        self._add_event_record(
+            run_id=run_id,
+            event_type=RunEventType.RUN_FAILED,
+            payload={
+                **linkage,
+                "from_status": RunStatus.WAITING_APPROVAL.value,
+                "to_status": RunStatus.FAILED.value,
+            },
+            trace_id=record.trace_id,
+        )
+        self._session.commit()
+        return _run_from_record(record)
+
     def list_queued(self, *, limit: int = 100) -> list[Run]:
         statement = (
             select(RunRecord)

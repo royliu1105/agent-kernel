@@ -88,6 +88,41 @@ Day 12 interrupt/resume baseline:
 - Day 12 remains explicit-tool only. Provider-native function calling and model-generated tool call
   parsing are deferred.
 
+## Rejected Continuation Consistency
+
+Current candidate contract (2026-11-14; verification tracked in the
+[repair record](../reviews/2026-11-14-approval-rejection-repair.md)):
+
+- `POST /v1/approvals/{id}/reject` still records only the decision and reviewer.
+  The Run/tool remain waiting until the explicit `run resume` step consumes the
+  rejected decision. This repair does not add automatic rejection execution.
+- A valid rejected resume finalizes its matching `ToolCall` as `denied` and
+  the `Run` as `failed`, both with `error_type=approval_rejected` and the saved
+  decision reason. No provider or tool is invoked, no result/latency is fabricated,
+  and earlier completed calls/results and accumulated usage remain unchanged.
+- `RunRepository.fail_rejected_approval` uses the existing Run-row lock and a
+  required live execution lease. It rechecks Run status, rejected approval,
+  bidirectional Run/tool/approval links and the tool's waiting state after locking.
+  A stale owner, mismatched ID or already-terminal state cannot overwrite records.
+- The tool and Run changes and their ordered events commit in one transaction.
+  `tool_call_failed` carries `status=denied`, `error_type=approval_rejected`,
+  `execution_skipped=true`, and the tool/approval IDs; `run_failed` follows it.
+  The event denotes a denied outcome, not a failed external invocation. These
+  are existing event/status enums; no new schema revision or endpoint is needed.
+- A pre-commit failure rolls both state/event writes back. The rejected decision
+  remains durable from its earlier transaction, so a later valid resume can
+  finalize it. Repeated/concurrent resumes cannot append a second terminal pair.
+  The failure log is emitted after the terminal transaction commits.
+
+This only finalizes the call linked to the rejected approval, not a general
+reconciliation of every pending call, corrupt checkpoint or cancellation path.
+Requested, expired and canceled approvals retain their existing fail-closed
+resume behavior. Automatic expiry/cancellation finalization is not added.
+Existing already-failed Runs with stale waiting tool rows are **not backfilled**;
+do not retry an old terminal Run or modify the active DB to repair its history.
+Any historical reconciliation needs separately reviewed, authorized operations.
+Current local Docker containers are not updated by this code/test change.
+
 ## State Transitions
 
 Initial flow:

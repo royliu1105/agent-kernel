@@ -1,6 +1,6 @@
 # Reference-Informed Follow-Up Plan
 
-Status: **CF1 code review, local verification and candidate CI passed; deployment/pilot acceptance pending (2026-11-14)**.
+Status: **CF1 candidate CI passed; CF2 isolated API/CLI fixture rehearsal passed, overall gate open; deployment/pilot acceptance pending (2026-11-14)**.
 
 The original authorization covered recording the [comparison](reference-project-comparison.md)
 and this plan only. The maintainer subsequently authorized the minimal CF1 repair:
@@ -11,12 +11,35 @@ its running environment. This does not authorize CF2-CF8 implementation, paid
 requests, pilot admission, tag or release. Identifying a gap is not fixing it; existing passing tests are
 not acceptance of a missing capability.
 
+The subsequent continuation authorizes a disposable Docker API/CLI rehearsal
+with authentication enabled and offline provider fixtures. Web authentication
+remains unresolved and outside this step. See the
+[workflow inventory](reviews/2026-11-14-cf2-workflow-inventory.md).
+No business-code expansion, active-stack update, paid execution, user admission
+or new commit/push is included.
+
+The maintainer subsequently authorized the minimal rejection-terminal repair:
+on resume of a rejected approval, atomically terminate its matching waiting
+tool call and Run, add regression tests and update documentation. Full local
+regression and isolated Docker verification passed; see the
+[repair record](reviews/2026-11-14-approval-rejection-repair.md). This does not
+close CF2 or authorize active Docker updates, historical data
+backfills, commit/push or broader expired/canceled approval behavior changes.
+
 Earlier continuation authorized baseline triage, read-only CF1 analysis and
 temporary fixture observations. See the [CF1 review record](reviews/2026-11-14-cf1-memory-boundary.md).
 The maintainer requested a demonstration at the learning checkpoint. That review
 did not authorize a repair. The later explicit authorization above now governs
-the minimal implementation. Commit/push and CI tracking are now explicitly
-authorized; paid execution, deployment and pilot admission remain excluded.
+the minimal implementation. CF1 commit/push and CI tracking were explicitly
+authorized and performed; that permission does not include the new CF2 changes.
+Paid execution, active deployment and pilot admission remain excluded.
+
+The latest maintainer instruction authorizes review of the CF2 rehearsal and
+rejection repair, then commit/push and exact-candidate CI tracking once review
+passes. See the [review record](reviews/2026-11-14-approval-rejection-repair.md#pre-commit-review).
+This supersedes only the earlier commit/push exclusion for these changes;
+active Docker updates, historical backfills, paid calls and pilot admission
+remain outside the authorization.
 
 ## Authority and Relationship to Existing Work
 
@@ -39,7 +62,9 @@ authorized; paid execution, deployment and pilot admission remain excluded.
 - The maintainer owns scope decisions. Assign an implementer and reviewer
   before starting each authorized task. CF1 implementation and code review: Codex;
   deployment/pilot residual-risk disposition: maintainer, pending. The code
-  review is not an independent security audit. Other tasks have not been assigned.
+  review is not an independent security audit. Codex also implements/reviews the
+  selected CF2 rehearsal; maintainer risk disposition remains pending. CF3-CF8
+  have not been assigned.
   Follow the [learning guide](pilot-learning-guide.md) for tradeoff, failure
   diagnosis and assertion exercises, without claiming learner mastery from CI.
 
@@ -55,7 +80,7 @@ need and separate scope decision are required. None means complete.
 | ID | Priority | Delivery | Prerequisite / pilot relationship | Current status | Acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
 | CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification/candidate CI passed; deployment and risk disposition pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): local 1146 passed, 35 optional skips; candidate `5952ba7` CI passed; not active-local deployment/pilot acceptance |
-| CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Not started | None; source inventory is not a user-path rehearsal |
+| CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | In progress: isolated authenticated API/CLI + offline request provenance passed; Web auth/pilot profile/review open | [Rehearsal evidence](reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence); synthetic corpus/mock embeddings, not live quality or PV2 acceptance |
 | CF3 | P1: reproducibility | Effective prompt-version binding to Run/checkpoint/eval | After PV6 prioritization or explicit earlier scope approval; CF1 context contract | Deferred; not started | None |
 | CF4 | P1: product journey | Scoped session/task submission and resumable streaming Web flow | After pilot evidence/scope approval; CF3 or an explicitly approved equivalent provenance contract | Deferred; not started | None |
 | CF5 | P2: memory effectiveness | Bounded summaries, semantic recall and controlled memory lifecycle | CF1 and CF3; pilot must identify a memory-specific need | Deferred; not started | None |
@@ -137,17 +162,35 @@ Current gap: preview and live surfaces coexist, and the PromptRegistry is not
 bound to effective runtime requests. A supported API/CLI route can still serve
 the pilot without pretending that all Web views or prompt automation are complete.
 
-- [ ] Enumerate the selected steps: upload/ingest, submit, inspect, approve,
+The [source inventory](reviews/2026-11-14-cf2-workflow-inventory.md) identifies
+the real entry points and evidence limits. In particular, Web decisions do not
+resume Runs, live lookup does not render full answers, and Web proxies do not
+carry API credentials. Authenticated Web therefore remains an unresolved path,
+not a passed RBAC journey. Do not disable auth or add a shared admin key to pass.
+
+- [x] Record source-confirmed API/CLI/Web paths and distinguish existing fixture,
+  deployment and live-model evidence. This is preparation, not path acceptance.
+
+- [x] Enumerate the selected steps: upload/ingest, submit, inspect, approve,
   resume, inspect citations and stop. Record actual command/route/UI entry point,
   role and expected persisted records; explicitly label fixture-only controls.
 - [ ] Rehearse that exact path from a clean Docker setup with disposable data;
   use actual API/Worker/Web responses, not intercepted browser fixtures.
+  The selected API/CLI-only path passed with real API/Worker/MCP/PostgreSQL and
+  offline provider transport. Authenticated Web remains excluded/unverified.
 - [ ] Freeze a manual prompt/configuration revision and content hashes in the
   restricted pilot record. Verify the effective request at the provider boundary,
   including memory, tool schema and continuation; sanitized public evidence must
   not contain private prompts or documents.
+  Manual fixture revision `cf2-api-cli-offline-v1` is verified; the actual pilot
+  corpus/model/profile and maintainer review are not yet frozen or accepted.
 - [ ] Correct only workflow-blocking instructions once verified. If required
   behavior is absent, record a blocker and request a scope decision, not a mock UI.
+  Rehearsal instructions and the minimal rejection terminal-status repair are
+  locally verified: rejected resume atomically denies the tool and fails the Run
+  without execution; see the [repair record](reviews/2026-11-14-approval-rejection-repair.md).
+  The active runtime is not updated. Web-auth/pilot-profile gaps keep this item
+  open; broader expired/canceled handling is outside this repair.
 
 Acceptance: the run ID, citations, approval and timeline agree across API/CLI,
 Workbench and persisted records; no fixture is counted as live. A reviewer can

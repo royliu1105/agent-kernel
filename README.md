@@ -29,7 +29,10 @@ Current development:
   repair passed code review and local regressions, with acceptance still pending;
   see its [verification record](docs/reviews/2026-11-14-cf1-minimal-repair.md).
   Its candidate CI passed, but the active local Docker stack has not been updated
-  with CF1. Deployment/pilot acceptance is still pending. CF2-CF8 are unchanged.
+  with CF1. Deployment/pilot acceptance is still pending. CF2 now has an
+  [isolated authenticated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
+  using offline model fixtures. Web authentication and pilot-profile acceptance
+  remain open; CF3-CF8 remain deferred/conditional.
 - Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)
   retains the implementation evidence and explicit limits.
 - `master` contains unreleased changes beyond the `v1.0.0` tag. Historical
