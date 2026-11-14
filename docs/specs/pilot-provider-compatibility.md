@@ -1,7 +1,7 @@
 # Pilot Provider Compatibility
 
-Status: **Minimal implementation and local offline verification passed;
-live compatibility/deployment/remote CI pending (2026-11-15)**.
+Status: **Minimal implementation, local offline verification and reviewed
+implementation-candidate CI passed; live compatibility/deployment pending (2026-11-15)**.
 The maintainer selected the reference project's DeepSeek and Alibaba Cloud
 Embedding services. This does not authorize paid requests, copying credentials,
 active Docker updates, a new release, or other feature expansion. Budget remains
@@ -51,11 +51,13 @@ Sources checked on 2026-11-15; no account was contacted.
 - [x] Embedding batching, validation, API indexing/query and Worker retrieval.
 - [x] Readiness and Compose/mock-default regression checks.
 - [x] Python lint, typecheck, focused/full offline tests and documentation checks.
+- [x] Reviewed implementation candidate verified by all four remote CI jobs.
 - [ ] Separately authorized live model/account/embedding verification (not authorized).
 - [ ] Separately authorized isolated pilot deployment (not authorized).
 
-The first five gates establish implementation/offline compatibility only.
-They do not complete PV1, CF2 or live/user acceptance.
+The first five gates establish implementation/offline compatibility only; remote
+CI adds disposable-backend/deployment evidence. None completes PV1, CF2 or
+live/user acceptance.
 
 ## Local Verification Evidence
 
@@ -66,6 +68,14 @@ maintainer request authorizes review, commit/push and exact-candidate CI trackin
 see the [review record](../reviews/2026-11-15-pv1-provider-review.md).
 Earlier CI does not verify this implementation. Paid calls and active Docker
 updates remain prohibited.
+
+Subsequent review reproduced and repaired non-finite/overflowing embedding-value
+validation, then verified 1251 local tests (35 explicit skips) and exact candidate
+`384416ce2f80538b4f3bffaf3806883deaf6d7fd` in
+[CI 43622497986](https://github.com/royliu1105/agent-kernel/actions/runs/43622497986).
+All four jobs passed. The [review record](../reviews/2026-11-15-pv1-provider-review.md)
+contains final-tree evidence and the remaining live gates. The table below is
+the earlier implementation checkpoint, not the final reviewed test count.
 
 | Check | Observed result |
 | --- | --- |

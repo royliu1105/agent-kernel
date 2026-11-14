@@ -1,8 +1,9 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-3; scenario and DeepSeek/DashScope selected, budget
-ceiling USD 10; local offline compatibility verified, live/contract gates pending**.
+Record revision: **draft-4; scenario and DeepSeek/DashScope selected, budget
+ceiling USD 10; reviewed implementation/local/remote CI verified,
+live/contract gates pending**.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
 This record supplies proposed values and evidence, not a second task ledger.
 
@@ -32,12 +33,16 @@ Preparation baseline: `767e35af19d52d0596478af13d010ea2ba0ab45b`.
 passed Python, Web, Compose and observability in the preceding review. The scoped
 [rejection repair](../reviews/2026-11-14-approval-rejection-repair.md) and
 [CF2 rehearsal](../reviews/2026-11-14-cf2-workflow-inventory.md) are prerequisite
-evidence, not PV2/PV3/PV5 acceptance. This draft does not claim a new CI run.
+evidence, not PV2/PV3/PV5 acceptance. That preparation checkpoint did not include
+a new CI run for the compatibility changes.
 The active `agent-kernel-local` environment has not been updated to this baseline.
-The new compatibility work is not in that SHA. Pin its actual reviewed candidate
-and CI before pilot execution; the baseline CI does not verify these new changes.
-The scoped implementation has since passed local offline verification, recorded
-in the linked compatibility contract; no pilot checklist item is accepted by that result.
+The new compatibility work is not in that baseline SHA. Its subsequently reviewed
+implementation is `384416ce2f80538b4f3bffaf3806883deaf6d7fd`, verified locally and by
+[CI 43622497986](https://github.com/royliu1105/agent-kernel/actions/runs/43622497986)
+with all four jobs passed. See the linked review record for repaired findings and
+test profiles. This pins implementation evidence only; actual pilot image/config,
+corpus and permission hashes still need a later freeze and sign-off. No pilot
+checklist item is accepted by this result, and current Docker was not updated.
 
 ## Selected Scenario and Proposed Participants
 

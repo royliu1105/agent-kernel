@@ -1,7 +1,7 @@
 # PV1 and Pilot Provider Review
 
-Date: 2026-11-15. Status: **Review and final local verification passed;
-commit/push and exact-candidate remote CI pending**.
+Date: 2026-11-15. Status: **Review, final local verification and implementation
+candidate remote CI passed; live providers and pilot admission remain unaccepted**.
 
 ## Scope and Authority
 
@@ -15,7 +15,8 @@ excluded from the commit and from build contexts.
 The preparation baseline is `767e35af19d52d0596478af13d010ea2ba0ab45b`.
 The [compatibility contract](../specs/pilot-provider-compatibility.md) retains
 implementation evidence; the [pilot ledger](../real-scenario-pilot-plan.md) alone
-owns PV1-PV6 acceptance. Prior CI does not verify this candidate.
+owns PV1-PV6 acceptance. Prior baseline CI does not verify the new implementation;
+its exact-candidate result is recorded below.
 
 ## Review Findings and Disposition
 
@@ -73,12 +74,41 @@ A full run begun before the finite-value repair passed 1242 tests with 35 opt-in
 skips; it is not final-tree coverage. The final rerun above supersedes it.
 The skips are opt-in Docker-local, monitoring/full-observability, promtool,
 backup/restore, real Redis/shared-admission and self-hosted deployment gates;
-they are not counted as local passes. The remote CI will exercise its configured
-disposable services separately. Commit/push and candidate CI remain pending.
+they are not counted as local passes. Remote CI exercised its configured
+disposable services separately, as recorded below.
 
 Only `agent-kernel-test` on loopback port 55432 is used for local database tests.
 Provider responses and credentials are synthetic. The active local runtime is
 not rebuilt, restarted, migrated, seeded or used as a test target.
+
+## Commit and Remote Verification
+
+Reviewed implementation: `384416ce2f80538b4f3bffaf3806883deaf6d7fd`,
+`feat(providers): add reviewed DeepSeek and DashScope pilot compatibility`.
+It was pushed to `origin/master` with authorization.
+[CI run 43622497986](https://github.com/royliu1105/agent-kernel/actions/runs/43622497986)
+reports that exact `headSha`, `completed` and `success`; all four jobs passed.
+
+| Remote check | Observed result |
+| --- | --- |
+| Python | Migration smoke 27 passed; Ruff passed; mypy checked 237 files; main suite 1270 passed, 15 opt-in skips; separate restore drill 1 passed; release eval gates passed, including 72 execution/continuation tests |
+| Web | Typecheck/build passed; Playwright 2 passed, 1 explicit Docker-targeted case skipped in this job |
+| Compose | Fresh isolated deployment built; HTTP rehearsal 1 passed; monitoring rehearsal 3 passed; cleanup passed |
+| Observability | Full logs/trace/local SMTP rehearsal 8 passed; default Docker startup and runtime/Web proxy 4 passed; cleanup passed |
+
+The main Python skips are Docker-local, monitoring/full-observability and
+self-hosted deployment tests exercised by their dedicated jobs. The standalone
+Web job's skipped Docker-targeted case is not silently counted as a browser pass;
+the separate default Docker job verifies its configured runtime/proxy contract.
+Existing Node-action deprecation and runner-image migration notices are warnings,
+not test failures; no unrelated workflow upgrade is included in this batch.
+
+Before submission, the staged paths and diff were reviewed: no `resource/`,
+private runtime/config/data paths or real credentials were included. All provider
+tests use synthetic values. This documentation-only follow-up records the already
+completed implementation CI, not a claim about any future commit. No tag/release
+was created, no actual provider was called, and no current local Docker service
+or data was updated. The isolated local test database was removed after use.
 
 ## Remaining Gates
 

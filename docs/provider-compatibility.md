@@ -1,9 +1,11 @@
 # DeepSeek and Alibaba Embedding Pilot Profile
 
-Status: **Implementation/local offline verification passed;
-live calls, deployment and remote CI not accepted (2026-11-15)**.
+Status: **Implementation/local offline verification and reviewed-candidate CI
+passed; live calls and pilot deployment not accepted (2026-11-15)**.
 See the [scoped contract](specs/pilot-provider-compatibility.md) and
-[PV1 record](pilots/pv1-2026-11-15-runbook-assistant.md). The total planning ceiling
+[PV1 record](pilots/pv1-2026-11-15-runbook-assistant.md). The
+[review/CI record](reviews/2026-11-15-pv1-provider-review.md) identifies the tested
+implementation SHA, not a deployed or admitted pilot. The total planning ceiling
 is USD 10. This work authorizes no spending, active-stack update or credential export.
 
 ## Configuration Contract
