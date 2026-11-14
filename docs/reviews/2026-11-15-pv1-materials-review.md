@@ -1,6 +1,8 @@
 # PV1 Corpus and Expected-Answer Review
 
-Date: 2026-11-15. Scope: 12 sanitized runbook summaries, 30 expected-answer
+Date: 2026-11-15. Status: **Engineering review, local checks and material-candidate
+CI passed; human approval and live acceptance remain pending**.
+Scope: 12 sanitized runbook summaries, 30 expected-answer
 drafts, provenance manifest, static integrity tests and linked pilot status.
 This is an engineering review, not human corpus approval or live acceptance.
 
@@ -88,3 +90,33 @@ The [pilot plan](../real-scenario-pilot-plan.md) remains the canonical acceptanc
 ledger. PV1 is in progress; PV2-PV6 have not started. Engineering review does not
 remove pending provider permission, budget allocation, Web-auth scope or risk
 sign-off gates.
+
+## Exact-Candidate CI Evidence
+
+Reviewed material commit: `fa0ed475b2cbbd7a02cd70eb1343143644f47b73`,
+`docs(pilot): add reviewed PV1 corpus and expected-answer drafts`.
+Pushed to `origin/master` with authorization. The
+[CI run 43628641491](https://github.com/royliu1105/agent-kernel/actions/runs/43628641491)
+reports that exact `headSha`, `completed`, `success`, and all four jobs green.
+This supersedes the pre-submission pending-CI checkpoint above.
+
+| Remote check | Observed result |
+| --- | --- |
+| Python | Migration smoke 27 passed; Ruff passed; mypy checked 238 files; main suite 1273 passed, 15 skipped; isolated restore 1 passed; release eval gates passed, including 72 execution/continuation cases |
+| Web | Typecheck/build passed; Playwright 2 passed, 1 explicit Docker-targeted case skipped |
+| Compose | Isolated deployment built; HTTP rehearsal 1 passed; monitoring 3 passed; cleanup passed |
+| Observability | Logs/Trace/local Mailpit rehearsal 8 passed; default Docker runtime/Web proxy 4 passed; cleanup passed |
+
+The main suite's 15 opt-in skips are not counted as passes. Deployment,
+observability and Docker-targeted checks run separately in their dedicated jobs;
+the standalone Web job's Docker-only skip is likewise not a browser pass.
+Existing action Node-runtime deprecation and runner-image migration notices are
+warnings, not failures; unrelated workflow upgrades are outside this batch.
+
+The CLI watcher encountered one network EOF; an independent query and resumed
+watch confirmed the completed successful run. No failure was waived or silently
+retried as a passing test. This documentation-only follow-up records already
+observed candidate evidence, not a prediction about a later commit's CI.
+No local Docker service/data was updated, no paid interface was called, no
+source runbook changed, and no resource/private data was submitted. The 30 pilot
+cases are still unexecuted; remote mock/fixture CI is not PV3 model acceptance.
