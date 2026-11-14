@@ -5,7 +5,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from kernel_providers import LLMProvider, MockLLMProvider, OpenAIProvider, ReplayLLMProvider
+from kernel_providers import (
+    DeepSeekProvider,
+    LLMProvider,
+    MockLLMProvider,
+    OpenAIProvider,
+    ReplayLLMProvider,
+)
 
 
 class UnknownModelRouteError(ValueError):
@@ -36,7 +42,12 @@ class ModelRouter:
 def create_default_model_router() -> ModelRouter:
     """Keep Worker execution and API approval continuation on the same routes."""
     return ModelRouter(
-        {"mock": MockLLMProvider(), "openai": OpenAIProvider(), "replay": ReplayLLMProvider()}
+        {
+            "mock": MockLLMProvider(),
+            "openai": OpenAIProvider(),
+            "deepseek": DeepSeekProvider(),
+            "replay": ReplayLLMProvider(),
+        }
     )
 
 

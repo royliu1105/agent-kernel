@@ -32,7 +32,8 @@ or prove notification receipt. This authorized exception precedes pilot executio
 
 The maintainer requested a validation/pilot plan on 2026-11-14, not more
 foundation features. [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
-is the canonical next-stage checklist (PV1-PV6, planned, execution not started).
+is the canonical next-stage checklist. PV1 contract preparation started on
+2026-11-15; PV2-PV6 have not started and no live/user-pilot acceptance exists.
 This document retains completed hardening evidence and limits. Do not reopen
 completed packages or treat deferred enhancements as automatically authorized.
 Live calls, pilot deployment/users and a new release have separate approvals.
@@ -529,8 +530,9 @@ Record project results and actual learner participation separately; CI success
 does not prove learner mastery. Contain real incidents before teaching.
 Preserve the Python backend and TypeScript Web. R1-R10 and N1-N5 are accepted
 within their documented scope; baseline d599fc2 has green CI 43468114477.
-PV1-PV6 are planned, not started. When authorized to begin, start PV1 by recording
-the scenario, owners, candidate, dataset, model, budget and safety decisions.
+PV1 contract preparation is in progress; read its linked draft before continuing.
+Record and resolve required scenario, owner, candidate, dataset, model, budget
+and safety decisions before sign-off. PV2-PV6 have not started.
 Do not expand foundation features or restart P1.1/Day 1-90. Use existing paths;
 only reproduced pilot blockers justify a minimal repair with regression evidence.
 Keep fixture, real-backend, live-provider and human-pilot outcomes separate.

@@ -1,10 +1,23 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
-Status: **Planned; execution not started (2026-11-14)**.
+Status: **PV1 contract preparation in progress; not accepted. PV2-PV6 not started (2026-11-15)**.
+
+The maintainer authorized PV1 preparation on 2026-11-15: identify the scenario,
+corpus, models, budget and acceptance decisions without expanding features or
+updating the active Docker environment. The
+[PV1 draft](pilots/pv1-2026-11-15-runbook-assistant.md) records the selected
+repository-runbook scenario, USD 10 budget ceiling and unresolved decisions.
+No paid execution, data transmission, deployment or user admission is authorized.
+
+The subsequent explicit exception authorizes minimal DeepSeek/Alibaba Embedding
+compatibility with tests/docs under the
+[scoped contract](specs/pilot-provider-compatibility.md). It does not authorize
+paid calls, current Docker updates or broader foundation work. Offline
+compatibility evidence cannot close PV1 or substitute for PV3 live acceptance.
 
 The maintainer separately authorized [observability completion](observability-completion-plan.md)
 before pilot execution. O1-O5 track that bounded exception to the freeze, with
-local SMTP and real inbox acceptance separated. This does not start PV1-PV6 or
+local SMTP and real inbox acceptance separated. That authorization did not start PV1-PV6 or
 authorize external email before its intended sender/recipient are configured.
 
 This is the canonical plan for the next stage, PV1-PV6. The maintainer has
@@ -27,7 +40,8 @@ The maintainer subsequently authorized only the minimal CF1 repair and its
 regressions, then review, baseline/CF1 commits, push and CI tracking, recorded in
 the [repair record](reviews/2026-11-14-cf1-minimal-repair.md).
 This does not authorize pilot admission or mean the running Docker images contain
-the repair. PV1-PV6 are still not started; the foundation-feature freeze remains.
+the repair. PV1 has now started as contract preparation only; the
+foundation-feature freeze remains.
 
 ## Guided Learning During Execution
 
@@ -43,8 +57,9 @@ pilot execution record. A green CI or an assistant explanation does not establis
 learner mastery; a learning exercise does not waive an acceptance or safety gate.
 Do not create extra features, inject faults into a running pilot, coach scored
 participants, or extend the calendar merely to generate teaching material.
-In a real incident, contain risk first and explain afterward. PV1-PV6 learning
-sessions are not started; the separate
+In a real incident, contain risk first and explain afterward. PV1 planning
+decisions are being collected; independent learner practice is not established,
+and PV2-PV6 sessions have not started. The separate
 [CF1 demonstration](reviews/2026-11-14-cf1-memory-boundary.md) is pre-pilot review
 evidence, not a completed pilot exercise or learner-mastery claim.
 
@@ -107,8 +122,9 @@ may overlap in a small project, but an implementer cannot count as both
 independent onboarding participants. The domain reviewer, not the Agent itself,
 scores correctness and whether citations support the claims.
 
-Use `docs/pilots/<pilot-id>.md` for the sanitized execution record when PV1 starts;
-that directory/record has not been created by this planning task. Keep this plan
+Use `docs/pilots/<pilot-id>.md` for sanitized execution records. The current
+[PV1 record](pilots/pv1-2026-11-15-runbook-assistant.md) is a draft, not signed-off
+acceptance or evidence of runtime execution. Keep this plan
 as the sole checklist. Link detailed evidence from each task without copying a
 second progress table into README, milestones, or old daily plans.
 
@@ -132,7 +148,7 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Not started | None |
+| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; required decisions pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md); no accepted/live result |
 | PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
 | PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |

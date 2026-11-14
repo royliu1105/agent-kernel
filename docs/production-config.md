@@ -88,6 +88,14 @@ never enables paid embeddings. Keep the selection identical across API and
 Worker processes. Unknown providers or missing/malformed OpenAI embedding
 credentials fail configuration rather than silently falling back to mock.
 
+The explicitly selected [DeepSeek/DashScope pilot profile](provider-compatibility.md)
+adds `deepseek:*` Responses routing and `AGENT_KERNEL_EMBEDDING_PROVIDER=dashscope`.
+It uses dedicated `DEEPSEEK_API_KEY` and `DASHSCOPE_API_KEY`, with independent
+validated endpoints and 1024-dimensional v3 embeddings. It does not change the
+mock default or automatically activate current Docker services. Live acceptance
+and spending authorization remain separate; never reuse a DeepSeek key as an
+official OpenAI credential just because the reference variable had that name.
+
 ## Storage
 
 Recommended production storage:
@@ -142,6 +150,8 @@ Embedding storage:
   evals.
 - OpenAI embeddings require `AGENT_KERNEL_EMBEDDING_PROVIDER=openai` and valid
   `OPENAI_API_KEY` credentials.
+- DashScope v3 requires explicit `dashscope` selection and its own credential;
+  see the [batching/dimension boundary](provider-compatibility.md#embedding-and-storage-boundaries).
 - Keep the same embedding provider and model for indexing and retrieval.
 - Store `OPENAI_API_KEY` as a secret.
 - `OPENAI_EMBEDDING_MODEL` and `OPENAI_EMBEDDING_DIMENSIONS` should be pinned

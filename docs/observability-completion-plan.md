@@ -5,7 +5,8 @@ Status: **Local single-host scope and candidate remote CI verified; external ema
 This is the canonical O1-O5 ledger for the explicitly authorized follow-up:
 centralized logs, a trace backend and alert notification delivery. It is a narrow
 exception to the pilot's foundation-feature freeze, not a new Day 1-90 schedule.
-PV1-PV6 remain planned and unexecuted. Historical R1-R10/N1-N5 acceptance did not
+The [pilot ledger](real-scenario-pilot-plan.md) now tracks PV1 preparation;
+PV2-PV6 have not started. Historical R1-R10/N1-N5 acceptance did not
 include these backend/delivery guarantees and is not evidence for this work.
 No commit, push, paid model call, external message, tag or release is implied
 by this plan alone; each requires the corresponding explicit authorization.

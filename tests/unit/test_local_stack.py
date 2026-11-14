@@ -23,7 +23,13 @@ def checkout(tmp_path: Path) -> Path:
 def invoke(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["sh", str(root / "scripts/local-stack.sh"), *args],
-        env={**os.environ, "OPENAI_API_KEY": "MUST_NOT_INHERIT", "DATABASE_URL": "wrong"},
+        env={
+            **os.environ,
+            "OPENAI_API_KEY": "MUST_NOT_INHERIT",
+            "DATABASE_URL": "wrong",
+            "DEEPSEEK_API_KEY": "MUST_NOT_INHERIT",
+            "DASHSCOPE_API_KEY": "MUST_NOT_INHERIT",
+        },
         capture_output=True,
         text=True,
         check=False,
@@ -69,6 +75,7 @@ def test_compose_uses_fixed_project_and_clean_environment(
         f"#!{sys.executable}\nimport json, os, sys\n"
         f"with open({str(record)!r}, 'w') as f:\n"
         " json.dump({'args': sys.argv[1:], 'provider': os.getenv('OPENAI_API_KEY'), "
+        "'deepseek': os.getenv('DEEPSEEK_API_KEY'), 'dashscope': os.getenv('DASHSCOPE_API_KEY'), "
         "'db': os.getenv('DATABASE_URL')}, f)\n"
     )
     docker.chmod(0o700)
@@ -77,6 +84,7 @@ def test_compose_uses_fixed_project_and_clean_environment(
     assert result.returncode == 0, result.stderr
     command = json.loads(record.read_text())
     assert command["provider"] is None and command["db"] is None
+    assert command["deepseek"] is None and command["dashscope"] is None
     assert "agent-kernel-local" in command["args"]
     assert command["args"][-2:] == ["config", "--quiet"]
     assert str(checkout / "deploy/local.compose.yml") in command["args"]
@@ -94,3 +102,5 @@ def test_docker_default_is_documented_and_build_context_excludes_secrets() -> No
     assert '"--appendonly", "yes"' in local
     assert "driver: local" in local
     assert "AGENT_KERNEL_RUN_QUEUE_BACKEND: redis" in local
+    assert local.count('DEEPSEEK_API_KEY: ""') == 2
+    assert local.count('DASHSCOPE_API_KEY: ""') == 2

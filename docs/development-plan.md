@@ -12,9 +12,10 @@ notification channel and external inbox verification remains blocked by setup.
 This is a narrow exception to the feature freeze below, not a new daily schedule.
 
 The [Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md)
-is the canonical next-stage plan. PV1-PV6 are planned, not started: freeze scope,
-rehearse safety, verify live behavior and deployment recovery, run a small user
-pilot, then decide go/no-go. Foundation feature expansion is frozen; only
+is the canonical next-stage plan. PV1 contract preparation is in progress;
+PV2-PV6 have not started. The sequence remains: freeze scope, rehearse safety,
+verify live behavior and deployment recovery, run a small user pilot, then
+decide go/no-go. Foundation feature expansion is frozen; only
 reproduced blocking defects justify scoped repair after execution is authorized.
 
 The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) retains

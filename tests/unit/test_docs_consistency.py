@@ -26,6 +26,12 @@ STATUS_GUIDES = (
     "docs/capability-hardening-plan.md",
     "docs/real-scenario-pilot-plan.md",
     "docs/pilot-learning-guide.md",
+    "docs/pilots/pv1-2026-11-15-runbook-assistant.md",
+    "docs/reference-follow-up-plan.md",
+    "docs/observability-completion-plan.md",
+    "docs/reviews/2026-11-14-cf2-workflow-inventory.md",
+    "docs/provider-compatibility.md",
+    "docs/specs/pilot-provider-compatibility.md",
 )
 
 
@@ -390,7 +396,7 @@ def test_phase_summaries_are_explicitly_historical(filename: str) -> None:
 
 def test_delivery_plan_no_longer_points_to_alpha_as_next_work() -> None:
     plan = (DOCS_ROOT / "post-v0.1-plan.md").read_text(encoding="utf-8")
-    assert "Current track: Real-scenario acceptance and controlled pilot (planned)" in plan
+    assert "Current track: Real-scenario acceptance and controlled pilot (PV1 preparation)" in plan
     assert "Current branch enhancements: Unreleased" in plan
     assert "## Historical Kickoff" in plan
     assert "## Next Daily Work" not in plan
@@ -444,6 +450,34 @@ def test_pilot_plan_keeps_expansion_and_paid_execution_boundaries() -> None:
         "cannot undo remote effects or charges",
     ):
         assert _normalized(anchor) in budget
+
+
+def test_pv1_draft_case_inventory_matches_the_pilot_cohorts() -> None:
+    draft = (DOCS_ROOT / "pilots/pv1-2026-11-15-runbook-assistant.md").read_text(encoding="utf-8")
+    case_ids = re.findall(r"^\| ([AUIX][0-9]{2}) \|", draft, flags=re.MULTILINE)
+    expected = [
+        f"{prefix}{index:02}"
+        for prefix, count in (("A", 18), ("U", 6), ("I", 3), ("X", 3))
+        for index in range(1, count + 1)
+    ]
+    assert case_ids == expected
+    assert "question ideas only" in draft
+
+
+def test_pv1_draft_records_decisions_without_implying_paid_or_runtime_acceptance() -> None:
+    filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
+    authorization = _section(filename, "Authorization and Candidate")
+    assert "usd 0" in authorization
+    assert (
+        "choosing a model or a proposed budget is not authorization to consume it" in authorization
+    )
+    budget = _section(filename, "Proposed Budget, Not Spending Approval")
+    assert "usd 10 ceiling selected by the maintainer" in budget
+    assert "at usd 8" in budget
+    models = _section(filename, "Model Decision and Read-Only Configuration Findings")
+    assert "selected providers are not live-accepted" in models
+    assert "configuration/integration blocker" in models
+    assert "no credential was copied, exported, submitted to a service" in models
 
 
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:

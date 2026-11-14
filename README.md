@@ -22,7 +22,9 @@ Current development:
   The optional single-host Loki/Tempo/Alertmanager/Mailpit profile has passed
   local end-to-end verification and exact-commit remote CI; see the ledger for evidence.
 - [Real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
-  remains planned, not yet executed. Other foundation feature expansion is frozen.
+  has started PV1 contract preparation; required decisions remain pending and
+  PV2-PV6 have not started. No live/user-pilot result exists.
+  Other foundation feature expansion is frozen.
 - [Reference comparison](docs/reference-project-comparison.md) records the
   code/test review. Its [follow-up plan](docs/reference-follow-up-plan.md) owns
   pilot-entry checks and deferred enhancements. CF1's minimal memory-context

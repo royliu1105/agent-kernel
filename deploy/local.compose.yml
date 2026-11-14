@@ -27,6 +27,8 @@ services:
       AGENT_KERNEL_RUN_QUEUE_BACKEND: redis
       AGENT_KERNEL_EMBEDDING_PROVIDER: mock
       OPENAI_API_KEY: ""
+      DEEPSEEK_API_KEY: ""
+      DASHSCOPE_API_KEY: ""
     ports: !override
       - "127.0.0.1:${AGENT_KERNEL_API_PORT:-8000}:8000"
     logging: *local-logging
@@ -36,6 +38,8 @@ services:
       AGENT_KERNEL_RUN_QUEUE_BACKEND: redis
       AGENT_KERNEL_EMBEDDING_PROVIDER: mock
       OPENAI_API_KEY: ""
+      DEEPSEEK_API_KEY: ""
+      DASHSCOPE_API_KEY: ""
     logging: *local-logging
   web:
     restart: unless-stopped

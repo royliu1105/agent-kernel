@@ -5,9 +5,11 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 from uuid import UUID
 
 import httpx
@@ -148,7 +150,7 @@ class OpenAIEmbeddingProvider:
             ) from error
         except httpx.RequestError as error:
             raise OpenAIEmbeddingError(
-                f"OpenAI embeddings API request failed: {error}",
+                "OpenAI-compatible embeddings API request failed.",
                 error_type="openai_embedding_request_error",
             ) from error
 
@@ -172,14 +174,77 @@ class OpenAIEmbeddingProvider:
         )
 
 
+class DashScopeEmbeddingProvider(OpenAIEmbeddingProvider):
+    """Alibaba v3 embeddings with isolated credentials and bounded HTTP batches."""
+
+    def __init__(
+        self,
+        *,
+        env: Mapping[str, str] | None = None,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        values = os.environ if env is None else env
+        key = values.get("DASHSCOPE_API_KEY", "")
+        if not key or not all(33 <= ord(char) <= 126 for char in key):
+            raise ValueError("DashScope credentials are missing or malformed.")
+        model = values.get("DASHSCOPE_EMBEDDING_MODEL", "text-embedding-v3")
+        if model != "text-embedding-v3":
+            raise ValueError("DashScope pilot supports only text-embedding-v3.")
+        try:
+            dimensions = int(values.get("DASHSCOPE_EMBEDDING_DIMENSIONS", "1024"))
+        except ValueError as error:
+            raise ValueError("DashScope embedding dimensions must be an integer.") from error
+        if dimensions not in {64, 128, 256, 512, 768, 1024}:
+            raise ValueError("Unsupported DashScope v3 embedding dimensions.")
+        url = values.get("DASHSCOPE_BASE_URL") or (
+            "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
+        try:
+            parsed = urlsplit(url)
+            official_host = parsed.netloc in {
+                "dashscope.aliyuncs.com",
+                "dashscope-intl.aliyuncs.com",
+                "cn-hongkong.dashscope.aliyuncs.com",
+            } or bool(
+                re.fullmatch(
+                    r"[a-zA-Z0-9-]+\.(cn-beijing|ap-southeast-1|cn-hongkong)\.maas\.aliyuncs\.com",
+                    parsed.netloc,
+                )
+            )
+            valid = (
+                url.isascii()
+                and not any(char.isspace() or ord(char) < 33 for char in url)
+                and parsed.scheme == "https"
+                and official_host
+                and parsed.path in {"/compatible-mode/v1", "/compatible-mode/v1/"}
+                and not parsed.query
+                and not parsed.fragment
+            )
+        except ValueError:
+            valid = False
+        if not valid:
+            raise ValueError("DashScope base URL must be an official HTTPS compatible endpoint.")
+        super().__init__(
+            api_key=key, model=model, dimensions=dimensions, base_url=url, transport=transport
+        )
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        vectors: list[list[float]] = []
+        for offset in range(0, len(texts), 10):
+            vectors.extend(super().embed_texts(texts[offset : offset + 10]))
+        return vectors
+
+
 def create_embedding_provider(env: Mapping[str, str] | None = None) -> EmbeddingProvider:
     """Explicit opt-in; the presence of an API key never enables paid indexing."""
     values = os.environ if env is None else env
     backend = values.get("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock").strip().lower()
     if backend == "mock":
         return MockEmbeddingProvider()
+    if backend == "dashscope":
+        return DashScopeEmbeddingProvider(env=values)
     if backend != "openai":
-        raise ValueError("Embedding provider must be mock or openai.")
+        raise ValueError("Embedding provider must be mock or openai or dashscope.")
     key = values.get(OPENAI_API_KEY_ENV, "")
     if not key or not key.isascii() or any(c.isspace() for c in key):
         raise ValueError("OpenAI embedding credentials are missing or malformed.")
@@ -335,7 +400,19 @@ def _embedding_vector_from_item(item: dict[str, Any], *, dimensions: int) -> lis
                 "OpenAI embedding vector values must be numeric.",
                 error_type="openai_embedding_invalid_vector",
             )
-        vector.append(float(value))
+        try:
+            converted = float(value)
+        except OverflowError as error:
+            raise OpenAIEmbeddingError(
+                "OpenAI-compatible embedding values must be finite.",
+                error_type="openai_embedding_invalid_vector",
+            ) from error
+        if not math.isfinite(converted):
+            raise OpenAIEmbeddingError(
+                "OpenAI-compatible embedding values must be finite.",
+                error_type="openai_embedding_invalid_vector",
+            )
+        vector.append(converted)
 
     if len(vector) != dimensions:
         raise OpenAIEmbeddingError(

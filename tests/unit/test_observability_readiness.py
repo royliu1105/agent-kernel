@@ -14,6 +14,53 @@ from sqlalchemy.orm import Session, sessionmaker
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("valid", [True, False])
+async def test_pilot_provider_readiness_is_local_and_keeps_credentials_private(
+    postgres_session_factory: sessionmaker[Session], monkeypatch: pytest.MonkeyPatch, valid: bool
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Readiness must not contact a provider")
+
+    monkeypatch.setattr("httpx.Client.send", forbidden)
+    monkeypatch.setattr("httpx.AsyncClient.send", forbidden)
+    checker = create_readiness_checker(
+        postgres_session_factory,
+        env={
+            "AGENT_KERNEL_EMBEDDING_PROVIDER": "dashscope",
+            "DASHSCOPE_API_KEY": "fixture-embedding" if valid else "",
+            "DEEPSEEK_API_KEY": "fixture-generation",
+            "AGENT_KERNEL_READINESS_DEEPSEEK": "required",
+            "DEEPSEEK_BASE_URL": "https://api.deepseek.com"
+            if valid
+            else "https://SECRET@wrong.test",
+        },
+    )
+    try:
+        result = await checker.check()
+        assert result.status_code == (200 if valid else 503)
+        dependencies = {item.name: item for item in result.dependencies}
+        for name in ("deepseek", "dashscope"):
+            assert dependencies[name].required
+            assert dependencies[name].status == ("ok" if valid else "failed")
+        assert "SECRET" not in json.dumps(result.to_dict())
+        assert "fixture" not in json.dumps(result.to_dict())
+    finally:
+        checker.close()
+
+
+@pytest.mark.parametrize("mode", ["optional", "disabled"])
+def test_selected_dashscope_cannot_disable_required_readiness(mode: str) -> None:
+    with pytest.raises(ValueError, match="must be required"):
+        create_readiness_checker(
+            sessionmaker(),
+            env={
+                "AGENT_KERNEL_EMBEDDING_PROVIDER": "dashscope",
+                "AGENT_KERNEL_READINESS_DASHSCOPE": mode,
+            },
+        )
+
+
+@pytest.mark.asyncio
 async def test_readiness_checks_real_database_and_disabled_dependencies(
     postgres_session_factory: sessionmaker[Session],
 ) -> None:

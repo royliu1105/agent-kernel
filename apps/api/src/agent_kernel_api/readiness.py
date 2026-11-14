@@ -15,6 +15,8 @@ from threading import Lock
 from time import monotonic
 from typing import Any, Literal
 
+from kernel_providers import DeepSeekProvider
+from kernel_rag import create_embedding_provider
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -24,7 +26,9 @@ Probe = Callable[[], object]
 
 @dataclass(frozen=True)
 class DependencyCheck:
-    name: Literal["database", "redis", "s3", "pgvector", "local_storage", "openai"]
+    name: Literal[
+        "database", "redis", "s3", "pgvector", "local_storage", "openai", "deepseek", "dashscope"
+    ]
     mode: Mode
     probe: Probe | None = None
 
@@ -85,7 +89,7 @@ class ReadinessChecker:
             raise ValueError("Readiness timeout/cache outside allowed range.")
         if (
             len({check.name for check in checks}) != len(checks)
-            or len(checks) > 6
+            or len(checks) > 8
             or not any(c.name == "database" and c.mode == "required" for c in checks)
         ):
             raise ValueError("Readiness requires one required database and unique dependencies.")
@@ -205,7 +209,7 @@ def create_readiness_checker(
     embedding_provider = (
         values.get("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock").strip().lower() or "mock"
     )
-    if embedding_provider not in {"mock", "openai"}:
+    if embedding_provider not in {"mock", "openai", "dashscope"}:
         raise ValueError("Unsupported embedding provider.")
     requires_openai = embedding_provider == "openai"
     openai_mode = _mode(
@@ -219,6 +223,16 @@ def create_readiness_checker(
     )
     if requires_openai and openai_mode != "required":
         raise ValueError("OpenAI readiness must be required when OpenAI embeddings are selected.")
+    dashscope_mode = _mode(
+        values, "DASHSCOPE", "required" if embedding_provider == "dashscope" else "disabled"
+    )
+    if embedding_provider == "dashscope" and dashscope_mode != "required":
+        raise ValueError(
+            "DashScope readiness must be required when DashScope embeddings are selected."
+        )
+    deepseek_mode = _mode(
+        values, "DEEPSEEK", "optional" if values.get("DEEPSEEK_API_KEY") else "disabled"
+    )
     bucket = values.get("AGENT_KERNEL_S3_BUCKET", "").strip()
     limiter_enabled = any(
         int(values.get(name, "0")) > 0
@@ -288,6 +302,17 @@ def create_readiness_checker(
             )
         return clients["redis"].ping()
 
+    def deepseek_check() -> None:
+        key = values.get("DEEPSEEK_API_KEY", "")
+        if not key:
+            raise ValueError("Provider credential missing")
+        DeepSeekProvider(
+            api_key=key, base_url=values.get("DEEPSEEK_BASE_URL") or "https://api.deepseek.com"
+        )
+
+    def dashscope_check() -> None:
+        create_embedding_provider({**values, "AGENT_KERNEL_EMBEDDING_PROVIDER": "dashscope"})
+
     def s3_check() -> None:
         if "s3" not in clients:
             boto3 = importlib.import_module("boto3")
@@ -330,6 +355,16 @@ def create_readiness_checker(
             ),
             DependencyCheck("local_storage", "disabled" if uses_s3 else "required", local_check),
             DependencyCheck("openai", openai_mode, openai_check),
+            *(
+                (DependencyCheck("deepseek", deepseek_mode, deepseek_check),)
+                if deepseek_mode != "disabled"
+                else ()
+            ),
+            *(
+                (DependencyCheck("dashscope", dashscope_mode, dashscope_check),)
+                if dashscope_mode != "disabled"
+                else ()
+            ),
         ),
         timeout_seconds=timeout_seconds,
         cache_seconds=cache_seconds,

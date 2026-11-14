@@ -13,11 +13,13 @@ from kernel_providers.base import (
     LLMUsage,
     MessageRole,
 )
+from kernel_providers.deepseek import DeepSeekProvider
 from kernel_providers.mock import MockLLMProvider
 from kernel_providers.openai import OPENAI_API_KEY_ENV, OpenAIProvider, get_openai_api_key
 from kernel_providers.replay import ReplayLLMProvider
 
 __all__ = [
+    "DeepSeekProvider",
     "LLMFinishReason",
     "LLMMessage",
     "LLMProvider",

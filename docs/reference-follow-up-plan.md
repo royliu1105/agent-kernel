@@ -34,18 +34,38 @@ the minimal implementation. CF1 commit/push and CI tracking were explicitly
 authorized and performed; that permission does not include the new CF2 changes.
 Paid execution, active deployment and pilot admission remain excluded.
 
-The latest maintainer instruction authorizes review of the CF2 rehearsal and
+The subsequent maintainer instruction authorized review of the CF2 rehearsal and
 rejection repair, then commit/push and exact-candidate CI tracking once review
 passes. See the [review record](reviews/2026-11-14-approval-rejection-repair.md#pre-commit-review).
 This supersedes only the earlier commit/push exclusion for these changes;
 active Docker updates, historical backfills, paid calls and pilot admission
 remain outside the authorization.
 
+The 2026-11-15 instruction starts PV1 contract preparation only; see the
+[draft record](pilots/pv1-2026-11-15-runbook-assistant.md). It does not authorize
+CF3-CF8, provider compatibility changes, active Docker updates, paid calls,
+user admission or a new commit/push. The resource configuration was inspected
+read-only at the maintainer's request; credentials were not copied or displayed.
+
+The later 2026-11-15 instruction explicitly authorizes the bounded
+[DeepSeek/Alibaba compatibility repair](specs/pilot-provider-compatibility.md),
+tests and docs. This supersedes only the provider-compatibility exclusion above.
+Budget stays USD 10; paid calls, active Docker updates and broader CF work remain
+excluded. Commit/push were excluded at that implementation checkpoint.
+This exception does not close CF1/CF2 or PV1.
+
+The subsequent maintainer request authorizes review of PV1 documentation and
+the compatibility changes, then commit/push and exact-candidate CI tracking
+after the review passes. The [review record](reviews/2026-11-15-pv1-provider-review.md)
+owns that evidence. It does not authorize active Docker updates, paid calls,
+pilot admission or a release.
+
 ## Authority and Relationship to Existing Work
 
 - [PV1-PV6](real-scenario-pilot-plan.md) remains the sole pilot task/status
   ledger, with its frozen scenario, 30-question quality set, authorization,
-  budget, user-observation and go/no-go rules. It remains not started.
+  budget, user-observation and go/no-go rules. PV1 preparation is in progress;
+  PV2-PV6 have not started. Required PV1 decisions remain unresolved.
 - This document alone owns CF1-CF8 statuses. CF1/CF2 are bounded pilot-entry
   follow-ups; CF3-CF8 are deferred/conditional proposals, not a second active
   foundation phase. Link evidence between ledgers; never count one as the other.

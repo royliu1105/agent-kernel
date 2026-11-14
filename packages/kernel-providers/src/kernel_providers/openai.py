@@ -66,24 +66,27 @@ class OpenAIProvider:
         base_url: str = DEFAULT_OPENAI_BASE_URL,
         timeout: float = 30.0,
         transport: httpx.AsyncBaseTransport | None = None,
+        provider_name: str = "openai",
     ) -> None:
         self._api_key = api_key if api_key is not None else get_openai_api_key()
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._transport = transport
+        self._provider_name = provider_name
+        self._display_name = "OpenAI" if provider_name == "openai" else "DeepSeek"
 
     @property
     def name(self) -> str:
-        return "openai"
+        return self._provider_name
 
     async def complete(self, request: LLMRequest) -> LLMResponse:
-        if self._api_key is None:
+        if not self._api_key:
             raise LLMProviderError(
-                f"{OPENAI_API_KEY_ENV} is not configured.",
+                f"{self.name.upper()}_API_KEY is not configured.",
                 error_type="missing_api_key",
             )
 
-        payload = _request_payload(request)
+        payload = _request_payload(request, provider_name=self.name)
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -101,35 +104,41 @@ class OpenAIProvider:
                 response.raise_for_status()
         except httpx.HTTPStatusError as error:
             raise LLMProviderError(
-                f"OpenAI API returned {error.response.status_code}.",
-                error_type=_status_error_type(error.response),
+                f"{self._display_name} API returned {error.response.status_code}.",
+                error_type=(
+                    f"{self.name}_quota_exhausted"
+                    if error.response.status_code == 402
+                    else _status_error_type(error.response).replace("openai_", f"{self.name}_")
+                ),
                 retry_after_seconds=_retry_after_seconds(error.response),
             ) from error
         except httpx.TimeoutException as error:
             raise LLMProviderError(
-                "OpenAI API request timed out.",
+                f"{self._display_name} API request timed out.",
                 error_type="provider_timeout",
             ) from error
         except (httpx.NetworkError, httpx.RemoteProtocolError) as error:
             raise LLMProviderError(
-                "OpenAI API is unavailable.",
+                f"{self._display_name} API is unavailable.",
                 error_type="provider_unavailable",
             ) from error
         except httpx.RequestError as error:
             raise LLMProviderError(
-                "OpenAI API request failed.",
-                error_type="openai_request_error",
+                f"{self._display_name} API request failed.",
+                error_type=f"{self.name}_request_error",
             ) from error
 
         try:
             data = response.json()
         except ValueError as error:
             raise LLMProviderError(
-                "OpenAI API returned invalid JSON.", error_type="openai_invalid_response"
+                f"{self._display_name} API returned invalid JSON.",
+                error_type=f"{self.name}_invalid_response",
             ) from error
         if not isinstance(data, dict):
             raise LLMProviderError(
-                "OpenAI API response must be an object.", error_type="openai_invalid_response"
+                f"{self._display_name} API response must be an object.",
+                error_type=f"{self.name}_invalid_response",
             )
         tool_calls = _extract_tool_calls(data)
         if tool_calls:
@@ -146,10 +155,10 @@ class OpenAIProvider:
         )
 
 
-def _request_payload(request: LLMRequest) -> dict[str, Any]:
+def _request_payload(request: LLMRequest, *, provider_name: str = "openai") -> dict[str, Any]:
     payload: dict[str, Any] = {
         "model": request.model,
-        "input": _input_payload(request.messages),
+        "input": _input_payload(request.messages, provider_name=provider_name),
     }
     if request.temperature != 0.0:
         payload["temperature"] = request.temperature
@@ -162,7 +171,9 @@ def _request_payload(request: LLMRequest) -> dict[str, Any]:
     return payload
 
 
-def _input_payload(messages: tuple[LLMMessage, ...]) -> list[dict[str, object]]:
+def _input_payload(
+    messages: tuple[LLMMessage, ...], *, provider_name: str = "openai"
+) -> list[dict[str, object]]:
     items: list[dict[str, object]] = []
     pending: set[str] = set()
     seen: set[str] = set()
@@ -214,10 +225,10 @@ def _input_payload(messages: tuple[LLMMessage, ...]) -> list[dict[str, object]]:
         if native_output is not None:
             if (
                 message.role is not MessageRole.ASSISTANT
-                or message.metadata.get("provider_name") != "openai"
+                or message.metadata.get("provider_name") != provider_name
             ):
                 raise LLMProviderError(
-                    "OpenAI native history must come from an OpenAI assistant response.",
+                    "Native history must come from the selected provider's assistant response.",
                     error_type="openai_invalid_tool_history",
                 )
             items.extend(_native_output_payload(native_output, tuple(calls)))

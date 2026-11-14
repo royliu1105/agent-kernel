@@ -1,7 +1,11 @@
 # Guided Learning During Pilot Acceptance
 
 Status: **Mechanism documented; CF1/CF2 demonstrations recorded, independent learner
-practice not established; PV1-PV6 sessions not started (2026-11-14)**.
+practice not established; PV1 planning started, PV2-PV6 sessions not started (2026-11-15)**.
+
+The [PV1 draft](pilots/pv1-2026-11-15-runbook-assistant.md) records scenario and
+budget decisions plus pending model/data/participant gates. Choosing an option
+does not establish independent diagnostic or test-design proficiency.
 
 The pre-pilot [CF1 review](reviews/2026-11-14-cf1-memory-boundary.md) records a
 maintainer-requested demonstration of assertions and temporary fixture checks.

@@ -18,6 +18,7 @@ from kernel_rag.embeddings import (
     OPENAI_API_KEY_ENV,
     OPENAI_EMBEDDING_DIMENSIONS_ENV,
     OPENAI_EMBEDDING_MODEL_ENV,
+    DashScopeEmbeddingProvider,
     DocumentIndexingError,
     DocumentIndexingService,
     DocumentNotIndexableError,
@@ -78,6 +79,7 @@ from kernel_rag.retrieval import (
 from kernel_rag.tools import KnowledgeBaseSearchTool, create_rag_tool_registry
 
 __all__ = [
+    "DashScopeEmbeddingProvider",
     "DEFAULT_MAX_OBJECT_BYTES",
     "DEFAULT_OBJECT_STORE_BACKEND",
     "DEFAULT_OBJECT_STORE_ROOT",

@@ -16,7 +16,7 @@ from agent_kernel_worker.main import _create_worker
 from fastapi.testclient import TestClient
 from kernel_core import ApprovalStatus, RiskLevel, RunEventType, RunStatus, ToolCallStatus
 from kernel_identity import PrincipalType, WorkspaceRole
-from kernel_providers import OpenAIProvider
+from kernel_providers import DeepSeekProvider, OpenAIProvider
 from kernel_runtime import ExecutionLimits, RetryPolicy, RunExecutionService
 from kernel_storage import (
     AgentRepository,
@@ -40,8 +40,9 @@ def native_wire_url(postgres_engine: Engine) -> Iterator[URL]:
     yield postgres_engine.url
 
 
+@pytest.mark.parametrize("provider_name", ["openai", "deepseek"])
 def test_worker_native_approval_resumes_through_default_api_runner_with_scope_checks(
-    native_wire_url: URL, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    native_wire_url: URL, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, provider_name: str
 ) -> None:
     specifications = [
         ("entry_read_one", "read-one", False),
@@ -64,7 +65,8 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
         for round_number in range(2)
     ]
     native_batches = [
-        _native_batch(index + 1, calls, "encrypted") for index, calls in enumerate(native_calls)
+        _native_batch(index + 1, calls, "plain" if provider_name == "deepseek" else "encrypted")
+        for index, calls in enumerate(native_calls)
     ]
     requests: list[dict[str, Any]] = []
     providers: list[OpenAIProvider] = []
@@ -74,7 +76,12 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert str(request.url) == "https://entry-wire.invalid/v1/responses"
+        endpoint = (
+            "https://api.deepseek.com/responses"
+            if provider_name == "deepseek"
+            else "https://entry-wire.invalid/v1/responses"
+        )
+        assert str(request.url) == endpoint
         assert request.headers["authorization"] == "Bearer synthetic-entry-wire-key"
         payload = json.loads(request.content)
         requests.append(payload)
@@ -137,10 +144,18 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
         )
 
     def offline_openai_provider() -> OpenAIProvider:
-        provider = OpenAIProvider(
-            api_key="synthetic-entry-wire-key",
-            base_url="https://entry-wire.invalid/v1",
-            transport=httpx.MockTransport(handler),
+        provider = (
+            DeepSeekProvider(
+                api_key="synthetic-entry-wire-key",
+                base_url="https://api.deepseek.com",
+                transport=httpx.MockTransport(handler),
+            )
+            if provider_name == "deepseek"
+            else OpenAIProvider(
+                api_key="synthetic-entry-wire-key",
+                base_url="https://entry-wire.invalid/v1",
+                transport=httpx.MockTransport(handler),
+            )
         )
         providers.append(provider)
         return provider
@@ -149,7 +164,11 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
         return registry
 
     # Keep the production router, runner, permission checks and repositories intact.
-    monkeypatch.setattr("kernel_runtime.router.OpenAIProvider", offline_openai_provider)
+    monkeypatch.setattr(
+        "kernel_runtime.router."
+        + ("DeepSeekProvider" if provider_name == "deepseek" else "OpenAIProvider"),
+        offline_openai_provider,
+    )
     monkeypatch.setattr("agent_kernel_api.main.create_rag_tool_registry", shared_registry)
     monkeypatch.setenv("AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG", "")
     monkeypatch.setenv("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock")
@@ -200,7 +219,7 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
                 json={
                     "input": {
                         "task": "Finish the API-reviewed batches.",
-                        "model": "openai:entry-model",
+                        "model": f"{provider_name}:entry-model",
                     }
                 },
                 headers=headers["a"],
@@ -313,6 +332,7 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
             calls = ToolCallRepository(session).list_for_run(run_id)
             assert len(calls) == 4
             assert all(call.status is ToolCallStatus.SUCCEEDED for call in calls)
+            assert all(call.provider_name == provider_name for call in calls)
             assert [call.raw_provider_payload for call in calls] == [
                 call for native_batch in native_calls for call in native_batch
             ]
@@ -387,7 +407,9 @@ def _native_batch(
         "type": "reasoning",
         "id": f"rs_round_{round_number}",
         "status": "completed",
-        "summary": [{"type": "summary_text", "text": f"Synthetic summary {round_number}."}],
+        "summary": []
+        if reasoning_mode == "plain"
+        else [{"type": "summary_text", "text": f"Synthetic summary {round_number}."}],
     }
     if reasoning_mode == "encrypted":
         reasoning["encrypted_content"] = f"synthetic-opaque-content-{round_number}"

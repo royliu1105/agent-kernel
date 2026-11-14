@@ -281,8 +281,10 @@ the entire repository's format check is green.
 ## Remaining Gates and Learning
 
 CF2 is **not closed**. Authenticated Web is still missing, and the real pilot
-profile/corpus/provider/budget and risk disposition remain unaccepted. PV1-PV6
-have not started. Do not reuse the offline fixture as paid-model or user evidence.
+profile/corpus/provider/budget and risk disposition remain unaccepted. At this
+2026-11-14 checkpoint, PV1-PV6 had not started. The subsequent
+[PV1 draft](../pilots/pv1-2026-11-15-runbook-assistant.md) records planning only,
+not acceptance of this gate. Do not reuse the offline fixture as paid-model or user evidence.
 
 **Observed residual issue:** rejection terminates the Run but leaves its protected
 tool row at `waiting_approval` with no result. This did not execute the tool or

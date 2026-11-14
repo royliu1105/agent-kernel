@@ -7,8 +7,9 @@ is tracked in O1-O5. Logs, trace backend and SMTP delivery have
 separate implementation/local/external gates; real email setup is not available.
 
 Use the [Real-Scenario Acceptance and Controlled Pilot Plan](docs/real-scenario-pilot-plan.md)
-for subsequent pilot work and status. PV1-PV6 are planned, not started. Other foundation
-feature expansion is frozen; prioritize scoped safety/effectiveness evidence,
+for subsequent pilot work and status. PV1 contract preparation is in progress;
+PV2-PV6 have not started. Other foundation feature expansion is frozen;
+prioritize scoped safety/effectiveness evidence,
 operational drills and actual user feedback, not new infrastructure.
 
 The [reference comparison](docs/reference-project-comparison.md) and

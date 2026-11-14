@@ -12,7 +12,8 @@ per-capability local verification and remaining gates, not a blanket completion 
 External mailbox delivery is blocked pending setup, not passed by local tests.
 The subsequent user-facing stage is the
 [Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md).
-PV1-PV6 are planned, not started; foundation feature expansion is frozen.
+PV1 contract preparation is in progress; PV2-PV6 have not started.
+Foundation feature expansion is frozen; no live/user-pilot result exists.
 That plan owns pilot priorities, tasks, scoring and go/no-go criteria.
 Use the [pilot learning guide](pilot-learning-guide.md) alongside it: explain
 tradeoffs, investigate failures and verify tests with the maintainer, recording
@@ -48,6 +49,9 @@ Current hardening operator guides:
 - [Observability Completion Plan](observability-completion-plan.md)
 - [Observability Backends and SMTP](observability-backends.md)
 - [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
+- [PV1 Runbook Assistant Contract Draft](pilots/pv1-2026-11-15-runbook-assistant.md)
+- [DeepSeek and Alibaba Embedding Pilot Profile](provider-compatibility.md)
+- [Pilot Provider Compatibility Contract](specs/pilot-provider-compatibility.md)
 - [Guided Learning During Pilot Acceptance](pilot-learning-guide.md)
 - [Reference Project Comparison](reference-project-comparison.md)
 - [Reference-Informed Follow-Up Plan](reference-follow-up-plan.md)

@@ -189,10 +189,18 @@ them through platform secret storage.
 | Variable | Components | Default | Production | Secret | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `AGENT_KERNEL_VECTOR_STORE` | API, worker | `auto` | `auto` or `pgvector` | No | Accepted values: `auto`, `json`, `pgvector`. |
-| `AGENT_KERNEL_EMBEDDING_PROVIDER` | API, worker | `mock` | Explicit `openai` for real embeddings | No | Same selection for indexing, retrieval and `kb_search`; an API key alone never enables paid embeddings. |
+| `AGENT_KERNEL_EMBEDDING_PROVIDER` | API, worker | `mock` | Explicit `openai` or `dashscope` for real embeddings | No | Same selection for indexing, retrieval and `kb_search`; an API key alone never enables paid embeddings. |
 | `OPENAI_API_KEY` | API, worker, CLI workflows | Empty | Required for `openai:*` models or OpenAI embeddings | Yes | Mock and replay providers do not require this. |
 | `OPENAI_EMBEDDING_MODEL` | API, worker | `text-embedding-3-small` | Pin per environment | No | Keep indexing and retrieval on the same model. |
 | `OPENAI_EMBEDDING_DIMENSIONS` | API, worker | `1536` | Pin per environment | No | Must match the embedding model and pgvector index strategy. |
+| `DEEPSEEK_API_KEY` | API, worker | Empty | Required for `deepseek:*` | Yes | Never falls back to `OPENAI_API_KEY`. |
+| `DEEPSEEK_BASE_URL` | API, worker | `https://api.deepseek.com` | Official HTTPS endpoint only | No | Optional `/v1`; Responses protocol, no redirects or arbitrary hosts. |
+| `DASHSCOPE_API_KEY` | API, worker | Empty | Required when `dashscope` is selected | Yes | Independent generation/embedding credentials; no fallback. |
+| `DASHSCOPE_BASE_URL` | API, worker | `https://dashscope.aliyuncs.com/compatible-mode/v1` | Official compatible endpoint matching account region | No | See [pilot compatibility](provider-compatibility.md) for allowed hosts/paths. |
+| `DASHSCOPE_EMBEDDING_MODEL` | API, worker | `text-embedding-v3` | Pin per environment | No | Only v3 in the bounded pilot profile. |
+| `DASHSCOPE_EMBEDDING_DIMENSIONS` | API, worker | `1024` | Same for index/query | No | Accepted: 64, 128, 256, 512, 768, 1024. No automatic index migration. |
+| `AGENT_KERNEL_READINESS_DEEPSEEK` | API | Optional with key, otherwise disabled | `required` for admitted DeepSeek-only deployments | No | Configuration-only check; no model or balance request. |
+| `AGENT_KERNEL_READINESS_DASHSCOPE` | API | Required when selected, otherwise disabled | Required for DashScope embeddings | No | Cannot disable the selected backend's check; no paid request. |
 
 Vector store behavior:
 
@@ -200,7 +208,7 @@ Vector store behavior:
 - `json` forces portable JSON-vector similarity.
 - `pgvector` requires PostgreSQL and the pgvector migration.
 
-If `OPENAI_EMBEDDING_DIMENSIONS` changes from `1536`, add and validate a
+If the embedding dimensions differ from `1536`, add and validate a
 matching pgvector expression index before treating the path as
 performance-ready.
 
@@ -301,7 +309,8 @@ contracts:
 - OpenTelemetry SDK installation strategy. The environment variables are
   stable, but packaging optional SDK dependencies remains deployment-specific.
 - Web Workbench feature flags, if added later.
-- Provider-specific base URLs beyond currently documented OpenAI defaults.
+- Arbitrary provider gateways/base URLs beyond the named, validated
+  [DeepSeek/DashScope profile](provider-compatibility.md).
 
 ## Internal or Tooling Variables
 

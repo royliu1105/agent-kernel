@@ -72,6 +72,10 @@ implicitly authorized. Mailpit captures SMTP messages locally. Real SMTP and
 provider activation require a deliberate configuration/acceptance step, not a
 host environment variable accidentally leaking into this stack.
 
+The [DeepSeek/DashScope compatibility profile](provider-compatibility.md) does not
+change this default: the local overlay also clears `DEEPSEEK_API_KEY` and
+`DASHSCOPE_API_KEY`. Its isolated pilot activation requires separate approval.
+
 ## Data and Migration Boundary
 
 PostgreSQL is the active relational/pgvector store. Redis uses a named volume
