@@ -510,6 +510,43 @@ def test_pv1_github_candidate_preserves_access_and_evidence_gates() -> None:
         assert _normalized(phrase) in section
 
 
+def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -> None:
+    filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
+    authorization = _section(filename, "Authorization and Candidate")
+    for phrase in (
+        "review instruction authorizes scoped commit/push after review passes",
+        "submission ci tracking for the exact submitted sha only",
+        "do not create an environment",
+        "invoke the pilot github query",
+        "provider transmission remains pending",
+        "usd 0",
+    ):
+        assert phrase in authorization
+    decisions = _section(filename, "Maintainer Confirmation Sheet")
+    for phrase in (
+        "maintainer accepted scope/budget owner, operator/incident contact and domain reviewer",
+        "p1/p2 and specific dates explicitly deferred",
+        "usd 0.25/task and usd 8 admission stop accepted",
+        "run 43634747295 / pinned sha",
+        "run_attempt, actual response review",
+        "full authenticated web acceptance incomplete",
+        "pv1 cannot pass with unresolved required fields",
+        "effective-request verification method",
+        "do not require pv2 execution to sign off pv1",
+    ):
+        assert phrase in decisions
+    prompt = _section(filename, "Accepted Task Prompt")
+    assert "not installed in a running environment or sent to a provider" in prompt
+    assert "file hash alone does not prove the runtime used it" in prompt
+    remaining = _section(filename, "Remaining Items by Priority")
+    assert "external transmission remains pending" in remaining
+    assert "each execution permission must be requested separately" in remaining
+    rehearsal = _section(
+        "real-scenario-pilot-plan.md", "PV2: Rehearse the Existing Workflow Without Paid Calls"
+    )
+    assert "not github server logs or global exactly-once" in rehearsal
+
+
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:
     evidence = _section("real-scenario-pilot-plan.md", "Authority, Owners and Evidence")
     for anchor in ("fixture", "live", "human_pilot", "not live proof", "no secrets"):

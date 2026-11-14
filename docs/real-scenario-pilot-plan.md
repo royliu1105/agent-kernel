@@ -157,7 +157,7 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; content frozen, CI lookup candidate selected, remaining decisions pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
+| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; design decisions consolidated, content/task prompt frozen; remaining permission, configuration and participant gates pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
 | PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
 | PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
@@ -171,6 +171,16 @@ after a fixed number of days.
 
 ### PV1: Freeze the Pilot Contract
 
+Confirmed design now includes human owners, budget/stop rules, bounded CI dispatch
+evidence, fixed run/SHA and anonymous access scope, isolated API/CLI-first setup,
+execution/retrieval/memory limits, thresholds, retention and the versioned task
+prompt. See the contract's confirmation sheet for the authoritative decisions.
+External transmission remains pending; spending authorization remains USD 0.
+No pilot environment or pilot API call is authorized. Scoped submission CI
+tracking is separate, as recorded in the contract. Remaining composite checklist items
+must not be ticked merely because their design was accepted; effective config,
+run_attempt/response review, participants/dates and full sign-off are still open.
+
 - [ ] Name owners, participants, environment, candidate SHA and authorized access.
 - [ ] Select and permission-check the corpus and fixed read-only tool target.
 - [ ] Freeze model/embedding IDs, prompts, retrieval settings and execution limits.
@@ -178,9 +188,11 @@ after a fixed number of days.
   assumptions, plus the method for verifying effective prompt/config hashes.
 - [ ] Approve generation, embedding and retry budgets, provider data handling,
   retention, stop controls and incident contact using the rules below.
-- [ ] Prepare 30 versioned questions with expected facts/source passages and
+- [x] Prepare 30 versioned questions with expected facts/source passages and
   reviewer scoring: 18 answerable, 6 unsupported/ambiguous, 3 document prompt
   injection cases and 3 cross-workspace/out-of-scope requests.
+  Evidence: frozen content baseline in the contract; maintainer is the confirmed
+  domain reviewer. This checks preparation only; all 30 cases remain not_run.
 - [ ] Freeze success/latency/cost thresholds, recovery time/data-loss targets
   (RTO/RPO) and the permitted pilot duration.
 
@@ -201,7 +213,10 @@ subset may be reported separately but cannot claim the full approval track passe
 - [ ] Rehearse approve, reject, repeated decision/resume, new-executor resume,
   concurrent resume and recovery with existing fixtures and disposable data.
 - [ ] Verify zero lookup invocation before approval or after rejection, and one
-  invocation after approved resume using downstream counters and run records.
+  invocation after approved resume using independent invocation evidence and run
+  records. For the selected GitHub candidate, the maintainer accepted the bounded
+  HTTP dispatch observer contract, not GitHub server logs or global exactly-once;
+  see [the evidence matrix](pilots/pv1-2026-11-15-runbook-assistant.md#independent-invocation-evidence).
 - [ ] Demonstrate stopping new submissions at the API entry, stopping Workers
   and revoking scoped access using existing operator controls. Preserve queued
   records; no new queue-pause API is required. Record what happens to already

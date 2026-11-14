@@ -9,6 +9,24 @@ ROOT = Path(__file__).resolve().parents[2]
 PACK = ROOT / "docs/pilots/pv1-materials"
 
 
+def test_pv1_accepted_prompt_is_pinned_separately_from_corpus() -> None:
+    version = "pv1-runbook-assistant-v1"
+    prompt = ROOT / f"docs/pilots/prompts/{version}.txt"
+    raw = prompt.read_bytes()
+    expected_hash = "bf6c5329a3e3bfa8587947b53a904fe4c3193444ad1f24a947305f163b1b091b"
+    assert hashlib.sha256(raw).hexdigest() == expected_hash
+    assert not raw.startswith(b"\xef\xbb\xbf") and b"\r" not in raw
+    assert raw.endswith(b"\n") and not raw.endswith(b"\n\n")
+    assert re.findall(r"^([1-6])\. ", raw.decode("utf-8"), re.MULTILINE) == list("123456")
+    contract = (ROOT / "docs/pilots/pv1-2026-11-15-runbook-assistant.md").read_text()
+    assert expected_hash in contract and f"prompts/{version}.txt" in contract
+    manifest = json.loads((PACK / "manifest.json").read_text())
+    assert all(
+        (PACK / item["path"]).resolve() != prompt.resolve()
+        for item in manifest["corpus"] + manifest["artifacts"]
+    )
+
+
 def test_pv1_frozen_content_manifest_is_unchanged() -> None:
     # Preserve preparation labels/bytes; the contract records the later acceptance.
     frozen_hash = "1e82f556cf3972e80881d66f254deeb2ad3db8758b6d79b4a3abca0082b15224"
