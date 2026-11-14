@@ -7,7 +7,8 @@ centralized logs, a trace backend and alert notification delivery. It is a narro
 exception to the pilot's foundation-feature freeze, not a new Day 1-90 schedule.
 PV1-PV6 remain planned and unexecuted. Historical R1-R10/N1-N5 acceptance did not
 include these backend/delivery guarantees and is not evidence for this work.
-This plan alone authorizes no paid model call, external message, tag or release.
+No commit, push, paid model call, external message, tag or release is implied
+by this plan alone; each requires the corresponding explicit authorization.
 The later baseline/CF1 commit, push and CI tracking were explicitly authorized;
 their exact-candidate evidence is recorded below.
 

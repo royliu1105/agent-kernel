@@ -141,6 +141,22 @@ start times still matched the pre-review check. No active Docker rebuild, restar
 migration or data cleanup was performed. The post-CI documentation commit records
 this candidate's results; it does not retroactively change the tested SHA.
 
+### Documentation Follow-Up Failure
+
+The subsequent documentation-only revision `30b75a1` failed the Python job in
+[run 43591421268](https://github.com/royliu1105/agent-kernel/actions/runs/43591421268):
+`test_completion_ledger_does_not_accept_external_email` expected the plan's
+explicit no-implied-authorization sentence. That revision changed the wording
+while recording the later commit/push approval. The failure was reproduced
+locally; it was not dismissed as a flaky test or an infrastructure incident.
+
+The correction preserves both facts: the plan alone implies no execution
+authorization, while the subsequent baseline/CF1 commit/push was explicitly
+approved. No assertion was removed and no runtime code changed. Expanded local
+documentation, observability-template/file-logging and local-stack checks passed
+**95 tests**. The failed revision is not accepted as a green branch head; the
+corrected follow-up must pass its own CI before handoff.
+
 ## Pre-Commit Code Review
 
 One P2 finding was reproduced and fixed: rejecting non-finite numbers or invalid
