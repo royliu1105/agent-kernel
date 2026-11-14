@@ -36,6 +36,20 @@ def test_pv1_frozen_content_manifest_is_unchanged() -> None:
     assert "20b8dc8a41bc3ada5386566fcc346392fd599324" in contract
 
 
+def test_pv1_offline_inventory_is_file_size_not_billed_tokens() -> None:
+    manifest = json.loads((PACK / "manifest.json").read_text())
+    raw = [(PACK / item["path"]).read_bytes() for item in manifest["corpus"]]
+    assert len(raw) == 12
+    assert sum(len(value) for value in raw) == 14574
+    assert sum(len(value.decode("utf-8")) for value in raw) == 6818
+    questions = json.loads((PACK / "questions.json").read_text())
+    assert sum(len(case["question"]) for case in questions["cases"]) == 603
+    contract = (ROOT / "docs/pilots/pv1-2026-11-15-runbook-assistant.md").read_text()
+    assert "12 files, 14574 bytes, 6818 Unicode code points" in contract
+    assert "30 question strings contain 603 Unicode code points" in contract
+    assert "not provider tokens" in contract
+
+
 def test_pv1_manifest_integrity_and_source_ranges() -> None:
     manifest = json.loads((PACK / "manifest.json").read_text())
     assert manifest["status"] == "prepared_not_approved"

@@ -176,6 +176,10 @@ evidence, fixed run/SHA and anonymous access scope, isolated API/CLI-first setup
 execution/retrieval/memory limits, thresholds, retention and the versioned task
 prompt. See the contract's confirmation sheet for the authoritative decisions.
 External transmission remains pending; spending authorization remains USD 0.
+The maintainer requires no training use of API inputs/outputs. DeepSeek's
+account-specific commitment is unverified, with official reply pending and
+inquiry submission not confirmed. This blocks affected provider transmission;
+offline configuration/budget preparation may continue without passing PV1.
 No pilot environment or pilot API call is authorized. Scoped submission CI
 tracking is separate, as recorded in the contract. Remaining composite checklist items
 must not be ticked merely because their design was accepted; effective config,

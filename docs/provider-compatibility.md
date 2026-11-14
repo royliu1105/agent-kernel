@@ -8,6 +8,12 @@ See the [scoped contract](specs/pilot-provider-compatibility.md) and
 implementation SHA, not a deployed or admitted pilot. The total planning ceiling
 is USD 10. This work authorizes no spending, active-stack update or credential export.
 
+PV1 now requires no training use of API inputs/outputs. DeepSeek's applicable
+account commitment is unverified; public documentation and offline compatibility
+tests are not that commitment. See the
+[provider evidence gate](pilots/pv1-2026-11-15-runbook-assistant.md#no-training-requirement-and-provider-evidence).
+Provider transmission remains unapproved, including for a compatibility smoke.
+
 ## Configuration Contract
 
 The generation route is `deepseek:deepseek-chat`. The prefix selects DeepSeek,

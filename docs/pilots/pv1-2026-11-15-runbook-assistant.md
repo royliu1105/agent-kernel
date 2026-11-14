@@ -1,17 +1,25 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-7; confirmed design consolidated; content and task prompt
-frozen; execution and provider transmission not authorized; PV1 in progress**.
+Record revision: **draft-8; no-training requirement accepted; DeepSeek account
+commitment unverified; content/task prompt unchanged; PV1 in progress**.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
 This record separates accepted design, remaining proposals and evidence; it is
 not a second task ledger.
 
 ## Authorization and Candidate
 
-The consolidation instruction authorized documentation and offline integrity
-checks only. The subsequent review instruction authorizes scoped commit/push
-after review passes and submission CI tracking for the exact submitted SHA only.
+The draft-8 preparation instruction authorized documentation and offline work only.
+The current review instruction authorizes scoped commit/push after review passes
+and CI tracking for this submission only. No pilot or model API calls, local
+environment creation or current Docker updates are authorized. External
+transmission permission remains pending; spending authorization remains USD 0.
+Existing remote CI disposable test services are not a pilot environment.
+See the [no-training/offline preparation review](../reviews/2026-11-15-pv1-no-training-review.md).
+
+The earlier consolidation instruction authorized documentation and offline checks.
+The subsequent review instruction authorized scoped commit/push after review
+passed and submission CI tracking for the exact submitted SHA only.
 Do not create an environment, invoke the pilot GitHub query, update current Docker,
 ingest data or call a paid model. Provider transmission remains pending and current
 spending authorization is **USD 0**. Submission CI management is not pilot-tool
@@ -250,6 +258,48 @@ Approve document chunks, questions, memory and tool outputs before transmission;
 local deletion does not delete provider records. Sensitive/zero-retention-required
 data is not admitted under this draft.
 
+## No-Training Requirement and Provider Evidence
+
+Maintainer decision (2026-11-15): **API inputs and outputs must not be used for
+model training**. This applies to generation and embeddings, including supplied
+document chunks, questions, allowed memory/context and tool results. Public or
+synthetic content does not waive this requirement. Until an applicable commitment
+is verified, affected provider transmission is blocked. Verification alone does
+not grant external transmission permission or spending authorization.
+
+The maintainer reports logging into the DeepSeek Open Platform but finding no
+privacy/data setting. This is not proof of an opt-out, a no-training agreement or
+zero retention. Chat-product settings are not API-account evidence.
+
+| Provider | Evidence and status | Required next evidence |
+| --- | --- | --- |
+| DeepSeek | Account-specific no-training commitment unverified; official reply pending, not received | Applicable official agreement or written confirmation tied to this API account, covered API Keys/Responses data and effective date/status |
+| Alibaba DashScope | Public no-training statement identified; applicability to this account/service and retention terms not yet signed off | Applicable terms for the selected Beijing embedding API and any exceptions; separate retention review |
+
+Public-source review from the preceding preparation step, not a new API check:
+[DeepSeek Open Platform privacy policy](https://cdn.deepseek.com/policies/zh-CN/deepseek-open-platform-privacy-policy.html)
+(effective 2026-11-11), section VII, allows training/improvement use of processed
+inputs/outputs absent a different written agreement. The
+[Alibaba privacy notice](https://help.aliyun.com/zh/model-studio/privacy-notice)
+states no model training use but also describes storage of invocation data.
+These source summaries are not account-specific agreements or legal sign-off.
+
+The maintainer may ask through Open Platform Help/Feedback or the policy's
+privacy@deepseek.com contact. Inquiry text has been supplied in the conversation;
+**submission not confirmed**, no ticket/reference or official response recorded.
+Do not claim that a support case has been opened or send one automatically.
+Keep account identifiers and full correspondence private; public evidence should
+contain only a sanitized disposition/reference. Never attach keys or pilot data.
+
+Before accepting a response, verify its official origin, account applicability,
+covered inputs/outputs/endpoints/keys, effective date and any activation steps.
+Ask separately about evaluation, human review, service improvement, retention
+periods and deletion; no-training is not zero retention. Encryption, de-identification,
+generic privacy assurances or silence do not satisfy the no-training gate.
+If unavailable or ambiguous, keep the gate blocked and request a maintainer
+decision; do not silently switch providers, weaken the requirement or spend.
+Final provider transmission permission remains pending even after this review.
+
 ## Proposed Configuration and Provenance
 
 | Setting | Draft value / boundary |
@@ -278,6 +328,53 @@ PV2 must capture actual initial/resumed requests, tool schemas, history, effecti
 API/Worker settings, image/lock/config hashes and requested/returned model IDs.
 Provider-default settings, including omitted temperature/reasoning fields, must
 be recorded rather than pretending the adapter configured them.
+
+### Offline Configuration and Budget Preparation
+
+Prepared by source/file inspection only; no profile, environment, credentials,
+database, model request or ingestion was created. These are implementation
+mappings for already accepted limits, not a new deployment authorization.
+
+| Existing API/Worker environment key | Accepted pilot value | Source default |
+| --- | --- | --- |
+| AGENT_KERNEL_MAX_MODEL_CALLS | 6 | 8 |
+| AGENT_KERNEL_MAX_TOOL_CALLS | 8 | 16 |
+| AGENT_KERNEL_MAX_ACTIVE_SECONDS | 120 | 300 |
+| AGENT_KERNEL_MAX_TOTAL_TOKENS | 32000 | 64000 |
+| AGENT_KERNEL_MAX_OUTPUT_TOKENS | 2048 | 4096 |
+| AGENT_KERNEL_MAX_HISTORY_BYTES | 262144 | 1048576 |
+
+Source: [ExecutionLimits](../../packages/kernel-runtime/src/kernel_runtime/native_state.py)
+and the API/Worker environment blocks in [Compose](../../docker-compose.yml).
+The source defaults differ from the pilot values; a future authorized isolated
+override must explicitly bind both services and PV2 must check effective settings
+and resumed counters. This is not a read of current Docker configuration.
+`RetryPolicy` in [execution.py](../../packages/kernel-runtime/src/kernel_runtime/execution.py)
+defaults to two attempts; the GitHub tool still requires retry_safe=false.
+Do not invent an environment variable for that policy or treat estimated-cost
+limits as provider billing enforcement. No code/configuration change is made here.
+
+Offline inventory of the frozen files (whole UTF-8 corpus files, before parsing,
+chunk overlap or metadata): **12 files, 14574 bytes, 6818 Unicode code points**.
+The **30 question strings contain 603 Unicode code points** in total, excluding
+JSON metadata and gold answers. These counts are not provider tokens, chunk
+counts, request counts or a cost forecast. Parsing/overlap, repeated retrieval,
+history and retries change what is billed. Gold answers never enter model input.
+
+Budget worksheet to complete before requesting spending:
+
+| Component | Basis to record | Current state |
+| --- | --- | --- |
+| Corpus indexing | Actual admitted chunks/token estimate, indexing attempts and embedding tariff | File inventory prepared; no index or token measurement |
+| Query embeddings | All retrieval requests and permitted retries, including user tasks | Allocation/usage unknown; do not infer 60 queries from 60 scored attempts |
+| Generation | Requested/returned model, input/output/reasoning/cache billing rules and all rounds | deepseek-chat availability and applicable tariff unresolved; no silent alias change |
+| Conversion/reserve | Account billing currency, dated USD conversion, conservative in-flight reserve | Pending; no invented exchange rate, free quota or hard billing cap |
+| Batch allocation | 60 scored attempts, approval/recovery work, at least 20 human tasks and permitted reruns within USD 10 | Not yet demonstrated feasible; first USD 2 batch and USD 0.25/task remain ceilings, not spending permission |
+
+Use input/output billable tokens times the applicable tariffs plus embedding and
+other authorized charges; include failed requests/retries where billed. Provider
+usage definitions must be confirmed before summing fields, to avoid counting
+reasoning tokens twice. No provider-price assumption substitutes for unknown usage.
 
 ## Accepted Task Prompt
 
@@ -577,7 +674,7 @@ out of public evidence. Credentials must later go into ignored private files.
 | ID | Area | Confirmed / remaining input |
 | --- | --- | --- |
 | Q1 | Scenario and sources | Maintainer accepted current 12 summaries and 30 answers; immutable content baseline pinned above. Provider transmission and live scoring are not approved by this freeze |
-| Q2 | Data permission and retention | Private raw evidence, sanitized publication and 30 days after closure accepted; exact dates and provider terms/transmission permission pending, no deletion authorized |
+| Q2 | Data permission and retention | No-training requirement accepted for API inputs/outputs; DeepSeek account commitment unverified, official reply pending (inquiry submission not confirmed). Private evidence/sanitized publication/30-day retention accepted; account terms, exact dates and external transmission permission pending |
 | Q3 | Model and account | Maintainer confirms ownership of both accounts/reference keys and Alibaba North China 2 (Beijing); credential validity, entitlement, model availability and live continuation remain unverified |
 | Q4 | Budget | USD 10 total, USD 2 initial batch within total, USD 0.25/task and USD 8 admission stop accepted; actual prices/conversion, allocation, billing controls/residual risk pending; spending authorization USD 0 |
 | Q5 | Human roles and window | Maintainer accepted scope/budget owner, operator/incident contact and domain reviewer roles; P1/P2 and specific dates explicitly deferred; private operational contact channel and derived deletion date not yet recorded |
@@ -601,7 +698,9 @@ claim that a frozen specification already verifies effective runtime behavior.
 
 1. **Permission boundary:** external transmission remains pending for corpus,
    questions, allowed memory and the full bounded tool payload. Review provider
-   terms and actual payload before final transmission approval. No GitHub/API,
+   terms, applicable no-training commitments and actual payload before final
+   transmission approval. DeepSeek official reply/account commitment remains
+   unverified; lack of a settings toggle is not approval. No GitHub/API,
    environment creation or paid-call authorization has been granted now.
 2. **Rehearsal prerequisites:** confirm run_attempt and exact tool timeout/API
    version; freeze candidate/configuration and scoped identities. Separately
@@ -626,6 +725,17 @@ features or an expanded schedule. Each execution permission must be requested
 separately; accepting this document does not start the next phase automatically.
 
 ## Learning and Preparation Evidence
+
+Draft-8 offline preparation (2026-11-15): **94 passed** across the same materials
+and document consistency suites, with provider key/test database variables unset
+and live smoke disabled. Added guards for the no-training gate, unverified
+official commitment, unchanged transmission prohibition and reproducible file
+inventory. Ruff passed; mypy passed for 238 source files. All 16 frozen material
+files still match the baseline bytes; the accepted prompt hash is unchanged.
+Source inspection mapped the six limits to existing API/Worker configuration;
+it did not inspect or modify the running environment. No API call, provider
+request, support submission, environment creation, Docker operation, ingestion,
+commit or push was performed. No PV1-PV6 acceptance gate was newly passed.
 
 Draft-7 consolidation verification (2026-11-15): **92 passed** across
 `tests/unit/test_pv1_materials.py` and `tests/unit/test_docs_consistency.py`, with

@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 import pytest
+from kernel_runtime.native_state import ExecutionLimits
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DOCS_ROOT = REPO_ROOT / "docs"
@@ -514,7 +515,8 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
     authorization = _section(filename, "Authorization and Candidate")
     for phrase in (
-        "review instruction authorizes scoped commit/push after review passes",
+        "current review instruction authorizes scoped commit/push after review passes",
+        "ci tracking for this submission only",
         "submission ci tracking for the exact submitted sha only",
         "do not create an environment",
         "invoke the pilot github query",
@@ -545,6 +547,51 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
         "real-scenario-pilot-plan.md", "PV2: Rehearse the Existing Workflow Without Paid Calls"
     )
     assert "not github server logs or global exactly-once" in rehearsal
+
+
+def test_pv1_no_training_gate_is_unverified_and_not_transmission_permission() -> None:
+    filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
+    privacy = _section(filename, "No-Training Requirement and Provider Evidence")
+    for phrase in (
+        "api inputs and outputs must not be used for model training",
+        "public or synthetic content does not waive this requirement",
+        "account-specific no-training commitment unverified",
+        "submission not confirmed",
+        "no-training is not zero retention",
+        "final provider transmission permission remains pending",
+    ):
+        assert _normalized(phrase) in privacy
+    for name in ("real-scenario-pilot-plan.md", "provider-compatibility.md"):
+        content = _normalized((DOCS_ROOT / name).read_text(encoding="utf-8"))
+        assert "no training use of api inputs/outputs" in content
+        assert "unverified" in content
+    preparation = _section(filename, "Offline Configuration and Budget Preparation")
+    assert "not a new deployment authorization" in preparation
+    assert "source defaults differ from the pilot values" in preparation
+    assert "not yet demonstrated feasible" in preparation
+    assert "no silent alias change" in preparation
+
+
+def test_pv1_limit_table_matches_offline_configuration_parser() -> None:
+    content = (DOCS_ROOT / "pilots/pv1-2026-11-15-runbook-assistant.md").read_text()
+    rows = re.findall(r"^\| (AGENT_KERNEL_MAX_\w+) \| (\d+) \| (\d+) \|$", content, re.MULTILINE)
+    expected = {
+        "AGENT_KERNEL_MAX_MODEL_CALLS": "6",
+        "AGENT_KERNEL_MAX_TOOL_CALLS": "8",
+        "AGENT_KERNEL_MAX_ACTIVE_SECONDS": "120",
+        "AGENT_KERNEL_MAX_TOTAL_TOKENS": "32000",
+        "AGENT_KERNEL_MAX_OUTPUT_TOKENS": "2048",
+        "AGENT_KERNEL_MAX_HISTORY_BYTES": "262144",
+    }
+    assert len(rows) == len(expected)
+    assert {key: value for key, value, _ in rows} == expected
+    # Explicit maps avoid reading host configuration or configuring a service.
+    defaults = ExecutionLimits.from_env({}).model_dump()
+    pilot = ExecutionLimits.from_env(expected).model_dump()
+    for key, value, default in rows:
+        field = key.removeprefix("AGENT_KERNEL_").lower()
+        assert defaults[field] == int(default)
+        assert pilot[field] == int(value)
 
 
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:
