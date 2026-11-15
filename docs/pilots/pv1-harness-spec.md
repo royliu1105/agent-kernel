@@ -90,7 +90,7 @@ Code: [fixture integration](../../scripts/pv2_offline_harness.py),
 | Conservative cost | USD 1.25 generation, USD 0.10 embedding; unused USD 0.65 remains locked. Successful requests consume their full reservation, not observed cost | Admission-only; no invoice or real tariff enforcement claim |
 | Changed request/unknown charges | Changed serialized body, bad/missing/excess usage or HTTP failure blocks; unresolved reserve prevents replacement/retry dispatch | Fixture implemented |
 | Approval/run/tool reconciliation | Approve/reject, new service instance, repeated resume and independent fixture counts are asserted against repository states | Two PostgreSQL tests; local verification blocked, exact-submission CI required |
-| Full runtime coverage | Actual API/Worker injection, native automatic retry/continuation, concurrent approval resume, effective deployment binding and stop/revoke drill | Pending; not passed by transport tests |
+| Full runtime coverage | API/Worker in-process fixture injection and retry/continuation cases below; effective container binding and stop/revoke drill remain separate | New CI verification required; deployed coverage pending |
 
 Reconciliation is observation-only, not a full approval verdict. Known failed
 executors must still be supplied, even when buffered journal bytes are readable.
@@ -126,6 +126,43 @@ Backend command, for the authorized disposable remote CI context only:
 `.venv/bin/pytest -q tests/integration/test_pv2_approval_observation.py`.
 Do not substitute the active runtime database. Full safety acceptance additionally
 requires the existing approval concurrency/recovery and API authorization suites.
+
+## API and Worker Integration
+
+2026-11-15 implementation checkpoint: production defaults remain unchanged.
+The fixture provider in `scripts/pv2_runtime_fixture.py` is injected through
+`create_app(execution_service=...)` and `QueuedRunWorker(execution_service=...)`.
+These exercise the maintained ASGI routes, queue polling, execution service,
+leases and PostgreSQL repositories, not a reimplemented execution loop. They do
+not launch a host server, Worker daemon or container and do not contact a provider.
+
+`tests/integration/test_pv2_api_worker.py` adds six cases:
+
+- API creates/queues a Run; Worker reaches approval without executing the tool.
+- A new API executor approves or rejects; repeated decisions are idempotent and
+  repeated resume is rejected, with independent journal and persisted tool checks.
+- Concurrent API resumes admit one winner and one conflict, with one tool call.
+- A pre-dispatch provider failure exercises the real retry loop and then succeeds.
+- A retryable error after reservation leaves uncertain charges; the real retry
+  loop reaches the guard, which denies without a second downstream dispatch.
+- API native continuation after tool execution obeys the same guard; an uncertain
+  continuation leaves the observation unknown rather than claiming full success.
+
+Run/model/original-task bindings are checked before reservation. The scripted
+provider cannot delegate to a live provider. Admission denial is translated to
+non-retryable `pv2_admission_denied`, so the runtime records failure normally.
+Existing DeepSeek/DashScope wire-format fixture tests remain separate; this is
+not proof of the frozen pilot prompt or deployed provider hook installation.
+The API cases intentionally disable auth; authenticated A/B access and revoke
+acceptance still require their existing security/deployment suites.
+
+Local checkpoint: 246 related offline tests passed, including five new binding/
+reservation tests. The six new PostgreSQL cases require the exact submitted CI
+run; they have not been run against any local database. CI results must be read
+from the matching commit, not inferred from test collection or earlier green runs.
+Full PV2 remains open: container-wide instrumentation, effective config/prompt
+attestation, operator stop/revoke and end-to-end deployment gates are not passed
+by these in-process fixtures.
 
 ## Scope and Authorization
 

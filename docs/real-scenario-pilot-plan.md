@@ -267,6 +267,12 @@ approval/observation cases are written; local execution was blocked by the absen
 disposable PostgreSQL URL. The submission's remote CI is the authorized backend
 verification path; no local test database or environment was created.
 
+Follow-up: [API/Worker integration](pilots/pv1-harness-spec.md#api-and-worker-integration)
+adds six real ASGI/queue/runtime PostgreSQL cases for decisions, concurrent resume
+and automatic retries. In-process fixture coverage is separate from container
+instrumentation and authenticated stop/revoke acceptance. Verify the exact
+submission's CI before accepting these cases; keep the full PV2 gates unchecked.
+
 - [ ] Re-run the applicable offline gates on the candidate; record exact commands,
   skips and separate backend/deployment coverage using the existing runbooks.
 - [ ] Follow the first-run path from a clean checkout; verify migrations, health,
