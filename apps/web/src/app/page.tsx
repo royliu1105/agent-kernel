@@ -283,8 +283,8 @@ function LiveWorkspace({ session, onUnauthorized }: { session: Session; onUnauth
           setRun(created); setRunIdInput(created.id); setEvents([]); setApprovals([]); setResumeApprovalId("");
         })}>
           <label>Model<input value={model} onChange={(event) => setModel(event.target.value)} maxLength={255} /></label>
-          <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} rows={3} maxLength={64000} /></label>
-          <label>Task<textarea value={task} onChange={(event) => setTask(event.target.value)} required rows={5} maxLength={64000} /></label>
+          <label>System prompt<textarea aria-label="System prompt" value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} rows={3} maxLength={64000} /></label>
+          <label>Task<textarea aria-label="Task" value={task} onChange={(event) => setTask(event.target.value)} required rows={5} maxLength={64000} /></label>
           <button disabled={busy || !agentId || !task.trim() || !can("run:write")}>Create run</button>
         </form>
         <form onSubmit={submit(async () => {
@@ -350,7 +350,7 @@ function ApprovalCard({ approval, busy, decide, api }: {
     {tool ? <><h4>{tool.tool_name}</h4><p>Risk: {tool.risk_level}</p>
       <pre aria-label="Tool arguments">{JSON.stringify(tool.arguments, null, 2)}</pre></> : !error && <p>Loading tool details...</p>}
     {approval.decision_note && <p>{approval.decision_note}</p>}
-    <label>Decision note<textarea value={note} onChange={(event) => setNote(event.target.value)} maxLength={4000} rows={2}
+    <label>Decision note<textarea aria-label="Decision note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={4000} rows={2}
       disabled={busy || approval.status !== "requested"} /></label>
     <div className={styles.actions}>
       <button disabled={busy || !tool || approval.status !== "requested"} onClick={() => decide("approve", note)}>Approve</button>

@@ -15,6 +15,7 @@ export default defineConfig({
   reporter: "line",
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    actionTimeout: 20_000,
     // Request traces could retain bearer credentials; only explicit UI screenshots are exported.
     trace: "off",
     screenshot: "off",

@@ -534,6 +534,9 @@ def main(*, pv2: bool = False, profile: bool = False, web: bool = False) -> int:
     except subprocess.CalledProcessError as error:
         claim_evidence(private, compose, env)
         detail = str(error.stderr or "") + "\n" + str(error.output or "")
+        if web:
+            for context in (ROOT / "apps/web/test-results").glob("*/error-context.md"):
+                detail += "\n" + context.read_text()[-16000:]
         secret_values = [password]
         credentials = private / "credentials.json"
         if credentials.exists():

@@ -74,6 +74,12 @@ The correction gives only the Web proxy a second, loopback-published ingress
 bridge. API/Worker/PostgreSQL/Redis remain on the internal network; runtime checks
 reject any non-Web container attached to ingress. No local Docker was touched.
 
+The next candidate `d2f23dd`, CI 43680741562, reached UI upload/index/retrieval,
+approved execution and independent single-effect readback, then timed out locating
+the populated System prompt field for the rejection case. Full acceptance remained
+failed. The correction supplies stable explicit textarea accessible names and
+a bounded action timeout; the full journey must pass again, not only its tail.
+
 Populate only from observed results. Local checks may run static/fixture units;
 database, containers and actual browser execution remain remote-CI-only.
 
