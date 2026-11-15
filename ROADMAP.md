@@ -7,8 +7,13 @@ is tracked in O1-O5. Logs, trace backend and SMTP delivery have
 separate implementation/local/external gates; real email setup is not available.
 
 Use the [Real-Scenario Acceptance and Controlled Pilot Plan](docs/real-scenario-pilot-plan.md)
-for subsequent pilot work and status. PV1 contract preparation is in progress;
-PV2-PV6 have not started. Other foundation feature expansion is frozen;
+for subsequent pilot work and status. PV1 technical planning is finalized;
+PV2 bounded offline checks passed with CF1 disposition still open. The formal
+PV3 cohort and PV4-PV6 have not started. The separately authorized
+[local paid walkthrough](docs/local-paid-experience.md) verified one RAG answer
+and an approval Run that failed closed at response validation, not full pilot
+acceptance. See the [project overview](docs/project-overview.md).
+Other foundation feature expansion is frozen;
 prioritize scoped safety/effectiveness evidence,
 operational drills and actual user feedback, not new infrastructure.
 
@@ -20,9 +25,11 @@ now has implementation, code review, regression and candidate CI evidence; final
 acceptance and deployment remain separately tracked in its
 [repair record](docs/reviews/2026-11-14-cf1-minimal-repair.md). CF2 has a verified
 [isolated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
-with offline provider fixtures and private request/config evidence. Authenticated
-Web, a frozen pilot profile and residual-risk review remain open; CF2 is not closed.
-No new calendar phase, broader foundation expansion or pilot admission is authorized.
+with offline provider fixtures and private request/config evidence. Subsequent
+frozen-profile and authenticated Web checks passed their bounded offline scope;
+CF1 residual-risk disposition and full pilot acceptance remain open. Local
+walkthrough deployment is not a shared-user admission decision.
+No new calendar phase or broader foundation expansion is introduced here.
 
 The [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
 retains implementation evidence. R1-R10 remediation passed scoped acceptance for

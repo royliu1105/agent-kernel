@@ -2,6 +2,10 @@
 
 This directory contains the canonical planning baseline for Agent Kernel. Treat these documents as the source of truth for the initial implementation plan unless a later ADR changes a decision.
 
+Start with the [Project Overview](project-overview.md) for the current product,
+technical architecture, capability evidence and limits. Historical delivery
+plans are not current acceptance checklists.
+
 Default local startup is now **Docker only**: `make docker-up`.
 See [Docker-Only Local Runtime](docker-local.md) for the single-project stack,
 private configuration, data retention and cutover evidence.
@@ -12,8 +16,12 @@ per-capability local verification and remaining gates, not a blanket completion 
 External mailbox delivery is blocked pending setup, not passed by local tests.
 The subsequent user-facing stage is the
 [Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md).
-PV1 contract preparation is in progress; PV2-PV6 have not started.
-Foundation feature expansion is frozen; no live/user-pilot result exists.
+PV1 technical planning is finalized. PV2 bounded offline API/CLI/Worker/profile
+and authenticated Web checks passed; CF1 risk disposition still blocks full PV2
+acceptance. The formal PV3 cohort and PV4-PV6 have not started. The separately
+authorized [local paid walkthrough](local-paid-experience.md) produced one real
+RAG answer and an approval Run blocked by response validation; it is not
+independent-user evidence or full pilot acceptance. Foundation expansion is frozen.
 That plan owns pilot priorities, tasks, scoring and go/no-go criteria.
 Use the [pilot learning guide](pilot-learning-guide.md) alongside it: explain
 tradeoffs, investigate failures and verify tests with the maintainer, recording
@@ -24,12 +32,15 @@ owns CF1-CF8 priorities, tasks and acceptance. CF1/CF2 feed pilot-entry checks;
 CF3-CF8 are deferred/conditional. The explicitly authorized CF1 minimal repair
 has implementation, code review, regressions and exact-candidate CI; its
 [verification record](reviews/2026-11-14-cf1-minimal-repair.md) separates those
-results from pending deployment/pilot acceptance. CF1 is not accepted. CF2 has
+results from pending scoped deployment/pilot acceptance. CF1 is not accepted. CF2 has
 [isolated API/CLI and manual provenance evidence](reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
-for offline fixtures, not authenticated Web or a frozen user-pilot profile.
+for offline fixtures; subsequent [PV2 checks](pilots/pv2-closure.md) and
+[authenticated Web checks](pilots/pv2-web-acceptance.md) cover the bounded profile
+and first-use journey, not live quality or public multi-tenant operation.
 The subsequently authorized [rejected-approval repair](reviews/2026-11-14-approval-rejection-repair.md)
-passed full local regression and isolated Docker checks; it is not deployed to
-the active runtime and does not close CF2.
+passed full local regression and isolated Docker checks. Later local rebuilds
+are recorded separately in the walkthrough; they do not retroactively expand
+that repair's evidence or close the remaining pilot gates.
 Completed implementation evidence remains in the
 [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
 R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier
@@ -46,6 +57,8 @@ new isolation, worker ownership or external-tool guarantees are implemented.
 
 Current hardening operator guides:
 
+- [Project Overview and Capability Evidence](project-overview.md)
+- [Supervised Local Paid Experience](local-paid-experience.md)
 - [Observability Completion Plan](observability-completion-plan.md)
 - [Observability Backends and SMTP](observability-backends.md)
 - [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)

@@ -1,8 +1,10 @@
 # Agent Kernel
 
-Agent Kernel is a self-hosted, observable, evaluable, resumable production-grade AI Agent Runtime for building real agent applications with tools, memory, knowledge bases, human approval, and workflows.
+Agent Kernel is a self-hosted, observable, evaluable, resumable AI Agent Runtime for building agent applications with tools, memory, knowledge bases and human approval. Production readiness is a scoped acceptance goal, not a guarantee implied by the release number.
 
 The canonical project baseline is captured in [docs/README.md](docs/README.md).
+Read the [project overview and capability boundaries](docs/project-overview.md)
+for positioning, architecture, implemented versus verified capabilities, and next steps.
 
 Run the Docker-only local stack with [docs/quickstart.md](docs/quickstart.md)
 and [Docker operations](docs/docker-local.md).
@@ -19,21 +21,25 @@ Current development:
   workstream tracks centralized logs, trace backend and SMTP
   alerts. Implementation/verification are tracked separately; external email
   delivery is not accepted without inbox evidence.
-  The optional single-host Loki/Tempo/Alertmanager/Mailpit profile has passed
+  The single-host Loki/Tempo/Alertmanager/Mailpit stack, included in default local startup, has passed
   local end-to-end verification and exact-commit remote CI; see the ledger for evidence.
 - [Real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
   has finalized PV1 technical preparation. PV2 offline API/Worker/profile checks
   passed, including authenticated Web first use. CF1 maintainer risk disposition
-  remains open, so PV2 is not fully accepted. PV3-PV6 have not started.
-  No live/user-pilot result exists.
+  remains open, so PV2 is not fully accepted. The formal PV3 cohort and PV4-PV6
+  have not started. A separately authorized [local paid walkthrough](docs/local-paid-experience.md)
+  verified one real DeepSeek/knowledge-base answer; its GitHub approval Run
+  failed closed at response-hash validation. This is not full pilot acceptance
+  or independent-user evidence.
   Other foundation feature expansion is frozen.
 - [Reference comparison](docs/reference-project-comparison.md) records the
   code/test review. Its [follow-up plan](docs/reference-follow-up-plan.md) owns
   pilot-entry checks and deferred enhancements. CF1's minimal memory-context
   repair passed code review and local regressions, with acceptance still pending;
   see its [verification record](docs/reviews/2026-11-14-cf1-minimal-repair.md).
-  Its candidate CI passed, but the active local Docker stack has not been updated
-  with CF1. Deployment/pilot acceptance is still pending. CF2 now has an
+  Its candidate CI passed. Subsequent local rebuilds are recorded in the paid
+  walkthrough; CF1-specific deployed acceptance and risk disposition remain
+  pending, not inferred from those rebuilds. CF2 now has an
   [isolated authenticated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
   using offline model fixtures. The frozen profile has offline verification;
   [authenticated Web acceptance](docs/pilots/pv2-web-acceptance.md) passed its bounded offline journey.
@@ -43,7 +49,8 @@ Current development:
   retains the implementation evidence and explicit limits.
 - `master` contains unreleased changes beyond the `v1.0.0` tag. Historical
   release CI does not verify those changes; implementation CI and pilot
-  acceptance are separate evidence, and live pilot results do not exist yet.
+  acceptance are separate evidence. Local walkthrough changes also include
+  uncommitted work; older CI does not verify that working tree.
 - Review the [upgrade and migration policy](docs/upgrade-migration-policy.md)
   before upgrading an existing deployment.
 

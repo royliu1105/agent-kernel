@@ -3,16 +3,27 @@
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
 PV5 people/dates. PV2 API/CLI offline and isolated remote deployment checks
 passed; authenticated Web passed on 6466aba; CF1 disposition remains open;
-PV3-PV6 not started (2026-11-15)**.
+formal PV3 cohort and PV4-PV6 not started. A separate local paid walkthrough
+has one successful RAG sample and a GitHub approval Run blocked by response
+validation, not full pilot acceptance (2026-11-15)**.
 
-Current instruction authorizes PV2 review/fixes, scoped submission and tracking
-its exact CI, not local deployment; technical planning is finalized, human-pilot
-requirements remain at PV5. No paid calls, pilot API calls, local environment
-creation or current Docker update. Remote CI uses disposable runner services. The
+Current documentation reconciliation authorizes no business-code changes,
+paid calls or Docker updates. Earlier authorized local deployment and actual
+calls are recorded in [local paid experience](local-paid-experience.md), a
+trusted single-user exception, not the authenticated frozen pilot cohort.
+CF1 disposition and human-pilot requirements are not waived by this exception.
+The earlier PV2 review used disposable remote CI services. The
 [pv1-config-v1 profile](pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
 and first USD 2 worksheet are now fixed on paper. Historical preparation
 restrictions below are superseded only by the recorded scoped authorizations;
-none is evidence of execution.
+authorization alone is not evidence of execution. The walkthrough record, not
+the historical preparation restrictions below, owns the later observed results.
+
+## Historical Preparation Decisions
+
+The following paragraphs preserve the scope at each preparation checkpoint;
+later scoped authorization and the walkthrough above supersede their earlier
+no-execution statements only for the explicitly admitted local activity.
 
 The maintainer authorized PV1 preparation on 2026-11-15: identify the scenario,
 corpus, models, budget and acceptance decisions without expanding features or
@@ -60,9 +71,10 @@ feed the entry checks below; CF3-CF8 remain deferred/conditional proposals.
 The maintainer subsequently authorized only the minimal CF1 repair and its
 regressions, then review, baseline/CF1 commits, push and CI tracking, recorded in
 the [repair record](reviews/2026-11-14-cf1-minimal-repair.md).
-This does not authorize pilot admission or mean the running Docker images contain
-the repair. PV1 has now started as contract preparation only; the
-foundation-feature freeze remains.
+That historical repair authorization did not authorize pilot admission or prove
+deployment. Later Docker rebuilds do not by themselves satisfy CF1 deployed
+acceptance. PV1 technical planning is now finalized; the foundation-feature
+freeze and remaining pilot gates persist.
 
 ## Guided Learning During Execution
 
@@ -78,9 +90,9 @@ pilot execution record. A green CI or an assistant explanation does not establis
 learner mastery; a learning exercise does not waive an acceptance or safety gate.
 Do not create extra features, inject faults into a running pilot, coach scored
 participants, or extend the calendar merely to generate teaching material.
-In a real incident, contain risk first and explain afterward. PV1 planning
-decisions are being collected; independent learner practice is not established,
-and PV2-PV6 sessions have not started. The separate
+In a real incident, contain risk first and explain afterward. Technical planning
+and bounded PV2 verification exist, and the later local walkthrough provides
+guided observations, not evidence of independent learner mastery or PV5 use. The separate
 [CF1 demonstration](reviews/2026-11-14-cf1-memory-boundary.md) is pre-pilot review
 evidence, not a completed pilot exercise or learner-mastery claim.
 
@@ -144,8 +156,9 @@ independent onboarding participants. The domain reviewer, not the Agent itself,
 scores correctness and whether citations support the claims.
 
 Use `docs/pilots/<pilot-id>.md` for sanitized execution records. The current
-[PV1 record](pilots/pv1-2026-11-15-runbook-assistant.md) is a draft, not signed-off
-acceptance or evidence of runtime execution. Keep this plan
+[PV1 record](pilots/pv1-2026-11-15-runbook-assistant.md) has finalized technical
+planning but not original full-pilot sign-off. Runtime evidence is recorded
+separately in PV2 records and the scoped local walkthrough. Keep this plan
 as the sole checklist. Link detailed evidence from each task without copying a
 second progress table into README, milestones, or old daily plans.
 
@@ -171,7 +184,7 @@ must state applicability and cannot be passed by omission.
 | --- | --- | --- | --- | --- | --- |
 | PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
 | PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Six of seven checklist items verified; CF1 maintainer disposition remains open | [Current evidence and remaining gates](pilots/pv2-closure.md) |
-| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
+| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Formal cohort not started; separate local observations are not acceptance | [Local walkthrough](local-paid-experience.md): one RAG success; GitHub approval continuation blocked; no full case-set or billing pass |
 | PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
 | PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
 | PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | Not started | None |
@@ -208,24 +221,28 @@ transmission, pilot/model/Docker operations and a first USD 2 batch within USD 1
 later batches need confirmation. The exact inspected GitHub body is approved for
 DeepSeek; changed responses require renewed review. Intended configuration and
 first-batch financial planning are finalized in draft-13; account/effective-runtime
-verification belongs to PV2/PV3. No model call or setup occurred.
+verification belongs to PV2/PV3. No model call or setup occurred during that
+planning step; later local activity is separately recorded, not retroactive PV1 evidence.
 The [offline operation sheet](pilots/pv1-offline-rehearsal.md) and request template
 cover API/CLI shapes and future evidence collection, not environment setup or
 runtime acceptance. Existing operator/viewer roles do not provide a submit-only
 participant role; the finalized procedure uses supervised serial maintainer
 submission and records assistance, not a new feature task. Maintainer-submitted
 sessions do not satisfy PV5 independent onboarding or unassisted task success.
-The [harness specification](pilots/pv1-harness-spec.md) and
-[evidence template](pilots/pv1-evidence-template.json) are draft preparation only.
-Offline fixture primitives and tests exist; deployed observer integration and
-runtime case evidence remain absent. Tests do not pass runtime acceptance.
+The [harness specification](pilots/pv1-harness-spec.md) tracks implementation;
+the blank [evidence template](pilots/pv1-evidence-template.json) remains
+preparation, not a populated acceptance result.
+The later [PV2 closure](pilots/pv2-closure.md) records integrated API/Worker
+observers and bounded offline runtime evidence; these are no longer merely
+unwired primitives. They do not establish live-model or independent-user acceptance.
 One authorized manual anonymous GET observed run_attempt=1 and matching target.
-It is not Agent approval/harness evidence. Current review authorizes scoped
-submission/CI, not paid calls, local setup or Docker updates.
+It is not Agent approval/harness evidence. Subsequent local approval observations
+are recorded in the walkthrough and must not be attributed to that manual GET.
 Remaining composite checklist items
 must not be ticked while required fields remain unresolved. Participants/dates,
-private contact and full-pilot sign-off remain open at PV5; effective configuration is future
-PV2 evidence, not a requirement to deploy during PV1. Changed payloads need review.
+private contact and full-pilot sign-off remain open at PV5; effective configuration
+has bounded offline PV2 evidence, not a requirement to deploy during PV1.
+Changed payloads need review.
 
 - [ ] Name owners, participants, environment, candidate SHA and authorized access.
   Owners, intended environment/candidate/role bindings are specified; only P1/P2,
@@ -328,6 +345,13 @@ pv1-config-v1 and [production configuration](production-config.md). Live runtime
 admission still requires applicable scope/risk and subsequent PV3/PV4 gates.
 
 ### PV3: Verify Real Model and Embedding Behavior
+
+The formal frozen-case cohort remains unstarted. The separate
+[local walkthrough](local-paid-experience.md) established real embedding/RAG
+behavior for one D01 question and an approval response-hash failure. Do not
+tick the cohort, successful live continuation, cost reconciliation or independent
+dispatch-evidence gates from these observations. Preserve that failed Run;
+failure-response evidence repair is proposed and paused, not implemented.
 
 - [ ] Record paid-call authorization; run the existing one-request
   [live smoke](behavior-regression.md#optional-live-provider-smoke) first.

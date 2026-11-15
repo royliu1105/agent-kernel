@@ -1,6 +1,9 @@
 # Technology Stack
 
-## Final Recommendation
+## Current Stack
+
+Updated 2026-11-15. This is the implemented stack, not the original MVP wishlist.
+See [Project Overview](project-overview.md) for evidence and acceptance limits.
 
 Use Python for the Agent runtime and TypeScript for the Web UI:
 
@@ -13,9 +16,10 @@ Docker Compose + GitHub Actions
 
 ## Backend
 
-MVP stack:
+Implemented backend/toolchain:
 
-- Python 3.12+
+- Python 3.12 (`>=3.12,<3.13` in the current workspace).
+- uv workspace and lockfile.
 - FastAPI
 - Pydantic v2
 - SQLAlchemy 2.x
@@ -29,13 +33,18 @@ MVP stack:
 
 ## LLM Providers
 
-MVP:
+Implemented adapters:
 
 - OpenAI provider.
+- DeepSeek provider (the local walkthrough uses `deepseek-flash`).
 - Mock provider.
 - Replay provider.
 
-Later:
+OpenAI and Alibaba DashScope embedding adapters support the selected RAG
+profiles. The local walkthrough uses DashScope `text-embedding-v3`, Beijing,
+1024 dimensions. A configured adapter is not evidence that every model was tested.
+
+Possible extensions, not scheduled pilot work:
 
 - Anthropic.
 - Gemini.
@@ -45,35 +54,48 @@ Later:
 
 ## Storage
 
-MVP:
+Implemented storage and coordination:
 
 - PostgreSQL.
 - pgvector.
 - Redis.
 - Local filesystem object store.
+- S3/MinIO-compatible object-store adapter (not a running default local MinIO).
 
-Later:
+PostgreSQL is the only supported runtime/test database. Redis queue hints do
+not replace the authoritative PostgreSQL Run ledger. No SQLite fallback exists.
 
-- S3 or MinIO.
+Not part of the current stack or committed pilot scope:
+
 - Qdrant or Weaviate.
 - Temporal.
 - ClickHouse or analytics warehouse.
-- Tempo, Jaeger, Prometheus, and Grafana.
+
+## Observability
+
+OpenTelemetry instrumentation, structured logs, Prometheus/Blackbox, Grafana,
+Alloy/Loki, Tempo, Alertmanager and Mailpit are implemented. The default local
+Compose stack includes these services. See the [acceptance ledger](observability-completion-plan.md)
+for local end-to-end evidence and the remaining external-mailbox gate.
+Jaeger is not the selected local trace backend; local SMTP capture is not real inbox delivery.
 
 ## Frontend
 
-MVP:
+Implemented frontend:
 
 - Next.js.
+- React.
 - TypeScript.
-- Tailwind CSS.
-- shadcn/ui or Radix UI.
-- TanStack Query.
 - Playwright.
+
+Tailwind, shadcn/Radix and TanStack Query were early options, not installed
+dependencies in the current Web package. Node.js 24 is the Docker/CI runtime
+baseline. The supported first-use path has authenticated offline CI evidence;
+the anonymous local paid experience is a different profile.
 
 ## Documentation
 
-MVP:
+Current documentation:
 
 - Markdown docs.
 - ADRs.
@@ -83,7 +105,7 @@ MVP:
 - SECURITY.
 - ROADMAP.
 
-Later:
+Optional documentation hosting, not a pilot prerequisite:
 
 - MkDocs Material.
 
@@ -100,7 +122,7 @@ TypeScript = Web UI
 
 ## What Not to Use Too Early
 
-Avoid in v0.1:
+Continue to avoid introducing without demonstrated need and separate scope:
 
 - Microservices.
 - Kubernetes.

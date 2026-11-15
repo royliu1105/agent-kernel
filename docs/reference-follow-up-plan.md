@@ -6,7 +6,15 @@ CF2 bounded offline API/CLI/profile and authenticated Web checks passed; deploym
 The bounded Web implementation and checks in the
 [Web acceptance record](pilots/pv2-web-acceptance.md) passed on 6466aba / CI 43681752996.
 The [CF1 risk decision list](reviews/cf1-risk-disposition.md) awaits the maintainer,
-not CI. This work updates no active Docker stack and makes no risk decision.
+not CI. The later [local paid walkthrough](local-paid-experience.md) records
+authorized rebuilds and real observations, not CF1 deployed acceptance or a
+risk decision. This documentation update performs no deployment or paid calls.
+
+## Historical Authorization Sequence
+
+The restrictions below describe each historical step, not a claim that no
+subsequent deployment or paid call occurred. Later scoped local authorization
+does not extend to shared-user admission or deferred CF3-CF8 work.
 
 The original authorization covered recording the [comparison](reference-project-comparison.md)
 and this plan only. The maintainer subsequently authorized the minimal CF1 repair:
@@ -72,7 +80,9 @@ pilot admission or a release.
   ledger, with its frozen scenario, 30-question quality set, authorization,
   budget, user-observation and go/no-go rules. PV1 technical planning is finalized;
   full-pilot human fields remain at PV5. PV2 has six of seven items checked and
-  one open composite gate; PV3-PV6 have not started. See the [PV2 evidence](pilots/pv2-closure.md).
+  one open composite gate; the formal PV3 cohort and PV4-PV6 have not started.
+  Separate local live observations do not close those gates. See the
+  [PV2 evidence](pilots/pv2-closure.md) and [walkthrough](local-paid-experience.md).
 - This document alone owns CF1-CF8 statuses. CF1/CF2 are bounded pilot-entry
   follow-ups; CF3-CF8 are deferred/conditional proposals, not a second active
   foundation phase. Link evidence between ledgers; never count one as the other.
@@ -106,7 +116,7 @@ need and separate scope decision are required. None means complete.
 
 | ID | Priority | Delivery | Prerequisite / pilot relationship | Current status | Acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification/candidate CI passed; deployment and maintainer risk disposition pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): candidate `5952ba7` CI passed; [risk decision list](reviews/cf1-risk-disposition.md) pending; not active-local deployment/pilot acceptance |
+| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification/candidate CI passed; scoped deployed acceptance and maintainer risk disposition pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): candidate `5952ba7` CI passed; [risk decision list](reviews/cf1-risk-disposition.md) pending; later local rebuilds are not CF1-specific deployed acceptance |
 | CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Verified for bounded offline scope: authenticated API/CLI/Web and frozen-profile provenance; not live quality or pilot admission | [PV2 evidence](pilots/pv2-closure.md): cbe8c42 CI passed; [Web evidence](pilots/pv2-web-acceptance.md) passed on 6466aba; no live quality or full PV2 acceptance |
 | CF3 | P1: reproducibility | Effective prompt-version binding to Run/checkpoint/eval | After PV6 prioritization or explicit earlier scope approval; CF1 context contract | Deferred; not started | None |
 | CF4 | P1: product journey | Scoped session/task submission and resumable streaming Web flow | After pilot evidence/scope approval; CF3 or an explicitly approved equivalent provenance contract | Deferred; not started | None |
@@ -171,8 +181,8 @@ not an authorization mechanism or a live-model safety guarantee.
 - [ ] Verify the approved implementation in the intended deployed environment.
 
 Checked items above mean implementation, review and scoped local/CI verification,
-not CF1 accepted. Commit/push and CI tracking are authorized; active local
-deployment and pilot admission are not.
+not CF1 accepted. Later authorized local rebuilds do not close the deployed
+memory-boundary acceptance item or authorize memory-bearing pilot admission.
 
 Acceptance: unit/request-capture tests establish data placement and bounds;
 actual runtime tests show no unauthorized data access or tool side effect, no
@@ -216,13 +226,15 @@ key to pass. Earlier API/CLI evidence is retained, not relabeled as Web evidence
   Historical fixture revision `cf2-api-cli-offline-v1` is verified. The later
   frozen `pv1-config-v1` offline container binding passed on cbe8c42; see
   [PV2 evidence](pilots/pv2-closure.md). New Web-path initial/resumed prompt binding passed on 6466aba. The Web fixture
-  differs from the paid profile as documented; live provider behavior remains unverified.
+  differs from the paid profile as documented; the later live RAG sample is
+  separate evidence, not verification of the complete frozen pilot profile.
 - [x] Correct only workflow-blocking instructions once verified. If required
   behavior is absent, record a blocker and request a scope decision, not a mock UI.
   Rehearsal instructions and the minimal rejection terminal-status repair are
   locally verified: rejected resume atomically denies the tool and fails the Run
   without execution; see the [repair record](reviews/2026-11-14-approval-rejection-repair.md).
-  The active runtime is not updated. [Web first-use instructions](web-first-use.md) were reviewed against the passed
+  Later runtime rebuilds belong to the local walkthrough record, not a new
+  rejection-path acceptance claim. [Web first-use instructions](web-first-use.md) were reviewed against the passed
   remote journey; broader expired/canceled handling is
   outside this repair.
 

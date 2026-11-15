@@ -16,13 +16,15 @@ next stage is the [real-scenario pilot plan](real-scenario-pilot-plan.md).
 
 The authorized prerequisite is [observability completion](observability-completion-plan.md),
 with per-capability local and external acceptance gates. The pilot track below
-has started PV1 contract preparation; no live pilot results exist.
+has finalized PV1 technical planning and bounded PV2 offline checks, with CF1
+disposition still open. Separate [local paid observations](local-paid-experience.md)
+are not formal PV3 or independent-user acceptance.
 
 ```text
 v0.1.0: Published
 v1.0.0: Published 2026-08-07
 Day 39-90: Historical delivery completed within the recorded scope
-Current track: Real-scenario acceptance and controlled pilot (PV1 preparation)
+Current track: Real-scenario acceptance and controlled pilot (see PV1-PV6 ledger)
 Current branch enhancements: Unreleased
 ```
 

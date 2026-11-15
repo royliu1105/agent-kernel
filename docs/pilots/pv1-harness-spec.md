@@ -6,7 +6,9 @@ This refines the existing [PV1 contract](pv1-2026-11-15-runbook-assistant.md) an
 [operation sheet](pv1-offline-rehearsal.md); it is not another progress ledger.
 The [evidence template](pv1-evidence-template.json) is an unpopulated record,
 not executable configuration or proof. PV1 technical planning is finalized;
-human fields remain at PV5. PV3-PV6 have not started. Current deployment evidence
+human fields remain at PV5. The formal PV3 cohort and PV4-PV6 have not started.
+The separate [local paid walkthrough](../local-paid-experience.md) is not a pass
+of this harness or the frozen cohort. Current deployment evidence
 and remaining gates are in the [PV2 record](pv2-closure.md); historical component
 checkpoints below are not the latest aggregate status.
 At preparation, provider transmission was pending with spending

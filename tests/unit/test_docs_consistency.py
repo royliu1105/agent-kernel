@@ -73,6 +73,8 @@ def test_docs_index_links_point_to_existing_files() -> None:
     checked_indexes = [
         DOCS_ROOT / "README.md",
         DOCS_ROOT / "daily" / "README.md",
+        DOCS_ROOT / "project-overview.md",
+        DOCS_ROOT / "local-paid-experience.md",
     ]
 
     missing_links: list[str] = []
@@ -400,13 +402,59 @@ def test_phase_summaries_are_explicitly_historical(filename: str) -> None:
 
 def test_delivery_plan_no_longer_points_to_alpha_as_next_work() -> None:
     plan = (DOCS_ROOT / "post-v0.1-plan.md").read_text(encoding="utf-8")
-    assert "Current track: Real-scenario acceptance and controlled pilot (PV1 preparation)" in plan
+    assert (
+        "Current track: Real-scenario acceptance and controlled pilot (see PV1-PV6 ledger)" in plan
+    )
     assert "Current branch enhancements: Unreleased" in plan
     assert "## Historical Kickoff" in plan
     assert "## Next Daily Work" not in plan
     stage = _section("development-plan.md", "Stage 9: Day 76-90 v1.0 Release Candidate")
     assert "published 2026-08-07" in stage
     assert "- [ ] clean-machine" not in stage
+
+
+def test_project_overview_links_evidence_without_a_second_pilot_ledger() -> None:
+    overview = (DOCS_ROOT / "project-overview.md").read_text(encoding="utf-8")
+    for evidence in (
+        "real-scenario-pilot-plan.md",
+        "reference-follow-up-plan.md",
+        "local-paid-experience.md",
+        "pilots/pv2-closure.md",
+        "pilots/pv2-web-acceptance.md",
+        "reviews/cf1-risk-disposition.md",
+        "pilot-learning-guide.md",
+    ):
+        assert evidence in overview
+    assert not re.findall(r"^\| (PV[1-6]) \|", overview, flags=re.MULTILINE)
+    assert "external_response_review_required" in overview
+    for entry in (REPO_ROOT / "README.md", REPO_ROOT / "ROADMAP.md", DOCS_ROOT / "README.md"):
+        text = entry.read_text(encoding="utf-8")
+        assert "project-overview.md" in text
+        assert "PV1 contract preparation is in progress" not in text
+        assert "PV2-PV6 have not started" not in text
+
+
+def test_local_walkthrough_keeps_failure_and_evidence_limits_explicit() -> None:
+    boundary = _section("local-paid-experience.md", "Documentation-Only Commit Boundary")
+    assert "does not ship those runtime changes" in boundary
+    assert "response_sha256" in boundary
+    assert "are not available" in boundary
+    assert "separately reviewed implementation commit" in boundary
+    failure = _section("local-paid-experience.md", "Observed Approval and Failed Continuation")
+    for marker in (
+        "external_response_review_required",
+        "no final ci answer",
+        "not an independent socket-level",
+        "reviewed_by=null",
+    ):
+        assert marker in failure
+    inspection = _section("local-paid-experience.md", "Subsequent Read-Only Response Inspection")
+    assert "did not preserve its raw response body" in inspection
+    assert "not a root-cause finding" in inspection
+    pending = _section("local-paid-experience.md", "Remaining Work and Current Hold")
+    assert "not implemented" in pending
+    assert "no automatic whitelist changes" in pending
+    assert "no paid calls" in pending
 
 
 @pytest.mark.parametrize(

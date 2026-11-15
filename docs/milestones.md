@@ -12,11 +12,14 @@ verification gates. This is not a new day-number schedule.
 
 ## Next Stage: Real-Scenario Acceptance and Controlled Pilot
 
-Status: planned, not started. The
+Status: technical preparation and bounded offline verification exist; full
+pilot acceptance remains open. The
 [pilot plan](real-scenario-pilot-plan.md) owns PV1-PV6 task status, priorities,
 evidence and go/no-go criteria. Foundation feature expansion is frozen.
-Start with PV1 scope/data/model/budget decisions; no new daily sequence or
-live-provider/pilot acceptance is implied by writing the plan.
+Do not restart PV1 confirmations or the daily sequence. The
+[project overview](project-overview.md) and [local paid walkthrough](local-paid-experience.md)
+distinguish the real RAG sample and blocked GitHub continuation from the formal
+PV3 cohort and independent-user acceptance.
 
 ## Completed Capability Hardening
 
