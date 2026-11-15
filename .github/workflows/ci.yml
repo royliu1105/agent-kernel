@@ -15,6 +15,8 @@ jobs:
       - name: PV2 Isolated Authenticated Container Rehearsal
         # Internal-only random project; synthetic providers, no host runtime reuse.
         run: python scripts/cf2_rehearsal.py --pv2
+      - name: PV2 Frozen Profile Offline Container Rehearsal
+        run: python scripts/cf2_rehearsal.py --pv2-profile
       - name: Sanitized PV2 Failure Detail
         if: failure()
         run: |

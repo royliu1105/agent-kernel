@@ -51,17 +51,29 @@ generated keys are not uploaded; sanitized pass/failure output stays in CI logs.
 Container verification above is **CF2 synthetic API/CLI acceptance**, not the full
 PV1 profile. It uses mock embeddings, an OpenAI-compatible fixture and counted MCP
 inventory calls, with a larger model-call ceiling for its three-response RAG flow.
-It does not install the PV1 GitHub guarded-HTTP observer/shared budget transport
-across all container executors or attest the frozen two-response paid profile.
-The task prompt hash alone cannot establish those missing bindings.
+That job alone does not install the PV1 GitHub guarded-HTTP observer/shared budget
+transport across all container executors or attest the frozen two-response paid
+profile. The task prompt hash alone cannot establish those bindings.
+
+The additional `--pv2-profile` rehearsal now implements that **offline binding**
+in a second owned remote project. It uses the real DeepSeek Responses and DashScope
+embedding adapters with synthetic transports, v3/1024 indexing, frozen model ID
+and execution limits, authenticated API/CLI and Redis Worker, guarded GitHub HTTP
+with a synthetic pool below its origin/path/size checks, and one shared durable
+admission ledger. Initial, restarted API, concurrent/repeated resume, rejection,
+pre-dispatch retry and unknown-charge retry are separate assertions. Per-process
+journals must all close before counts reconcile. An expected unknown charge is
+asserted to remain unknown and block redispatch; it never becomes a successful
+budget window. Fixture charges are conservative reservations, not actual billing.
+This new matrix remains pending exact-submission remote verification.
 
 Full authenticated Web still lacks its approved credential bridge. The accepted
 API/CLI-first route does not waive full Web acceptance. No new Web/auth feature
 is implemented by this rehearsal. Do not mark all seven canonical PV2 boxes done
 because this job or the general CI is green.
 
-Before paid admission, finish the exact-profile/container observer and budget
-binding, then run its initial/retry/resumed request and approval case matrix.
+Before paid admission, verify the exact-profile/container observer and budget
+binding on the candidate, including its request and approval case matrix.
 Use the existing frozen data and permissions; do not issue paid calls as a way
 to test these safety controls. Human participants belong to PV5, not these gates.
 

@@ -8,6 +8,7 @@ import json
 import os
 import re
 import secrets
+import signal
 import subprocess
 import sys
 from dataclasses import asdict
@@ -310,15 +311,34 @@ def main() -> None:
     guard()
     if mode == "bootstrap":
         bootstrap()
+        if os.environ.get("PV2_PROFILE") == "1":
+            from pv2_profile import setup
+
+            setup()
         return
-    instrument_provider()
+    journal = None
+    if os.environ.get("PV2_PROFILE") == "1":
+        from pv2_profile import install
+
+        journal = install()
+
+        def terminate(signum: int, frame: Any) -> None:
+            raise SystemExit(0)
+
+        signal.signal(signal.SIGTERM, terminate)
+    else:
+        instrument_provider()
     if mode == "api":
         from agent_kernel_api.main import main as entrypoint
     elif mode == "worker":
         from agent_kernel_worker.main import main as entrypoint
     else:
         raise ValueError("Unknown fixture entrypoint")
-    entrypoint()
+    try:
+        entrypoint()
+    finally:
+        if journal is not None:
+            journal.append("case_close")
 
 
 if __name__ == "__main__":

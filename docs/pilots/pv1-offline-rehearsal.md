@@ -6,8 +6,10 @@ not a new phase or a second progress ledger. Its preparation checkpoint had
 spending authorization USD 0 and pending transmission; the
 [later scoped authorization](pv1-authorization-2026-11-15.md) supersedes those
 restrictions without verifying DeepSeek's no-training commitment or this workflow.
-No support submission is assumed. No local environment, request, key or identity
-is created. Existing CI/review permissions do not authorize rehearsal execution.
+No support submission is assumed. This sheet creates no environment or identity.
+Later authorization permits disposable remote CI rehearsal; it does not permit
+local environment creation, current Docker updates or paid calls in this work.
+See the [PV2 evidence record](pv2-closure.md) for actual verification status.
 
 ## Request Assembly Contract
 
@@ -110,7 +112,8 @@ HTTP/authentication or cross-workspace database evidence.
 
 All six evidence cases in the JSON artifact remain not_run. Their pass criteria
 are the existing [independent invocation matrix](pv1-2026-11-15-runbook-assistant.md#independent-invocation-evidence),
-not a newly relaxed definition. The GitHub observer is still unimplemented.
+not a newly relaxed definition. The GitHub observer has fixture components and
+regression tests; this does not attest installation in a live executor.
 
 | Step | Evidence required later | Prohibition / incomplete condition |
 | --- | --- | --- |
@@ -139,13 +142,15 @@ quality and cost controls cannot pass through these tests. They remain in PV1-PV
 at their original gates; this file does not authorize implementation or execution
 of those future components. No runtime feature or provider choice is changed.
 
-The [harness specification](pv1-harness-spec.md) and
-[evidence template](pv1-evidence-template.json) now provide draft coverage,
-journal, control-case and verdict contracts; neither is implemented or executed.
-Operator confirmation is still needed for participant admission and the final
-configuration. Provider terms/reply, actual billing constraints, real response
-inspection, two trial participants and dates remain unresolved. Do not invent
-answers or ask for final external transmission approval while evidence is absent.
+The [harness specification](pv1-harness-spec.md) records implemented fixture
+components, shared admission and API/Worker integration. The
+[evidence template](pv1-evidence-template.json) remains deliberately blank; do not
+populate it with inferred live results. Technical configuration and scoped
+transmission were accepted; DeepSeek's no-training promise remains unverified,
+with that risk explicitly accepted in the authorization addendum. The inspected
+GitHub body is approved, not arbitrary future responses. Actual billing evidence,
+two independent trial participants and dates remain open. These human fields
+belong to PV5 and do not block offline PV2 safety checks.
 
 Offline verification is in
 [test_pv1_offline_preparation.py](../../tests/unit/test_pv1_offline_preparation.py).

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -82,10 +83,13 @@ def test_host_environment_is_allowlisted() -> None:
     }
 
 
-def test_pv2_container_mode_refuses_local_execution(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("options", [{"pv2": True}, {"profile": True}])
+def test_pv2_container_mode_refuses_local_execution(
+    monkeypatch: pytest.MonkeyPatch, options: dict[str, bool]
+) -> None:
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     with pytest.raises(RuntimeError, match="remote-CI-only"):
-        harness.main(pv2=True)
+        harness.main(**options)
 
 
 def test_collision_never_runs_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -225,11 +229,31 @@ def test_manifest_excludes_credentials_and_hashes_configuration(
     monkeypatch.setattr(harness, "ROOT", tmp_path)
     harness.write_json(tmp_path / "configuration.json", {"auth": True})
     harness.write_json(tmp_path / "credentials.json", {"key": "synthetic-secret"})
+    (tmp_path / "journals").mkdir()
+    (tmp_path / "journals/one.jsonl").write_text("synthetic observation\n")
     harness.seal_evidence(tmp_path, {"files": {}}, ["synthetic-secret"])
     manifest = json.loads((tmp_path / "manifest.json").read_text())
     assert manifest["configuration_sha256"] == hashlib.sha256(b'{"auth":true}').hexdigest()
-    assert set(manifest["file_bytes_sha256"]) == {"configuration.json"}
+    assert set(manifest["file_bytes_sha256"]) == {"configuration.json", "journals/one.jsonl"}
     assert "synthetic-secret" not in json.dumps(manifest)
+
+
+def test_linux_evidence_handoff_keeps_modes_and_uses_only_owned_mount(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    harness.write_json(tmp_path / "credentials.json", {"key": "synthetic"})
+    monkeypatch.setattr(os, "access", lambda *_: False)
+    commands: list[list[str]] = []
+    monkeypatch.setattr(harness, "run", lambda args, *_: commands.append(args))
+    compose = ["docker", "compose", "-p", "agent-kernel-cf2-0123456789abcdef"]
+    harness.claim_evidence(tmp_path, compose, {})
+    assert len(commands) == 1
+    assert commands[0][: len(compose)] == compose
+    assert "--no-deps" in commands[0] and "--user" in commands[0]
+    script = commands[0][commands[0].index("-c") + 1]
+    assert "guard()" in script and "follow_symlinks=False" in script
+    assert "chmod" not in script and "is_symlink" in script
+    assert (tmp_path / "credentials.json").stat().st_mode & 0o777 == 0o600
 
 
 def test_manifest_refuses_and_redacts_accidental_secret(tmp_path: Path) -> None:

@@ -144,7 +144,7 @@ def seal_evidence(private: Path, source: dict[str, Any], secret_values: list[str
             "Source changed during CF2 rehearsal; evidence is not a frozen candidate"
         )
     files = {}
-    for path in sorted(private.iterdir()):
+    for path in sorted(private.rglob("*")):
         if not path.is_file() or path.name in {"credentials.json", "compose.json", "manifest.json"}:
             continue
         content = path.read_bytes()
@@ -153,7 +153,7 @@ def seal_evidence(private: Path, source: dict[str, Any], secret_values: list[str
                 content = content.replace(secret.encode(), b"<redacted>")
             path.write_bytes(content)
             raise RuntimeError("Credential appeared in CF2 evidence; redacted, acceptance refused")
-        files[path.name] = hashlib.sha256(content).hexdigest()
+        files[str(path.relative_to(private))] = hashlib.sha256(content).hexdigest()
     configuration = json.loads((private / "configuration.json").read_text())
     canonical_config = json.dumps(
         configuration, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
@@ -184,6 +184,33 @@ def run(args: list[str], env: dict[str, str], *, timeout: int = 300) -> str:
     return result.stdout
 
 
+def claim_evidence(private: Path, compose: list[str], env: dict[str, str]) -> None:
+    """Linux bind mounts retain container ownership; preserve 0600/0700 modes."""
+    credentials = private / "credentials.json"
+    if credentials.exists() and not os.access(credentials, os.R_OK):
+        run(
+            [
+                *compose,
+                "run",
+                "--rm",
+                "--no-deps",
+                "--user",
+                "0",
+                "api",
+                "python",
+                "-c",
+                "import os,sys; sys.path.insert(0, '/fixture'); "
+                "from cf2_runtime import guard,EVIDENCE; guard(); "
+                "paths=[EVIDENCE,*EVIDENCE.rglob('*')]; "
+                "[(os.chown(p,int(sys.argv[1]),int(sys.argv[2]),follow_symlinks=False)) "
+                "for p in paths if not p.is_symlink()]",
+                str(os.getuid()),
+                str(os.getgid()),
+            ],
+            env,
+        )
+
+
 def active_identity(env: dict[str, str]) -> list[dict[str, Any]]:
     ids = run(
         ["docker", "ps", "-aq", "--filter", "label=com.docker.compose.project=agent-kernel-local"],
@@ -207,7 +234,8 @@ def active_identity(env: dict[str, str]) -> list[dict[str, Any]]:
     )
 
 
-def main(*, pv2: bool = False) -> int:
+def main(*, pv2: bool = False, profile: bool = False) -> int:
+    pv2 = pv2 or profile
     if pv2 and os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("PV2 container acceptance is remote-CI-only")
     os.umask(0o077)
@@ -228,6 +256,21 @@ def main(*, pv2: bool = False) -> int:
                 *service["volumes"],
                 f"{ROOT / 'docs/pilots/prompts'}:/prompts:ro",
             ]
+            if profile:
+                service["volumes"].append(f"{ROOT / 'scripts'}:/app/scripts:ro")
+                service["environment"].update(
+                    {
+                        "PV2_PROFILE": "1",
+                        "PYTHONPATH": "/app:/fixture",
+                        "AGENT_KERNEL_EMBEDDING_PROVIDER": "dashscope",
+                        "AGENT_KERNEL_MAX_MODEL_CALLS": "2",
+                        "AGENT_KERNEL_MAX_TOOL_CALLS": "8",
+                        "AGENT_KERNEL_MAX_ACTIVE_SECONDS": "120",
+                        "AGENT_KERNEL_MAX_TOTAL_TOKENS": "32000",
+                        "AGENT_KERNEL_MAX_OUTPUT_TOKENS": "2048",
+                        "AGENT_KERNEL_MAX_HISTORY_BYTES": "262144",
+                    }
+                )
     compose_file = private / "compose.json"
     write_json(compose_file, config)
     compose = [
@@ -277,6 +320,13 @@ def main(*, pv2: bool = False) -> int:
         paths += [
             "tests/fixtures/pv2_controls.py",
             "docs/pilots/prompts/pv1-runbook-assistant-v1.txt",
+        ]
+    if profile:
+        paths += [
+            "tests/fixtures/pv2_profile.py",
+            "tests/fixtures/pv2_profile_scenario.py",
+            "scripts/pv1_harness.py",
+            "scripts/pv2_offline_harness.py",
         ]
     source = {
         "git_head": run(["git", "rev-parse", "HEAD"], env).strip(),
@@ -331,8 +381,9 @@ def main(*, pv2: bool = False) -> int:
         )
         for stage in ("prepare", "finish"):
             print(f"CF2: {stage} authenticated CLI/API scenario", flush=True)
+            scenario = "pv2_profile_scenario.py" if profile else "cf2_scenario.py"
             output = run(
-                [*compose, "exec", "-T", "api", "python", "/fixture/cf2_scenario.py", stage], env
+                [*compose, "exec", "-T", "api", "python", f"/fixture/{scenario}", stage], env
             )
             print(output.strip(), flush=True)
             if stage == "prepare":
@@ -348,7 +399,25 @@ def main(*, pv2: bool = False) -> int:
                     time.sleep(1)
                 else:
                     raise TimeoutError("Isolated API did not become healthy after restart")
-        if pv2:
+        if profile:
+            run([*compose, "stop", "api", "worker"], env)
+            print(
+                run(
+                    [
+                        *compose,
+                        "run",
+                        "--rm",
+                        "--no-deps",
+                        "api",
+                        "python",
+                        "/fixture/pv2_profile_scenario.py",
+                        "verify",
+                    ],
+                    env,
+                ).strip(),
+                flush=True,
+            )
+        elif pv2:
             print("PV2: stopping isolated Worker; preserving queued records", flush=True)
             run([*compose, "stop", "worker"], env)
             run([*compose, "exec", "-T", "api", "python", "/fixture/pv2_controls.py", "queue"], env)
@@ -373,6 +442,7 @@ def main(*, pv2: bool = False) -> int:
             )
         succeeded = True
     except subprocess.CalledProcessError as error:
+        claim_evidence(private, compose, env)
         detail = str(error.stderr or "") + "\n" + str(error.output or "")
         secret_values = [password]
         credentials = private / "credentials.json"
@@ -385,6 +455,7 @@ def main(*, pv2: bool = False) -> int:
     finally:
         # Logs and raw evidence remain private. No secrets/headers are captured by instrumentation.
         try:
+            claim_evidence(private, compose, env)
             logs = run(
                 [*compose, "logs", "--no-color", "--tail", "150", "api", "worker", "bootstrap"], env
             )
@@ -427,4 +498,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--pv2", action="store_true")
-    raise SystemExit(main(pv2=parser.parse_args().pv2))
+    parser.add_argument("--pv2-profile", action="store_true")
+    args = parser.parse_args()
+    raise SystemExit(main(pv2=args.pv2, profile=args.pv2_profile))

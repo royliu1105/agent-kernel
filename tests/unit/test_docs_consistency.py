@@ -713,7 +713,7 @@ def test_pv1_offline_sheet_keeps_request_checks_separate_from_pilot_evidence() -
         "cli --input takes the inner input object",
         "resume is an active execution endpoint",
         "no claimed submitter/approver separation",
-        "the github observer is still unimplemented",
+        "the github observer has fixture components",
         "in-memory serialization is not persisted resume evidence",
     ):
         assert phrase in sheet
