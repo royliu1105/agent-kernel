@@ -1,12 +1,14 @@
 # PV1 Offline Acceptance Harness Specification
 
-Version: pv1-harness-spec-v1. Status: **offline components implemented; full executor
-integration and deployed acceptance not implemented or executed**.
+Version: pv1-harness-spec-v1. Status: **offline components and API/Worker integration
+implemented; isolated remote container checks passed; full PV2 open**.
 This refines the existing [PV1 contract](pv1-2026-11-15-runbook-assistant.md) and
 [operation sheet](pv1-offline-rehearsal.md); it is not another progress ledger.
 The [evidence template](pv1-evidence-template.json) is an unpopulated record,
 not executable configuration or proof. PV1 technical planning is finalized;
-human fields remain at PV5, deployed PV2 and PV3-PV6 have not started.
+human fields remain at PV5. PV3-PV6 have not started. Current deployment evidence
+and remaining gates are in the [PV2 record](pv2-closure.md); historical component
+checkpoints below are not the latest aggregate status.
 At preparation, provider transmission was pending with spending
 authorization USD 0. The [later scoped authorization](pv1-authorization-2026-11-15.md)
 allows the first USD 2 and specified operations without verifying DeepSeek's
@@ -37,7 +39,7 @@ Run with existing dependencies only:
 | Reconciliation | Per-tool counts across supplied executor IDs; duplicate counts fail even with a truncated tail or late dispatch after close; missing evidence stays unknown |
 | Budget | Serial in-memory generation ledger: five tasks, two attempts/task, USD 1.25 allocation, USD 0.25/task; unknown/invalid/over-reserved costs stop admission |
 | Payload | Exact byte digest and DeepSeek-only check, tested with synthetic bodies only |
-| Not complete | Actual persisted approvals, deployed API/Worker pre-dispatch wiring, runtime case matrix; shared durable budget and embedding allowance now have fixture components below, not deployed enforcement |
+| Beyond this component checkpoint | Persisted approvals and API/Worker cases below now have remote PostgreSQL evidence; shared ledger/container wiring has a separate remote rehearsal, not live billing enforcement |
 
 Observation pass is **not** a case-matrix pass: no database, real approval decision
 or execution ownership was exercised. Threaded append tests are not process-crash
@@ -89,8 +91,8 @@ Code: [fixture integration](../../scripts/pv2_offline_harness.py),
 | Embedding | Maintained DashScope batching crosses the same shared ledger; second batch is denied when its allocation is exhausted | Fixture implemented; no ingestion or vector storage |
 | Conservative cost | USD 1.25 generation, USD 0.10 embedding; unused USD 0.65 remains locked. Successful requests consume their full reservation, not observed cost | Admission-only; no invoice or real tariff enforcement claim |
 | Changed request/unknown charges | Changed serialized body, bad/missing/excess usage or HTTP failure blocks; unresolved reserve prevents replacement/retry dispatch | Fixture implemented |
-| Approval/run/tool reconciliation | Approve/reject, new service instance, repeated resume and independent fixture counts are asserted against repository states | Two PostgreSQL tests; local verification blocked, exact-submission CI required |
-| Full runtime coverage | API/Worker in-process fixture injection and retry/continuation cases below; effective container binding and stop/revoke drill remain separate | New CI verification required; deployed coverage pending |
+| Approval/run/tool reconciliation | Approve/reject, new service instance, repeated resume and independent fixture counts are asserted against repository states | Two PostgreSQL tests passed in CI 43671367900 and 43672700313 |
+| Full runtime coverage | Six API/Worker in-process cases passed in CI 43672700313; effective container binding and stop/revoke use separate CI steps | See PV2 closure record; no inferred full-gate pass |
 
 Reconciliation is observation-only, not a full approval verdict. Known failed
 executors must still be supplied, even when buffered journal bytes are readable.

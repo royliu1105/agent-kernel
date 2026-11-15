@@ -1,8 +1,8 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
-PV5 people/dates. PV2 offline preparation active, deployed PV2 and PV3-PV6
-not started (2026-11-15)**.
+PV5 people/dates. PV2 API/CLI offline and isolated remote deployment checks
+passed; full PV2 has two open gates; PV3-PV6 not started (2026-11-15)**.
 
 Current instruction authorizes PV2 review/fixes, scoped submission and tracking
 its exact CI, not local deployment; technical planning is finalized, human-pilot
@@ -169,7 +169,7 @@ must state applicability and cannot be passed by omission.
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
-| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Offline fixture components under verification; deployed acceptance not started | [Harness scope/status](pilots/pv1-harness-spec.md#offline-implementation-status) |
+| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Five of seven checklist items verified; authenticated Web and CF1 disposition remain open | [Current evidence and remaining gates](pilots/pv2-closure.md) |
 | PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
 | PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
@@ -262,51 +262,60 @@ subset may be reported separately but cannot claim the full approval track passe
 Current evidence: [PV2 closure record](pilots/pv2-closure.md) links the verified
 remote database cases and the new isolated container control job. It explicitly
 distinguishes the CF2 mock profile from the frozen PV1 profile and preserves the
-unresolved Web/profile gates; full PV2 is not marked complete.
+unresolved Web and CF1 disposition gates; full PV2 is not marked complete.
 
 Offline integration checkpoint (2026-11-15): shared fixture manifest/admission
 ledger and maintained provider/embedding transport tests are implemented; see
 [PV2 integration evidence](pilots/pv1-harness-spec.md#pv2-offline-integration).
-No complete PV2 checkbox is earned by these component results. Two new persisted
-approval/observation cases are written; local execution was blocked by the absent
-disposable PostgreSQL URL. The submission's remote CI is the authorized backend
-verification path; no local test database or environment was created.
+No complete PV2 checkbox is earned by these component results. The two persisted
+approval/observation cases passed in CI 43671367900 and 43672700313. Local execution
+was blocked by the absent disposable PostgreSQL URL; no local test database or
+environment was created. Exact-candidate remote CI remains the backend gate.
 
 Follow-up: [API/Worker integration](pilots/pv1-harness-spec.md#api-and-worker-integration)
 adds six real ASGI/queue/runtime PostgreSQL cases for decisions, concurrent resume
-and automatic retries. In-process fixture coverage is separate from container
-instrumentation and authenticated stop/revoke acceptance. Verify the exact
-submission's CI before accepting these cases; keep the full PV2 gates unchecked.
+and automatic retries, all passed in CI 43672700313. In-process fixture coverage
+is separate from the new container instrumentation and authenticated stop/revoke
+acceptance. Verify each exact submission; keep incomplete full PV2 gates unchecked.
 
-- [ ] Re-run the applicable offline gates on the candidate; record exact commands,
+- [x] Re-run the applicable offline gates on the candidate; record exact commands,
   skips and separate backend/deployment coverage using the existing runbooks.
 - [ ] Follow the first-run path from a clean checkout; verify migrations, health,
   scoped credentials, private monitoring and real Workbench/API responses.
 - [ ] Link reviewed CF1 disposition and CF2 actual workflow/provenance evidence
   from the follow-up ledger. Inspect effective initial/resumed provider requests;
   do not treat a registry object or fixture page as runtime version binding.
-- [ ] Rehearse approve, reject, repeated decision/resume, new-executor resume,
+- [x] Rehearse approve, reject, repeated decision/resume, new-executor resume,
   concurrent resume and recovery with existing fixtures and disposable data.
-- [ ] Verify zero lookup invocation before approval or after rejection, and one
+- [x] Verify zero lookup invocation before approval or after rejection, and one
   invocation after approved resume using independent invocation evidence and run
   records. For the selected GitHub candidate, the maintainer accepted the bounded
   HTTP dispatch observer contract, not GitHub server logs or global exactly-once;
   see [the evidence matrix](pilots/pv1-2026-11-15-runbook-assistant.md#independent-invocation-evidence).
-- [ ] Demonstrate stopping new submissions at the API entry, stopping Workers
+- [x] Demonstrate stopping new submissions at the API entry, stopping Workers
   and revoking scoped access using existing operator controls. Preserve queued
   records; no new queue-pause API is required. Record what happens to already
   running calls and uncertain external effects.
-- [ ] Review the exact participant instructions against current behavior and fix
+- [x] Review the exact participant instructions against current behavior and fix
   only workflow-blocking documentation defects before sharing them.
+
+Checked items use cbe8c42 / CI 43674964968: all five jobs passed, Python 1394
+passed/15 explicitly gated skips, both PV2 container matrices passed. Instructions
+are for the accepted supervised API/CLI subset, not independent Web onboarding.
+The two unchecked items are intentionally retained: complete authenticated
+Workbench first-run acceptance and the maintainer's CF1 risk disposition (with
+the CF2 full-workflow closure). No extra participant/date confirmation round is
+needed to accept these offline checks; those fields remain PV5 requirements.
 
 Acceptance: deterministic contracts and applicable real-backend checks pass;
 A/B access is denied; the operator can stop new work without deleting evidence.
 CF1/CF2 entry checks for the admitted scope have reviewed evidence; their source
 inspection alone does not pass this gate or authorize a business-code repair.
-Fixture results establish safety behavior, not live answer quality. The current
-quickstart/examples still contain historical Alpha labels and legacy embedding
-wiring instructions; PV2 must reconcile the selected path with
-[production configuration](production-config.md) before using it with participants.
+Fixture results establish safety behavior, not live answer quality. Historical
+Alpha quickstart/embedding examples are not the pilot instructions. Use the
+reviewed [API/CLI operation sheet](pilots/pv1-offline-rehearsal.md), frozen
+pv1-config-v1 and [production configuration](production-config.md). Live runtime
+admission still requires applicable scope/risk and subsequent PV3/PV4 gates.
 
 ### PV3: Verify Real Model and Embedding Behavior
 

@@ -4,6 +4,12 @@ Date: 2026-11-15. Status: **in progress; full PV2 not accepted**.
 The canonical checklist remains [the pilot plan](../real-scenario-pilot-plan.md).
 This records evidence, not a replacement or a relaxation of its requirements.
 
+The authorized API/CLI offline technical work is verified on cbe8c42. **Five of
+seven canonical checklist items are checked**; the remaining two are full
+authenticated Web/first-run acceptance and CF1 residual-risk disposition with
+full CF2 closure. This is not another implementation/preparation loop for the
+completed offline harness, and no PV3 paid calls or PV5 user sessions are claimed.
+
 ## Verified Baseline
 
 - [CI 43671367900](https://github.com/royliu1105/agent-kernel/actions/runs/43671367900),
@@ -65,7 +71,12 @@ pre-dispatch retry and unknown-charge retry are separate assertions. Per-process
 journals must all close before counts reconcile. An expected unknown charge is
 asserted to remain unknown and block redispatch; it never becomes a successful
 budget window. Fixture charges are conservative reservations, not actual billing.
-This new matrix remains pending exact-submission remote verification.
+Both container steps passed on cbe8c42 in
+[CI 43674964968](https://github.com/royliu1105/agent-kernel/actions/runs/43674964968).
+The profile log explicitly records v3/1024 indexing, three persisted approvals,
+zero pre-approval dispatches, all three closed executor journals and final
+approved/rejected/concurrent HTTP counts **1/0/1**. The retry-only task finishes
+without a tool. Full candidate checks are tracked separately from this job.
 
 The two-call runtime ceiling counts failed provider attempts too. Therefore the
 pre-dispatch retry case must finish without a lookup on its second model call;
@@ -77,6 +88,13 @@ Full authenticated Web still lacks its approved credential bridge. The accepted
 API/CLI-first route does not waive full Web acceptance. No new Web/auth feature
 is implemented by this rehearsal. Do not mark all seven canonical PV2 boxes done
 because this job or the general CI is green.
+
+The other non-test gate is the maintainer's CF1 residual-risk disposition. The
+[reviewed repair](../reviews/2026-11-14-cf1-minimal-repair.md) and adversarial
+memory fixture establish bounded implementation evidence, not that disposition.
+The accepted retrieval/memory scope was explicitly not a general risk waiver.
+Do not invent a maintainer sign-off or admit real pilot users from these results.
+Two independent participants and dates remain PV5 inputs, not extra PV2 coding.
 
 Before paid admission, verify the exact-profile/container observer and budget
 binding on the candidate, including its request and approval case matrix.
@@ -93,6 +111,39 @@ workspace's key private. A successful approve decision does not execute the tool
 resume is a separate action. Inspect Run, tool and independent observer evidence.
 Do not expose the default local unauthenticated Workbench to participants.
 
-Current checkpoint: local static/offline tests only for these container additions;
-the new CI job must pass on the exact submitted SHA before its controls are accepted.
-Neither a local environment nor current Docker is updated by this work.
+Verification checkpoint: 276 focused offline tests, Ruff and mypy (251 source
+files) passed locally. A wider local unit run was not a clean pass: 823 passed,
+178 PostgreSQL setup errors and five failures without the required DB/listener
+permissions; one logging assertion passed in isolation. Use the full remote
+backend suite as the acceptance evidence, not that blocked local run.
+
+CI history is retained rather than replaced by optimistic status:
+
+- c416add / 43674217209: container controls passed, but evidence cleanup failed
+  because Linux retained root ownership of private bind-mounted files. The fix
+  transfers ownership only inside the owned evidence mount, retaining 0600/0700.
+- a6bc97a / 43674646669: control/cleanup step passed; the profile matrix's retry
+  case incorrectly expected lookup after exhausting both model attempts. Corrected
+  to finish the retry case without a tool; production limits remain unchanged.
+- cbe8c42 / 43674964968: **all five CI jobs passed** (python, web, compose,
+  observability, pv2). Python: **1394 passed, 15 skipped**, including all six
+  API/Worker cases, both persisted approval observation cases and eight profile
+  hook unit cases. Both container steps passed with complete cleanup/sealing.
+  Web smoke: two passed/one explicitly skipped. Dedicated Compose and observability
+  jobs separately cover their opted-in deployment checks. Skips are not passes.
+  This remains fixture evidence, not a live-model or authenticated Web pass.
+
+Commands for reproduction on an authorized disposable **remote CI runner**:
+
+```sh
+python scripts/cf2_rehearsal.py --pv2
+python scripts/cf2_rehearsal.py --pv2-profile
+uv run pytest --ignore=tests/integration/test_real_backend_drill.py
+```
+
+The Python job supplies its guarded test PostgreSQL/Redis URLs and runs the
+restore/eval gates separately; do not copy these commands against an active DB.
+The container modes reject non-CI execution before touching Docker. See
+`.github/workflows/ci.yml` for the exact environment and separate deployment jobs.
+
+No local environment, current Docker or paid provider was used by this work.

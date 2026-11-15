@@ -719,11 +719,11 @@ def test_pv1_offline_sheet_keeps_request_checks_separate_from_pilot_evidence() -
         assert phrase in sheet
 
 
-def test_pv1_harness_spec_does_not_claim_implementation_or_live_evidence() -> None:
+def test_pv1_harness_spec_separates_fixture_implementation_from_full_acceptance() -> None:
     spec = _normalized((DOCS_ROOT / "pilots/pv1-harness-spec.md").read_text())
     for phrase in (
-        "offline components implemented",
-        "full executor integration and deployed acceptance not implemented or executed",
+        "offline components and api/worker integration implemented",
+        "isolated remote container checks passed; full pv2 open",
         "spending authorization usd 0",
         "api resume executes tools too",
         "headers alone are not a complete response",
@@ -746,7 +746,7 @@ def test_pv1_offline_dependency_exception_preserves_human_and_runtime_gates() ->
     assert "current no-environment/no-paid-call hold remains" in plan
     status = _section("pilots/pv1-harness-spec.md", "Offline Implementation Status")
     assert "not** a case-matrix pass" in status
-    assert "shared durable budget and embedding allowance" in status
+    assert "shared ledger/container wiring" in status
     assert "blank evidence templates remain unchanged" in status
 
 
