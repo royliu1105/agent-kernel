@@ -123,7 +123,21 @@ def ledger() -> FixtureLedger:
 
 def response(payload: dict[str, Any]) -> dict[str, Any]:
     results = [item for item in payload["input"] if item.get("type") == "function_call_output"]
-    if results:
+    task = json.loads(
+        next(item["content"][0]["text"] for item in payload["input"] if item.get("role") == "user")
+    )
+    if task["case"] == "retry_before":
+        assert not results
+        output = [
+            {
+                "type": "message",
+                "role": "assistant",
+                "content": [
+                    {"type": "output_text", "text": "Synthetic retry completed without a tool"}
+                ],
+            }
+        ]
+    elif results:
         assert len(results) == 1
         observed = json.loads(results[0]["output"])
         assert observed["result"]["data"] == BODY

@@ -100,6 +100,33 @@ async def test_installed_hook_blocks_retry_after_uncertain_dispatch(fixture: Mod
     assert len(attempts) == 1 and not next(iter(attempts.values())).complete
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change", ["model", "prompt", "output_limit", "case"])
+async def test_unapproved_request_never_reserves_or_dispatches(
+    fixture: ModuleType, change: str
+) -> None:
+    import kernel_runtime.router as router
+
+    value = request(fixture, "not-approved" if change == "case" else "approve")
+    if change == "model":
+        value = value.model_copy(update={"model": "changed"})
+    elif change == "output_limit":
+        value = value.model_copy(update={"max_output_tokens": 4096})
+    elif change == "prompt":
+        value = value.model_copy(
+            update={
+                "messages": (
+                    LLMMessage(role=MessageRole.SYSTEM, content="changed"),
+                    value.messages[1],
+                )
+            }
+        )
+    provider = router.create_default_model_router().route("deepseek:" + fixture.MODEL).provider
+    with pytest.raises(AssertionError):
+        await provider.complete(value)
+    assert not fixture.ledger().snapshot().attempts
+
+
 def test_installed_embedding_uses_frozen_dimensions_and_shared_budget(fixture: ModuleType) -> None:
     import kernel_rag.embeddings as embeddings
 

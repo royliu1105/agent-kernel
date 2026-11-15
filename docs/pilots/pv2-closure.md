@@ -67,6 +67,12 @@ asserted to remain unknown and block redispatch; it never becomes a successful
 budget window. Fixture charges are conservative reservations, not actual billing.
 This new matrix remains pending exact-submission remote verification.
 
+The two-call runtime ceiling counts failed provider attempts too. Therefore the
+pre-dispatch retry case must finish without a lookup on its second model call;
+it cannot assume a third synthesis call remains. Approved lookup cases use one
+initial call and one continuation. This is an intentional frozen-budget limit,
+not a reason to increase limits or claim a retried lookup flow succeeded.
+
 Full authenticated Web still lacks its approved credential bridge. The accepted
 API/CLI-first route does not waive full Web acceptance. No new Web/auth feature
 is implemented by this rehearsal. Do not mark all seven canonical PV2 boxes done

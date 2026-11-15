@@ -13,7 +13,7 @@ from cf2_runtime import EVIDENCE, guard, save
 from cf2_scenario import api, cli, lines, read, snapshot, wait_for
 from pv2_profile import MODEL, ledger
 
-from scripts.pv1_harness import read_events, reconcile
+from scripts.pv1_harness import HarnessBlocked, read_events, reconcile
 
 
 def create(agent_id: str, case: str, status: str = "waiting_approval") -> str:
@@ -48,20 +48,33 @@ def prepare() -> None:
     indexed = cli("document", "index", document["id"])
     assert indexed["model"] == "text-embedding-v3" and indexed["dimensions"] == 1024
     cases = {}
-    for case in ("approve", "reject", "concurrent", "retry_before"):
+    for case in ("approve", "reject", "concurrent"):
         run_id = create(agent["id"], case)
         stored = snapshot(run_id, f"profile-waiting-{case}")
         assert len(stored["calls"]) == 1
         call = stored["calls"][0]
         assert call["status"] == "waiting_approval"
         cases[case] = {"run_id": run_id, "tool_id": call["id"], "approval_id": call["approval_id"]}
+        api("GET", f"/v1/runs/{run_id}", role="other", status=404)
+        api("GET", f"/v1/runs/{run_id}", role=None, status=401)
+        api(
+            "POST",
+            f"/v1/approvals/{call['approval_id']}/approve",
+            role="viewer",
+            status=403,
+            body={},
+        )
     for path in (EVIDENCE / "journals").glob("*.jsonl"):
         assert not any(row.event == "dispatch_start" for row in read_events(path))
+    retry_run = create(agent["id"], "retry_before", "succeeded")
+    retried = snapshot(retry_run, "profile-retry-before")
+    assert retried["calls"] == []
     first = cases["approve"]
     cli("approval", "approve", first["approval_id"], "--note", "synthetic fixture")
     save("profile-cases.json", {"agent_id": agent["id"], "cases": cases})
     print(
-        "PV2 exact profile prepared: v3/1024 indexed; four persisted approvals; zero HTTP dispatch."
+        "PV2 exact profile prepared: v3/1024 indexed; three persisted approvals; "
+        "pre-dispatch retry succeeded without a tool; zero HTTP dispatch."
     )
 
 
@@ -106,8 +119,8 @@ def finish() -> None:
     dispatches = lines("profile-dispatches.jsonl")
     assert sum(row["case"] == "retry_after" for row in requests) == 2
     assert sum(row["case"] == "retry_after" for row in dispatches) == 1
-    assert sum(row["case"] == "retry_before" for row in requests) == 3
-    assert sum(row["case"] == "retry_before" for row in dispatches) == 2
+    assert sum(row["case"] == "retry_before" for row in requests) == 2
+    assert sum(row["case"] == "retry_before" for row in dispatches) == 1
     print(
         "PV2 exact profile matrix passed: restart/concurrent/repeated resume, "
         "reject and automatic retries."
@@ -132,9 +145,15 @@ def verify() -> None:
     assert all(
         UUID(row["executor"]) in current.executors for row in lines("profile-requests.jsonl")
     )
-    assert len(current.attempts) == 9  # eight generation + one embedding, across all processes
+    assert len(current.attempts) == 8  # seven generation + one embedding, across all processes
     assert sum(not value.complete for value in current.attempts.values()) == 1
-    assert sum(value.reserved for value in current.attempts.values()) == Decimal("1.10")
+    assert sum(value.reserved for value in current.attempts.values()) == Decimal("0.975")
+    try:
+        state.change("close", executor=next(iter(current.executors)))
+    except HarnessBlocked as error:
+        assert "uncertain" in str(error)
+    else:
+        raise AssertionError("Uncertain charge window must not close")
     # Unknown charge deliberately prevents a green budget window, even with known HTTP counts.
     assert state.observation(EVIDENCE / "journals", expected).verdict == "unknown"
     save(
@@ -150,7 +169,7 @@ def verify() -> None:
     )
     print(
         "PV2 exact-profile safety checks passed: all three executor journals closed; "
-        "HTTP counts 1/0/1/1; unknown charge blocks retry."
+        "HTTP counts 1/0/1; unknown charge blocks retry."
     )
 
 

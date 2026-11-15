@@ -145,6 +145,8 @@ def seal_evidence(private: Path, source: dict[str, Any], secret_values: list[str
         )
     files = {}
     for path in sorted(private.rglob("*")):
+        if path.is_symlink():
+            raise RuntimeError("Symlink in private evidence; refusing out-of-tree evidence")
         if not path.is_file() or path.name in {"credentials.json", "compose.json", "manifest.json"}:
             continue
         content = path.read_bytes()
@@ -330,7 +332,7 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
         ]
     source = {
         "git_head": run(["git", "rev-parse", "HEAD"], env).strip(),
-        "working_tree": "uncommitted harness/documentation candidate; hashes identify exact files",
+        "working_tree": "file hashes identify exact source; git_head records checkout",
         "files": {
             path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
             for path in sorted(set(paths))

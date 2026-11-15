@@ -262,3 +262,9 @@ def test_manifest_refuses_and_redacts_accidental_secret(tmp_path: Path) -> None:
         harness.seal_evidence(tmp_path, {"files": {}}, ["synthetic-secret"])
     assert (tmp_path / "containers.log").read_text() == "value=<redacted>"
     assert not (tmp_path / "manifest.json").exists()
+
+
+def test_manifest_refuses_symlink_evidence(tmp_path: Path) -> None:
+    (tmp_path / "outside-link").symlink_to(tmp_path.parent)
+    with pytest.raises(RuntimeError, match="Symlink"):
+        harness.seal_evidence(tmp_path, {"files": {}}, [])

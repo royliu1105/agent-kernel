@@ -99,7 +99,10 @@ def wait_for(run_id: str, status: str) -> dict[str, Any]:
         assert isinstance(run, dict)
         if run["status"] == status:
             return run
-        assert run["status"] not in {"failed", "canceled", "succeeded"}, run["status"]
+        assert run["status"] not in {"failed", "canceled", "succeeded"}, (
+            run["status"],
+            run.get("error_type"),
+        )
         time.sleep(0.5)
     raise TimeoutError("CF2 run did not reach expected state")
 
