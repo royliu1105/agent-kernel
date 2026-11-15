@@ -184,6 +184,10 @@ The [offline operation sheet](pilots/pv1-offline-rehearsal.md) and request templ
 cover API/CLI shapes and future evidence collection, not environment setup or
 runtime acceptance. Existing operator/viewer roles do not provide a submit-only
 participant role; supervised admission remains a decision, not a new feature task.
+The [harness specification](pilots/pv1-harness-spec.md) and
+[evidence template](pilots/pv1-evidence-template.json) are draft preparation only.
+Observer implementation, fixture controls and case evidence remain absent; no
+PV1/PV2 checklist item passes from this specification or its structural tests.
 No pilot environment or pilot API call is authorized. Scoped submission CI
 tracking is separate, as recorded in the contract. Remaining composite checklist items
 must not be ticked merely because their design was accepted; effective config,

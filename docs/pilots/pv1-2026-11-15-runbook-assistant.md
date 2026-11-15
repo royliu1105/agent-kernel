@@ -1,17 +1,26 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-9; offline request/approval preparation added; no-training
-commitment and external transmission pending; PV1 in progress**.
+Record revision: **draft-10; offline harness specification and evidence form added;
+no-training commitment and external transmission pending; PV1 in progress**.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
 This record separates accepted design, remaining proposals and evidence; it is
 not a second task ledger.
 
 ## Authorization and Candidate
 
+The draft-10 preparation instruction authorized offline harness specification and
+evidence-template preparation only, with no feature expansion. The current review
+instruction authorizes scoped commit/push after review passes and exact-submission
+CI tracking only. No harness implementation, pilot/model API calls, local environment
+creation or current Docker updates are authorized. DeepSeek official reply and
+external transmission permission remain pending; spending authorization remains
+USD 0. Remote CI disposable test services are not pilot setup. See the
+[harness specification review](../reviews/2026-11-15-pv1-harness-spec-review.md).
+
 The draft-9 preparation instruction authorized offline preparation only, with no
-feature expansion. The current review instruction authorizes scoped commit/push
-after review passes and exact-submission CI tracking only. No pilot/model API
+feature expansion. Its review instruction authorized scoped commit/push
+after review passed and exact-submission CI tracking only. No pilot/model API
 calls, local environment creation or current Docker updates are authorized.
 DeepSeek official reply and external transmission permission remain pending;
 spending authorization remains USD 0. Existing remote CI disposable test services
@@ -395,6 +404,15 @@ inspection. Operator can submit and approve, while viewer cannot submit. A
 supervised participant admission procedure remains to be confirmed; no new role,
 gateway or credential is created. This does not close full authenticated Web.
 
+The [harness specification](pv1-harness-spec.md) and
+[unpopulated evidence form](pv1-evidence-template.json) now detail proposed
+executor coverage, durable dispatch/response evidence, fixture controls and
+per-tool-call verdicts. They do not implement an observer or pass its controls.
+Unknown observations are null, not zero; the second legitimate approved call
+remains separately covered. No runtime configuration, target or accepted threshold
+changed. Intended specification review belongs to PV1; actual artifacts and
+runtime evidence belong to separately authorized PV2/PV3 work.
+
 ## Accepted Task Prompt
 
 - Version: `pv1-runbook-assistant-v1`.
@@ -744,6 +762,16 @@ features or an expanded schedule. Each execution permission must be requested
 separately; accepting this document does not start the next phase automatically.
 
 ## Learning and Preparation Evidence
+
+Draft-10 offline harness specification (2026-11-15): **109 passed** across
+test_pv1_offline_preparation.py, test_pv1_materials.py and test_docs_consistency.py,
+with provider key/test DB variables unset and live smoke disabled. Checks cover
+empty observations/closed authorization, seven case records (including the
+existing second-call requirement), eight planned fixture controls, frozen
+provenance and document links. These are structural tests, not observer controls
+or dispatch evidence. The harness is not implemented; no environment, API call,
+provider request, Docker operation or pilot acceptance occurred. DeepSeek reply,
+external transmission and all previously open entry decisions remain pending.
 
 Draft-9 offline request preparation (2026-11-15): **104 passed** across
 test_pv1_offline_preparation.py, test_pv1_materials.py and test_docs_consistency.py,

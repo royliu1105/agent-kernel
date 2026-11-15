@@ -129,8 +129,10 @@ quality and cost controls cannot pass through these tests. They remain in PV1-PV
 at their original gates; this file does not authorize implementation or execution
 of those future components. No runtime feature or provider choice is changed.
 
-Next offline work can finalize the harness specification and evidence form;
-operator confirmation is still needed for participant admission and the final
+The [harness specification](pv1-harness-spec.md) and
+[evidence template](pv1-evidence-template.json) now provide draft coverage,
+journal, control-case and verdict contracts; neither is implemented or executed.
+Operator confirmation is still needed for participant admission and the final
 configuration. Provider terms/reply, actual billing constraints, real response
 inspection, two trial participants and dates remain unresolved. Do not invent
 answers or ask for final external transmission approval while evidence is absent.

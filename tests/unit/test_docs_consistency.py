@@ -29,6 +29,7 @@ STATUS_GUIDES = (
     "docs/pilot-learning-guide.md",
     "docs/pilots/pv1-2026-11-15-runbook-assistant.md",
     "docs/pilots/pv1-offline-rehearsal.md",
+    "docs/pilots/pv1-harness-spec.md",
     "docs/reference-follow-up-plan.md",
     "docs/observability-completion-plan.md",
     "docs/reviews/2026-11-14-cf2-workflow-inventory.md",
@@ -517,6 +518,8 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     authorization = _section(filename, "Authorization and Candidate")
     for phrase in (
         "current review instruction authorizes scoped commit/push after review passes",
+        "no harness implementation, pilot/model api calls, local environment "
+        "creation or current docker updates are authorized",
         "exact-submission ci tracking only",
         "ci tracking for this submission only",
         "submission ci tracking for the exact submitted sha only",
@@ -610,6 +613,25 @@ def test_pv1_offline_sheet_keeps_request_checks_separate_from_pilot_evidence() -
         "in-memory serialization is not persisted resume evidence",
     ):
         assert phrase in sheet
+
+
+def test_pv1_harness_spec_does_not_claim_implementation_or_live_evidence() -> None:
+    spec = _normalized((DOCS_ROOT / "pilots/pv1-harness-spec.md").read_text())
+    for phrase in (
+        "draft, not implemented or executed",
+        "spending authorization usd 0",
+        "api resume executes tools too",
+        "headers alone are not a complete response",
+        "unknown values are null, never zero",
+        "not github server logs or global exactly-once",
+        "tests of form structure alone do not implement or pass these controls",
+        "do not require executed pv2 evidence to sign off pv1",
+        "no learning sign-off is claimed now",
+        "a planned replacement executor is allowed only after",
+        "unregistered or uninstrumented executors invalidate coverage",
+        "confirm fsync (or equivalent durable-store acknowledgement)",
+    ):
+        assert phrase in spec
 
 
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:

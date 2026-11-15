@@ -160,3 +160,168 @@ def test_identity_matrix_does_not_claim_separation_of_duties() -> None:
     assert Permission.RUN_READ in viewer
     assert Permission.RUN_WRITE not in viewer
     assert Permission.APPROVAL_REVIEW not in viewer
+
+
+def _evidence_template() -> dict[str, Any]:
+    value: dict[str, Any] = json.loads((PILOTS / "pv1-evidence-template.json").read_text())
+    return value
+
+
+def test_evidence_form_has_no_authorization_or_observed_results() -> None:
+    template = _evidence_template()
+    assert template["version"] == "pv1-evidence-template-v1"
+    assert template["status"] == "draft_not_executed"
+    assert (PILOTS / template["specification"]).is_file()
+    assert template["authority"] == {
+        "harness_implementation_authorized": False,
+        "environment_creation_authorized": False,
+        "pilot_query_authorized": False,
+        "provider_transmission_authorized": False,
+        "spending_authorized_usd": 0,
+        "deepseek_official_reply": "pending",
+        "authorization_reference": None,
+    }
+    assert template["records"] == []
+    record = template["record_shape"]
+    assert record["behavior_verdict"] == record["case_verdict"] == "not_run"
+    for key, value in record.items():
+        if key not in {"behavior_verdict", "case_verdict"}:
+            assert value is None or value == [], key
+    for name in ("executor_shape", "journal_event_shape"):
+        assert all(value is None for value in template[name].values())
+    assert template["artifact_shape"] == {
+        "reference": None,
+        "sha256": None,
+        "evidence_kind": None,
+        "access": "private",
+    }
+
+
+def test_evidence_plan_covers_all_existing_groups_and_second_legitimate_call() -> None:
+    template = _evidence_template()
+    cases = template["case_plan"]
+    expected = {
+        "before_approval": 0,
+        "reject_then_resume": 0,
+        "approve_then_resume": 1,
+        "duplicate_concurrent_resume": 1,
+        "new_executor_resume": 1,
+        "second_legitimate_approved_call": 1,
+        "observer_failure_or_timeout": None,
+    }
+    assert len(cases) == len(expected)
+    assert {case["id"]: case["expected_dispatches_per_tool_call"] for case in cases} == expected
+    assert {case["id"] for case in _template()["evidence_cases"]} == (
+        set(expected) - {"second_legitimate_approved_call"}
+    )
+    controls = template["fixture_control_plan"]
+    control_ids = {
+        "known_dispatch",
+        "duplicate_dispatch",
+        "missing_executor",
+        "journal_before_send",
+        "journal_after_send",
+        "crash_after_start",
+        "incomplete_response",
+        "binding_and_guards",
+    }
+    assert len(controls) == len(control_ids)
+    assert {control["id"] for control in controls} == control_ids
+    assert all(item["result"] == "not_run" for item in cases + controls)
+    spec = (PILOTS / template["specification"]).read_text()
+    assert all(f"| {name} |" in spec for name in set(expected) | control_ids)
+
+
+def test_evidence_form_retains_required_correlation_and_coverage_fields() -> None:
+    template = _evidence_template()
+    required = {
+        "record_shape": {
+            "case_id",
+            "evidence_class",
+            "run_id",
+            "tool_call_id",
+            "approval_id",
+            "prior_case_references",
+            "executor_manifest",
+            "journal_artifacts",
+            "window_start_utc",
+            "window_end_utc",
+            "coverage_complete",
+            "in_flight_at_close",
+            "observed_dispatch_starts",
+            "observed_validated_responses",
+            "response_identity",
+            "persisted_state_artifacts",
+            "initial_request_artifacts",
+            "resumed_request_artifacts",
+            "limits_and_counter_artifacts",
+            "private_response_artifacts",
+            "tool_outcome",
+            "behavior_verdict",
+            "case_verdict",
+            "missing_evidence",
+            "reviewer_reference",
+        },
+        "executor_shape": {
+            "executor_id",
+            "kind",
+            "configuration_sha256",
+            "hook_attestation_artifact",
+            "window_start_utc",
+            "window_end_utc",
+            "last_sequence",
+            "journal_record_count",
+            "close_marker_present",
+        },
+        "journal_event_shape": {
+            "event",
+            "case_id",
+            "run_id",
+            "tool_call_id",
+            "executor_id",
+            "sequence",
+            "attempt_id",
+            "timestamp_utc",
+            "method",
+            "fixed_path",
+            "http_status",
+            "github_request_id",
+            "body_complete",
+            "validation_outcome",
+            "error_code",
+        },
+    }
+    for section, fields in required.items():
+        assert fields <= template[section].keys(), section
+    assert set(template["journal_event_shape"]) == required["journal_event_shape"]
+
+
+def test_evidence_provenance_preserves_frozen_inputs_and_unknown_target_fields() -> None:
+    template = _evidence_template()
+    provenance = template["provenance"]
+    assert provenance["prompt_version"] == _template()["prompt"]["version"]
+    assert provenance["prompt_sha256"] == _template()["prompt"]["sha256"]
+    manifest_bytes = (PILOTS / "pv1-materials/manifest.json").read_bytes()
+    assert provenance["materials_manifest_sha256"] == hashlib.sha256(manifest_bytes).hexdigest()
+    assert provenance["materials_version"] == json.loads(manifest_bytes)["version"]
+    for key in (
+        "candidate_sha",
+        "lock_sha256",
+        "sanitized_config_sha256",
+        "harness_sha256",
+        "operation_definition_sha256",
+    ):
+        assert provenance[key] is None
+    assert provenance["image_digests"] == []
+    assert template["target"] == {
+        "repository": "royliu1105/agent-kernel",
+        "run_id": 43634747295,
+        "head_sha": "2bb3f4ab1d50afa1cc2686b42b1ebcaf5db1f726",
+        "run_attempt": None,
+        "api_version": None,
+        "proposed_timeout_ms": 10000,
+        "effective_timeout_ms": None,
+        "exclude_pull_requests": True,
+        "max_response_bytes": 32768,
+        "max_result_bytes": 65536,
+    }
