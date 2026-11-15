@@ -236,9 +236,46 @@ def active_identity(env: dict[str, str]) -> list[dict[str, Any]]:
     )
 
 
-def main(*, pv2: bool = False, profile: bool = False) -> int:
+def add_web_service(config: dict[str, Any], project: str) -> None:
+    """Expose only the disposable browser entrypoint on the CI runner loopback."""
+    if not re.fullmatch(PROJECT_PATTERN, project):
+        raise ValueError("Refusing a non-disposable Web project name")
+    config["services"]["web"] = {
+        "image": project + ":web",
+        "build": {"context": str(ROOT), "dockerfile": "apps/web/Dockerfile"},
+        "environment": {
+            "AGENT_KERNEL_API_URL": "http://api:8000",
+            "NEXT_TELEMETRY_DISABLED": "1",
+        },
+        "ports": ["127.0.0.1:3101:3000"],
+        "restart": "no",
+        "healthcheck": {
+            "test": [
+                "CMD",
+                "node",
+                "-e",
+                "fetch('http://127.0.0.1:3000/api/agent-kernel/health')"
+                ".then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+            ],
+            "interval": "2s",
+            "timeout": "5s",
+            "retries": 60,
+        },
+    }
+    for name in ("api", "worker", "bootstrap"):
+        config["services"][name]["environment"].update(
+            {"DEEPSEEK_API_KEY": "", "DASHSCOPE_API_KEY": "", "PV2_REHEARSAL": "1"}
+        )
+        config["services"][name]["volumes"].append(
+            f"{ROOT / 'docs/pilots/prompts'}:/prompts:ro"
+        )
+
+
+def main(*, pv2: bool = False, profile: bool = False, web: bool = False) -> int:
     pv2 = pv2 or profile
-    if pv2 and os.environ.get("GITHUB_ACTIONS") != "true":
+    if web and pv2:
+        raise ValueError("Web and frozen-profile rehearsals are separate evidence scopes")
+    if (pv2 or web) and os.environ.get("GITHUB_ACTIONS") != "true":
         raise RuntimeError("PV2 container acceptance is remote-CI-only")
     os.umask(0o077)
     env = clean_environment(dict(os.environ))
@@ -248,6 +285,8 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
     write_json(private / "guard.json", {"project": project})
     password = secrets.token_urlsafe(32)
     config = compose_config(project, private, password)
+    if web:
+        add_web_service(config, project)
     if pv2:
         for name in ("api", "worker", "bootstrap"):
             service = config["services"][name]
@@ -305,6 +344,9 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
             or path
             in {
                 "pyproject.toml",
+                "package.json",
+                "package-lock.json",
+                ".github/workflows/ci.yml",
                 "uv.lock",
                 "alembic.ini",
                 "README.md",
@@ -330,6 +372,11 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
             "scripts/pv1_harness.py",
             "scripts/pv2_offline_harness.py",
         ]
+    if web:
+        paths += [
+            "tests/fixtures/pv2_web_observer.py",
+            "docs/pilots/prompts/pv1-runbook-assistant-v1.txt",
+        ]
     source = {
         "git_head": run(["git", "rev-parse", "HEAD"], env).strip(),
         "working_tree": "file hashes identify exact source; git_head records checkout",
@@ -345,7 +392,7 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
     try:
         run([*compose, "config", "--quiet"], env)
         print("CF2: building isolated candidate; no active-stack operations", flush=True)
-        run([*compose, "build", "api"], env, timeout=900)
+        run([*compose, "build", "api", *(["web"] if web else [])], env, timeout=1200)
         image_id = run(
             ["docker", "image", "inspect", project + ":candidate", "--format", "{{.Id}}"], env
         ).strip()
@@ -353,6 +400,8 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
         run([*compose, "up", "-d", "--wait", "postgres", "redis"], env)
         run([*compose, "run", "--rm", "--no-deps", "bootstrap"], env)
         run([*compose, "up", "-d", "--wait", "--wait-timeout", "120", "api", "worker"], env)
+        if web:
+            run([*compose, "up", "-d", "--wait", "--wait-timeout", "120", "web"], env)
         network_ids = run(
             [
                 "docker",
@@ -381,7 +430,36 @@ def main(*, pv2: bool = False, profile: bool = False) -> int:
                 for item in inspected
             ],
         )
-        for stage in ("prepare", "finish"):
+        if web:
+            claim_evidence(private, compose, env)
+            browser_env = {
+                **env,
+                "CI": "1",
+                "GITHUB_ACTIONS": "true",
+                "CF2_WEB_PROJECT": project,
+                "CF2_WEB_EVIDENCE": str(private),
+                "PLAYWRIGHT_BASE_URL": "http://127.0.0.1:3101",
+            }
+            print("PV2 Web: actual authenticated browser first-use journey", flush=True)
+            print(
+                run(
+                    [
+                        "npm",
+                        "--workspace",
+                        "apps/web",
+                        "exec",
+                        "--",
+                        "playwright",
+                        "test",
+                        "--config",
+                        "playwright.pv2.config.ts",
+                    ],
+                    browser_env,
+                    timeout=600,
+                ).strip(),
+                flush=True,
+            )
+        for stage in () if web else ("prepare", "finish"):
             print(f"CF2: {stage} authenticated CLI/API scenario", flush=True)
             scenario = "pv2_profile_scenario.py" if profile else "cf2_scenario.py"
             output = run(
@@ -501,5 +579,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pv2", action="store_true")
     parser.add_argument("--pv2-profile", action="store_true")
+    parser.add_argument("--web", action="store_true")
     args = parser.parse_args()
-    raise SystemExit(main(pv2=args.pv2, profile=args.pv2_profile))
+    raise SystemExit(main(pv2=args.pv2, profile=args.pv2_profile, web=args.web))

@@ -10,6 +10,12 @@ authenticated Web/first-run acceptance and CF1 residual-risk disposition with
 full CF2 closure. This is not another implementation/preparation loop for the
 completed offline harness, and no PV3 paid calls or PV5 user sessions are claimed.
 
+The bounded Web implementation candidate is now available; its
+[acceptance matrix](pv2-web-acceptance.md) is entirely pending main-agent
+exact-candidate CI. The consolidated
+[CF1 decision list](../reviews/cf1-risk-disposition.md) is pending the maintainer's
+explicit disposition. These are the two remaining closure paths, not new passes.
+
 ## Verified Baseline
 
 - [CI 43671367900](https://github.com/royliu1105/agent-kernel/actions/runs/43671367900),
@@ -84,14 +90,21 @@ it cannot assume a third synthesis call remains. Approved lookup cases use one
 initial call and one continuation. This is an intentional frozen-budget limit,
 not a reason to increase limits or claim a retried lookup flow succeeded.
 
-Full authenticated Web still lacks its approved credential bridge. The accepted
-API/CLI-first route does not waive full Web acceptance. No new Web/auth feature
-is implemented by this rehearsal. Do not mark all seven canonical PV2 boxes done
-because this job or the general CI is green.
+Full authenticated Web acceptance remains pending. The candidate implements
+the in-memory workspace API key, Bearer proxy, backend per-request RBAC path and
+actual UI create-agent/KB/upload/ingest/chunk/index/Run/queue/approval/resume/output/
+logout journey. Real Docker fixture-provider plus browser verification is planned
+in remote CI; all new checks in the [Web record](pv2-web-acceptance.md) are pending.
+The accepted API/CLI-first route does not waive full Web acceptance, and the
+historical rehearsal did not implement or verify this new path. Do not mark all
+seven canonical PV2 boxes done because an earlier job or general CI is green.
 
 The other non-test gate is the maintainer's CF1 residual-risk disposition. The
 [reviewed repair](../reviews/2026-11-14-cf1-minimal-repair.md) and adversarial
 memory fixture establish bounded implementation evidence, not that disposition.
+The [consolidated risk list](../reviews/cf1-risk-disposition.md) separates exact
+risks, consequences, existing mitigations and evidence limits; every decision
+remains pending. Even a future Web CI pass cannot supply maintainer acceptance.
 The accepted retrieval/memory scope was explicitly not a general risk waiver.
 Do not invent a maintainer sign-off or admit real pilot users from these results.
 Two independent participants and dates remain PV5 inputs, not extra PV2 coding.

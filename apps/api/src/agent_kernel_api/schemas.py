@@ -14,8 +14,10 @@ from kernel_core import (
     IngestionJobStatus,
     KnowledgeBaseStatus,
     MemoryType,
+    RiskLevel,
     RunEventType,
     RunStatus,
+    ToolCallStatus,
 )
 from kernel_core.memory_limits import (
     MEMORY_CONTENT_BYTES,
@@ -28,6 +30,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class ApiModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class AuthMeResponse(ApiModel):
+    authenticated: bool
+    principal_id: UUID | None
+    display_name: str | None
+    workspace_id: UUID | None
+    role: str | None
+    permissions: list[str]
 
 
 class AgentCreateRequest(ApiModel):
@@ -109,6 +120,16 @@ class ApprovalResponse(ApiModel):
 
 class ApprovalApproveRequest(ApiModel):
     decision_note: str | None = Field(default=None, max_length=4000)
+
+
+class ApprovalToolCallResponse(ApiModel):
+    id: UUID
+    run_id: UUID
+    tool_name: str
+    arguments: dict[str, Any]
+    status: ToolCallStatus
+    risk_level: RiskLevel
+    approval_id: UUID | None
 
 
 class ApprovalRejectRequest(ApiModel):

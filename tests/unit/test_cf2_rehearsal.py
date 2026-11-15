@@ -83,13 +83,34 @@ def test_host_environment_is_allowlisted() -> None:
     }
 
 
-@pytest.mark.parametrize("options", [{"pv2": True}, {"profile": True}])
+@pytest.mark.parametrize("options", [{"pv2": True}, {"profile": True}, {"web": True}])
 def test_pv2_container_mode_refuses_local_execution(
     monkeypatch: pytest.MonkeyPatch, options: dict[str, bool]
 ) -> None:
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     with pytest.raises(RuntimeError, match="remote-CI-only"):
         harness.main(**options)
+
+
+def test_web_config_exposes_only_loopback_entrypoint(tmp_path: Path) -> None:
+    project = "agent-kernel-cf2-0123456789abcdef"
+    config = harness.compose_config(project, tmp_path, "synthetic-password")
+    harness.add_web_service(config, project)
+    assert config["networks"] == {"default": {"internal": True}}
+    assert config["services"]["web"]["ports"] == ["127.0.0.1:3101:3000"]
+    assert config["services"]["web"]["environment"]["AGENT_KERNEL_API_URL"] == "http://api:8000"
+    assert not any(
+        "ports" in service for name, service in config["services"].items() if name != "web"
+    )
+    assert "volumes" not in config["services"]["web"]
+    for name in ("api", "worker", "bootstrap"):
+        assert config["services"][name]["environment"]["DEEPSEEK_API_KEY"] == ""
+        assert config["services"][name]["environment"]["DASHSCOPE_API_KEY"] == ""
+
+
+def test_web_profile_cannot_be_confused_with_frozen_profile() -> None:
+    with pytest.raises(ValueError, match="separate evidence scopes"):
+        harness.main(web=True, profile=True)
 
 
 def test_collision_never_runs_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

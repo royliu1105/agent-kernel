@@ -90,7 +90,7 @@ test("operator can navigate core Workbench views", async ({ page }) => {
     });
   });
 
-  await page.goto("/");
+  await page.goto("/preview");
 
   await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
   await expect(page.getByLabel("Runtime status")).toContainText(
@@ -174,7 +174,7 @@ test("operator can inspect runs and approve tool calls locally", async ({ page }
     });
   });
 
-  await page.goto("/");
+  await page.goto("/preview");
 
   await page.getByRole("button", { name: "Runs" }).click();
   await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();

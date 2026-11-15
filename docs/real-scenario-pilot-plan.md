@@ -263,6 +263,10 @@ Current evidence: [PV2 closure record](pilots/pv2-closure.md) links the verified
 remote database cases and the new isolated container control job. It explicitly
 distinguishes the CF2 mock profile from the frozen PV1 profile and preserves the
 unresolved Web and CF1 disposition gates; full PV2 is not marked complete.
+The [Web acceptance matrix](pilots/pv2-web-acceptance.md) tracks the bounded
+implementation in progress by another agent; all new checks await main-agent
+exact-candidate remote CI. The [CF1 residual-risk decision list](reviews/cf1-risk-disposition.md)
+awaits explicit maintainer disposition, not an agent or CI acceptance.
 
 Offline integration checkpoint (2026-11-15): shared fixture manifest/admission
 ledger and maintained provider/embedding transport tests are implemented; see
@@ -282,9 +286,13 @@ acceptance. Verify each exact submission; keep incomplete full PV2 gates uncheck
   skips and separate backend/deployment coverage using the existing runbooks.
 - [ ] Follow the first-run path from a clean checkout; verify migrations, health,
   scoped credentials, private monitoring and real Workbench/API responses.
+  See the [pending authenticated Web checks](pilots/pv2-web-acceptance.md);
+  planned real Docker fixture-provider/browser CI is not yet evidence.
 - [ ] Link reviewed CF1 disposition and CF2 actual workflow/provenance evidence
   from the follow-up ledger. Inspect effective initial/resumed provider requests;
   do not treat a registry object or fixture page as runtime version binding.
+  [CF1 risks and decisions](reviews/cf1-risk-disposition.md) remain pending the
+  maintainer; a Web pass alone cannot close this composite item.
 - [x] Rehearse approve, reject, repeated decision/resume, new-executor resume,
   concurrent resume and recovery with existing fixtures and disposable data.
 - [x] Verify zero lookup invocation before approval or after rejection, and one

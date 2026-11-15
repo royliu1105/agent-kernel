@@ -374,6 +374,17 @@ class AgentRepository:
             return None
         return _agent_from_record(record)
 
+    def list(self, *, workspace_id: UUID | None = None, limit: int = 100) -> list[Agent]:
+        if not 1 <= limit <= 1000:
+            raise ValueError("limit must be between 1 and 1000.")
+        statement = select(AgentRecord)
+        if workspace_id is not None:
+            statement = statement.where(AgentRecord.workspace_id == str(workspace_id))
+        statement = statement.order_by(AgentRecord.created_at.desc(), AgentRecord.id.desc()).limit(
+            limit
+        )
+        return [_agent_from_record(record) for record in self._session.scalars(statement)]
+
 
 class RunRepository:
     """Persistence operations for runs and run event timelines."""

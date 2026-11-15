@@ -35,7 +35,7 @@ from kernel_core import (
     RunEventType,
     RunStatus,
 )
-from kernel_identity import Permission
+from kernel_identity import AuthorizationRequest, Permission, WorkspaceAuthorizer
 from kernel_observability import (
     AggregatingMetricsRecorder,
     ExposableMetricsRecorder,
@@ -103,12 +103,14 @@ from kernel_tools.external.config import external_tools_config_from_env
 from kernel_tools.external.loader import load_external_tools
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
+from starlette.middleware.base import RequestResponseEndpoint
 
 from agent_kernel_api.auth import (
     ApiKeyAuthMiddleware,
     api_key_auth_enabled_from_env,
     current_principal_id,
     current_workspace_id,
+    get_auth_context,
     require_permission,
 )
 from agent_kernel_api.readiness import ReadinessChecker, create_readiness_checker
@@ -118,6 +120,8 @@ from agent_kernel_api.schemas import (
     ApprovalApproveRequest,
     ApprovalRejectRequest,
     ApprovalResponse,
+    ApprovalToolCallResponse,
+    AuthMeResponse,
     ChunkEmbeddingResponse,
     CitationResponse,
     DocumentChunkResponse,
@@ -223,6 +227,16 @@ def create_app(
         )
     app.add_middleware(HttpMetricsMiddleware, metrics=process_metrics)
 
+    @app.middleware("http")
+    async def identity_cache_control(
+        request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        response = await call_next(request)
+        if request.url.path.startswith("/v1/"):
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["Vary"] = "Authorization"
+        return response
+
     runner = execution_service or RunExecutionService(
         router=create_default_model_router(),
         metrics_recorder=process_metrics,
@@ -282,6 +296,42 @@ def create_app(
             media_type="text/plain; version=0.0.4; charset=utf-8",
         )
 
+    @app.get("/v1/auth/me", response_model=AuthMeResponse, tags=["auth"])
+    def auth_me(http_request: Request) -> AuthMeResponse:
+        context = get_auth_context(http_request)
+        if context is None:
+            # Permission dependencies allow all operations when auth is disabled.
+            return AuthMeResponse(
+                authenticated=False,
+                principal_id=None,
+                display_name=None,
+                workspace_id=None,
+                role=None,
+                permissions=sorted(permission.value for permission in Permission),
+            )
+        authorizer = WorkspaceAuthorizer(context.memberships)
+        decisions = [
+            authorizer.authorize(
+                AuthorizationRequest(
+                    principal=context.principal,
+                    workspace_id=context.api_key.workspace_id,
+                    permission=permission,
+                )
+            )
+            for permission in Permission
+        ]
+        role = next((decision.role for decision in decisions if decision.allowed), None)
+        return AuthMeResponse(
+            authenticated=True,
+            principal_id=context.principal.id,
+            display_name=context.principal.display_name,
+            workspace_id=context.api_key.workspace_id,
+            role=role.value if role is not None else None,
+            permissions=sorted(
+                decision.permission.value for decision in decisions if decision.allowed
+            ),
+        )
+
     @app.get(
         "/v1/usage",
         dependencies=[Depends(require_permission(Permission.RUN_READ))],
@@ -336,6 +386,24 @@ def create_app(
             workspace_id=current_workspace_id(http_request),
         )
         return _agent_response(agent)
+
+    @app.get(
+        "/v1/agents",
+        response_model=list[AgentResponse],
+        dependencies=[Depends(require_permission(Permission.AGENT_READ))],
+        tags=["agents"],
+    )
+    def list_agents(
+        http_request: Request,
+        limit: int = Query(default=100, ge=1, le=1000),
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> list[AgentResponse]:
+        return [
+            _agent_response(agent)
+            for agent in AgentRepository(session).list(
+                workspace_id=current_workspace_id(http_request), limit=limit
+            )
+        ]
 
     @app.get(
         "/v1/agents/{agent_id}",
@@ -575,6 +643,28 @@ def create_app(
         if approval is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
         return _approval_response(approval)
+
+    @app.get(
+        "/v1/approvals/{approval_id}/tool-call",
+        response_model=ApprovalToolCallResponse,
+        dependencies=[Depends(require_permission(Permission.APPROVAL_REVIEW))],
+        tags=["approvals"],
+    )
+    def get_approval_tool_call(
+        approval_id: UUID,
+        http_request: Request,
+        session: Session = Depends(get_session),  # noqa: B008
+    ) -> ApprovalToolCallResponse:
+        workspace_id = current_workspace_id(http_request)
+        approval = ApprovalRepository(session).get(approval_id, workspace_id=workspace_id)
+        if approval is None:
+            raise HTTPException(status_code=404, detail="Approval not found")
+        tool = ToolCallRepository(session, workspace_id=workspace_id).get(approval.tool_call_id)
+        if tool is None or tool.run_id != approval.run_id or tool.approval_id != approval.id:
+            raise HTTPException(status_code=409, detail="Approval tool binding is inconsistent")
+        return ApprovalToolCallResponse(
+            **tool.model_dump(include=set(ApprovalToolCallResponse.model_fields))
+        )
 
     @app.post(
         "/v1/approvals/{approval_id}/approve",

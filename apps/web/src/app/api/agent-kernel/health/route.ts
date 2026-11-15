@@ -1,55 +1,26 @@
-import { NextResponse } from "next/server";
-
-const DEFAULT_API_URL = "http://127.0.0.1:8000";
-const HEALTH_TIMEOUT_MS = 1500;
+import { apiOrigin, boundedBody, PRIVATE_HEADERS } from "../../../../lib/proxy";
 
 export async function GET() {
-  const baseUrl = (
-    process.env.AGENT_KERNEL_API_URL ??
-    process.env.NEXT_PUBLIC_AGENT_KERNEL_API_URL ??
-    DEFAULT_API_URL
-  ).replace(/\/$/, "");
   const checkedAt = new Date().toISOString();
-  const startedAt = Date.now();
-
+  const started = Date.now();
+  let baseUrl = "unconfigured";
   try {
+    baseUrl = apiOrigin();
+    const signal = AbortSignal.timeout(1500);
     const response = await fetch(`${baseUrl}/healthz`, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
+      headers: { accept: "application/json" }, cache: "no-store",
+      credentials: "omit", redirect: "error", signal,
     });
-    const latencyMs = Date.now() - startedAt;
-
     if (!response.ok) {
-      return NextResponse.json({
-        state: "offline",
-        service: "agent-kernel-api",
-        status: "unreachable",
-        baseUrl,
-        checkedAt,
-        latencyMs,
-        error: `Health check returned HTTP ${response.status}`,
-      });
+      await response.body?.cancel();
+      throw new Error("Health check failed");
     }
-
-    const payload = (await response.json()) as { service?: unknown; status?: unknown };
-
-    return NextResponse.json({
-      state: "online",
-      service: typeof payload.service === "string" ? payload.service : "agent-kernel-api",
-      status: typeof payload.status === "string" ? payload.status : "ok",
-      baseUrl,
-      checkedAt,
-      latencyMs,
-    });
-  } catch (error) {
-    return NextResponse.json({
-      state: "offline",
-      service: "agent-kernel-api",
-      status: "unreachable",
-      baseUrl,
-      checkedAt,
-      latencyMs: null,
-      error: error instanceof Error ? error.message : "Health check failed",
-    });
+    const data = await boundedBody(response.body, 16 * 1024, signal);
+    JSON.parse(new TextDecoder().decode(data));
+    return Response.json({ state: "online", service: "agent-kernel-api", status: "ok",
+      baseUrl, checkedAt, latencyMs: Date.now() - started }, { headers: PRIVATE_HEADERS });
+  } catch {
+    return Response.json({ state: "offline", service: "agent-kernel-api", status: "unreachable",
+      baseUrl, checkedAt, latencyMs: null, error: "Health check failed." }, { headers: PRIVATE_HEADERS });
   }
 }

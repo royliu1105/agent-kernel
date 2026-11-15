@@ -1,0 +1,52 @@
+.workbench { max-width: 1600px; margin: 0 auto; padding: 24px; letter-spacing: 0; }
+.workbench h1 { margin: 0; font-size: 28px; line-height: 1.2; }
+.workbench h2 { margin: 0 0 20px; font-size: 20px; }
+.workbench h3 { font-size: 15px; margin: 20px 0 10px; }
+.workbench p { overflow-wrap: anywhere; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+.eyebrow { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
+.headerActions, .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.health { font-size: 13px; color: var(--teal); }
+.identity { display: flex; flex-wrap: wrap; gap: 10px 22px; padding-top: 18px; font-size: 13px; overflow-wrap: anywhere; }
+.feedback { min-height: 48px; font-size: 13px; }
+.feedback p { margin: 14px 0; }
+.columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 0 32px; align-items: start; }
+.section { min-width: 0; padding: 24px 0; border-top: 1px solid var(--border); }
+.section:first-child { grid-column: 1; }
+.section:nth-child(2) { grid-column: 1; }
+.runSection { grid-column: 2; grid-row: 1 / span 2; }
+.workbench label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; margin: 14px 0; min-width: 0; }
+.workbench input, .workbench select, .workbench textarea { display: block; width: 100%; max-width: 100%; min-width: 0; border: 1px solid #aebcc7; border-radius: 4px; padding: 9px 10px; background: white; color: var(--foreground); font-size: 14px; font-weight: 400; }
+.workbench textarea { resize: vertical; }
+.workbench input[type="file"] { padding: 7px; }
+.workbench button { max-width: 100%; min-height: 36px; padding: 7px 12px; border: 1px solid #b5c3cb; border-radius: 4px; background: white; color: var(--foreground); font-size: 13px; font-weight: 600; white-space: normal; overflow-wrap: anywhere; }
+.workbench button:hover:not(:disabled) { background: var(--teal-soft); border-color: var(--teal); }
+.workbench button:focus-visible, .workbench input:focus-visible, .workbench select:focus-visible, .workbench textarea:focus-visible, .workbench summary:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+.workbench form { margin-bottom: 20px; }
+.workbench form button[type="submit"], .workbench form > button { background: var(--teal); color: white; border-color: var(--teal); }
+.workbench form button:hover:not(:disabled) { background: #075d58; }
+.identifier { font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
+.workbench pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; padding: 12px; background: #edf1f3; border-left: 3px solid #91aaa9; font-size: 12px; line-height: 1.6; }
+.workbench details { margin: 12px 0; }
+.workbench summary { cursor: pointer; overflow-wrap: anywhere; font-size: 13px; }
+.error { color: var(--red); }
+.login { max-width: 480px; padding: 36px 0; }
+.login form button[type="button"] { color: var(--foreground); background: white; border-color: var(--border); }
+.runHeading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 14px; }
+.runHeading h3 { margin: 0; }
+.runHeading > strong { font-size: 13px; color: var(--teal); }
+.events { padding: 0; list-style: none; }
+.events li { border-bottom: 1px solid var(--border); }
+.approvals { margin-top: 24px; }
+.approval { border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin: 12px 0; background: white; }
+.approval > strong { color: var(--amber); font-size: 13px; }
+.result { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+@media (max-width: 800px) {
+  .workbench { padding: 16px; }
+  .header { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .workbench h1 { font-size: 26px; }
+  .columns { display: block; }
+  .identity { flex-direction: column; gap: 8px; }
+  .headerActions { width: 100%; justify-content: space-between; }
+  .workbench input, .workbench textarea, .workbench select { font-size: 16px; }
+}

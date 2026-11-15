@@ -7,6 +7,36 @@ on:
   workflow_dispatch:
 
 jobs:
+  pv2-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - run: npm --workspace apps/web exec playwright install --with-deps chromium
+      - name: Authenticated Docker Web First Use
+        run: python scripts/cf2_rehearsal.py --web
+      - name: Sanitized Web Failure Detail
+        if: failure()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for path in Path('.agent-kernel').glob('agent-kernel-cf2-*/failure.log'):
+              print(path.read_text()[-16000:])
+          PY
+      - name: Synthetic Workbench Screenshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pv2-web-screenshots
+          path: .agent-kernel/pv2-web-screenshots/*.png
+          retention-days: 7
+          include-hidden-files: true
+
   pv2:
     runs-on: ubuntu-latest
     timeout-minutes: 25

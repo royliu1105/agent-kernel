@@ -22,8 +22,9 @@ Current development:
   The optional single-host Loki/Tempo/Alertmanager/Mailpit profile has passed
   local end-to-end verification and exact-commit remote CI; see the ledger for evidence.
 - [Real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
-  has started PV1 contract preparation; required decisions remain pending and
-  PV2-PV6 have not started. No live/user-pilot result exists.
+  has finalized PV1 technical preparation. PV2 offline API/Worker/profile checks
+  passed; authenticated Web verification and CF1 risk disposition are the
+  remaining gates. PV3-PV6 have not started. No live/user-pilot result exists.
   Other foundation feature expansion is frozen.
 - [Reference comparison](docs/reference-project-comparison.md) records the
   code/test review. Its [follow-up plan](docs/reference-follow-up-plan.md) owns
@@ -33,8 +34,10 @@ Current development:
   Its candidate CI passed, but the active local Docker stack has not been updated
   with CF1. Deployment/pilot acceptance is still pending. CF2 now has an
   [isolated authenticated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
-  using offline model fixtures. Web authentication and pilot-profile acceptance
-  remain open; CF3-CF8 remain deferred/conditional.
+  using offline model fixtures. The frozen profile has offline verification;
+  [authenticated Web acceptance](docs/pilots/pv2-web-acceptance.md) is in progress.
+  [CF1 residual risks](docs/reviews/cf1-risk-disposition.md) require a maintainer
+  decision; CF3-CF8 remain deferred/conditional.
 - Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)
   retains the implementation evidence and explicit limits.
 - `master` contains unreleased changes beyond the `v1.0.0` tag. Historical
