@@ -157,7 +157,7 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; design decisions consolidated, content/task prompt frozen; remaining permission, configuration and participant gates pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
+| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; frozen inputs, scoped risk/first USD 2 authorized; exact inspected GitHub body approved for DeepSeek; cost/configuration and participants pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
 | PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
 | PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
@@ -175,11 +175,14 @@ Confirmed design now includes human owners, budget/stop rules, bounded CI dispat
 evidence, fixed run/SHA and anonymous access scope, isolated API/CLI-first setup,
 execution/retrieval/memory limits, thresholds, retention and the versioned task
 prompt. See the contract's confirmation sheet for the authoritative decisions.
-External transmission remains pending; spending authorization remains USD 0.
-The maintainer requires no training use of API inputs/outputs. DeepSeek's
-account-specific commitment is unverified, with official reply pending and
-inquiry submission not confirmed. This blocks affected provider transmission;
-offline configuration/budget preparation may continue without passing PV1.
+The earlier requirement of no training use of API inputs/outputs was superseded
+by explicit scoped risk acceptance, not provider verification. DeepSeek's account
+commitment is unverified, reply pending and inquiry submission unconfirmed.
+The [latest authorization](pilots/pv1-authorization-2026-11-15.md) allows frozen-input
+transmission, pilot/model/Docker operations and a first USD 2 batch within USD 10;
+later batches need confirmation. The exact inspected GitHub body is approved for
+DeepSeek; changed responses require renewed review. Financial/configuration
+readiness remains open. No model call or setup occurred.
 The [offline operation sheet](pilots/pv1-offline-rehearsal.md) and request template
 cover API/CLI shapes and future evidence collection, not environment setup or
 runtime acceptance. Existing operator/viewer roles do not provide a submit-only
@@ -188,10 +191,12 @@ The [harness specification](pilots/pv1-harness-spec.md) and
 [evidence template](pilots/pv1-evidence-template.json) are draft preparation only.
 Observer implementation, fixture controls and case evidence remain absent; no
 PV1/PV2 checklist item passes from this specification or its structural tests.
-No pilot environment or pilot API call is authorized. Scoped submission CI
-tracking is separate, as recorded in the contract. Remaining composite checklist items
+One authorized manual anonymous GET observed run_attempt=1 and matching target.
+It is not Agent approval/harness evidence. The current review authorizes scoped
+submission/CI only, not paid calls, local setup or current Docker updates.
+Remaining composite checklist items
 must not be ticked merely because their design was accepted; effective config,
-run_attempt/response review, participants/dates and full sign-off are still open.
+participants/dates and full sign-off are still open; changed payloads need review.
 
 - [ ] Name owners, participants, environment, candidate SHA and authorized access.
 - [ ] Select and permission-check the corpus and fixed read-only tool target.

@@ -3,9 +3,10 @@
 Status: **Minimal implementation, local offline verification and reviewed
 implementation-candidate CI passed; live compatibility/deployment pending (2026-11-15)**.
 The maintainer selected the reference project's DeepSeek and Alibaba Cloud
-Embedding services. This does not authorize paid requests, copying credentials,
-active Docker updates, a new release, or other feature expansion. Budget remains
-USD 10; current spending authorization is USD 0.
+Embedding services. Selection alone did not authorize paid requests or activation.
+The later [PV1 authorization](../pilots/pv1-authorization-2026-11-15.md) allows scoped
+transmission/model/Docker operations and the first USD 2 within USD 10, subject to
+readiness gates. No release, credential disclosure or feature expansion is approved.
 
 ## Contract
 
@@ -52,8 +53,8 @@ Sources checked on 2026-11-15; no account was contacted.
 - [x] Readiness and Compose/mock-default regression checks.
 - [x] Python lint, typecheck, focused/full offline tests and documentation checks.
 - [x] Reviewed implementation candidate verified by all four remote CI jobs.
-- [ ] Separately authorized live model/account/embedding verification (not authorized).
-- [ ] Separately authorized isolated pilot deployment (not authorized).
+- [ ] Live model/account/embedding verification (scope authorized; readiness pending, not executed).
+- [ ] Isolated pilot deployment (operations authorized; not created or verified).
 
 The first five gates establish implementation/offline compatibility only; remote
 CI adds disposable-backend/deployment evidence. None completes PV1, CF2 or
@@ -66,8 +67,8 @@ Candidate: the uncommitted compatibility working tree on preparation baseline
 No new commit/push or remote CI was performed at that checkpoint. The subsequent
 maintainer request authorizes review, commit/push and exact-candidate CI tracking;
 see the [review record](../reviews/2026-11-15-pv1-provider-review.md).
-Earlier CI does not verify this implementation. Paid calls and active Docker
-updates remain prohibited.
+Earlier CI did not verify this implementation at that checkpoint. The historical
+paid-call/Docker prohibition is superseded only by the linked scoped authorization.
 
 Subsequent review reproduced and repaired non-finite/overflowing embedding-value
 validation, then verified 1251 local tests (35 explicit skips) and exact candidate

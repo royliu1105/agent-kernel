@@ -6,13 +6,19 @@ See the [scoped contract](specs/pilot-provider-compatibility.md) and
 [PV1 record](pilots/pv1-2026-11-15-runbook-assistant.md). The
 [review/CI record](reviews/2026-11-15-pv1-provider-review.md) identifies the tested
 implementation SHA, not a deployed or admitted pilot. The total planning ceiling
-is USD 10. This work authorizes no spending, active-stack update or credential export.
+is USD 10. The original compatibility implementation did not authorize spending
+or activation; the later scoped decision below supersedes that restriction.
 
-PV1 now requires no training use of API inputs/outputs. DeepSeek's applicable
-account commitment is unverified; public documentation and offline compatibility
+PV1 previously required no training use of API inputs/outputs. The maintainer now
+accepts unverified no-training risk for the scoped pilot, authorizing frozen-input
+transmission, pilot/model/Docker operations and a first USD 2 batch within USD 10.
+See the [authorization record](pilots/pv1-authorization-2026-11-15.md).
+DeepSeek's account commitment remains unverified; public documentation and offline
 tests are not that commitment. See the
 [provider evidence gate](pilots/pv1-2026-11-15-runbook-assistant.md#no-training-requirement-and-provider-evidence).
-Provider transmission remains unapproved, including for a compatibility smoke.
+The exact inspected GitHub response is approved for DeepSeek; changed responses
+need renewed review. Cost/configuration readiness remains open. No
+model smoke or deployment is claimed by this permission; mock defaults stay intact.
 
 ## Configuration Contract
 

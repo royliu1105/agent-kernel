@@ -1,17 +1,35 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-10; offline harness specification and evidence form added;
-no-training commitment and external transmission pending; PV1 in progress**.
+Record revision: **draft-12; inspected GitHub response approved for DeepSeek;
+scoped risk acceptance and first USD 2 authorization retained; PV1 in progress**.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
 This record separates accepted design, remaining proposals and evidence; it is
 not a second task ledger.
 
 ## Authorization and Candidate
 
+Current authority is the [scoped authorization record](pv1-authorization-2026-11-15.md).
+This review permits scoped commit/push after review passes and exact-submission
+CI tracking only. No paid model calls, local environment creation or current
+Docker updates in this review. Earlier operational consent is retained, not
+exercised here. See the [review record](../reviews/2026-11-15-pv1-authorization-review.md).
+
+The maintainer accepts unverified no-training risk for this pilot and authorizes
+DeepSeek/Alibaba transmission of admitted frozen inputs for their selected
+generation/embedding roles. The inspected GitHub tool response is authorized
+for DeepSeek only, not Alibaba. Pilot/model interfaces and Docker operations
+were authorized subject to readiness and the current review hold. First paid batch:
+at most USD 2 within USD 10; later batches require separate confirmation.
+The inspected GitHub source body is now approved for DeepSeek by its SHA-256;
+changed responses require renewed review. Cost readiness and remaining PV1 gates still apply.
+One prior manual anonymous GitHub inspection occurred; no model call, Docker
+operation or environment setup occurred. No release is requested. Earlier
+restrictions below are historical, superseded only within the accepted scope.
+
 The draft-10 preparation instruction authorized offline harness specification and
-evidence-template preparation only, with no feature expansion. The current review
-instruction authorizes scoped commit/push after review passes and exact-submission
+evidence-template preparation only, with no feature expansion. Its review
+instruction authorized scoped commit/push after review passed and exact-submission
 CI tracking only. No harness implementation, pilot/model API calls, local environment
 creation or current Docker updates are authorized. DeepSeek official reply and
 external transmission permission remain pending; spending authorization remains
@@ -108,7 +126,7 @@ no API invocation, login, Docker update, paid model call or implementation.
 The preceding submission instruction authorized review, scoped commit/push and tracking
 that submission's CI. CI management queries were solely submission verification,
 not invocation or acceptance of the proposed `github_ci_run_status` tool.
-No candidate endpoint test, current Docker update or paid model call is authorized.
+At that checkpoint no candidate endpoint test, Docker update or paid call was authorized.
 See the [candidate design review](../reviews/2026-11-15-pv1-ci-candidate-review.md).
 PV1 remains in progress; PV2-PV6 have not begun.
 
@@ -120,14 +138,14 @@ the task prompt below. These are **accepted design decisions, not tested results
 or execution permissions**. Participants and dates were explicitly deferred.
 
 The earlier preparation instruction authorized 12 sanitized runbooks and 30 expected-answer
-cases. The subsequent instruction authorizes review, scoped commit/push and
+cases. The subsequent instruction authorized review, scoped commit/push and
 exact-commit CI tracking. See [local review materials](pv1-materials/README.md)
 and the [review record](../reviews/2026-11-15-pv1-materials-review.md).
 At that review checkpoint, accounts/regions, participants and the tool target
 were pending; the later decisions above supersede only the specified fields.
-This does not approve data transmission, paid execution, current Docker updates,
-deployment or PV1 sign-off. Git publication of the reviewed repository artifacts
-is authorized; provider transmission/ingestion remains a separate pending gate.
+That review did not approve data transmission, paid execution, Docker updates,
+deployment or PV1 sign-off. Draft-11 later grants the scoped operational/batch
+permission recorded above, not full acceptance.
 
 **Agent Kernel deployment and operations runbook assistant**, a concrete instance
 of the already planned team-runbook scenario. A participant asks an operational
@@ -158,7 +176,7 @@ reference text, not permission to execute them. No new connector or UI is planne
 The maintainer selected repository runbooks. Propose the following **12 maintained
 Markdown runbooks** from the candidate above. This avoids
 introducing parsers or sourcing private company data. The maintainer accepted
-the derived content selection/redaction; provider transmission remains pending.
+the derived content selection/redaction; draft-11 now authorizes scoped transmission.
 These source documents identify provenance. The derived summaries and expected
 answers are now accepted as the frozen content baseline, not as live evidence
 or permission to transmit source documents in full.
@@ -182,7 +200,7 @@ Preparation reviewed current versus historical instructions and recorded selecte
 passages/redactions. Source SHA, line ranges and frozen content hashes are in the
 [manifest](pv1-materials/manifest.json); the later content acceptance is recorded
 above. Do not change gold answers after observing model output. Provider
-transmission permission and full-contract sign-off remain **TBD**; the maintainer
+transmission follows draft-11; full-contract sign-off remains **TBD**. The maintainer
 is the confirmed execution reviewer, but no execution scoring exists.
 No upload, embedding, access credential or runtime ingestion was created.
 `resource/`, private runtime files, customer data and secrets are excluded.
@@ -197,7 +215,7 @@ date and derived deletion date when the window is fixed (no dates invented now).
 This is not immediate/automatic deletion authorization and does not delete frozen
 versioned materials, sanitized reports or current Docker data. Local deletion
 does not imply provider deletion or zero data retention; provider terms and
-external transmission permission remain pending.
+account commitments remain unverified; draft-11 risk acceptance is not a provider promise.
 
 ## Model Decision and Read-Only Configuration Findings
 
@@ -205,7 +223,8 @@ Initially, the maintainer did not know whether an OpenAI API account was availab
 to inspect local configuration, preferring existing resource credentials if no
 OpenAI configuration was found. After inspection, the maintainer selected
 DeepSeek and Alibaba Embedding and explicitly authorized their minimal
-compatibility implementation. Paid calls remain prohibited in this step.
+compatibility implementation. Paid calls were prohibited at that implementation
+checkpoint; draft-11 now records the first-batch authorization and remaining gates.
 
 Read-only inspection checked the current process environment, root `.env`
 (absent), Docker-local private config and the reference project's private `.env`.
@@ -278,12 +297,19 @@ data is not admitted under this draft.
 
 ## No-Training Requirement and Provider Evidence
 
-Maintainer decision (2026-11-15): **API inputs and outputs must not be used for
+Earlier decision (2026-11-15): **API inputs and outputs must not be used for
 model training**. This applies to generation and embeddings, including supplied
 document chunks, questions, allowed memory/context and tool results. Public or
 synthetic content does not waive this requirement. Until an applicable commitment
 is verified, affected provider transmission is blocked. Verification alone does
-not grant external transmission permission or spending authorization.
+not grant external transmission permission or spending authorization. This was
+the prior gate, now superseded only by the scoped decision below.
+
+Latest decision: the maintainer explicitly accepts unverified no-training risk
+for this pilot. A no-training commitment is no longer a prerequisite for admitted
+frozen inputs and separately reviewed tool responses. DeepSeek reply remains
+pending; this is not verification, zero retention or a general risk waiver.
+See the [authorization record](pv1-authorization-2026-11-15.md).
 
 The maintainer reports logging into the DeepSeek Open Platform but finding no
 privacy/data setting. This is not proof of an opt-out, a no-training agreement or
@@ -314,16 +340,18 @@ covered inputs/outputs/endpoints/keys, effective date and any activation steps.
 Ask separately about evaluation, human review, service improvement, retention
 periods and deletion; no-training is not zero retention. Encryption, de-identification,
 generic privacy assurances or silence do not satisfy the no-training gate.
-If unavailable or ambiguous, keep the gate blocked and request a maintainer
-decision; do not silently switch providers, weaken the requirement or spend.
-Final provider transmission permission remains pending even after this review.
+Unavailable/ambiguous evidence remains unverified. Do not silently switch providers
+or claim the former no-training requirement is met. Scoped provider transmission
+is authorized by draft-11; draft-12 additionally approves the inspected full
+GitHub response for DeepSeek. Changed responses require renewed review; provider
+commitments remain unverified.
 
 ## Proposed Configuration and Provenance
 
 | Setting | Draft value / boundary |
 | --- | --- |
 | Storage | PostgreSQL/pgvector + local object files; Redis scheduling hints |
-| Deployment | Accepted isolated Docker design, independent PostgreSQL/Redis/object files/volumes/ports/private configuration; no active-stack data or ambient model/GitHub credentials; creation not authorized |
+| Deployment | Isolated Docker operations authorized; independent PostgreSQL/Redis/object files/volumes/ports/private configuration; no active-stack data or ambient credentials; no pilot environment created |
 | Retrieval | Accepted: only the frozen 12 summaries, 1000-character chunks / 150-character overlap; request top_k=5; no RRF/reranker or source expansion |
 | Execution | Accepted: 6 model attempts including retries, 8 tool calls, 120 active seconds excluding human approval wait, 32,000 cumulative reported tokens, 2048 output tokens/request, 262144 history bytes |
 | Retries | Accepted: at most 2 attempts including initial attempt per eligible transient operation, counted within model-attempt bounds; no automatic model fallback; GitHub lookup has no automatic retry |
@@ -379,7 +407,7 @@ JSON metadata and gold answers. These counts are not provider tokens, chunk
 counts, request counts or a cost forecast. Parsing/overlap, repeated retrieval,
 history and retries change what is billed. Gold answers never enter model input.
 
-Budget worksheet to complete before requesting spending:
+Budget worksheet to complete before executing the authorized first batch:
 
 | Component | Basis to record | Current state |
 | --- | --- | --- |
@@ -387,7 +415,7 @@ Budget worksheet to complete before requesting spending:
 | Query embeddings | All retrieval requests and permitted retries, including user tasks | Allocation/usage unknown; do not infer 60 queries from 60 scored attempts |
 | Generation | Requested/returned model, input/output/reasoning/cache billing rules and all rounds | deepseek-chat availability and applicable tariff unresolved; no silent alias change |
 | Conversion/reserve | Account billing currency, dated USD conversion, conservative in-flight reserve | Pending; no invented exchange rate, free quota or hard billing cap |
-| Batch allocation | 60 scored attempts, approval/recovery work, at least 20 human tasks and permitted reruns within USD 10 | Not yet demonstrated feasible; first USD 2 batch and USD 0.25/task remain ceilings, not spending permission |
+| Batch allocation | 60 scored attempts, approval/recovery work, at least 20 human tasks and permitted reruns within USD 10 | Not yet demonstrated feasible; first USD 2 batch authorized, allocation/cost readiness pending; USD 0.25/task retained |
 
 Use input/output billable tokens times the applicable tariffs plus embedding and
 other authorized charges; include failed requests/retries where billed. Provider
@@ -454,8 +482,10 @@ before the applicable CF1/CF2 and PV2/PV4 gates pass.
 
 ## GitHub CI Read-Only Candidate
 
-Status: **candidate selected; minimal design documented; bounded design accepted;
-not configured, implemented, invoked or live-accepted**. This supports deployment/release readiness
+Status: **candidate selected; minimal design documented; manual response inspection
+completed; Agent tool/harness not implemented, invoked or accepted**. See the
+[inspection record](pv1-authorization-2026-11-15.md#manual-github-inspection).
+This supports deployment/release readiness
 questions, not customer-assignment business operations. The frozen 30-case RAG
 set is unchanged; live lookup/approval evidence is a separate existing pilot gate.
 
@@ -466,7 +496,7 @@ set is unchanged; live lookup/approval evidence is a separate existing pilot gat
 | Tool name | Proposed `github_ci_run_status` |
 | Fixed repository | `royliu1105/agent-kernel`; owner/repository are trusted literals, not model arguments |
 | Method/path | Only `GET /repos/royliu1105/agent-kernel/actions/runs/{run_id}` on `https://api.github.com` |
-| Input | Positive integer run_id restricted to the single accepted ID 43634747295; expected head_sha 2bb3f4ab1d50afa1cc2686b42b1ebcaf5db1f726; run_attempt remains unknown/pending |
+| Input | Positive integer run_id restricted to 43634747295; expected head_sha 2bb3f4ab1d50afa1cc2686b42b1ebcaf5db1f726; run_attempt=1 observed by manual inspection, recheck before rehearsal |
 | Query | Required `exclude_pull_requests` boolean with schema enum `[true]`; no freely selectable query/header/URL |
 | Policy | `read_only=true`, `idempotent=true`, `retry_safe=false`, explicit `require_approval`; authenticated pilot workspace allowlist, `allow_unscoped=false` |
 | Bounds | Accepted 32768-byte HTTP response cap (32 KiB); existing 65536-byte serialized result limit still applies; proposed 10-second tool timeout awaits configuration freeze; no automatic retries/polling/fallback |
@@ -485,9 +515,9 @@ The minimal access choice is **anonymous read of public repository metadata**.
 The [GitHub operation documentation](https://docs.github.com/en/rest/actions/workflow-runs#get-a-workflow-run)
 permits this for public resources; authenticated fine-grained access requires
 Actions read permission. The maintainer reports that this repository is public
-and accepts the anonymous access scope. This is not a live visibility/access
-check or permission to issue a request. Verify access later under separate
-authorization, not by inferring it from old successful CI.
+and accepts the anonymous access scope. Draft-11 authorized a manual GET, which
+returned HTTP 200 without credentials. This proves access at inspection time,
+not future availability or an Agent approval-track pass.
 On 401/403/404/429, stop and record the error; do not borrow the operator's `gh`
 token, use browser cookies, retry or auto-create a credential. If anonymous access
 is unsuitable, obtain a separate decision for a repository-restricted, expiring
@@ -517,13 +547,16 @@ do not silently select "latest" or rerun the workflow.
 The accepted target is run **43634747295**, expected head SHA
 `2bb3f4ab1d50afa1cc2686b42b1ebcaf5db1f726`. Its previously authorized submission
 review observed completed/success; this is historical CI evidence, not a fresh
-query or pilot-tool result. `run_attempt` is unknown and must be confirmed before
-the rehearsal; never assume 1. The answer/report scope above is accepted, while
-actual response review and permission to transmit its full JSON remain pending.
+query or pilot-tool result. The later manual inspection observed run_attempt=1
+and matching SHA; recheck before rehearsal, never infer it from the UI run number.
+The response includes author/committer names/email and actor/repository metadata;
+the maintainer now permits this inspected full JSON to be sent to DeepSeek as a
+tool result. The source digest is pinned in the authorization record; changed
+responses require renewed review. This does not prove any actual model call.
 
 Before live model use, inspect an explicitly authorized response without sending
 it to a model, and approve the actual full payload for provider transmission.
-No inspection is authorized now. Reject oversized, malformed, unexpected or
+The initial inspection is recorded in draft-11. Reject oversized, malformed, unexpected or
 unacceptable payloads; do not silently raise limits or add a projection feature.
 If full public JSON is not acceptable, the candidate stays blocked pending a
 separate scoped decision. Treat text fields as untrusted data, never instructions;
@@ -589,29 +622,29 @@ obtain explicit disposition, never silently relabel client evidence as server lo
 
 The bounded evidence standard, run/SHA, anonymous access scope, response limits
 and retention are accepted as design, not execution evidence. Remaining items
-include run_attempt, timeout/configuration freeze, actual response inspection
-and provider transmission permission. Before any
-execution, separately authorize isolated harness/config implementation and
-credential-free rehearsal; real HTTP access and paid model use each require
-their own authorization. PV2/PV3 remain not started. This does not introduce
+include timeout/configuration freeze, payload-change review and harness
+implementation. run_attempt=1 is observed, not assumed. Draft-11 records scoped
+HTTP/model/Docker authorization and the first USD 2 batch; readiness gates and
+separate approval of later batches remain required. PV2/PV3 remain not started. This does not introduce
 new frozen questions, a new connector, or an extra business-system track.
 
-## Proposed Budget, Not Spending Approval
+## Budget and First-Batch Authorization
 
 | Budget item | Accepted rule / remaining input |
 | --- | --- |
 | Currency / entire PV3-PV5 envelope | USD 10 ceiling selected by the maintainer, including generation, embeddings, retry/drill/rerun charges and user tasks; allocation not signed off |
-| First paid batch | Accepted at most USD 2 within that envelope, separately authorized after prerequisites; not USD 2 extra |
+| First paid batch | Authorized at most USD 2 within the total, subject to readiness gates; not USD 2 extra; later batches require confirmation |
 | Per-task envelope | USD 0.25 including all rounds and retries, not per individual model call |
 | Admission stop | At USD 8 observed plus conservatively reserved in-flight cost, or earlier if the next task cannot fit |
 | Attempt ceiling | Proposal only: at most 100 admitted live Runs including 60 scored attempts, smoke, tool drills, user tasks and reruns; exact batch allocation TBD, not an accepted funded quota |
 | Provider-side controls | Confirm actual spend enforcement/account settings; if no enforceable cap, explicitly accept residual risk for a small supervised batch |
 
 The maintainer accepted the USD 10 / USD 2 / USD 0.25 and USD 8 stop rules.
-Current spending authorization remains **USD 0**. No automatic recharge,
+Current first-batch spending authorization is **USD 2**; no model call has been
+made in this work. No automatic recharge,
 budget increase, model substitution or extra reruns are allowed. Confirm actual
 prices, currency conversion, conservative cost estimates, batch allocation and
-provider-side controls before requesting a paid batch. Delayed/missing usage is
+provider-side controls before executing a paid batch. Delayed/missing usage is
 unknown, never zero; pause admission until reconciled.
 
 USD 10 is the selected planning ceiling, not authorization to spend, a forecast
@@ -633,7 +666,7 @@ The [expected-answer draft](pv1-materials/reviewer/expected-answers.md) now supp
 30 corresponding questions, expected facts, sanitized source sections, failure
 conditions and required effect evidence. Its content is now frozen by the
 maintainer, who is also the confirmed scoring reviewer. It is not scored or
-model-executed; execution permissions remain pending.
+model-executed; scope/budget authorization is not evidence of execution.
 
 | ID | Proposed question or negative case | Evidence to label before freeze |
 | --- | --- | --- |
@@ -711,12 +744,12 @@ out of public evidence. Credentials must later go into ignored private files.
 | ID | Area | Confirmed / remaining input |
 | --- | --- | --- |
 | Q1 | Scenario and sources | Maintainer accepted current 12 summaries and 30 answers; immutable content baseline pinned above. Provider transmission and live scoring are not approved by this freeze |
-| Q2 | Data permission and retention | No-training requirement accepted for API inputs/outputs; DeepSeek account commitment unverified, official reply pending (inquiry submission not confirmed). Private evidence/sanitized publication/30-day retention accepted; account terms, exact dates and external transmission permission pending |
+| Q2 | Data permission and retention | Scoped no-training risk accepted; commitments unverified, DeepSeek reply pending (inquiry submission not confirmed). Frozen inputs authorized; exact inspected GitHub body approved for DeepSeek, changed responses need review; retention dates pending; private evidence/sanitized publication/30-day rule retained |
 | Q3 | Model and account | Maintainer confirms ownership of both accounts/reference keys and Alibaba North China 2 (Beijing); credential validity, entitlement, model availability and live continuation remain unverified |
-| Q4 | Budget | USD 10 total, USD 2 initial batch within total, USD 0.25/task and USD 8 admission stop accepted; actual prices/conversion, allocation, billing controls/residual risk pending; spending authorization USD 0 |
+| Q4 | Budget | USD 10 total, USD 2 initial batch within total, USD 0.25/task and USD 8 admission stop accepted; first USD 2 authorized, later batches require confirmation; actual prices/conversion, allocation and billing controls pending; operator limits are not a provider hard cap |
 | Q5 | Human roles and window | Maintainer accepted scope/budget owner, operator/incident contact and domain reviewer roles; P1/P2 and specific dates explicitly deferred; private operational contact channel and derived deletion date not yet recorded |
-| Q6 | Read-only target | Fixed anonymous GitHub GET, run 43634747295 / pinned SHA, response scope and bounded independent dispatch evidence accepted; run_attempt, actual response review, implementation and real validation pending; rm-assignment withdrawn |
-| Q7 | Workflow and environment | Isolated Docker and API/CLI-first subset accepted; environment not created, candidate/config/identities not frozen; full authenticated Web acceptance incomplete |
+| Q6 | Read-only target | Fixed anonymous GitHub GET, run 43634747295 / pinned SHA; manual HTTP 200, run_attempt=1 and matching identity observed; exact full response approved for DeepSeek; harness implementation and Agent validation pending; rm-assignment withdrawn |
+| Q7 | Workflow and environment | Isolated Docker and API/CLI-first subset accepted; operations authorized but none performed this turn; environment not created, candidate/config/identities not frozen; full authenticated Web acceptance incomplete |
 | Q8 | Acceptance and risk | Scoring, latency, bounded RTO/RPO, execution/retry limits, retrieval/memory scope and versioned prompt accepted; no measured pass or general risk waiver |
 
 Corpus/question/expected-fact hashes and the standalone task prompt hash are now
@@ -733,16 +766,15 @@ claim that a frozen specification already verifies effective runtime behavior.
 
 ### Remaining Items by Priority
 
-1. **Permission boundary:** external transmission remains pending for corpus,
-   questions, allowed memory and the full bounded tool payload. Review provider
-   terms, applicable no-training commitments and actual payload before final
-   transmission approval. DeepSeek official reply/account commitment remains
-   unverified; lack of a settings toggle is not approval. No GitHub/API,
-   environment creation or paid-call authorization has been granted now.
-2. **Rehearsal prerequisites:** confirm run_attempt and exact tool timeout/API
-   version; freeze candidate/configuration and scoped identities. Separately
-   authorize offline harness/configuration work and later isolated setup/HTTP
-   inspection. The observer does not exist; a planned gate is not its evidence.
+1. **Payload boundary:** frozen-input transmission is authorized with explicit
+   unverified no-training risk acceptance. DeepSeek reply remains pending, not a
+   verified promise. The inspected full GitHub payload is approved for DeepSeek;
+   changed responses require renewed review. New memory/private data are not
+   covered by blanket permission. No model transmission has occurred yet.
+2. **Rehearsal prerequisites:** freeze exact tool timeout/API version,
+   candidate/configuration and scoped identities; run_attempt=1 was observed and
+   must be rechecked. The observer does not exist; a planned gate is not evidence.
+   Docker authorization does not mean a pilot environment has been created.
 3. **Financial readiness:** establish actual model pricing/currency conversion,
    feasible batch allocation, billing controls and any explicitly accepted
    residual risk. Account/key ownership and Beijing region are attestations only;

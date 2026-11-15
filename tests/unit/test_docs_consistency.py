@@ -30,6 +30,7 @@ STATUS_GUIDES = (
     "docs/pilots/pv1-2026-11-15-runbook-assistant.md",
     "docs/pilots/pv1-offline-rehearsal.md",
     "docs/pilots/pv1-harness-spec.md",
+    "docs/pilots/pv1-authorization-2026-11-15.md",
     "docs/reference-follow-up-plan.md",
     "docs/observability-completion-plan.md",
     "docs/reviews/2026-11-14-cf2-workflow-inventory.md",
@@ -470,11 +471,12 @@ def test_pv1_draft_case_inventory_matches_the_pilot_cohorts() -> None:
 def test_pv1_draft_records_decisions_without_implying_paid_or_runtime_acceptance() -> None:
     filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
     authorization = _section(filename, "Authorization and Candidate")
-    assert "usd 0" in authorization
+    assert "at most usd 2 within usd 10" in authorization
     assert (
         "choosing a model or a proposed budget is not authorization to consume it" in authorization
     )
-    budget = _section(filename, "Proposed Budget, Not Spending Approval")
+    budget = _section(filename, "Budget and First-Batch Authorization")
+    assert "current first-batch spending authorization is **usd 2**" in budget
     assert "usd 10 ceiling selected by the maintainer" in budget
     assert "at usd 8" in budget
     models = _section(filename, "Model Decision and Read-Only Configuration Findings")
@@ -517,9 +519,8 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
     authorization = _section(filename, "Authorization and Candidate")
     for phrase in (
-        "current review instruction authorizes scoped commit/push after review passes",
-        "no harness implementation, pilot/model api calls, local environment "
-        "creation or current docker updates are authorized",
+        "the maintainer accepts unverified no-training risk for this pilot",
+        "at most usd 2 within usd 10; later batches require separate confirmation",
         "exact-submission ci tracking only",
         "ci tracking for this submission only",
         "submission ci tracking for the exact submitted sha only",
@@ -535,7 +536,7 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
         "p1/p2 and specific dates explicitly deferred",
         "usd 0.25/task and usd 8 admission stop accepted",
         "run 43634747295 / pinned sha",
-        "run_attempt, actual response review",
+        "run_attempt=1 and matching identity observed",
         "full authenticated web acceptance incomplete",
         "pv1 cannot pass with unresolved required fields",
         "effective-request verification method",
@@ -546,7 +547,7 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     assert "not installed in a running environment or sent to a provider" in prompt
     assert "file hash alone does not prove the runtime used it" in prompt
     remaining = _section(filename, "Remaining Items by Priority")
-    assert "external transmission remains pending" in remaining
+    assert "changed responses require renewed review" in remaining
     assert "each execution permission must be requested separately" in remaining
     rehearsal = _section(
         "real-scenario-pilot-plan.md", "PV2: Rehearse the Existing Workflow Without Paid Calls"
@@ -554,7 +555,7 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     assert "not github server logs or global exactly-once" in rehearsal
 
 
-def test_pv1_no_training_gate_is_unverified_and_not_transmission_permission() -> None:
+def test_pv1_risk_acceptance_is_not_a_verified_provider_commitment() -> None:
     filename = "pilots/pv1-2026-11-15-runbook-assistant.md"
     privacy = _section(filename, "No-Training Requirement and Provider Evidence")
     for phrase in (
@@ -563,7 +564,8 @@ def test_pv1_no_training_gate_is_unverified_and_not_transmission_permission() ->
         "account-specific no-training commitment unverified",
         "submission not confirmed",
         "no-training is not zero retention",
-        "final provider transmission permission remains pending",
+        "the maintainer explicitly accepts unverified no-training risk",
+        "approves the inspected full github response for deepseek",
     ):
         assert _normalized(phrase) in privacy
     for name in ("real-scenario-pilot-plan.md", "provider-compatibility.md"):
@@ -575,6 +577,61 @@ def test_pv1_no_training_gate_is_unverified_and_not_transmission_permission() ->
     assert "source defaults differ from the pilot values" in preparation
     assert "not yet demonstrated feasible" in preparation
     assert "no silent alias change" in preparation
+
+
+def test_pv1_scoped_authorization_does_not_pass_pilot_or_authorize_all_data() -> None:
+    filename = "pilots/pv1-authorization-2026-11-15.md"
+    review = _section(filename, "Current Review Scope")
+    for phrase in (
+        "scoped commit/push after review passes",
+        "exact-submission ci tracking only",
+        "do not call paid models, create local environments or update current docker",
+        "no pilot query or provider request is needed or performed",
+        "retained, not exercised by this submission",
+    ):
+        assert phrase in review
+    authority = _section(filename, "Accepted Authorization")
+    for phrase in (
+        "first paid batch up to usd 2 within the usd 10 total ceiling",
+        "later batches require separate confirmation",
+        "deepseek official reply remains pending",
+        "risk acceptance is not a provider promise or zero retention",
+        "reviewer gold answers",
+        "personal memory are excluded",
+        "no model request was made this turn",
+        "keep pilot/test storage separate from agent-kernel-local",
+        "blank request/evidence templates intentionally stay fail-closed",
+    ):
+        assert phrase in authority
+    inspection = _section(filename, "Manual GitHub Inspection")
+    for phrase in (
+        "one manual anonymous get",
+        "not zero/one agent dispatch",
+        "43634747295 / 1",
+        "14622 bytes",
+        "author/committer names and email fields",
+        "payload-specific permission",
+        "no model received the body",
+    ):
+        assert phrase in inspection
+
+
+def test_pv1_payload_permission_is_bound_to_reviewed_source_and_provider() -> None:
+    inspection = _section("pilots/pv1-authorization-2026-11-15.md", "Manual GitHub Inspection")
+    for phrase in (
+        "37637575f2483bd19f6d91c84ae8db84a0189993e50b96ca247242a59009bc7f",
+        "for transmission to deepseek as a tool result",
+        "not approval for arbitrary future github responses",
+        "or transmission of this tool payload to alibaba",
+        "a changed response must be reviewed again before transmission",
+        "matching run_id/sha/attempt alone is insufficient",
+        "no projection feature or enforcement code is implemented",
+        "no model received the response",
+        "not the provider wire envelope",
+    ):
+        assert phrase in inspection
+    summary = _section("pilots/pv1-2026-11-15-runbook-assistant.md", "Authorization and Candidate")
+    assert "for deepseek only, not alibaba" in summary
 
 
 def test_pv1_limit_table_matches_offline_configuration_parser() -> None:

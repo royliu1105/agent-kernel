@@ -2,8 +2,10 @@
 
 Date: 2026-11-15. Status: **prepared, not executed or accepted**. This supporting
 specification belongs to the [PV1 contract](pv1-2026-11-15-runbook-assistant.md),
-not a new phase or a second progress ledger. DeepSeek no-training evidence and
-external transmission permission remain pending; spending authorization USD 0.
+not a new phase or a second progress ledger. Its preparation checkpoint had
+spending authorization USD 0 and pending transmission; the
+[later scoped authorization](pv1-authorization-2026-11-15.md) supersedes those
+restrictions without verifying DeepSeek's no-training commitment or this workflow.
 No support submission is assumed. No local environment, request, key or identity
 is created. Existing CI/review permissions do not authorize rehearsal execution.
 
@@ -118,8 +120,10 @@ not a newly relaxed definition. The GitHub observer is still unimplemented.
 Private evidence retains raw artifacts under the accepted retention rule. Publish
 only sanitized summaries/references. The observer journal must not log bodies or
 credentials; do not mix its metadata with separately reviewed private response
-inspection. No raw GitHub response has been retrieved or approved for external
-transmission. run_attempt, API-version choice and tool timeout freeze remain open.
+inspection. A later manual GitHub inspection is recorded in the authorization
+addendum; run_attempt=1 was observed and that exact full body is approved for
+DeepSeek. Changed responses require renewed review; no model received the body.
+API-version/tool-timeout freeze and actual harness coverage remain open.
 
 ## Remaining Preparation and Verification
 

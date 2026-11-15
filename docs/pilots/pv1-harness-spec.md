@@ -5,16 +5,19 @@ This refines the existing [PV1 contract](pv1-2026-11-15-runbook-assistant.md) an
 [operation sheet](pv1-offline-rehearsal.md); it is not another progress ledger.
 The [evidence template](pv1-evidence-template.json) is an unpopulated record,
 not executable configuration or proof. PV1 remains in progress; PV2-PV6 have not
-started. DeepSeek official reply and provider transmission permission remain
-pending; spending authorization USD 0. Inquiry submission is not assumed.
+started. At preparation, provider transmission was pending with spending
+authorization USD 0. The [later scoped authorization](pv1-authorization-2026-11-15.md)
+allows the first USD 2 and specified operations without verifying DeepSeek's
+no-training commitment. Inquiry submission is not assumed. This blank template
+remains unpopulated/fail-closed, not a live authorization file.
 
 ## Scope and Authorization
 
 The preparation step permitted documentation and in-memory artifact tests only.
-The current review authorizes scoped commit/push after review passes and tracking
-that submission's CI only. No harness, OpenAPI operation binding, local environment,
-credential or data store is created. No pilot/model API call or current Docker
-operation is authorized. Remote CI disposable test services are not pilot setup.
+Its review authorized scoped commit/push and corresponding CI only. The later
+authorization above governs current operations. No harness, OpenAPI operation
+binding, environment or credential is created by this specification. Remote CI
+disposable test services are not pilot setup.
 See the [review record](../reviews/2026-11-15-pv1-harness-spec-review.md).
 
 Later implementation must be harness-only, using the maintained adapter and
