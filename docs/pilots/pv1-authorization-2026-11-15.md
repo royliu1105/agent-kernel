@@ -5,10 +5,16 @@ Date: 2026-11-15. Latest decisions supporting the
 PV1 technical planning is finalized; original full-pilot sign-off still requires
 the human fields tracked at PV5. This is not runtime acceptance.
 
+Current PV2 instruction authorizes review/fixes, scoped commit/push after checks
+pass and exact-submission CI tracking, including the new PostgreSQL approval
+tests in remote disposable runner services. No paid/pilot requests, local
+environment creation or current Docker update. This does not pass PV2 acceptance.
+Fixture progress and local PostgreSQL restrictions are recorded in the harness spec.
+
 The preceding instruction requested direct PV1 completion. The
 [technical closure](pv1-2026-11-15-runbook-assistant.md#technical-closure) records
 frozen technical decisions without inventing participants/dates or treating the
-request as a waiver of independent-user acceptance. The latest instruction is
+request as a waiver of independent-user acceptance. The subsequent review used
 the scoped review/submission below; existing paid-call/local-execution holds remain.
 
 ## Current Offline Implementation Scope
@@ -17,9 +23,12 @@ The preparation instruction authorized offline harness implementation, tests and
 dependency updates. Two independent participants and dates remain pending; they
 do not block offline preparation. No paid call, pilot interface, environment
 creation, current Docker update or submission is performed in this step. The
-review scope below now authorizes this submission after review and verification.
+review scope below documents that completed submission, not renewed permission.
 
 ## Current Review Scope
+
+Historical scope for the completed 2d7a2dc submission; the PV2 instruction above
+is now authoritative. The following paragraph preserves that review's scope.
 
 The preparation authorized technical closure, offline harness code/tests and
 existing-document updates. The current instruction authorizes review and fixes,

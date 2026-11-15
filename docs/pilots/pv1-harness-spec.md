@@ -37,7 +37,7 @@ Run with existing dependencies only:
 | Reconciliation | Per-tool counts across supplied executor IDs; duplicate counts fail even with a truncated tail or late dispatch after close; missing evidence stays unknown |
 | Budget | Serial in-memory generation ledger: five tasks, two attempts/task, USD 1.25 allocation, USD 0.25/task; unknown/invalid/over-reserved costs stop admission |
 | Payload | Exact byte digest and DeepSeek-only check, tested with synthetic bodies only |
-| Not complete | Durable manifest/attestation, process restart/crash drills, actual persisted approvals, API/Worker/provider/embedding pre-dispatch wiring, shared durable budget and embedding allowance, runtime case matrix |
+| Not complete | Actual persisted approvals, deployed API/Worker pre-dispatch wiring, runtime case matrix; shared durable budget and embedding allowance now have fixture components below, not deployed enforcement |
 
 Observation pass is **not** a case-matrix pass: no database, real approval decision
 or execution ownership was exercised. Threaded append tests are not process-crash
@@ -68,6 +68,64 @@ Coverage is bounded:
 | budget/payload checks | Limits, attempt/task slots, unknown charge reservation, exact digest/provider check | Automatic retry/resume/embedding wiring and durable cross-process ledger |
 
 Do not copy these component successes into the blank runtime case-plan results.
+
+## PV2 Offline Integration
+
+Current authorization covers review/fixes, scoped commit/push after checks pass
+and tracking that submission's CI. No paid or pilot request, local environment
+creation or current Docker update. Remote disposable CI services may verify the
+PostgreSQL cases. Production modules and frozen inputs/templates are unchanged.
+
+Code: [fixture integration](../../scripts/pv2_offline_harness.py),
+[offline tests](../../tests/unit/test_pv2_offline_harness.py),
+[PostgreSQL approval cases](../../tests/integration/test_pv2_approval_observation.py).
+
+| Item | Implementation and evidence boundary | Status |
+| --- | --- | --- |
+| Executor manifest | Case/config digest plus distinct API/Worker IDs; registration before admission; all registered journals required for observation | Fixture implemented |
+| Shared admission | Locked append-only file, sequences, fsync, bounded reads, exclusive private creation; reopened instances share reservations | Fixture implemented |
+| Replacement/crash | Child process exits after durable reservation; replacement cannot dispatch or close an unresolved window | Offline process test passed; not power-loss/container recovery proof |
+| Generation | Maintained DeepSeek adapter uses exact serialized request allowlist before MockTransport; API/Worker-labeled replacements retain task/attempt limits | Fixture implemented; no real runtime bootstrap |
+| Embedding | Maintained DashScope batching crosses the same shared ledger; second batch is denied when its allocation is exhausted | Fixture implemented; no ingestion or vector storage |
+| Conservative cost | USD 1.25 generation, USD 0.10 embedding; unused USD 0.65 remains locked. Successful requests consume their full reservation, not observed cost | Admission-only; no invoice or real tariff enforcement claim |
+| Changed request/unknown charges | Changed serialized body, bad/missing/excess usage or HTTP failure blocks; unresolved reserve prevents replacement/retry dispatch | Fixture implemented |
+| Approval/run/tool reconciliation | Approve/reject, new service instance, repeated resume and independent fixture counts are asserted against repository states | Two PostgreSQL tests; local verification blocked, exact-submission CI required |
+| Full runtime coverage | Actual API/Worker injection, native automatic retry/continuation, concurrent approval resume, effective deployment binding and stop/revoke drill | Pending; not passed by transport tests |
+
+Reconciliation is observation-only, not a full approval verdict. Known failed
+executors must still be supplied, even when buffered journal bytes are readable.
+The manifest digest is a fixture declaration, not proof that a running process
+installed hooks. No final journal-hash attestation, anti-tampering guarantee or
+all-filesystem-failure durability guarantee is claimed. These helpers expose
+only MockTransport and must not be installed as live billing enforcement.
+
+Pre-review verification on 2026-11-15: 237 relevant offline tests passed (20 new PV2 cases
+plus the preceding 217). Ruff/pre-commit passed; workspace mypy passed on 244
+source files and explicit strict mypy passed on the two new offline harness files.
+PostgreSQL test invocation produced **two setup errors**:
+AGENT_KERNEL_TEST_POSTGRES_URL was intentionally absent; both bodies did not run.
+This is blocked verification, not a skip/pass. No database connection or creation
+was attempted. Full PV2 remains open. Exact offline command:
+
+```sh
+env -u AGENT_KERNEL_TEST_POSTGRES_URL -u OPENAI_API_KEY -u DEEPSEEK_API_KEY -u DASHSCOPE_API_KEY AGENT_KERNEL_LIVE_SMOKE=0 .venv/bin/pytest -q tests/unit/test_pv1_harness.py tests/unit/test_pv2_offline_harness.py tests/unit/test_docs_consistency.py tests/unit/test_pv1_offline_preparation.py tests/unit/test_pv1_materials.py tests/unit/test_pilot_providers.py tests/unit/test_model_router.py
+```
+
+Review found and reproduced an initialization durability defect: failed file or
+directory fsync left a readable ledger that could accept work. Initialization now
+holds the file lock, writes an incomplete state, and publishes the ready snapshot
+only after file/directory sync; caught persistence failures leave a rejecting tail.
+Four regressions cover file/directory/ready-marker failure and interruption before
+ready. All 24 PV2 offline cases passed after repair. Approval tests now explicitly
+check the requested/approved/rejected records and an empty pre-approval journal.
+The full related offline suite passed 241 tests; workspace/explicit harness mypy
+and pre-commit passed. Remote PostgreSQL evidence is not inferred from these results.
+No power-loss durability or real runtime injection claim follows from these tests.
+
+Backend command, for the authorized disposable remote CI context only:
+`.venv/bin/pytest -q tests/integration/test_pv2_approval_observation.py`.
+Do not substitute the active runtime database. Full safety acceptance additionally
+requires the existing approval concurrency/recovery and API authorization suites.
 
 ## Scope and Authorization
 

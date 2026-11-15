@@ -4,8 +4,8 @@ Status: **PV1 technical contract finalized; original full-pilot sign-off pending
 PV5 people/dates. PV2 offline preparation active, deployed PV2 and PV3-PV6
 not started (2026-11-15)**.
 
-Current instruction authorizes review/fixes, scoped commit/push after checks pass,
-and exact-submission CI tracking; technical planning is finalized, human-pilot
+Current instruction authorizes PV2 review/fixes, scoped submission and tracking
+its exact CI, not local deployment; technical planning is finalized, human-pilot
 requirements remain at PV5. No paid calls, pilot API calls, local environment
 creation or current Docker update. Remote CI uses disposable runner services. The
 [pv1-config-v1 profile](pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
@@ -220,7 +220,7 @@ Offline fixture primitives and tests exist; deployed observer integration and
 runtime case evidence remain absent. Tests do not pass runtime acceptance.
 One authorized manual anonymous GET observed run_attempt=1 and matching target.
 It is not Agent approval/harness evidence. Current review authorizes scoped
-submission/CI only, not paid calls, local setup or Docker updates.
+submission/CI, not paid calls, local setup or Docker updates.
 Remaining composite checklist items
 must not be ticked while required fields remain unresolved. Participants/dates,
 private contact and full-pilot sign-off remain open at PV5; effective configuration is future
@@ -258,6 +258,14 @@ target means the affected gate is blocked, not accepted. A read-only Q&A-only
 subset may be reported separately but cannot claim the full approval track passed.
 
 ### PV2: Rehearse the Existing Workflow Without Paid Calls
+
+Offline integration checkpoint (2026-11-15): shared fixture manifest/admission
+ledger and maintained provider/embedding transport tests are implemented; see
+[PV2 integration evidence](pilots/pv1-harness-spec.md#pv2-offline-integration).
+No complete PV2 checkbox is earned by these component results. Two new persisted
+approval/observation cases are written; local execution was blocked by the absent
+disposable PostgreSQL URL. The submission's remote CI is the authorized backend
+verification path; no local test database or environment was created.
 
 - [ ] Re-run the applicable offline gates on the candidate; record exact commands,
   skips and separate backend/deployment coverage using the existing runbooks.
