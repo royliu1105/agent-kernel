@@ -267,7 +267,7 @@ def test_linux_evidence_handoff_keeps_modes_and_uses_only_owned_mount(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     harness.write_json(tmp_path / "credentials.json", {"key": "synthetic"})
-    monkeypatch.setattr(os, "access", lambda *_: False)
+    assert os.access(tmp_path / "credentials.json", os.R_OK)
     commands: list[list[str]] = []
     monkeypatch.setattr(harness, "run", lambda args, *_: commands.append(args))
     compose = ["docker", "compose", "-p", "agent-kernel-cf2-0123456789abcdef"]

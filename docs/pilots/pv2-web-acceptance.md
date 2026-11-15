@@ -80,6 +80,14 @@ the populated System prompt field for the rejection case. Full acceptance remain
 failed. The correction supplies stable explicit textarea accessible names and
 a bounded action timeout; the full journey must pass again, not only its tail.
 
+Candidate `ccf050e`, CI 43681268158, passed the complete browser case in 24.1s,
+including rejection, logout and revocation. Evidence sealing then failed reading
+a root-owned `effects.jsonl`: the earlier browser handoff had made credentials
+readable, so the final ownership check incorrectly skipped newer journals.
+The correction reclaims all files in the guarded owned mount at every handoff,
+preserving private modes. The unit regression explicitly starts with readable
+credentials. The overall Web gate remains pending a successful sealed rerun.
+
 Populate only from observed results. Local checks may run static/fixture units;
 database, containers and actual browser execution remain remote-CI-only.
 

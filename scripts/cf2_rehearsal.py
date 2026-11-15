@@ -189,7 +189,10 @@ def run(args: list[str], env: dict[str, str], *, timeout: int = 300) -> str:
 def claim_evidence(private: Path, compose: list[str], env: dict[str, str]) -> None:
     """Linux bind mounts retain container ownership; preserve 0600/0700 modes."""
     credentials = private / "credentials.json"
-    if credentials.exists() and not os.access(credentials, os.R_OK):
+    # Browser setup may have claimed credentials before later container-created
+    # journals exist. Reclaim the whole owned mount at every handoff, not just
+    # when the original credential file is unreadable.
+    if credentials.exists():
         run(
             [
                 *compose,
