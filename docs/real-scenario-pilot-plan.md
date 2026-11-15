@@ -180,6 +180,10 @@ The maintainer requires no training use of API inputs/outputs. DeepSeek's
 account-specific commitment is unverified, with official reply pending and
 inquiry submission not confirmed. This blocks affected provider transmission;
 offline configuration/budget preparation may continue without passing PV1.
+The [offline operation sheet](pilots/pv1-offline-rehearsal.md) and request template
+cover API/CLI shapes and future evidence collection, not environment setup or
+runtime acceptance. Existing operator/viewer roles do not provide a submit-only
+participant role; supervised admission remains a decision, not a new feature task.
 No pilot environment or pilot API call is authorized. Scoped submission CI
 tracking is separate, as recorded in the contract. Remaining composite checklist items
 must not be ticked merely because their design was accepted; effective config,

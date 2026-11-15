@@ -1,0 +1,40 @@
+{
+  "version": "pv1-offline-request-v1",
+  "status": "prepared_not_executed",
+  "execution_authorized": false,
+  "transmission_authorized": false,
+  "spending_authorized_usd": 0,
+  "prompt": {
+    "path": "prompts/pv1-runbook-assistant-v1.txt",
+    "version": "pv1-runbook-assistant-v1",
+    "sha256": "bf6c5329a3e3bfa8587947b53a904fe4c3193444ad1f24a947305f163b1b091b"
+  },
+  "question_source": "pv1-materials/questions.json",
+  "example_case_id": "A01",
+  "task_template": {
+    "question": "{{QUESTION_TEXT}}",
+    "knowledge_base_id": "{{PILOT_KB_UUID}}",
+    "top_k": 5
+  },
+  "run_create_body_template": {
+    "input": {
+      "model": "mock:pv1-offline",
+      "fallback_models": [],
+      "messages": [
+        {"role": "system", "content": "{{TASK_PROMPT_UTF8}}"},
+        {"role": "user", "content": "{{TASK_JSON}}"}
+      ]
+    }
+  },
+  "approve_body_template": {"decision_note": "PV1 separately authorized rehearsal"},
+  "reject_body_template": {"reason": "PV1 rejection case; no tool dispatch permitted"},
+  "resume_body_template": {"approval_id": "{{APPROVAL_UUID}}"},
+  "evidence_cases": [
+    {"id": "before_approval", "result": "not_run"},
+    {"id": "reject_then_resume", "result": "not_run"},
+    {"id": "approve_then_resume", "result": "not_run"},
+    {"id": "duplicate_concurrent_resume", "result": "not_run"},
+    {"id": "new_executor_resume", "result": "not_run"},
+    {"id": "observer_failure_or_timeout", "result": "not_run"}
+  ]
+}

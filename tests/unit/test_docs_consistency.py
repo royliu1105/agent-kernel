@@ -28,6 +28,7 @@ STATUS_GUIDES = (
     "docs/real-scenario-pilot-plan.md",
     "docs/pilot-learning-guide.md",
     "docs/pilots/pv1-2026-11-15-runbook-assistant.md",
+    "docs/pilots/pv1-offline-rehearsal.md",
     "docs/reference-follow-up-plan.md",
     "docs/observability-completion-plan.md",
     "docs/reviews/2026-11-14-cf2-workflow-inventory.md",
@@ -516,6 +517,7 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     authorization = _section(filename, "Authorization and Candidate")
     for phrase in (
         "current review instruction authorizes scoped commit/push after review passes",
+        "exact-submission ci tracking only",
         "ci tracking for this submission only",
         "submission ci tracking for the exact submitted sha only",
         "do not create an environment",
@@ -592,6 +594,22 @@ def test_pv1_limit_table_matches_offline_configuration_parser() -> None:
         field = key.removeprefix("AGENT_KERNEL_").lower()
         assert defaults[field] == int(default)
         assert pilot[field] == int(value)
+
+
+def test_pv1_offline_sheet_keeps_request_checks_separate_from_pilot_evidence() -> None:
+    sheet = _normalized((DOCS_ROOT / "pilots/pv1-offline-rehearsal.md").read_text())
+    for phrase in (
+        "prepared, not executed or accepted",
+        "not an api body or runnable client",
+        "input.task is then ignored",
+        "not automatically loaded by this api path",
+        "cli --input takes the inner input object",
+        "resume is an active execution endpoint",
+        "no claimed submitter/approver separation",
+        "the github observer is still unimplemented",
+        "in-memory serialization is not persisted resume evidence",
+    ):
+        assert phrase in sheet
 
 
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:

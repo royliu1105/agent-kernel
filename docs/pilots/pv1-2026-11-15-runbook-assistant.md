@@ -1,16 +1,25 @@
 # PV1: Runbook Assistant Contract Draft
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-8; no-training requirement accepted; DeepSeek account
-commitment unverified; content/task prompt unchanged; PV1 in progress**.
+Record revision: **draft-9; offline request/approval preparation added; no-training
+commitment and external transmission pending; PV1 in progress**.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
 This record separates accepted design, remaining proposals and evidence; it is
 not a second task ledger.
 
 ## Authorization and Candidate
 
+The draft-9 preparation instruction authorized offline preparation only, with no
+feature expansion. The current review instruction authorizes scoped commit/push
+after review passes and exact-submission CI tracking only. No pilot/model API
+calls, local environment creation or current Docker updates are authorized.
+DeepSeek official reply and external transmission permission remain pending;
+spending authorization remains USD 0. Existing remote CI disposable test services
+are not a pilot environment. See the
+[offline operation sheet review](../reviews/2026-11-15-pv1-offline-rehearsal-review.md).
+
 The draft-8 preparation instruction authorized documentation and offline work only.
-The current review instruction authorizes scoped commit/push after review passes
+Its review instruction authorized scoped commit/push after review passed
 and CI tracking for this submission only. No pilot or model API calls, local
 environment creation or current Docker updates are authorized. External
 transmission permission remains pending; spending authorization remains USD 0.
@@ -376,6 +385,16 @@ other authorized charges; include failed requests/retries where billed. Provider
 usage definitions must be confirmed before summing fields, to avoid counting
 reasoning tokens twice. No provider-price assumption substitutes for unknown usage.
 
+The [offline API/CLI operation sheet](pv1-offline-rehearsal.md) and
+[request template](pv1-offline-request-template.json) now define in-memory input
+assembly, API-vs-CLI envelopes, proposed roles and future evidence capture. These
+are prepared artifacts, not final configuration sign-off or executed PV2 cases.
+The template uses a mock route only and does not load the prompt automatically.
+Existing runtime messages override task; resume executes continuation, not just
+inspection. Operator can submit and approve, while viewer cannot submit. A
+supervised participant admission procedure remains to be confirmed; no new role,
+gateway or credential is created. This does not close full authenticated Web.
+
 ## Accepted Task Prompt
 
 - Version: `pv1-runbook-assistant-v1`.
@@ -725,6 +744,17 @@ features or an expanded schedule. Each execution permission must be requested
 separately; accepting this document does not start the next phase automatically.
 
 ## Learning and Preparation Evidence
+
+Draft-9 offline request preparation (2026-11-15): **104 passed** across
+test_pv1_offline_preparation.py, test_pv1_materials.py and test_docs_consistency.py,
+with provider keys/test DB variables unset and live smoke disabled. The new
+tests use only in-memory request/schema/role operations, block socket connections
+and intercept the CLI request helper; they neither create nor execute a Run.
+All 30 question shapes preserve the accepted prompt through serialization, but
+no model output or behavioral score was produced. Ruff passed; mypy passed for
+239 source files. All 16 frozen materials match the baseline and the prompt hash
+is unchanged. No support contact, API call, provider request, environment setup,
+Docker operation, ingestion, commit or push occurred. No pilot gate is passed.
 
 Draft-8 offline preparation (2026-11-15): **94 passed** across the same materials
 and document consistency suites, with provider key/test database variables unset
