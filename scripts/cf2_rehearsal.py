@@ -207,7 +207,9 @@ def active_identity(env: dict[str, str]) -> list[dict[str, Any]]:
     )
 
 
-def main() -> int:
+def main(*, pv2: bool = False) -> int:
+    if pv2 and os.environ.get("GITHUB_ACTIONS") != "true":
+        raise RuntimeError("PV2 container acceptance is remote-CI-only")
     os.umask(0o077)
     env = clean_environment(dict(os.environ))
     project = "agent-kernel-cf2-" + secrets.token_hex(8)
@@ -216,6 +218,16 @@ def main() -> int:
     write_json(private / "guard.json", {"project": project})
     password = secrets.token_urlsafe(32)
     config = compose_config(project, private, password)
+    if pv2:
+        for name in ("api", "worker", "bootstrap"):
+            service = config["services"][name]
+            service["environment"]["PV2_REHEARSAL"] = "1"
+            service["environment"]["DEEPSEEK_API_KEY"] = ""
+            service["environment"]["DASHSCOPE_API_KEY"] = ""
+            service["volumes"] = [
+                *service["volumes"],
+                f"{ROOT / 'docs/pilots/prompts'}:/prompts:ro",
+            ]
     compose_file = private / "compose.json"
     write_json(compose_file, config)
     compose = [
@@ -261,6 +273,11 @@ def main() -> int:
         "tests/fixtures/cf2_runtime.py",
         "tests/fixtures/cf2_scenario.py",
     ]
+    if pv2:
+        paths += [
+            "tests/fixtures/pv2_controls.py",
+            "docs/pilots/prompts/pv1-runbook-assistant-v1.txt",
+        ]
     source = {
         "git_head": run(["git", "rev-parse", "HEAD"], env).strip(),
         "working_tree": "uncommitted harness/documentation candidate; hashes identify exact files",
@@ -331,6 +348,29 @@ def main() -> int:
                     time.sleep(1)
                 else:
                     raise TimeoutError("Isolated API did not become healthy after restart")
+        if pv2:
+            print("PV2: stopping isolated Worker; preserving queued records", flush=True)
+            run([*compose, "stop", "worker"], env)
+            run([*compose, "exec", "-T", "api", "python", "/fixture/pv2_controls.py", "queue"], env)
+            run([*compose, "stop", "api"], env)
+            for service in ("api", "worker"):
+                identity = run([*compose, "ps", "-aq", service], env).strip()
+                if (
+                    run(
+                        ["docker", "inspect", identity, "--format", "{{.State.Running}}"], env
+                    ).strip()
+                    != "false"
+                ):
+                    raise RuntimeError("PV2 operator stop failed")
+            write_json(private / "pv2-stopped.json", {"api": "stopped", "worker": "stopped"})
+            run([*compose, "up", "-d", "--wait", "--wait-timeout", "120", "api", "worker"], env)
+            print(
+                run(
+                    [*compose, "exec", "-T", "api", "python", "/fixture/pv2_controls.py", "verify"],
+                    env,
+                ).strip(),
+                flush=True,
+            )
         succeeded = True
     except subprocess.CalledProcessError as error:
         detail = str(error.stderr or "") + "\n" + str(error.output or "")
@@ -383,4 +423,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pv2", action="store_true")
+    raise SystemExit(main(pv2=parser.parse_args().pv2))

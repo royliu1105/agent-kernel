@@ -7,6 +7,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  pv2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: PV2 Isolated Authenticated Container Rehearsal
+        # Internal-only random project; synthetic providers, no host runtime reuse.
+        run: python scripts/cf2_rehearsal.py --pv2
+      - name: Sanitized PV2 Failure Detail
+        if: failure()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for path in Path('.agent-kernel').glob('agent-kernel-cf2-*/failure.log'):
+              print(path.read_text()[-16000:])
+          PY
+
   python:
     runs-on: ubuntu-latest
     env:

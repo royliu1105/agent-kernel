@@ -82,6 +82,12 @@ def test_host_environment_is_allowlisted() -> None:
     }
 
 
+def test_pv2_container_mode_refuses_local_execution(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    with pytest.raises(RuntimeError, match="remote-CI-only"):
+        harness.main(pv2=True)
+
+
 def test_collision_never_runs_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(harness, "ROOT", tmp_path)
     calls: list[list[str]] = []

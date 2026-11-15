@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -104,11 +105,19 @@ def wait_for(run_id: str, status: str) -> dict[str, Any]:
 
 
 def create_waiting(agent_id: str, kb_id: str, case: str) -> tuple[str, str]:
-    payload = {
+    payload: dict[str, Any] = {
         "task": json.dumps({"case": case, "kb_id": kb_id}, sort_keys=True),
         "model": "openai:cf2-offline",
         "memory": {"scopes": ["cf2"]},
     }
+    if os.environ.get("PV2_REHEARSAL") == "1":
+        payload["messages"] = [
+            {
+                "role": "system",
+                "content": Path("/prompts/pv1-runbook-assistant-v1.txt").read_text(),
+            },
+            {"role": "user", "content": payload["task"]},
+        ]
     save(f"input-{case}.json", payload)
     run = cli("run", "create", agent_id, "--input", f"@/evidence/input-{case}.json")
     assert run["status"] == "created"

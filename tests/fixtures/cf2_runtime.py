@@ -14,6 +14,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
+from uuid import uuid4
 
 EVIDENCE = Path("/evidence")
 
@@ -39,6 +40,7 @@ def append(name: str, value: Any) -> None:
         fcntl.flock(stream, fcntl.LOCK_EX)
         stream.write(canonical(value).decode() + "\n")
         stream.flush()
+        os.fsync(stream.fileno())
     (EVIDENCE / name).chmod(0o600)
 
 
@@ -212,6 +214,21 @@ def instrument_provider() -> None:
     from kernel_runtime.retry import RetryDelayPolicy
 
     embedding = create_embedding_provider()
+    executor_id = str(uuid4())
+    prompt_sha = None
+    if os.environ.get("PV2_REHEARSAL") == "1":
+        prompt_sha = hashlib.sha256(
+            Path("/prompts/pv1-runbook-assistant-v1.txt").read_bytes()
+        ).hexdigest()
+        assert prompt_sha == "bf6c5329a3e3bfa8587947b53a904fe4c3193444ad1f24a947305f163b1b091b"
+        append(
+            "executors.jsonl",
+            {
+                "executor_id": executor_id,
+                "role": os.environ["CF2_ROLE"],
+                "prompt_sha256": prompt_sha,
+            },
+        )
     save(
         f"effective-{os.environ['CF2_ROLE']}.json",
         {
@@ -225,6 +242,7 @@ def instrument_provider() -> None:
             "auth": True,
             "queue": "redis",
             "objects": "local",
+            "prompt_sha256": prompt_sha,
         },
     )
 
@@ -233,11 +251,20 @@ def instrument_provider() -> None:
             def transport(wire: httpx.Request) -> httpx.Response:
                 assert str(wire.url) == "https://cf2.invalid/v1/responses"
                 payload = json.loads(wire.content)
+                if prompt_sha is not None:
+                    prompt = Path("/prompts/pv1-runbook-assistant-v1.txt").read_text()
+                    assert any(
+                        item.get("role") == "system"
+                        and item.get("content") == [{"type": "input_text", "text": prompt}]
+                        for item in payload["input"]
+                    )
                 response = fixture_response(payload)
                 append(
                     "provider.jsonl",
                     {
                         "service": os.environ["CF2_ROLE"],
+                        "executor_id": executor_id,
+                        "prompt_sha256": prompt_sha,
                         "run_id": request.metadata["run_id"],
                         "normalized_request": request.model_dump(mode="json"),
                         "wire_request": payload,

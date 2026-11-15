@@ -259,6 +259,11 @@ subset may be reported separately but cannot claim the full approval track passe
 
 ### PV2: Rehearse the Existing Workflow Without Paid Calls
 
+Current evidence: [PV2 closure record](pilots/pv2-closure.md) links the verified
+remote database cases and the new isolated container control job. It explicitly
+distinguishes the CF2 mock profile from the frozen PV1 profile and preserves the
+unresolved Web/profile gates; full PV2 is not marked complete.
+
 Offline integration checkpoint (2026-11-15): shared fixture manifest/admission
 ledger and maintained provider/embedding transport tests are implemented; see
 [PV2 integration evidence](pilots/pv1-harness-spec.md#pv2-offline-integration).
