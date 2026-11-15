@@ -96,8 +96,12 @@ def test_web_config_exposes_only_loopback_entrypoint(tmp_path: Path) -> None:
     project = "agent-kernel-cf2-0123456789abcdef"
     config = harness.compose_config(project, tmp_path, "synthetic-password")
     harness.add_web_service(config, project)
-    assert config["networks"] == {"default": {"internal": True}}
+    assert config["networks"] == {"default": {"internal": True}, "browser": {}}
     assert config["services"]["web"]["ports"] == ["127.0.0.1:3101:3000"]
+    assert config["services"]["web"]["networks"] == ["default", "browser"]
+    assert all(
+        "networks" not in service for name, service in config["services"].items() if name != "web"
+    )
     assert config["services"]["web"]["environment"]["AGENT_KERNEL_API_URL"] == "http://api:8000"
     assert not any(
         "ports" in service for name, service in config["services"].items() if name != "web"

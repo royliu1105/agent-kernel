@@ -67,6 +67,13 @@ The [first-use guide](../web-first-use.md) records actual operations and limits.
 
 ## Evidence Handoff
 
+The first candidate `fa503db`, CI 43680474418, failed before its first browser
+API request: Docker Engine did not expose the published port on an internal-only
+network (`ECONNREFUSED`). This is a harness failure, not passed Web acceptance.
+The correction gives only the Web proxy a second, loopback-published ingress
+bridge. API/Worker/PostgreSQL/Redis remain on the internal network; runtime checks
+reject any non-Web container attached to ingress. No local Docker was touched.
+
 Populate only from observed results. Local checks may run static/fixture units;
 database, containers and actual browser execution remain remote-CI-only.
 

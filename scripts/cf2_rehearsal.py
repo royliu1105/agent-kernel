@@ -240,6 +240,9 @@ def add_web_service(config: dict[str, Any], project: str) -> None:
     """Expose only the disposable browser entrypoint on the CI runner loopback."""
     if not re.fullmatch(PROJECT_PATTERN, project):
         raise ValueError("Refusing a non-disposable Web project name")
+    # Internal-only Docker networks do not publish host ports on CI Engine.
+    # Only the credential-free Web proxy joins the loopback ingress bridge.
+    config["networks"]["browser"] = {}
     config["services"]["web"] = {
         "image": project + ":web",
         "build": {"context": str(ROOT), "dockerfile": "apps/web/Dockerfile"},
@@ -248,6 +251,7 @@ def add_web_service(config: dict[str, Any], project: str) -> None:
             "NEXT_TELEMETRY_DISABLED": "1",
         },
         "ports": ["127.0.0.1:3101:3000"],
+        "networks": ["default", "browser"],
         "restart": "no",
         "healthcheck": {
             "test": [
@@ -266,9 +270,7 @@ def add_web_service(config: dict[str, Any], project: str) -> None:
         config["services"][name]["environment"].update(
             {"DEEPSEEK_API_KEY": "", "DASHSCOPE_API_KEY": "", "PV2_REHEARSAL": "1"}
         )
-        config["services"][name]["volumes"].append(
-            f"{ROOT / 'docs/pilots/prompts'}:/prompts:ro"
-        )
+        config["services"][name]["volumes"].append(f"{ROOT / 'docs/pilots/prompts'}:/prompts:ro")
 
 
 def main(*, pv2: bool = False, profile: bool = False, web: bool = False) -> int:
@@ -414,8 +416,16 @@ def main(*, pv2: bool = False, profile: bool = False, web: bool = False) -> int:
             env,
         ).split()
         networks = json.loads(run(["docker", "network", "inspect", *network_ids], env))
-        if len(networks) != 1 or not networks[0]["Internal"]:
+        internal = [network for network in networks if network["Internal"]]
+        ingress = [network for network in networks if not network["Internal"]]
+        if len(internal) != 1 or len(ingress) != (1 if web else 0):
             raise RuntimeError("CF2 requires an isolated internal Docker network")
+        if web:
+            ingress_services = [
+                container["Name"] for container in ingress[0]["Containers"].values()
+            ]
+            if ingress_services != [project + "-web-1"]:
+                raise RuntimeError("Only the Web proxy may join the browser ingress network")
         containers = run([*compose, "ps", "-q"], env).split()
         inspected = json.loads(run(["docker", "inspect", *containers], env))
         write_json(
