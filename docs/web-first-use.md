@@ -1,6 +1,7 @@
 # Authenticated Web First Use
 
-Status: implementation candidate; remote Docker/browser verification pending.
+Status: bounded first-use journey verified in remote Docker/browser CI 43681752996,
+candidate 6466aba; no live-model or active-local deployment acceptance.
 See [PV2 evidence](pilots/pv2-web-acceptance.md) for the tested revision and scope.
 These instructions do not authorize starting or changing a deployment.
 

@@ -17,7 +17,7 @@ jobs:
           node-version: "24"
           cache: "npm"
       - run: npm ci
-      - run: npm --workspace apps/web exec playwright install --with-deps chromium
+      - run: npm --workspace apps/web exec -- playwright install --with-deps chromium
       - name: Authenticated Docker Web First Use
         run: python scripts/cf2_rehearsal.py --web
       - name: Sanitized Web Failure Detail
@@ -145,7 +145,7 @@ jobs:
       - name: Build Web
         run: npm run build
       - name: Install Playwright
-        run: npm --workspace apps/web exec playwright install --with-deps chromium
+        run: npm --workspace apps/web exec -- playwright install --with-deps chromium
       - name: Smoke Test Web
         env:
           # Explicit isolated test harness, never the default local startup path.

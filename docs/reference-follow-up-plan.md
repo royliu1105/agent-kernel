@@ -1,11 +1,10 @@
 # Reference-Informed Follow-Up Plan
 
 Status: **CF1 historical candidate CI passed, maintainer risk decision pending;
-CF2 offline API/CLI/profile checks passed, authenticated Web implementation in
-progress and acceptance pending; deployment/pilot acceptance pending (2026-11-15)**.
+CF2 bounded offline API/CLI/profile and authenticated Web checks passed; deployment/pilot acceptance pending (2026-11-15)**.
 
-The bounded Web implementation and new checks in the
-[Web acceptance record](pilots/pv2-web-acceptance.md) await exact-candidate remote CI.
+The bounded Web implementation and checks in the
+[Web acceptance record](pilots/pv2-web-acceptance.md) passed on 6466aba / CI 43681752996.
 The [CF1 risk decision list](reviews/cf1-risk-disposition.md) awaits the maintainer,
 not CI. This work updates no active Docker stack and makes no risk decision.
 
@@ -72,8 +71,8 @@ pilot admission or a release.
 - [PV1-PV6](real-scenario-pilot-plan.md) remains the sole pilot task/status
   ledger, with its frozen scenario, 30-question quality set, authorization,
   budget, user-observation and go/no-go rules. PV1 technical planning is finalized;
-  full-pilot human fields remain at PV5. PV2 has five of seven items checked and
-  two open gates; PV3-PV6 have not started. See the [PV2 evidence](pilots/pv2-closure.md).
+  full-pilot human fields remain at PV5. PV2 has six of seven items checked and
+  one open composite gate; PV3-PV6 have not started. See the [PV2 evidence](pilots/pv2-closure.md).
 - This document alone owns CF1-CF8 statuses. CF1/CF2 are bounded pilot-entry
   follow-ups; CF3-CF8 are deferred/conditional proposals, not a second active
   foundation phase. Link evidence between ledgers; never count one as the other.
@@ -108,7 +107,7 @@ need and separate scope decision are required. None means complete.
 | ID | Priority | Delivery | Prerequisite / pilot relationship | Current status | Acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
 | CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification/candidate CI passed; deployment and maintainer risk disposition pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): candidate `5952ba7` CI passed; [risk decision list](reviews/cf1-risk-disposition.md) pending; not active-local deployment/pilot acceptance |
-| CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | In progress: isolated authenticated API/CLI and offline frozen-profile checks passed; Web implementation in progress, full workflow review pending | [PV2 evidence](pilots/pv2-closure.md): cbe8c42 CI passed; [new Web checks](pilots/pv2-web-acceptance.md) pending; no live quality or full PV2 acceptance |
+| CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Verified for bounded offline scope: authenticated API/CLI/Web and frozen-profile provenance; not live quality or pilot admission | [PV2 evidence](pilots/pv2-closure.md): cbe8c42 CI passed; [Web evidence](pilots/pv2-web-acceptance.md) passed on 6466aba; no live quality or full PV2 acceptance |
 | CF3 | P1: reproducibility | Effective prompt-version binding to Run/checkpoint/eval | After PV6 prioritization or explicit earlier scope approval; CF1 context contract | Deferred; not started | None |
 | CF4 | P1: product journey | Scoped session/task submission and resumable streaming Web flow | After pilot evidence/scope approval; CF3 or an explicitly approved equivalent provenance contract | Deferred; not started | None |
 | CF5 | P2: memory effectiveness | Bounded summaries, semantic recall and controlled memory lifecycle | CF1 and CF3; pilot must identify a memory-specific need | Deferred; not started | None |
@@ -195,9 +194,8 @@ the pilot without pretending that all Web views or prompt automation are complet
 The historical [source inventory](reviews/2026-11-14-cf2-workflow-inventory.md)
 records the earlier missing credential bridge, resume and full-output path.
 The candidate implements the bounded authenticated UI journey with an
-in-memory workspace key, Bearer proxy and backend per-request RBAC. All new
-[Web checks](pilots/pv2-web-acceptance.md) remain pending; implementation in
-progress is not a passed RBAC journey. Do not disable auth or add a shared admin
+in-memory workspace key, Bearer proxy and backend per-request RBAC. The new
+[Web checks](pilots/pv2-web-acceptance.md) passed their bounded authenticated journey. Do not disable auth or add a shared admin
 key to pass. Earlier API/CLI evidence is retained, not relabeled as Web evidence.
 
 - [x] Record source-confirmed API/CLI/Web paths and distinguish existing fixture,
@@ -206,26 +204,26 @@ key to pass. Earlier API/CLI evidence is retained, not relabeled as Web evidence
 - [x] Enumerate the selected steps: upload/ingest, submit, inspect, approve,
   resume, inspect citations and stop. Record actual command/route/UI entry point,
   role and expected persisted records; explicitly label fixture-only controls.
-- [ ] Rehearse that exact path from a clean Docker setup with disposable data;
+- [x] Rehearse that exact path from a clean Docker setup with disposable data;
   use actual API/Worker/Web responses, not intercepted browser fixtures.
   The selected API/CLI-only path passed with real API/Worker/MCP/PostgreSQL and
-  offline provider transport. Authenticated Web is now in progress but remains
-  unverified pending exact-candidate remote Docker/browser CI.
-- [ ] Freeze a manual prompt/configuration revision and content hashes in the
+  offline provider transport. Authenticated Web passed its complete first-use case, independent observations
+  and sealed cleanup on 6466aba / CI 43681752996.
+- [x] Freeze a manual prompt/configuration revision and content hashes in the
   restricted pilot record. Verify the effective request at the provider boundary,
   including memory, tool schema and continuation; sanitized public evidence must
   not contain private prompts or documents.
   Historical fixture revision `cf2-api-cli-offline-v1` is verified. The later
   frozen `pv1-config-v1` offline container binding passed on cbe8c42; see
-  [PV2 evidence](pilots/pv2-closure.md). New Web-path binding/review and live
-  provider behavior are not established by those earlier results.
-- [ ] Correct only workflow-blocking instructions once verified. If required
+  [PV2 evidence](pilots/pv2-closure.md). New Web-path initial/resumed prompt binding passed on 6466aba. The Web fixture
+  differs from the paid profile as documented; live provider behavior remains unverified.
+- [x] Correct only workflow-blocking instructions once verified. If required
   behavior is absent, record a blocker and request a scope decision, not a mock UI.
   Rehearsal instructions and the minimal rejection terminal-status repair are
   locally verified: rejected resume atomically denies the tool and fails the Run
   without execution; see the [repair record](reviews/2026-11-14-approval-rejection-repair.md).
-  The active runtime is not updated. New Web instructions and full-workflow
-  review remain pending main-agent CI; broader expired/canceled handling is
+  The active runtime is not updated. [Web first-use instructions](web-first-use.md) were reviewed against the passed
+  remote journey; broader expired/canceled handling is
   outside this repair.
 
 Acceptance: the run ID, citations, approval and timeline agree across API/CLI,

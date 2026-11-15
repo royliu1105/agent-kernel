@@ -2,7 +2,8 @@
 
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
 PV5 people/dates. PV2 API/CLI offline and isolated remote deployment checks
-passed; full PV2 has two open gates; PV3-PV6 not started (2026-11-15)**.
+passed; authenticated Web passed on 6466aba; CF1 disposition remains open;
+PV3-PV6 not started (2026-11-15)**.
 
 Current instruction authorizes PV2 review/fixes, scoped submission and tracking
 its exact CI, not local deployment; technical planning is finalized, human-pilot
@@ -169,7 +170,7 @@ must state applicability and cannot be passed by omission.
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
-| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Five of seven checklist items verified; authenticated Web and CF1 disposition remain open | [Current evidence and remaining gates](pilots/pv2-closure.md) |
+| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Six of seven checklist items verified; CF1 maintainer disposition remains open | [Current evidence and remaining gates](pilots/pv2-closure.md) |
 | PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
 | PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
@@ -238,7 +239,8 @@ PV2 evidence, not a requirement to deploy during PV1. Changed payloads need revi
 - [x] Record CF1 memory/admitted-context scope and CF2 live/preview workflow
   assumptions, plus the method for verifying effective prompt/config hashes.
   Evidence: contract workflow/profile, offline operation sheet and harness spec;
-  actual deployment/request verification stays in PV2, Web acceptance stays open.
+  actual deployment/request verification belongs to PV2; Web was open at PV1
+  sign-off and later passed the bounded PV2 journey recorded below.
 - [ ] Approve generation, embedding and retry budgets, provider data handling,
   retention, stop controls and incident contact using the rules below.
   First-batch allocation and existing scoped authorization are recorded; private
@@ -262,10 +264,10 @@ subset may be reported separately but cannot claim the full approval track passe
 Current evidence: [PV2 closure record](pilots/pv2-closure.md) links the verified
 remote database cases and the new isolated container control job. It explicitly
 distinguishes the CF2 mock profile from the frozen PV1 profile and preserves the
-unresolved Web and CF1 disposition gates; full PV2 is not marked complete.
+unresolved CF1 disposition gate; full PV2 is not marked complete.
 The [Web acceptance matrix](pilots/pv2-web-acceptance.md) tracks the bounded
-implementation in progress by another agent; all new checks await main-agent
-exact-candidate remote CI. The [CF1 residual-risk decision list](reviews/cf1-risk-disposition.md)
+implementation verified by the remote Docker/browser job on 6466aba,
+CI 43681752996. The [CF1 residual-risk decision list](reviews/cf1-risk-disposition.md)
 awaits explicit maintainer disposition, not an agent or CI acceptance.
 
 Offline integration checkpoint (2026-11-15): shared fixture manifest/admission
@@ -284,10 +286,10 @@ acceptance. Verify each exact submission; keep incomplete full PV2 gates uncheck
 
 - [x] Re-run the applicable offline gates on the candidate; record exact commands,
   skips and separate backend/deployment coverage using the existing runbooks.
-- [ ] Follow the first-run path from a clean checkout; verify migrations, health,
+- [x] Follow the first-run path from a clean checkout; verify migrations, health,
   scoped credentials, private monitoring and real Workbench/API responses.
-  See the [pending authenticated Web checks](pilots/pv2-web-acceptance.md);
-  planned real Docker fixture-provider/browser CI is not yet evidence.
+  See the [authenticated Web evidence](pilots/pv2-web-acceptance.md), including
+  independent effects, rejection, logout/revocation and sealed owned cleanup.
 - [ ] Link reviewed CF1 disposition and CF2 actual workflow/provenance evidence
   from the follow-up ledger. Inspect effective initial/resumed provider requests;
   do not treat a registry object or fixture page as runtime version binding.
@@ -307,12 +309,12 @@ acceptance. Verify each exact submission; keep incomplete full PV2 gates uncheck
 - [x] Review the exact participant instructions against current behavior and fix
   only workflow-blocking documentation defects before sharing them.
 
-Checked items use cbe8c42 / CI 43674964968: all five jobs passed, Python 1394
+The original five checked items use cbe8c42 / CI 43674964968: all five jobs passed, Python 1394
 passed/15 explicitly gated skips, both PV2 container matrices passed. Instructions
-are for the accepted supervised API/CLI subset, not independent Web onboarding.
-The two unchecked items are intentionally retained: complete authenticated
-Workbench first-run acceptance and the maintainer's CF1 risk disposition (with
-the CF2 full-workflow closure). No extra participant/date confirmation round is
+were for the supervised API/CLI subset. The additional first-run item uses
+6466aba / CI 43681752996; [Web instructions](web-first-use.md) now cover that path.
+The remaining unchecked item is the maintainer's CF1 risk disposition; CF2's
+bounded offline workflow/provenance has technical evidence. No extra participant/date confirmation round is
 needed to accept these offline checks; those fields remain PV5 requirements.
 
 Acceptance: deterministic contracts and applicable real-backend checks pass;

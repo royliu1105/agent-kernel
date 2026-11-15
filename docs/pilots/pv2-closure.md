@@ -4,17 +4,17 @@ Date: 2026-11-15. Status: **in progress; full PV2 not accepted**.
 The canonical checklist remains [the pilot plan](../real-scenario-pilot-plan.md).
 This records evidence, not a replacement or a relaxation of its requirements.
 
-The authorized API/CLI offline technical work is verified on cbe8c42. **Five of
-seven canonical checklist items are checked**; the remaining two are full
-authenticated Web/first-run acceptance and CF1 residual-risk disposition with
-full CF2 closure. This is not another implementation/preparation loop for the
+The authorized API/CLI offline technical work is verified on cbe8c42, with
+authenticated Web verified on 6466aba. **Six of seven canonical checklist items
+are checked**; the remaining item requires CF1 maintainer residual-risk disposition.
+CF2's bounded offline workflow/provenance has technical evidence. This is not another implementation/preparation loop for the
 completed offline harness, and no PV3 paid calls or PV5 user sessions are claimed.
 
-The bounded Web implementation candidate is now available; its
-[acceptance matrix](pv2-web-acceptance.md) is entirely pending main-agent
-exact-candidate CI. The consolidated
+The bounded Web implementation passed its actual Docker/browser journey and
+evidence sealing in [CI 43681752996](https://github.com/royliu1105/agent-kernel/actions/runs/43681752996);
+see the [acceptance matrix](pv2-web-acceptance.md). The consolidated
 [CF1 decision list](../reviews/cf1-risk-disposition.md) is pending the maintainer's
-explicit disposition. These are the two remaining closure paths, not new passes.
+explicit disposition. That decision cannot be supplied by a green CI.
 
 ## Verified Baseline
 
@@ -90,21 +90,21 @@ it cannot assume a third synthesis call remains. Approved lookup cases use one
 initial call and one continuation. This is an intentional frozen-budget limit,
 not a reason to increase limits or claim a retried lookup flow succeeded.
 
-Full authenticated Web acceptance remains pending. The candidate implements
+The bounded authenticated Web path is verified on 6466aba. It implements
 the in-memory workspace API key, Bearer proxy, backend per-request RBAC path and
 actual UI create-agent/KB/upload/ingest/chunk/index/Run/queue/approval/resume/output/
-logout journey. Real Docker fixture-provider plus browser verification is planned
-in remote CI; all new checks in the [Web record](pv2-web-acceptance.md) are pending.
-The accepted API/CLI-first route does not waive full Web acceptance, and the
-historical rehearsal did not implement or verify this new path. Do not mark all
-seven canonical PV2 boxes done because an earlier job or general CI is green.
+logout journey. The real Docker fixture-provider/browser case passed in 19.7s;
+independent persisted/effect evidence, private sealing and owned cleanup passed.
+Desktop 1440px and mobile 390px screenshots were inspected; see the
+[Web record](pv2-web-acceptance.md). This supplements, rather than relabels, the
+historical API/CLI results. Do not mark all seven PV2 boxes done from CI alone.
 
 The other non-test gate is the maintainer's CF1 residual-risk disposition. The
 [reviewed repair](../reviews/2026-11-14-cf1-minimal-repair.md) and adversarial
 memory fixture establish bounded implementation evidence, not that disposition.
 The [consolidated risk list](../reviews/cf1-risk-disposition.md) separates exact
 risks, consequences, existing mitigations and evidence limits; every decision
-remains pending. Even a future Web CI pass cannot supply maintainer acceptance.
+remains pending. The Web CI pass cannot supply maintainer acceptance.
 The accepted retrieval/memory scope was explicitly not a general risk waiver.
 Do not invent a maintainer sign-off or admit real pilot users from these results.
 Two independent participants and dates remain PV5 inputs, not extra PV2 coding.
