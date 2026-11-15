@@ -5,6 +5,35 @@ Date: 2026-11-15. Latest decisions supporting the
 PV1 technical planning is finalized; original full-pilot sign-off still requires
 the human fields tracked at PV5. This is not runtime acceptance.
 
+## Latest Local Walkthrough Decision
+
+On 2026-11-15, after restarting Docker and manually creating an Agent/document,
+the maintainer explicitly approved configuring paid models using the remaining
+first USD 2 allowance. The [local paid profile](../local-paid-experience.md)
+records the trusted-local exception, preserved mock data, bounded configuration
+and operator spending controls. This supersedes the local-update/activation hold
+below for this walkthrough only. It does not pass PV2/PV3, activate a shared
+dollar-budget guard, authorize extra batches or attest provider billing. No paid
+request is performed merely by configuring this profile.
+
+The subsequent maintainer request authorizes the local GitHub read-only approval
+binding within the same first-batch remainder, explicitly without repeating the
+completed RAG Run. The binding pins run 43634747295 and the already reviewed raw
+response hash; changed content fails closed before model delivery. The anonymous
+localhost access exception, G5 reservation and verified configuration are recorded
+in the [walkthrough](../local-paid-experience.md#github-approval-walkthrough).
+No tool dispatch, approval decision or continuation is authorized merely by
+loading the configuration; any new live Run must wait for human review. The
+maintainer subsequently approved and resumed the one recorded Run; it failed
+at response validation. This is historical evidence, not permission to repeat it.
+
+Current review authorizes a separate commit/push and exact-revision CI for the
+paid configuration and hash guard. No paid model calls, task reruns or updates
+to the current Docker environment are authorized. The separate failed-response
+private-evidence proposal remains paused.
+
+## Historical PV2 Review Scope
+
 Current PV2 instruction authorizes review/fixes, scoped commit/push after checks
 pass and exact-submission CI tracking, including the new PostgreSQL approval
 tests in remote disposable runner services. No paid/pilot requests, local

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import httpx
 import pytest
 from kernel_core import RiskLevel, RunEventType, RunStatus, ToolCallStatus
 from kernel_providers import LLMFinishReason, LLMRequest, LLMResponse, LLMToolCall, LLMUsage
@@ -14,6 +17,8 @@ from kernel_runtime.execution import RunAlreadyClaimedError, RunExecutionError
 from kernel_storage import AgentRepository, ApprovalRepository, RunRepository, ToolCallRepository
 from kernel_storage.models import RunRecord
 from kernel_tools import ToolMetadata, ToolRegistry
+from kernel_tools.external.config import read_external_tools_config
+from kernel_tools.external.openapi import load_openapi_tools
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -428,6 +433,100 @@ async def test_unusable_approval_state_never_runs_a_tool_or_model(
     assert result.error_type == expected[case]
     assert write.calls == []
     assert provider.requests == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("case", ["match", "body_changed", "pin_changed", "pin_removed"])
+async def test_response_pin_survives_persisted_approval_continuation(
+    continuation_db: sessionmaker[Session], case: str
+) -> None:
+    directory = Path(__file__).parents[2] / "deploy/local-paid-tools"
+    config = read_external_tools_config(directory / "tools.json").openapi[0]
+    body = b'{"id":43634747295,"run_attempt":1,"conclusion":"success"}'
+    binding = config.bindings[0].model_copy(
+        update={"response_sha256": hashlib.sha256(body).hexdigest()}
+    )
+    config = config.model_copy(
+        update={"document": directory / "github-ci.openapi.json", "bindings": (binding,)}
+    )
+    requests: list[httpx.Request] = []
+    response = {"body": body}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200, content=response["body"], headers={"Content-Type": "application/json"}
+        )
+
+    args = {"path": {"run_id": 43634747295}, "query": {"exclude_pull_requests": True}}
+    initial = ScriptedProvider(
+        [reply(LLMToolCall(id="lookup", name="github_ci_run_status", arguments=args))]
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), trust_env=False) as client:
+        registry = ToolRegistry()
+        registry.register(load_openapi_tools(client, config)[0])
+        with continuation_db() as session:
+            run_id = queued(session)
+            waiting = await RunExecutionService(provider=initial, tool_registry=registry).execute(
+                run_id=run_id, repository=RunRepository(session)
+            )
+            assert waiting.status is RunStatus.WAITING_APPROVAL
+            assert requests == []
+            approval = ApprovalRepository(session).list_for_run(run_id)[0]
+            ApprovalRepository(session).approve(approval_id=approval.id)
+            approved_run = RunRepository(session).get(run_id)
+            assert approved_run is not None
+            assert approved_run.status is RunStatus.WAITING_APPROVAL
+            assert requests == []
+
+        if case == "body_changed":
+            response["body"] = b'{"private":"unreviewed-canary"}'
+        elif case in {"pin_changed", "pin_removed"}:
+            config = config.model_copy(
+                update={
+                    "bindings": (
+                        binding.model_copy(
+                            update={"response_sha256": "0" * 64 if case == "pin_changed" else None}
+                        ),
+                    )
+                }
+            )
+        # A fresh registry/service must obey the contract saved by the old executor.
+        resumed_registry = ToolRegistry()
+        resumed_registry.register(load_openapi_tools(client, config)[0])
+        continuation = ScriptedProvider(
+            [reply(text="reviewed final answer")] if case == "match" else []
+        )
+        with continuation_db() as session:
+            result = await RunExecutionService(
+                provider=continuation, tool_registry=resumed_registry
+            ).resume(
+                run_id=run_id,
+                repository=RunRepository(session),
+                approval_repository=ApprovalRepository(session),
+                tool_call_repository=ToolCallRepository(session),
+                approval_id=approval.id,
+            )
+            calls = ToolCallRepository(session).list_for_run(run_id)
+        assert len(initial.requests) == 1
+        assert len(calls) == 1
+        if case == "match":
+            assert result.status is RunStatus.SUCCEEDED
+            assert calls[0].status is ToolCallStatus.SUCCEEDED
+            assert len(continuation.requests) == 1 and len(requests) == 1
+        else:
+            assert result.status is RunStatus.FAILED
+            assert result.error_type == (
+                "external_response_review_required"
+                if case == "body_changed"
+                else "continuation_config_changed"
+            )
+            assert result.output is None and calls[0].result is None
+            assert len(requests) == (1 if case == "body_changed" else 0)
+            assert continuation.requests == []
+            assert "unreviewed-canary" not in (result.error_message or "")
+            if case == "body_changed":
+                assert calls[0].status is ToolCallStatus.FAILED
 
 
 @pytest.mark.asyncio

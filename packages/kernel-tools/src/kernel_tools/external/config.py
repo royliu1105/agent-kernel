@@ -20,6 +20,7 @@ class ExternalToolMetadata(ToolMetadata):
     """Trusted binding policy, never derived from remote metadata."""
 
     policy_decision: ExternalPolicyDecision | None = None
+    response_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class ExternalToolContract(ToolModel):
@@ -100,6 +101,7 @@ class MCPServerConfig(ToolModel):
 class OpenAPIBinding(ToolModel):
     operation_id: str
     contract: ExternalToolContract
+    response_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     idempotency_header: str | None = Field(default=None, pattern=r"^[A-Za-z0-9-]{1,64}$")
 
     @model_validator(mode="after")

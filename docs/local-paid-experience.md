@@ -8,6 +8,10 @@ historical, not a claim that no later paid request occurred.
 
 ## Documentation-Only Commit Boundary
 
+Historical boundary for commit `17af7db`, retained for provenance. The separate
+implementation follow-up below supersedes the availability statements in this
+section, not the scope of that earlier commit.
+
 This record describes observations on the maintainer's working tree based on
 `d8f316d`, with additional uncommitted paid-profile and response-hash changes.
 This documentation-only commit does not ship those runtime changes. In a clean
@@ -29,7 +33,24 @@ pilot deployment plan, for a trusted single-user localhost walkthrough. It does
 not authorize automated drills, arbitrary uploads, new tool-response disclosure,
 or additional batches. Retain all existing volumes and credentials.
 
-## Recorded Local Activation (Uncommitted Implementation)
+## Separate Implementation Follow-Up
+
+The subsequent review/submission includes the explicit paid Compose overlay,
+`docker-paid-*` entrypoints, fixed local GitHub binding and optional
+`response_sha256` adapter guard. These are a separate implementation change,
+not part of `17af7db`. Its own CI must validate the submitted revision; the
+earlier documentation-only CI cannot substitute for that result.
+
+The review adds byte-exact mismatch cases and persisted approval-continuation
+regressions for matching bodies, changed bodies, changed pins and removed pins.
+Database cases use only disposable remote CI PostgreSQL in this review, not
+the active local runtime. No new model/tool request or local Docker update is
+authorized by this submission. The current Docker images remain unchanged.
+
+The failed-response private-evidence repair remains paused and unimplemented;
+shipping the existing hash guard does not resolve the observed mismatch.
+
+## Recorded Local Activation
 
 Keep ONLY these two entries in ignored `.agent-kernel/docker-local/paid.env`
 (0600, inside the existing 0700 directory):
@@ -259,9 +280,10 @@ perform one separately authorized diagnostic through the actual tool transport.
 Keep the current hash and approval contract; no automatic whitelist changes or
 business-Run retries. This work was paused before implementation.
 
-The current request is documentation-only: no paid calls, environment creation,
-Docker updates or business-code edits. The local paid overlay and hash guard
-remain uncommitted working-tree changes at this checkpoint; historical remote
-CI does not verify them. Budget reservations above are not reconciled charges.
+The current follow-up authorizes review and separate implementation submission:
+no paid calls, task reruns or current Docker updates. The documentation-only
+commit excluded the local paid overlay and hash guard; their subsequent
+implementation CI must be evaluated separately. Budget reservations above are
+not reconciled charges.
 The [pilot plan](real-scenario-pilot-plan.md) remains the sole PV1-PV6 ledger;
 the [project overview](project-overview.md) summarizes capability boundaries.

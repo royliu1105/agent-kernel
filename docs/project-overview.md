@@ -2,7 +2,7 @@
 
 更新日期：2026-11-15。本文介绍当前工作树，不代表某个已发布 tag 的全部能力，也不构成部署、付费调用或发布授权。
 
-提交范围：本次只提交介绍、状态同步、体验记录和文档测试。付费 Docker 配置、`docker-paid-*` 命令及 `response_sha256` 响应保护仍是基于 `d8f316d` 的本地未提交改动，不包含在本次提交中。下文相应描述是本地观察，不保证新克隆此提交即可复现；详见[提交边界](local-paid-experience.md#documentation-only-commit-boundary)。
+提交范围：介绍与状态同步提交 `17af7db` 未包含付费 Docker 配置、`docker-paid-*` 命令及 `response_sha256` 响应保护。后续单独提交这些实现及其回归测试，必须检查该实现提交自己的 CI，不能沿用文档提交的通过结论；详见[提交边界](local-paid-experience.md#documentation-only-commit-boundary)和[实现跟进](local-paid-experience.md#separate-implementation-follow-up)。历史本地体验不是新克隆后的自动执行指令。
 
 ## 定位与目标用户
 
@@ -118,7 +118,7 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 - 费用估算字段为零不等于免费。USD 2 首批、USD 10 总额和 USD 0.25/任务是操作限额，不是服务商保证的硬扣费上限；账单核对仍未完成。
 - 这是关闭鉴权的单用户 localhost 体验；鉴权 Web 的离线 CI 是另一条证据，不据此推断真实共享多租户或独立用户试点成功。
 
-本地体验包含尚未提交的配置和响应校验改动。旧 commit 的绿色 CI 不能验证当前工作树。本次文档整理不重跑以上任务，不调用付费模型，不更新 Docker。
+本地体验发生时包含未提交的配置和响应校验改动，现按独立实现提交审查。旧 commit 的绿色 CI 不能验证后续实现。本次提交不重跑以上任务，不调用付费模型，不更新 Docker；失败响应的私密证据补齐仍未实施。
 
 ## 后续规划与完成口径
 

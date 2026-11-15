@@ -1,0 +1,29 @@
+# Explicit supervised local exception; never loaded by ordinary docker-up.
+# These execution bounds are NOT a shared monetary/billing cap.
+x-paid-environment: &paid-environment
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?Missing dedicated DeepSeek key}
+  DEEPSEEK_BASE_URL: https://api.deepseek.com
+  DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:?Missing dedicated DashScope key}
+  DASHSCOPE_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+  DASHSCOPE_EMBEDDING_MODEL: text-embedding-v3
+  DASHSCOPE_EMBEDDING_DIMENSIONS: "1024"
+  AGENT_KERNEL_EMBEDDING_PROVIDER: dashscope
+  AGENT_KERNEL_READINESS_DEEPSEEK: required
+  AGENT_KERNEL_READINESS_DASHSCOPE: required
+  AGENT_KERNEL_MAX_MODEL_CALLS: "2"
+  AGENT_KERNEL_MAX_TOOL_CALLS: "8"
+  AGENT_KERNEL_MAX_ACTIVE_SECONDS: "120"
+  AGENT_KERNEL_MAX_TOTAL_TOKENS: "32000"
+  AGENT_KERNEL_MAX_OUTPUT_TOKENS: "2048"
+  AGENT_KERNEL_MAX_HISTORY_BYTES: "262144"
+  AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG: /etc/agent-kernel/paid-tools/tools.json
+
+services:
+  api:
+    environment: *paid-environment
+    volumes:
+      - ./deploy/local-paid-tools:/etc/agent-kernel/paid-tools:ro
+  worker:
+    environment: *paid-environment
+    volumes:
+      - ./deploy/local-paid-tools:/etc/agent-kernel/paid-tools:ro

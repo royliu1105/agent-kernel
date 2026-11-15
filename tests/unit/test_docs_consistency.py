@@ -440,6 +440,9 @@ def test_local_walkthrough_keeps_failure_and_evidence_limits_explicit() -> None:
     assert "response_sha256" in boundary
     assert "are not available" in boundary
     assert "separately reviewed implementation commit" in boundary
+    implementation = _section("local-paid-experience.md", "Separate Implementation Follow-Up")
+    assert "current docker images remain unchanged" in implementation
+    assert "private-evidence repair remains paused and unimplemented" in implementation
     failure = _section("local-paid-experience.md", "Observed Approval and Failed Continuation")
     for marker in (
         "external_response_review_required",

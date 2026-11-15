@@ -49,8 +49,9 @@ Current development:
   retains the implementation evidence and explicit limits.
 - `master` contains unreleased changes beyond the `v1.0.0` tag. Historical
   release CI does not verify those changes; implementation CI and pilot
-  acceptance are separate evidence. Local walkthrough changes also include
-  uncommitted work; older CI does not verify that working tree.
+  acceptance are separate evidence. The local paid profile and hash guard are
+  a separate implementation follow-up to documentation commit `17af7db`;
+  only their own submitted-revision CI can verify them, not older CI.
 - Review the [upgrade and migration policy](docs/upgrade-migration-policy.md)
   before upgrading an existing deployment.
 

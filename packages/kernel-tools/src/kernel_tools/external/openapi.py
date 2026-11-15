@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from typing import Any
@@ -44,7 +45,9 @@ class OpenAPITool:
         self._binding = binding
         self._method = method.upper()
         self._path = path
-        self._metadata = metadata_for(binding.contract, schema)
+        self._metadata = metadata_for(binding.contract, schema).model_copy(
+            update={"response_sha256": binding.response_sha256}
+        )
         self._active = True
         if binding.contract.read_only and method not in {"get", "head", "options"}:
             raise ExternalConfigurationError("Mutating HTTP methods cannot be marked read-only.")
@@ -106,6 +109,12 @@ class OpenAPITool:
                         f"External HTTP operation returned {response.status_code}."
                     )
                 data = await response.aread()
+                expected = self._binding.response_sha256
+                if expected is not None and hashlib.sha256(data).hexdigest() != expected:
+                    raise ExternalToolError(
+                        "External response changed; operator review is required.",
+                        error_type="external_response_review_required",
+                    )
                 content: Any
                 if not data:
                     content = None

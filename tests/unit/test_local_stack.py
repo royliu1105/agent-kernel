@@ -89,6 +89,55 @@ def test_compose_uses_fixed_project_and_clean_environment(
     assert command["args"][-2:] == ["config", "--quiet"]
     assert str(checkout / "deploy/local.compose.yml") in command["args"]
     assert "--env-file" in command["args"]
+    assert str(checkout / "deploy/local-paid.compose.yml") not in command["args"]
+
+    state = checkout / ".agent-kernel/docker-local"
+    paid = state / "paid.env"
+    assert invoke(checkout, "paid-config").returncode == 1
+    paid.write_text("DEEPSEEK_API_KEY=test-only\nDASHSCOPE_API_KEY=test-only\n")
+    paid.chmod(0o644)
+    result = invoke(checkout, "paid-config")
+    assert result.returncode == 0, result.stderr
+    assert paid.stat().st_mode & 0o777 == 0o600
+    command = json.loads(record.read_text())
+    assert command["args"].count("--env-file") == 2
+    assert str(paid) in command["args"]
+    assert str(checkout / "deploy/local-paid.compose.yml") in command["args"]
+    assert command["deepseek"] is None and command["dashscope"] is None
+    assert "test-only" not in result.stdout + result.stderr
+
+    # Merely having credentials on disk must not activate paid models.
+    assert invoke(checkout, "config").returncode == 0
+    command = json.loads(record.read_text())
+    assert str(paid) not in command["args"]
+    assert str(checkout / "deploy/local-paid.compose.yml") not in command["args"]
+
+
+def test_paid_configuration_symlink_is_rejected(checkout: Path) -> None:
+    assert invoke(checkout, "init").returncode == 0
+    target = checkout / "credentials"
+    target.write_text("private")
+    (checkout / ".agent-kernel/docker-local/paid.env").symlink_to(target)
+    assert invoke(checkout, "paid-config").returncode == 1
+    assert target.read_text() == "private"
+
+
+def test_paid_override_is_bounded_and_does_not_change_storage() -> None:
+    import yaml  # type: ignore[import-untyped]
+
+    config = yaml.safe_load((ROOT / "deploy/local-paid.compose.yml").read_text())
+    assert set(config["services"]) == {"api", "worker"}
+    api, worker = (config["services"][name] for name in ("api", "worker"))
+    assert api == worker
+    assert set(api) == {"environment", "volumes"}
+    assert api["volumes"] == ["./deploy/local-paid-tools:/etc/agent-kernel/paid-tools:ro"]
+    env = api["environment"]
+    assert env["DEEPSEEK_API_KEY"].startswith("${DEEPSEEK_API_KEY:?")
+    assert env["DASHSCOPE_API_KEY"].startswith("${DASHSCOPE_API_KEY:?")
+    assert env["AGENT_KERNEL_MAX_MODEL_CALLS"] == "2"
+    assert env["AGENT_KERNEL_MAX_OUTPUT_TOKENS"] == "2048"
+    assert env["AGENT_KERNEL_EMBEDDING_PROVIDER"] == "dashscope"
+    assert env["DASHSCOPE_EMBEDDING_DIMENSIONS"] == "1024"
 
 
 def test_docker_default_is_documented_and_build_context_excludes_secrets() -> None:

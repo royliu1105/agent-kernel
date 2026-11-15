@@ -1,0 +1,18 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Approved single GitHub CI lookup", "version": "1.0.0"},
+  "paths": {
+    "/repos/royliu1105/agent-kernel/actions/runs/{run_id}": {
+      "get": {
+        "operationId": "github_ci_run_status",
+        "parameters": [
+          {"name": "run_id", "in": "path", "required": true,
+            "schema": {"type": "integer", "enum": [43634747295]}},
+          {"name": "exclude_pull_requests", "in": "query", "required": true,
+            "schema": {"type": "boolean", "enum": [true]}}
+        ],
+        "responses": {"200": {"description": "Bounded, previously reviewed workflow-run JSON"}}
+      }
+    }
+  }
+}

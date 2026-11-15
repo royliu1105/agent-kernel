@@ -7,8 +7,8 @@ STATE="$ROOT/.agent-kernel/docker-local"
 ACTION=${1:-up}
 if [ "$#" -gt 0 ]; then shift; fi
 case "$ACTION" in
-  init|up|build|stop|down|ps|logs|config|exec) ;;
-  *) printf 'Usage: sh scripts/local-stack.sh {init|up|build|stop|down|ps|logs|config|exec}\n' >&2; exit 2 ;;
+  init|up|paid-up|paid-config|build|stop|down|ps|logs|config|exec) ;;
+  *) printf 'Usage: sh scripts/local-stack.sh {init|up|paid-up|paid-config|build|stop|down|ps|logs|config|exec}\n' >&2; exit 2 ;;
 esac
 if [ "$ACTION" = down ] && [ "$#" -ne 0 ]; then
   printf 'down preserves data; volume deletion is deliberately not supported here.\n' >&2
@@ -17,7 +17,7 @@ fi
 
 umask 077
 for path in "$ROOT/.agent-kernel" "$STATE" "$STATE/config.env" \
-  "$STATE/monitoring-token" "$STATE/grafana-password" "$STATE/smtp-password"; do
+  "$STATE/monitoring-token" "$STATE/grafana-password" "$STATE/smtp-password" "$STATE/paid.env"; do
   if [ -L "$path" ]; then
     printf 'Refusing symlink in private runtime configuration.\n' >&2
     exit 1
@@ -41,7 +41,22 @@ chmod 600 "$STATE/config.env" "$STATE/grafana-password"
 # Non-root containers read bind-mounted files; the host parent remains owner-only.
 chmod 644 "$STATE/monitoring-token" "$STATE/smtp-password"
 
+PAID=0
+case "$ACTION" in
+  paid-up|paid-config)
+    if [ ! -f "$STATE/paid.env" ]; then
+      printf 'Missing private paid.env. See docs/local-paid-experience.md.\n' >&2
+      exit 1
+    fi
+    chmod 600 "$STATE/paid.env"
+    PAID=1
+    ;;
+esac
+
 compose() {
+  if [ "$PAID" = 1 ]; then
+    set -- --env-file "$STATE/paid.env" -f "$ROOT/deploy/local-paid.compose.yml" "$@"
+  fi
   # Ignore direnv/root .env and host provider keys. Docker client settings survive.
   env -i PATH="$PATH" HOME="$HOME" \
     DOCKER_CONFIG="${DOCKER_CONFIG:-$HOME/.docker}" \
@@ -63,13 +78,13 @@ case "$ACTION" in
     printf 'Private config: %s\nGrafana user: admin; password file: %s\n' \
       "$STATE/config.env" "$STATE/grafana-password"
     ;;
-  up)
+  up|paid-up)
     compose config --quiet
     compose up --build --detach --wait --wait-timeout 240 "$@"
     compose ps
     printf 'All runtime services use Docker. See docs/docker-local.md for URLs and commands.\n'
     ;;
-  config) compose config --quiet ;;
+  config|paid-config) compose config --quiet ;;
   logs) compose logs --tail 100 "$@" ;;
   down) compose down ;;
   *) compose "$ACTION" "$@" ;;

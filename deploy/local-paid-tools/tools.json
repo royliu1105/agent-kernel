@@ -1,0 +1,30 @@
+{
+  "openapi": [{
+    "name": "local_github_ci",
+    "document": "/etc/agent-kernel/paid-tools/github-ci.openapi.json",
+    "endpoint": {
+      "url": "https://api.github.com",
+      "max_response_bytes": 32768,
+      "timeout_ms": 10000,
+      "headers": {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      }
+    },
+    "access": {"allow_unscoped": true},
+    "bindings": [{
+      "operation_id": "github_ci_run_status",
+      "response_sha256": "37637575f2483bd19f6d91c84ae8db84a0189993e50b96ca247242a59009bc7f",
+      "contract": {
+        "name": "github_ci_run_status",
+        "description": "Read only approved historical GitHub CI run 43634747295, not the latest run. Human approval is mandatory; changed response content requires operator review.",
+        "risk_level": "network",
+        "read_only": true,
+        "idempotent": true,
+        "retry_safe": false,
+        "policy_decision": "require_approval",
+        "timeout_ms": 10000
+      }
+    }]
+  }]
+}

@@ -1,5 +1,13 @@
 # DeepSeek and Alibaba Embedding Pilot Profile
 
+Local walkthrough update (2026-11-15): the maintainer has separately authorized
+and activated the [explicit local paid configuration](local-paid-experience.md).
+API/Worker configuration-only readiness passed without paid requests during
+setup. Subsequently one real RAG Run succeeded and an approved GitHub Run failed
+closed at response validation; see the walkthrough evidence. Ordinary
+`make docker-up` remains mock-only. This is not the formal frozen pilot cohort;
+the isolated pilot requirements and full live-acceptance gaps remain open.
+
 Status: **Implementation/local offline verification and reviewed-candidate CI
 passed; live calls and pilot deployment not accepted (2026-11-15)**.
 See the [scoped contract](specs/pilot-provider-compatibility.md) and
