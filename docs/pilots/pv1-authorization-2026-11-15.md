@@ -6,12 +6,13 @@ PV1 remains in progress; this is not final contract or runtime acceptance.
 
 ## Current Review Scope
 
-The latest instruction authorizes scoped commit/push after review passes and
-exact-submission CI tracking only. Do not call paid models, create local
-environments or update current Docker in this review. No pilot query or provider
-request is needed or performed. The previously recorded USD 2 allowance and
-payload permission are retained, not exercised by this submission. Remote CI
-disposable test services are not a local/pilot environment. No tag/release.
+The preparation authorized one consolidated technical/budget finalization,
+existing-document updates and offline checks. The current instruction authorizes
+scoped commit/push after review passes and exact-submission CI tracking only.
+Do not call paid models, create local environments or update current Docker.
+No pilot query or provider request is needed or performed. The previously recorded
+USD 2 allowance and payload permission are retained, not exercised by this review.
+Remote CI disposable runner services are not a local pilot environment. No release.
 See the [authorization review](../reviews/2026-11-15-pv1-authorization-review.md).
 
 ## Accepted Authorization
@@ -40,8 +41,10 @@ Do not run drills against the active DB or activate paid providers globally. Thi
 preparation performed no Docker operation, environment setup or harness
 implementation. The current review boundary above takes precedence for this turn.
 
-Price/currency, conservative allocation, unknown-charge handling and effective
-model/configuration still need verification before paid requests. No model
+The [draft-13 profile and worksheet](pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
+finalize intended configuration, dated tariffs, conservative currency reservations,
+five-Run allocation and unknown-charge handling. Actual account tariffs and effective
+model/configuration still need verification during execution preflight. No model
 request was made this turn; observed model spend for this work is USD 0 and the
 first-batch allowance remains USD 2. No account balance/invoice total is inferred.
 Authorization does not start PV2-PV6 or waive remaining entry/evidence gates.
@@ -111,12 +114,13 @@ for later bound copies, with this authorization referenced explicitly.
 
 ## Remaining Work
 
-Full-response disposition is now recorded for the exact source above. Freeze
-intended target/config and harness bindings. Verify model availability, pricing
-and first-batch cost reservation
-without spending the allowance implicitly. Participants/dates and supervised
-admission remain open. Harness implementation and actual acceptance still follow
-the existing gates. No observer control or model case is marked run or passed.
+Full-response disposition is recorded for the exact source above. Intended target,
+config/harness bindings, supervised admission and the first USD 2 allocation are
+now finalized in pv1-config-v1, including the explicit deepseek-flash retirement
+correction. Only participants/dates/private contact and one consolidated contract
+sign-off remain as PV1 inputs. Actual model access, effective settings, observer
+implementation and acceptance follow PV2/PV3, not more PV1 design questions.
+No observer control or model case is marked run or passed.
 
 ## Verification
 

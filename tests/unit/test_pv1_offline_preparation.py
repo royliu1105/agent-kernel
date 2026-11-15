@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import socket
 from copy import deepcopy
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -22,8 +24,13 @@ from agent_kernel_cli import main as cli_main
 from kernel_core import Run
 from kernel_identity import Permission, WorkspaceRole
 from kernel_identity.authorizer import ROLE_PERMISSIONS
+from kernel_providers import DeepSeekProvider
 from kernel_providers.openai import _request_payload
+from kernel_rag.chunking import TextChunker
+from kernel_rag.parsers import TextMarkdownParser
 from kernel_runtime.execution import _model_refs_from_run, _request_from_run
+from kernel_runtime.native_state import ExecutionLimits
+from kernel_runtime.router import ModelRouter
 from pydantic import ValidationError
 from typer.testing import CliRunner
 
@@ -46,6 +53,124 @@ def forbid_network(monkeypatch: pytest.MonkeyPatch) -> None:
 def _template() -> dict[str, Any]:
     value: dict[str, Any] = json.loads((PILOTS / "pv1-offline-request-template.json").read_text())
     return value
+
+
+def _finalized_profile() -> dict[str, Any]:
+    document = (PILOTS / "pv1-2026-11-15-runbook-assistant.md").read_text()
+    section = document.split("## Finalized Technical Profile\n", 1)[1].split("\n## ", 1)[0]
+    blocks = re.findall(r"```json\n(.*?)\n```", section, re.DOTALL)
+    assert len(blocks) == 1
+    value: dict[str, Any] = json.loads(blocks[0])
+    return value
+
+
+def test_finalized_profile_uses_existing_limits_and_request_serialization() -> None:
+    profile = _finalized_profile()
+    assert profile["version"] == "pv1-config-v1"
+    assert profile["implementation_sha"] == "21c54217c426a6c6ef7384edf22e32a4ca8334b7"
+    assert profile["model"] == "deepseek:deepseek-flash"
+    assert profile["fallback_models"] == []
+    assert profile["generation_base_url"] == "https://api.deepseek.com"
+    assert profile["embedding_base_url"] == "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    assert profile["embedding_provider"] == "dashscope"
+    assert (profile["embedding_model"], profile["embedding_dimensions"]) == (
+        "text-embedding-v3",
+        1024,
+    )
+    limits = ExecutionLimits.from_env(profile["first_batch_environment"])
+    assert limits.max_model_calls == profile["budget"]["attempts_per_task"] == 2
+    assert limits.max_tool_calls == 8
+    assert limits.max_active_seconds == 120
+    assert limits.max_total_tokens == 32000
+    assert limits.max_output_tokens == profile["budget"]["output_tokens_per_attempt"] == 2048
+    assert limits.max_history_bytes == 262144
+    assert profile["compose_project"] == "agent-kernel-pv1"
+    assert profile["api_bind"] == "127.0.0.1:18080:8000"
+    assert profile["active_runs"] == 1
+    assert (profile["github_run_id"], profile["github_run_attempt"]) == (43634747295, 1)
+    assert profile["github_api_version"] == "2022-11-28"
+    assert profile["github_timeout_ms"] == 10000
+    assert profile["github_max_response_bytes"] == 32768
+    assert profile["tool_max_result_bytes"] == 65536
+
+    body = _body("How do I start the local stack?")
+    body["input"]["model"] = profile["model"]
+    body["input"]["fallback_models"] = profile["fallback_models"]
+    parsed = RunCreateRequest.model_validate(body)
+    run = Run(agent_id=AGENT_ID, input=parsed.input)
+    assert _model_refs_from_run(run, default_model="mock:unused") == (profile["model"],)
+    request = _request_from_run(run, default_model="mock:unused")
+    router = ModelRouter(
+        {"deepseek": DeepSeekProvider(api_key="", base_url=profile["generation_base_url"])}
+    )
+    route = router.route(request.model)
+    assert route.provider_name == "deepseek"
+    wire = _request_payload(
+        request.model_copy(update={"model": route.model, "max_output_tokens": 2048}),
+        provider_name=route.provider_name,
+    )
+    assert wire["model"] == "deepseek-flash"
+    assert wire["max_output_tokens"] == 2048
+    assert "reasoning" not in wire
+    assert "store" not in wire
+
+
+def test_first_batch_decimal_forecast_and_reservations_fit_without_discounts() -> None:
+    budget = _finalized_profile()["budget"]
+    tasks = budget["tasks"]
+    attempts = tasks * budget["attempts_per_task"]
+    assert tasks == 5 and attempts == 10
+    input_tokens = attempts * budget["input_tokens_per_attempt_forecast"]
+    output_tokens = attempts * budget["output_tokens_per_attempt"]
+    million = Decimal(1000000)
+    usd = (
+        input_tokens * Decimal(budget["generation_input_usd_per_million"])
+        + output_tokens * Decimal(budget["generation_output_usd_per_million"])
+    ) / million
+    cny = (
+        input_tokens * Decimal(budget["generation_input_cny_per_million"])
+        + output_tokens * Decimal(budget["generation_output_cny_per_million"])
+    ) / million
+    embedding_cny = (
+        budget["embedding_tokens_forecast"] * Decimal(budget["embedding_cny_per_million"])
+    ) / million
+    stress = Decimal(budget["stress_reserve_usd_per_cny"])
+    assert usd == Decimal("0.12288")
+    assert cny == Decimal("0.81920")
+    assert embedding_cny == Decimal("0.02500")
+    total = max(usd, cny * stress) + embedding_cny * stress
+    assert total == Decimal("0.84420")
+    task_reserve = Decimal(budget["task_reserve_usd"])
+    embedding_reserve = Decimal(budget["embedding_reserve_usd"])
+    ceiling = Decimal(budget["batch_ceiling_usd"])
+    assert max(usd, cny * stress) / tasks + embedding_cny * stress < task_reserve
+    assert embedding_cny * stress < embedding_reserve
+    assert total < tasks * task_reserve + embedding_reserve
+    assert (
+        tasks * task_reserve + embedding_reserve + Decimal(budget["locked_reserve_usd"]) == ceiling
+    )
+    assert ceiling == Decimal("2.00")
+
+
+def test_frozen_corpus_chunk_inventory_matches_budget_basis() -> None:
+    profile = _finalized_profile()
+    root = PILOTS / "pv1-materials"
+    manifest = json.loads((root / "manifest.json").read_text())
+    parser = TextMarkdownParser()
+    chunker = TextChunker(
+        chunk_size_chars=profile["chunk_size"], chunk_overlap_chars=profile["chunk_overlap"]
+    )
+    chunks = [
+        chunk
+        for item in manifest["corpus"]
+        for chunk in chunker.chunk(
+            parser.parse(content=(root / item["path"]).read_bytes(), filename=item["path"]).text
+        )
+    ]
+    assert len(manifest["corpus"]) == len(chunks) == 12
+    assert sum(len(chunk.content.encode()) for chunk in chunks) == 14574
+    assert max(len(chunk.content.encode()) for chunk in chunks) == 1654
+    assert profile["top_k"] == 5
 
 
 def _body(question: str) -> dict[str, Any]:

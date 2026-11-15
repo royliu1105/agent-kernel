@@ -17,21 +17,25 @@ DeepSeek's account commitment remains unverified; public documentation and offli
 tests are not that commitment. See the
 [provider evidence gate](pilots/pv1-2026-11-15-runbook-assistant.md#no-training-requirement-and-provider-evidence).
 The exact inspected GitHub response is approved for DeepSeek; changed responses
-need renewed review. Cost/configuration readiness remains open. No
+need renewed review. The [finalized technical profile and first-batch worksheet](pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
+now specify the intended bindings and USD 2 allocation; actual runtime/account
+verification remains open. Current work is offline only. No
 model smoke or deployment is claimed by this permission; mock defaults stay intact.
 
 ## Configuration Contract
 
-The generation route is `deepseek:deepseek-chat`. The prefix selects DeepSeek,
+The finalized pilot generation route is `deepseek:deepseek-flash`. The prefix selects DeepSeek,
 and the remaining model ID is sent unchanged. The adapter reuses Responses,
 including native function calls, persisted continuation, usage, deadlines and
 retry classification. It is not the reference project's Chat Completions client.
 The default model remains mock; supplying credentials does not change it.
 
-The saved `deepseek-chat` ID is not a live-verified model. Current
-[DeepSeek documentation](https://api-docs.deepseek.com/guides/responses_api/)
-lists newer Responses models. Do not silently remap it or fall back to a paid
-alternative. A later explicitly authorized smoke must verify account access,
+Draft-13 explicitly replaces the reference's `deepseek-chat` plan because the
+[official notice](https://api-docs.deepseek.com/news/news260424/) retires it after
+2026-07-24 15:59 UTC. This is not runtime alias remapping or an active Docker change.
+The current Responses model is documented as DeepSeek-V4.1-Flash-1017;
+the slug is not an immutable version pin. Do not fall back to another paid model.
+A later authorized smoke must verify account access,
 the requested/returned ID, actual output shape and approval continuation.
 Only validated completed function/message/reasoning items are replayed; unknown
 or incomplete tool history fails closed. No provider-side web tools are enabled.
@@ -65,7 +69,7 @@ prepare only the required dedicated values in an ignored private pilot config:
 | --- | --- | --- |
 | `OPENAI_API_KEY` for the saved DeepSeek endpoint | `DEEPSEEK_API_KEY` | Never send this key to the official OpenAI route |
 | `OPENAI_BASE_URL` | `DEEPSEEK_BASE_URL` | Only `https://api.deepseek.com` with optional `/v1` |
-| `OPENAI_MODEL` | Run model `deepseek:<saved model>` | Preserve selected ID; no implicit model switch |
+| `OPENAI_MODEL` (historical value) | Run model `deepseek:deepseek-flash` | Explicit draft-13 retirement correction; do not load the retired reference ID or silently remap it |
 | `EMBEDDING_API_KEY` | `DASHSCOPE_API_KEY` | Independent from both generation keys |
 | `EMBEDDING_BASE_URL` | `DASHSCOPE_BASE_URL` | Official HTTPS compatible-mode endpoint only |
 | `EMBEDDING_MODEL` | `DASHSCOPE_EMBEDDING_MODEL` | This bounded profile supports `text-embedding-v3` |

@@ -1,6 +1,15 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
-Status: **PV1 contract preparation in progress; not accepted. PV2-PV6 not started (2026-11-15)**.
+Status: **PV1 technical/budget plan finalized; people/dates and final sign-off open.
+PV1 not accepted; PV2-PV6 not started (2026-11-15)**.
+
+Current instruction permits review, scoped commit/push after review passes and
+exact-submission CI tracking only: no paid calls, pilot API calls, local environment
+creation or current Docker update. Remote CI uses disposable runner services. The
+[pv1-config-v1 profile](pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
+and first USD 2 worksheet are now fixed on paper. Historical preparation
+restrictions below are superseded only by the recorded scoped authorizations;
+none is evidence of execution.
 
 The maintainer authorized PV1 preparation on 2026-11-15: identify the scenario,
 corpus, models, budget and acceptance decisions without expanding features or
@@ -157,7 +166,7 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; frozen inputs, scoped risk/first USD 2 authorized; exact inspected GitHub body approved for DeepSeek; cost/configuration and participants pending | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
+| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; pv1-config-v1 and first USD 2 allocation finalized; participants/dates/private contact and final sign-off open | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
 | PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
 | PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
 | PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
@@ -181,30 +190,44 @@ commitment is unverified, reply pending and inquiry submission unconfirmed.
 The [latest authorization](pilots/pv1-authorization-2026-11-15.md) allows frozen-input
 transmission, pilot/model/Docker operations and a first USD 2 batch within USD 10;
 later batches need confirmation. The exact inspected GitHub body is approved for
-DeepSeek; changed responses require renewed review. Financial/configuration
-readiness remains open. No model call or setup occurred.
+DeepSeek; changed responses require renewed review. Intended configuration and
+first-batch financial planning are finalized in draft-13; account/effective-runtime
+verification belongs to PV2/PV3. No model call or setup occurred.
 The [offline operation sheet](pilots/pv1-offline-rehearsal.md) and request template
 cover API/CLI shapes and future evidence collection, not environment setup or
 runtime acceptance. Existing operator/viewer roles do not provide a submit-only
-participant role; supervised admission remains a decision, not a new feature task.
+participant role; the finalized procedure uses supervised serial maintainer
+submission and records assistance, not a new feature task. Maintainer-submitted
+sessions do not satisfy PV5 independent onboarding or unassisted task success.
 The [harness specification](pilots/pv1-harness-spec.md) and
 [evidence template](pilots/pv1-evidence-template.json) are draft preparation only.
-Observer implementation, fixture controls and case evidence remain absent; no
-PV1/PV2 checklist item passes from this specification or its structural tests.
+Observer implementation, fixture controls and case evidence remain absent;
+structural tests do not pass runtime acceptance or the overall PV1 gate.
 One authorized manual anonymous GET observed run_attempt=1 and matching target.
-It is not Agent approval/harness evidence. The current review authorizes scoped
-submission/CI only, not paid calls, local setup or current Docker updates.
+It is not Agent approval/harness evidence. Current review authorizes scoped
+submission/CI only, not paid calls, local setup or Docker updates.
 Remaining composite checklist items
-must not be ticked merely because their design was accepted; effective config,
-participants/dates and full sign-off are still open; changed payloads need review.
+must not be ticked while required fields remain unresolved. Participants/dates,
+private contact and full sign-off remain open; effective configuration is future
+PV2 evidence, not a requirement to deploy during PV1. Changed payloads need review.
 
 - [ ] Name owners, participants, environment, candidate SHA and authorized access.
-- [ ] Select and permission-check the corpus and fixed read-only tool target.
-- [ ] Freeze model/embedding IDs, prompts, retrieval settings and execution limits.
-- [ ] Record CF1 memory/admitted-context scope and CF2 live/preview workflow
+  Owners, intended environment/candidate/role bindings are specified; only P1/P2,
+  dates and private contact remain to be supplied together in the contract.
+- [x] Select and permission-check the corpus and fixed read-only tool target.
+  Evidence: frozen summaries plus the exact inspected GitHub body authorization;
+  changed responses require review. This is scope/permission, not dispatch evidence.
+- [x] Freeze intended model/embedding IDs, prompts, retrieval settings and execution limits.
+  Evidence: draft-13 pv1-config-v1, explicit retired-model correction and unchanged
+  prompt/material hashes. This checks the configuration specification only, not live behavior.
+- [x] Record CF1 memory/admitted-context scope and CF2 live/preview workflow
   assumptions, plus the method for verifying effective prompt/config hashes.
+  Evidence: contract workflow/profile, offline operation sheet and harness spec;
+  actual deployment/request verification stays in PV2, Web acceptance stays open.
 - [ ] Approve generation, embedding and retry budgets, provider data handling,
   retention, stop controls and incident contact using the rules below.
+  First-batch allocation and existing scoped authorization are recorded; private
+  incident contact and the closure-derived retention date remain unfilled.
 - [x] Prepare 30 versioned questions with expected facts/source passages and
   reviewer scoring: 18 answerable, 6 unsupported/ambiguous, 3 document prompt
   injection cases and 3 cross-workspace/out-of-scope requests.
@@ -212,6 +235,7 @@ participants/dates and full sign-off are still open; changed payloads need revie
   domain reviewer. This checks preparation only; all 30 cases remain not_run.
 - [ ] Freeze success/latency/cost thresholds, recovery time/data-loss targets
   (RTO/RPO) and the permitted pilot duration.
+  Thresholds are accepted; actual start/end and three active-use dates remain open.
 
 Acceptance: one signed-off contract has no unresolved required field. Dataset
 labels precede model outputs. Missing corpus permission, budget, reviewer or tool

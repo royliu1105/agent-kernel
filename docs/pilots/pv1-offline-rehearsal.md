@@ -83,8 +83,9 @@ automatically after a client timeout; inspect evidence and disposition first.
 
 ## Proposed Identity Matrix
 
-These are labels, not created accounts, keys, memberships or final assignments.
-All UUIDs/roles/endpoints must be recorded privately before authorized setup.
+These are finalized role labels in pv1-config-v1, not created accounts, keys or
+memberships. Create/record actual UUID bindings privately during authorized PV2
+setup and verify them before execution; do not demand nonexistent UUIDs in PV1.
 
 | Label | Proposed workspace/role | Scope of evidence |
 | --- | --- | --- |
@@ -98,7 +99,11 @@ and [API auth](../../apps/api/src/agent_kernel_api/auth.py). Operator includes b
 run:write and approval:review. There is no claimed submitter/approver separation
 or dedicated submit-only participant role. Viewer cannot submit tasks or inspect
 approvals. Do not hand operator credentials to trial users as a least-privilege
-solution; participant admission remains pending. Local RBAC table tests are not
+solution. The [finalized profile](pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
+uses serial maintainer submission of unchanged participant questions, with help
+recorded as intervention. Such sessions do not pass PV5 independent onboarding
+or unassisted task success; they are supervised diagnostics only.
+Local RBAC table tests are not
 HTTP/authentication or cross-workspace database evidence.
 
 ## Future Evidence Capture
@@ -123,7 +128,8 @@ credentials; do not mix its metadata with separately reviewed private response
 inspection. A later manual GitHub inspection is recorded in the authorization
 addendum; run_attempt=1 was observed and that exact full body is approved for
 DeepSeek. Changed responses require renewed review; no model received the body.
-API-version/tool-timeout freeze and actual harness coverage remain open.
+API version 2022-11-28 and timeout 10000 ms are now frozen in pv1-config-v1;
+effective settings and actual harness coverage remain unverified.
 
 ## Remaining Preparation and Verification
 

@@ -15,10 +15,11 @@ readiness gates. No release, credential disclosure or feature expansion is appro
   approval checkpoints. Preserve provider identity across resume; reject history
   belonging to a different provider. No Chat Completions engine, automatic model
   remapping, thinking-mode control, server tools, streaming or fallback is added.
-- Preserve the selected `deepseek-chat` identifier in the pilot instructions.
-  Current official documentation advertises newer model IDs; no offline test
-  proves that this saved identifier or account still works. A later authorized
-  smoke must verify it; a rejection requires an explicit model decision.
+- Preserve the explicitly selected identifier without runtime remapping.
+  The [draft-13 technical profile](../pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
+  replaces the retired reference deepseek-chat with deepseek-flash. This updates
+  the planned route, not business code or current Docker. No offline test proves
+  actual account access or continuation; those remain later live checks.
 - Add explicit `AGENT_KERNEL_EMBEDDING_PROVIDER=dashscope` with independent
   `DASHSCOPE_API_KEY`, endpoint, model and dimensions. Scope to `text-embedding-v3`,
   default 1024 dimensions. Index/query and API/Worker use the same factory.

@@ -548,7 +548,10 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     assert "file hash alone does not prove the runtime used it" in prompt
     remaining = _section(filename, "Remaining Items by Priority")
     assert "changed responses require renewed review" in remaining
-    assert "each execution permission must be requested separately" in remaining
+    assert "one consolidated remaining input" in remaining
+    assert "use the existing scoped authorizations" in remaining
+    assert "closure + 30 calendar days" in remaining
+    assert "current paid-call/environment/docker hold remains in force" in remaining
     rehearsal = _section(
         "real-scenario-pilot-plan.md", "PV2: Rehearse the Existing Workflow Without Paid Calls"
     )
@@ -583,11 +586,13 @@ def test_pv1_scoped_authorization_does_not_pass_pilot_or_authorize_all_data() ->
     filename = "pilots/pv1-authorization-2026-11-15.md"
     review = _section(filename, "Current Review Scope")
     for phrase in (
-        "scoped commit/push after review passes",
-        "exact-submission ci tracking only",
+        "one consolidated technical/budget finalization",
+        "existing-document updates and offline checks",
         "do not call paid models, create local environments or update current docker",
         "no pilot query or provider request is needed or performed",
-        "retained, not exercised by this submission",
+        "retained, not exercised by this review",
+        "scoped commit/push after review passes and exact-submission ci tracking only",
+        "no release",
     ):
         assert phrase in review
     authority = _section(filename, "Accepted Authorization")
@@ -632,6 +637,40 @@ def test_pv1_payload_permission_is_bound_to_reviewed_source_and_provider() -> No
         assert phrase in inspection
     summary = _section("pilots/pv1-2026-11-15-runbook-assistant.md", "Authorization and Candidate")
     assert "for deepseek only, not alibaba" in summary
+
+
+def test_pv1_budget_preflight_is_not_claimed_as_existing_runtime_enforcement() -> None:
+    budget = _section(
+        "pilots/pv1-2026-11-15-runbook-assistant.md", "First USD 2 Allocation and Calculation"
+    )
+    for phrase in (
+        "the existing runtime automatically retries eligible provider errors",
+        "serial run admission alone cannot intercept those calls",
+        "including retries and resume",
+        "before any content is sent",
+        "paid execution stays blocked",
+        "not implemented by this document or its arithmetic tests",
+        "not an exchange-rate quote",
+        "not a provider-guaranteed hard invoice cap",
+    ):
+        assert phrase in budget
+    harness = _section("pilots/pv1-harness-spec.md", "Preflight and Coverage")
+    for phrase in (
+        "every generation and embedding attempt",
+        "guard denial must be non-retryable",
+        "zero downstream provider dispatch on denial",
+        "unimplemented pv2 obligations",
+    ):
+        assert phrase in harness
+
+
+def test_pv1_supervised_subset_cannot_pass_independent_user_gate() -> None:
+    profile = _section("pilots/pv1-2026-11-15-runbook-assistant.md", "Finalized Technical Profile")
+    assert "not evidence of pv5 independent onboarding or unassisted task success" in profile
+    assert "no threshold is waived" in profile
+    for filename in ("pilots/pv1-offline-rehearsal.md", "real-scenario-pilot-plan.md"):
+        content = _normalized((DOCS_ROOT / filename).read_text())
+        assert "pv5 independent onboarding or unassisted task success" in content
 
 
 def test_pv1_limit_table_matches_offline_configuration_parser() -> None:

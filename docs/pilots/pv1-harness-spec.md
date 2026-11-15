@@ -10,6 +10,9 @@ authorization USD 0. The [later scoped authorization](pv1-authorization-2026-11-
 allows the first USD 2 and specified operations without verifying DeepSeek's
 no-training commitment. Inquiry submission is not assumed. This blank template
 remains unpopulated/fail-closed, not a live authorization file.
+The later [pv1-config-v1](pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
+finalizes intended profile bindings and budget. It does not implement this draft
+or change the blank template's null effective values. Current work is offline only.
 
 ## Scope and Authorization
 
@@ -26,8 +29,11 @@ API, new role, Web auth feature or data projection. If the required hooks cannot
 be installed without business-code changes, report the blocker for a separate
 decision; do not silently weaken coverage or broaden scope.
 
-Three distinct later permissions are needed: implementation/isolated fixture
-setup, real anonymous GitHub inspection, and provider transmission/paid calls.
+Keep three distinct scopes: implementation/isolated fixture setup, real anonymous
+GitHub inspection, and provider transmission/paid calls. Existing scoped consent
+is recorded in the authorization addendum; the current execution hold still applies.
+Do not repeatedly ask for unchanged consent. Changed payloads or later paid batches
+still require their specific decisions.
 Fixture mode must not resolve or contact GitHub or providers. A real GitHub
 inspection does not authorize sending its response to a model. Mock model
 continuation is not a live provider result. Do not use paid models to orchestrate
@@ -45,12 +51,25 @@ PV1 freezes the intended specification and verification method. Actual image,
 configuration, hook and request evidence is collected in separately authorized
 PV2 execution; do not require executed PV2 evidence to sign off PV1.
 
+The budget worksheet's per-attempt checks are not implemented by serial operator
+admission. Runtime provider retries and tool continuation are automatic. Before
+paid execution, verify harness-side pre-dispatch coverage of every generation and
+embedding attempt across API, Worker and replacement executors. Reject missing
+reservation, unknown prior charges or an unapproved changed tool body before the
+next provider request; guard denial must be non-retryable. Fixture controls must
+exercise initial, retry and resumed calls, with zero downstream provider dispatch
+on denial and one on valid admission. No live request is needed for those controls.
+If existing injection hooks are insufficient, report the implementation blocker;
+do not fall back to log watching or silently change production code. These remain
+unimplemented PV2 obligations, not controls passed by this specification.
+
 Preflight must reject unresolved run_attempt, API version, tool timeout or scope
 bindings for a real query. Do not guess run_attempt=1. Preserve the accepted
 single run/SHA, constant exclude_pull_requests=true, anonymous access, explicit
 approval, no retries/fallback, 32768-byte HTTP and 65536-byte result caps.
-The template preserves the proposed 10000 ms timeout separately from the still
-unknown effective value. It does not select an API version on the user's behalf.
+pv1-config-v1 now fixes timeout 10000 ms and API version 2022-11-28; the previously
+inspected attempt is 1. The template retains null effective observations until
+PV2 checks them. Planned values are not measured configuration or fresh responses.
 
 List every participating API and Worker process, including replacements, in the
 case manifest with distinct executor IDs. API resume executes tools too. Each
@@ -66,8 +85,9 @@ Quiesce the isolated case before closing its window: no in-flight dispatch or
 unaccounted executor may remain. Never stop or inspect the active local stack.
 Manual gh/browser refreshes and unrelated requests are excluded from the window.
 Intentional response inspection is a separate authorized record, not part of a
-before-approval zero-count case. Participant admission remains supervised and
-pending, not enforced by a new role or a claimed submitter/approver split.
+before-approval zero-count case. Participant admission uses the finalized supervised,
+serial maintainer procedure, not a new role or a claimed submitter/approver split.
+Its effective behavior remains to be checked during PV2.
 
 ## Dispatch and Response Evidence
 
