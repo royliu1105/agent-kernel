@@ -2,18 +2,34 @@
 
 Date: 2026-11-15. Latest decisions supporting the
 [PV1 contract](pv1-2026-11-15-runbook-assistant.md), not another progress ledger.
-PV1 remains in progress; this is not final contract or runtime acceptance.
+PV1 technical planning is finalized; original full-pilot sign-off still requires
+the human fields tracked at PV5. This is not runtime acceptance.
+
+The preceding instruction requested direct PV1 completion. The
+[technical closure](pv1-2026-11-15-runbook-assistant.md#technical-closure) records
+frozen technical decisions without inventing participants/dates or treating the
+request as a waiver of independent-user acceptance. The latest instruction is
+the scoped review/submission below; existing paid-call/local-execution holds remain.
+
+## Current Offline Implementation Scope
+
+The preparation instruction authorized offline harness implementation, tests and plan
+dependency updates. Two independent participants and dates remain pending; they
+do not block offline preparation. No paid call, pilot interface, environment
+creation, current Docker update or submission is performed in this step. The
+review scope below now authorizes this submission after review and verification.
 
 ## Current Review Scope
 
-The preparation authorized one consolidated technical/budget finalization,
-existing-document updates and offline checks. The current instruction authorizes
+The preparation authorized technical closure, offline harness code/tests and
+existing-document updates. The current instruction authorizes review and fixes,
 scoped commit/push after review passes and exact-submission CI tracking only.
 Do not call paid models, create local environments or update current Docker.
 No pilot query or provider request is needed or performed. The previously recorded
 USD 2 allowance and payload permission are retained, not exercised by this review.
 Remote CI disposable runner services are not a local pilot environment. No release.
-See the [authorization review](../reviews/2026-11-15-pv1-authorization-review.md).
+The earlier [authorization review](../reviews/2026-11-15-pv1-authorization-review.md)
+is historical; this review's findings are recorded in the contract's preparation evidence.
 
 ## Accepted Authorization
 
@@ -38,8 +54,9 @@ This is not blanket permission to transmit the workspace or all account data.
 Docker permission removes the operational prohibition, not data isolation. Keep
 pilot/test storage separate from agent-kernel-local; preserve volumes/credentials.
 Do not run drills against the active DB or activate paid providers globally. This
-preparation performed no Docker operation, environment setup or harness
-implementation. The current review boundary above takes precedence for this turn.
+earlier authorization preparation performed no Docker operation, environment setup
+or harness implementation. The later offline fixture implementation is separate;
+the current review boundary above takes precedence for this turn.
 
 The [draft-13 profile and worksheet](pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
 finalize intended configuration, dated tariffs, conservative currency reservations,
@@ -117,8 +134,8 @@ for later bound copies, with this authorization referenced explicitly.
 Full-response disposition is recorded for the exact source above. Intended target,
 config/harness bindings, supervised admission and the first USD 2 allocation are
 now finalized in pv1-config-v1, including the explicit deepseek-flash retirement
-correction. Only participants/dates/private contact and one consolidated contract
-sign-off remain as PV1 inputs. Actual model access, effective settings, observer
+correction. Participants/dates/private contact and full-pilot
+sign-off remain as PV5 entry inputs. Actual model access, effective settings, observer
 implementation and acceptance follow PV2/PV3, not more PV1 design questions.
 No observer control or model case is marked run or passed.
 

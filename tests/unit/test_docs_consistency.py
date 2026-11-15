@@ -548,7 +548,7 @@ def test_pv1_confirmed_design_keeps_unresolved_permissions_and_evidence_open() -
     assert "file hash alone does not prove the runtime used it" in prompt
     remaining = _section(filename, "Remaining Items by Priority")
     assert "changed responses require renewed review" in remaining
-    assert "one consolidated remaining input" in remaining
+    assert "pv5 entry inputs, not another pv1 technical confirmation round" in remaining
     assert "use the existing scoped authorizations" in remaining
     assert "closure + 30 calendar days" in remaining
     assert "current paid-call/environment/docker hold remains in force" in remaining
@@ -586,8 +586,8 @@ def test_pv1_scoped_authorization_does_not_pass_pilot_or_authorize_all_data() ->
     filename = "pilots/pv1-authorization-2026-11-15.md"
     review = _section(filename, "Current Review Scope")
     for phrase in (
-        "one consolidated technical/budget finalization",
-        "existing-document updates and offline checks",
+        "technical closure, offline harness code/tests",
+        "current instruction authorizes review and fixes",
         "do not call paid models, create local environments or update current docker",
         "no pilot query or provider request is needed or performed",
         "retained, not exercised by this review",
@@ -595,6 +595,14 @@ def test_pv1_scoped_authorization_does_not_pass_pilot_or_authorize_all_data() ->
         "no release",
     ):
         assert phrase in review
+    for name in (
+        filename,
+        "real-scenario-pilot-plan.md",
+        "pilots/pv1-2026-11-15-runbook-assistant.md",
+    ):
+        content = _normalized((DOCS_ROOT / name).read_text())
+        assert "no commit/push is requested in this step" not in content
+        assert "review scope below records the preceding completed submission" not in content
     authority = _section(filename, "Accepted Authorization")
     for phrase in (
         "first paid batch up to usd 2 within the usd 10 total ceiling",
@@ -714,7 +722,8 @@ def test_pv1_offline_sheet_keeps_request_checks_separate_from_pilot_evidence() -
 def test_pv1_harness_spec_does_not_claim_implementation_or_live_evidence() -> None:
     spec = _normalized((DOCS_ROOT / "pilots/pv1-harness-spec.md").read_text())
     for phrase in (
-        "draft, not implemented or executed",
+        "offline components implemented",
+        "full executor integration and deployed acceptance not implemented or executed",
         "spending authorization usd 0",
         "api resume executes tools too",
         "headers alone are not a complete response",
@@ -728,6 +737,34 @@ def test_pv1_harness_spec_does_not_claim_implementation_or_live_evidence() -> No
         "confirm fsync (or equivalent durable-store acknowledgement)",
     ):
         assert phrase in spec
+
+
+def test_pv1_offline_dependency_exception_preserves_human_and_runtime_gates() -> None:
+    plan = _normalized((DOCS_ROOT / "real-scenario-pilot-plan.md").read_text())
+    assert "not offline harness work" in plan
+    assert "full pv1 sign-off, two independent participants/dates" in plan
+    assert "current no-environment/no-paid-call hold remains" in plan
+    status = _section("pilots/pv1-harness-spec.md", "Offline Implementation Status")
+    assert "not** a case-matrix pass" in status
+    assert "shared durable budget and embedding allowance" in status
+    assert "blank evidence templates remain unchanged" in status
+
+
+def test_pv1_technical_closure_preserves_original_full_pilot_requirements() -> None:
+    closure = _section("pilots/pv1-2026-11-15-runbook-assistant.md", "Technical Closure")
+    for phrase in (
+        "technical planning scope",
+        "not the original full-pilot acceptance",
+        "not a waiver or invented participant consent",
+        "no further routine pv1 questionnaire is needed",
+        "current execution hold remains",
+        "not a verified incident channel or 24/7 coverage",
+    ):
+        assert phrase in closure
+    users = _section("real-scenario-pilot-plan.md", "PV5: Run the Controlled User Pilot")
+    assert "two independent participant" in users
+    assert "at least three distinct active-use dates" in users
+    assert "not waived by technical planning closure" in users
 
 
 def test_pilot_plan_separates_evidence_and_prevents_cherry_picked_passes() -> None:

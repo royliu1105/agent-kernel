@@ -1,11 +1,13 @@
 # PV1 Offline Acceptance Harness Specification
 
-Version: pv1-harness-spec-v1. Status: **draft, not implemented or executed**.
+Version: pv1-harness-spec-v1. Status: **offline components implemented; full executor
+integration and deployed acceptance not implemented or executed**.
 This refines the existing [PV1 contract](pv1-2026-11-15-runbook-assistant.md) and
 [operation sheet](pv1-offline-rehearsal.md); it is not another progress ledger.
 The [evidence template](pv1-evidence-template.json) is an unpopulated record,
-not executable configuration or proof. PV1 remains in progress; PV2-PV6 have not
-started. At preparation, provider transmission was pending with spending
+not executable configuration or proof. PV1 technical planning is finalized;
+human fields remain at PV5, deployed PV2 and PV3-PV6 have not started.
+At preparation, provider transmission was pending with spending
 authorization USD 0. The [later scoped authorization](pv1-authorization-2026-11-15.md)
 allows the first USD 2 and specified operations without verifying DeepSeek's
 no-training commitment. Inquiry submission is not assumed. This blank template
@@ -13,6 +15,59 @@ remains unpopulated/fail-closed, not a live authorization file.
 The later [pv1-config-v1](pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
 finalizes intended profile bindings and budget. It does not implement this draft
 or change the blank template's null effective values. Current work is offline only.
+
+## Offline Implementation Status
+
+The current instruction authorizes offline implementation/tests without waiting
+for P1/P2 or dates. Original full-pilot sign-off and PV5 still require them. No environment,
+pilot API/model call, current Docker update or production behavior change is
+authorized in this step. Code: [fixture primitives](../../scripts/pv1_harness.py);
+executable controls: [unit harness](../../tests/unit/test_pv1_harness.py).
+
+Run with existing dependencies only:
+
+```sh
+.venv/bin/pytest -q tests/unit/test_pv1_harness.py
+```
+
+| Component | Current implementation boundary |
+| --- | --- |
+| Tool observation | Maintained OpenAPITool + GuardedTransport, with a synthetic pool below origin/path guards; tests block DNS/sockets |
+| Journal | Per-executor fixture files, exclusive creation, serialized sticky failure state, fsync, sequences, typed body-free records, truncation/sequence rollback rejection, bounded reads |
+| Reconciliation | Per-tool counts across supplied executor IDs; duplicate counts fail even with a truncated tail or late dispatch after close; missing evidence stays unknown |
+| Budget | Serial in-memory generation ledger: five tasks, two attempts/task, USD 1.25 allocation, USD 0.25/task; unknown/invalid/over-reserved costs stop admission |
+| Payload | Exact byte digest and DeepSeek-only check, tested with synthetic bodies only |
+| Not complete | Durable manifest/attestation, process restart/crash drills, actual persisted approvals, API/Worker/provider/embedding pre-dispatch wiring, shared durable budget and embedding allowance, runtime case matrix |
+
+Observation pass is **not** a case-matrix pass: no database, real approval decision
+or execution ownership was exercised. Threaded append tests are not process-crash
+proof. A known persistence failure must be supplied to reconciliation through
+failed_executors even if buffered bytes are readable. No live transport can be
+selected by these fixture primitives; private _pool injection is confined to tests
+and requires re-review if the maintained transport changes. Do not install this
+partial harness in a live environment. Blank evidence templates remain unchanged.
+
+Pre-review checkpoint on 2026-11-15: **35 fixture tests passed**, 211 with the
+related regression suite; Ruff and mypy (241 files) passed. Review added four
+regressions for empty/nonempty truncation, concurrent persistence failure and
+late duplicate dispatch; **39 fixture tests passed** and **217 related offline
+tests passed** after review. Ruff, workspace mypy (241 files) and explicit strict
+mypy on the two new harness files passed. The 16 frozen material files are
+byte-identical to the content baseline. Remote CI is checked against the eventual
+submission SHA separately; these local results do not assert remote success.
+Coverage is bounded:
+
+| Spec control | Verified offline | Still not established |
+| --- | --- | --- |
+| known_dispatch / duplicate_dispatch | Real adapter + synthetic pool; correlated start/validated completion; duplicates fail | Live dispatch and database effect |
+| missing_executor | Missing journal or unlisted journal prevents observation pass | Durable manifest/registration across API/Worker |
+| journal_before_send | Directory/append fsync failure and missing tool binding block fixture delegation | All filesystem failure modes and process crashes |
+| journal_after_send / crash_after_start | Missing completion/close or known failed executor stays unknown | Process death and restarted process recovery |
+| incomplete_response | Malformed JSON, wrong identity, redirect, compressed/oversized response and HTTP error never pass | Actual network truncation/timeouts |
+| binding_and_guards | Workspace/origin/path denial and fixed anonymous request shape; DNS/socket tripwires | Persisted approval and complete runtime binding |
+| budget/payload checks | Limits, attempt/task slots, unknown charge reservation, exact digest/provider check | Automatic retry/resume/embedding wiring and durable cross-process ledger |
+
+Do not copy these component successes into the blank runtime case-plan results.
 
 ## Scope and Authorization
 
@@ -149,7 +204,9 @@ This evidence is not GitHub server logs or global exactly-once.
 
 ## Fixture Controls Before Real Queries
 
-These are future tests, not checks performed in this documentation step. Use
+The offline subset above exercises these controls, but does not complete the
+whole matrix or all durability boundaries. In particular, actual initialization/
+flush/close crash recovery and cross-process manifest coverage remain open. Use
 separate case IDs/journals; synthetic requests must never enter live-case totals.
 
 | Control ID | Required observation |

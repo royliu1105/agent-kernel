@@ -1,15 +1,57 @@
-# PV1: Runbook Assistant Contract Draft
+# PV1: Runbook Assistant Technical Contract
 
 Pilot ID: `pv1-2026-11-15-runbook-assistant`. Date: **2026-11-15**, Asia/Shanghai.
-Record revision: **draft-13; technical profile pv1-config-v1 and first USD 2
-allocation finalized on paper; people/dates and final sign-off open; PV1 in progress**.
+Record revision: **technical-contract-v1, 2026-11-15; technical planning finalized.
+Original full-pilot sign-off remains conditional on PV5 people/dates; no runtime
+acceptance claimed**. This supersedes repeated planning confirmations, not
+unexecuted acceptance gates.
 The [pilot plan](../real-scenario-pilot-plan.md) owns PV1-PV6 status and acceptance.
 This record separates accepted design, remaining proposals and evidence; it is
 not a second task ledger.
 
+## Technical Closure
+
+The maintainer requested direct PV1 completion without more confirmation rounds.
+All maintainer-controlled technical decisions are consolidated here. This closes
+the **technical planning scope**, not the original full-pilot acceptance with
+independent participants. That outstanding requirement is explicitly tracked at
+PV5 entry; the completion request is not a waiver or invented participant consent.
+
+| Technical contract item | Disposition / evidence |
+| --- | --- |
+| Scenario / owners | Runbook assistant; maintainer is owner, operator, incident contact and reviewer; self-tests are not independent-user evidence |
+| Content / prompt | Frozen 12 summaries, 30 labeled cases and pv1-runbook-assistant-v1; hashes and transmission boundaries unchanged |
+| Implementation / configuration | pv1-config-v1 with implementation/dependency hashes below; canonical JSON SHA-256 bfb7b3ee1dd52fffa3738b1e9e7f9b65600979d8b37562b301ccae8c74a37eaf |
+| Budget | First USD 2 within USD 10; five bounded Runs, USD 0.10 embeddings, USD 0.65 locked reserve; USD 0.25/task; uncertainty stops; later batches separately authorized |
+| Tool / safety | Fixed GitHub target, approval, source-body permission, request/response bounds and bounded evidence standard unchanged |
+| Acceptance | Original quality, citation, safety, latency and recovery thresholds retained; no measured result inferred |
+| Contact / schedule | Maintainer-supervised technical sessions only; this existing chat coordinates preparation, work stops when maintainer unavailable; not a verified incident channel or 24/7 coverage. Actual user contact/window belongs to PV5 |
+| Retention | Closure + 30-day rule retained; actual collection/closure dates recorded at execution, not fabricated during planning |
+| Handoff | Remaining harness/safety evidence is PV2; real models PV3; recovery PV4; independent users PV5 |
+
+Canonical JSON hashing: UTF-8, sorted keys, compact separators, ensure_ascii=true,
+no trailing newline. This identifies intended configuration, not effective containers.
+No further routine PV1 questionnaire is needed. Changed data/provider scope,
+budget or safety conditions still require their applicable decisions.
+
+**Current execution hold remains:** no paid calls, pilot interfaces, environment
+creation or current Docker updates. No automatic commit/push, release, invitation,
+runtime activation or full-pilot sign-off follows from this planning closure.
+
+Pre-review closure verification: 213 relevant offline tests passed, including canonical
+configuration hashing and preservation of PV5 human gates; Ruff and mypy (241
+source files) passed. These verify planning/fixture consistency, not deployed
+behavior. Frozen corpus, questions, prompt and blank evidence templates are unchanged.
+
 ## Authorization and Candidate
 
 Current authority is the [scoped authorization record](pv1-authorization-2026-11-15.md).
+Latest instruction: review technical closure and the offline harness, fix findings,
+then scoped commit/push and exact-submission CI tracking after checks pass. No
+paid calls, pilot interfaces, environment creation or Docker updates. Missing P1/P2 and dates do not block this offline
+preparation, but still block original full-pilot sign-off and independent-user
+acceptance at PV5. Technical closure above is the current planning status.
+See [implementation status](pv1-harness-spec.md#offline-implementation-status).
 The preparation instruction permitted technical/budget finalization and offline
 checks. The current review authorizes scoped commit/push after review passes and
 exact-submission CI tracking only. No paid model calls, local environment creation,
@@ -935,7 +977,8 @@ cherry-picked successful attempt:
 
 This consolidates all decisions through the accepted task prompt. Accepted
 design, account attestation, unverified implementation and execution permission
-are separate states; the full contract is **pending people/dates and final sign-off**.
+are separate states; technical planning is **finalized**, while original full-pilot
+sign-off is **pending people/dates at PV5 entry**.
 Technical configuration and the first-batch worksheet are finalized, not executed.
 Supply the remaining human logistics together using the table below; do not
 re-confirm all Q1-Q8. Keep names, contacts and credentials out of public evidence.
@@ -954,9 +997,10 @@ re-confirm all Q1-Q8. Keep names, contacts and credentials out of public evidenc
 Corpus/question/expected-fact hashes and the standalone task prompt hash are now
 recorded. The intended candidate/configuration, harness specification bindings,
 expected prompt hash and effective-request verification method, batch costs and
-scoped permission references are specified. Finish the people/date table and
-obtain one consolidated PV1 sign-off. PV1 cannot pass with unresolved required
-fields; PV2-PV6 do not start
+scoped permission references are specified. Technical planning is now closed.
+PV1 cannot pass with unresolved required fields under its original full-pilot
+definition; the human fields carry explicitly to PV5 entry, not waived or supplied.
+PV2-PV6 do not start
 automatically. A new function or relaxed gate is not a substitute for a missing
 target, participant, permission or budget.
 Actual image/config/harness artifact hashes and initial/resumed request evidence
@@ -966,7 +1010,7 @@ claim that a frozen specification already verifies effective runtime behavior.
 
 ### Remaining Items by Priority
 
-**One consolidated remaining input, not successive confirmation rounds:**
+**PV5 entry inputs, not another PV1 technical confirmation round:**
 
 | Priority | Maintainer supplies | Required form / boundary |
 | --- | --- | --- |
@@ -976,8 +1020,8 @@ claim that a frozen specification already verifies effective runtime behavior.
 
 Retention deletion date is derived as closure + 30 calendar days; no separate
 round is needed to ask for it. When actual closure changes, update the derived
-date. After these fields, record **one final contract sign-off** covering this
-version. No invitations or execution start automatically.
+date. After these fields, record **one full-pilot entry sign-off** for PV5.
+No invitations or execution start automatically.
 
 Not additional PV1 user questions: actual UUIDs/images, observer implementation,
 effective initial/resumed request checks and safety cases belong to PV2; actual
@@ -989,8 +1033,29 @@ Full authenticated Web remains an explicit incomplete part of the full gate.
 Current paid-call/environment/Docker hold remains in force. When execution is
 requested later, use the existing scoped authorizations; ask again only for a
 changed payload/scope, later batch, or genuinely missing decision, not every step.
+The maintainer may perform future technical self-testing under a scoped technical
+entry authorization while people/dates remain open. Current authorization covers
+only offline preparation and technical planning closure; the original full-pilot
+contract is not completed by moving its outstanding human fields to PV5.
 
 ## Learning and Preparation Evidence
+
+Technical-closure review (2026-11-15): fixed journal truncation/sequence rollback
+acceptance, a concurrent-writer race around sticky persistence failure, and late
+duplicate dispatches being discarded after case_close. Added regressions for each
+boundary; bounded journal reads to 4 MiB plus one overflow-detection byte. These
+are fixture-evidence correctness fixes, not live execution or exactly-once proof.
+Verification results are recorded in the [harness implementation status](pv1-harness-spec.md#offline-implementation-status);
+the frozen inputs and blank runtime evidence templates remain unchanged.
+
+Draft-14 offline implementation (2026-11-15): **35 new fixture tests passed**;
+**211 tests passed** including document/material/request/provider/router regression
+checks. Ruff and mypy (241 source files) passed. Tests block DNS/socket connection
+and use temporary fixture files only; no database, environment, Docker operation,
+pilot query or model call. [Harness status](pv1-harness-spec.md#offline-implementation-status)
+records the implemented components and remaining integration/durability work.
+This is not full harness, PV1 or PV2 acceptance. No personal learning sign-off is
+claimed: the evidence demonstrates observation counts, not real approved execution.
 
 Draft-13 review: repaired two specification ambiguities. Per-response budget and
 payload checks require pre-dispatch harness enforcement across automatic retries

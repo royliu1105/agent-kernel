@@ -115,6 +115,20 @@ def test_finalized_profile_uses_existing_limits_and_request_serialization() -> N
     assert "store" not in wire
 
 
+def test_technical_closure_pins_canonical_configuration_without_deployment() -> None:
+    profile = _finalized_profile()
+    encoded = json.dumps(profile, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
+    digest = hashlib.sha256(encoded).hexdigest()
+    assert digest == "bfb7b3ee1dd52fffa3738b1e9e7f9b65600979d8b37562b301ccae8c74a37eaf"
+    closure = (
+        (PILOTS / "pv1-2026-11-15-runbook-assistant.md")
+        .read_text()
+        .split("## Technical Closure\n", 1)[1]
+        .split("\n## ", 1)[0]
+    )
+    assert digest in closure
+
+
 def test_first_batch_decimal_forecast_and_reservations_fit_without_discounts() -> None:
     budget = _finalized_profile()["budget"]
     tasks = budget["tasks"]

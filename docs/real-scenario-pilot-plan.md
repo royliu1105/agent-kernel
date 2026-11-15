@@ -1,10 +1,12 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
-Status: **PV1 technical/budget plan finalized; people/dates and final sign-off open.
-PV1 not accepted; PV2-PV6 not started (2026-11-15)**.
+Status: **PV1 technical contract finalized; original full-pilot sign-off pending
+PV5 people/dates. PV2 offline preparation active, deployed PV2 and PV3-PV6
+not started (2026-11-15)**.
 
-Current instruction permits review, scoped commit/push after review passes and
-exact-submission CI tracking only: no paid calls, pilot API calls, local environment
+Current instruction authorizes review/fixes, scoped commit/push after checks pass,
+and exact-submission CI tracking; technical planning is finalized, human-pilot
+requirements remain at PV5. No paid calls, pilot API calls, local environment
 creation or current Docker update. Remote CI uses disposable runner services. The
 [pv1-config-v1 profile](pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
 and first USD 2 worksheet are now fixed on paper. Historical preparation
@@ -166,12 +168,19 @@ must state applicability and cannot be passed by omission.
 
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| PV1 | 0: entry blocker | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | In progress; pv1-config-v1 and first USD 2 allocation finalized; participants/dates/private contact and final sign-off open | [Contract draft](pilots/pv1-2026-11-15-runbook-assistant.md), [content baseline](pilots/pv1-materials/README.md); full contract not signed off or live-tested |
-| PV2 | 0: safety blocker | PV1 | Credential-free setup, access, approval and stop-path rehearsal | Not started | None |
-| PV3 | 1: effectiveness | PV1-PV2 plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
-| PV4 | 0: user-admission blocker | PV1-PV2; same candidate/profile as PV3 | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
-| PV5 | 1: usability | PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
+| PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
+| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Offline fixture components under verification; deployed acceptance not started | [Harness scope/status](pilots/pv1-harness-spec.md#offline-implementation-status) |
+| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Not started | None |
+| PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
+| PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
 | PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | Not started | None |
+
+Missing independent participants/dates block original full-pilot sign-off and PV5, not
+offline harness work. Maintainer-only technical execution may later use a
+recorded technical-entry authorization for the frozen scope after applicable
+safety/configuration checks; this is not full PV1 acceptance or independent-user
+evidence. PV3/PV4 still need their execution authorization and technical gates;
+the current no-environment/no-paid-call hold remains. No criteria are relaxed.
 
 PV3 and PV4 may run independently once their prerequisites are met. Work in
 bounded sessions; do not append a new Day 91-120 schedule. The observation
@@ -179,6 +188,12 @@ window below measures exposure, not a promise that production maturity arrives
 after a fixed number of days.
 
 ### PV1: Freeze the Pilot Contract
+
+Technical planning is finalized in technical-contract-v1. This explicitly
+separates technical planning from external-user admission, not a declaration that
+the original full-pilot contract has no missing fields. The retained checklist
+shows unresolved composite items honestly. Their people/contact/window portions
+carry to PV5; no more technical confirmation rounds are planned.
 
 Confirmed design now includes human owners, budget/stop rules, bounded CI dispatch
 evidence, fixed run/SHA and anonymous access scope, isolated API/CLI-first setup,
@@ -201,14 +216,14 @@ submission and records assistance, not a new feature task. Maintainer-submitted
 sessions do not satisfy PV5 independent onboarding or unassisted task success.
 The [harness specification](pilots/pv1-harness-spec.md) and
 [evidence template](pilots/pv1-evidence-template.json) are draft preparation only.
-Observer implementation, fixture controls and case evidence remain absent;
-structural tests do not pass runtime acceptance or the overall PV1 gate.
+Offline fixture primitives and tests exist; deployed observer integration and
+runtime case evidence remain absent. Tests do not pass runtime acceptance.
 One authorized manual anonymous GET observed run_attempt=1 and matching target.
 It is not Agent approval/harness evidence. Current review authorizes scoped
 submission/CI only, not paid calls, local setup or Docker updates.
 Remaining composite checklist items
 must not be ticked while required fields remain unresolved. Participants/dates,
-private contact and full sign-off remain open; effective configuration is future
+private contact and full-pilot sign-off remain open at PV5; effective configuration is future
 PV2 evidence, not a requirement to deploy during PV1. Changed payloads need review.
 
 - [ ] Name owners, participants, environment, candidate SHA and authorized access.
@@ -320,6 +335,11 @@ If S3/MinIO is selected instead of local objects, matching object-version restor
 is a required additional drill. Local-file restore does not satisfy that gate.
 
 ### PV5: Run the Controlled User Pilot
+
+- [ ] Supply two independent participant aliases/consent/availability, private
+  incident contact, start/end dates and at least three distinct active-use dates.
+- [ ] Record full-pilot entry sign-off and closure/deletion schedule; original
+  missing PV1 human fields are not waived by technical planning closure.
 
 - [ ] Obtain participant/data permission and deployment approval; provide scoped
   access, task boundaries, incident contact and stop instructions.
