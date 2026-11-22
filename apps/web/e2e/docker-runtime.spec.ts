@@ -15,7 +15,7 @@ test("Docker Web uses the internal API and renders on desktop and mobile", async
     await page.setViewportSize(viewport);
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
-    await expect(page.getByLabel("Runtime status")).toContainText("API reachable");
+    await expect(page.getByLabel("Runtime status")).toContainText(/API ready|API reachable/);
     await page.screenshot({ path: testInfo.outputPath(`docker-${viewport.width}.png`), fullPage: true });
   }
 });

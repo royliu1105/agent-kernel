@@ -52,13 +52,14 @@ test("live Workbench sign-in and core flow sections are available", async ({ pag
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
-  await expect(page.getByLabel("Runtime status")).toContainText(/Checking API|API reachable|API unreachable/);
+  await expect(page.getByLabel("Runtime status")).toContainText(/Checking API|API ready|API reachable|API unreachable/);
   await expect(page.getByRole("heading", { name: "Workspace sign in" })).toBeVisible();
 
   await page.getByRole("button", { name: "Continue anonymously" }).click();
   await expect(page.getByText("Anonymous (authentication disabled)")).toBeVisible();
-  await expect(page.getByLabel("Workbench flow")).toContainText("Agents");
-  await expect(page.getByLabel("Workbench flow")).toContainText("Results");
+  await expect(page.getByLabel("Workbench flow")).toContainText("Task");
+  await expect(page.getByLabel("Workbench flow")).toContainText("Approvals");
+  await expect(page.getByLabel("Workbench flow")).toContainText("Setup");
   await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Knowledge" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
@@ -66,6 +67,7 @@ test("live Workbench sign-in and core flow sections are available", async ({ pag
   await expect(page.getByRole("region", { name: "Knowledge" }).getByRole("combobox").first())
     .toContainText("Live Operations KB");
   await expect(page.getByText("Advanced options")).toBeVisible();
+  await expect(page.getByText("Prepare for retrieval")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Results" })).toHaveCount(0);
 });
 
@@ -73,7 +75,12 @@ test("live Workbench surfaces run results after lookup", async ({ page }) => {
   await page.route("**/api/agent-kernel/health", async (route) => {
     await route.fulfill({
       contentType: "application/json",
-      json: { state: "online", baseUrl: "http://api:8000" },
+      json: {
+        state: "online",
+        baseUrl: "http://api:8000",
+        readiness: { status: "ready", failing: [] },
+        observability: { grafanaUrl: "http://127.0.0.1:3090" },
+      },
     });
   });
   await page.route("**/api/agent-kernel/auth/me", async (route) => {
@@ -104,8 +111,12 @@ test("live Workbench surfaces run results after lookup", async ({ page }) => {
         status: "waiting_approval",
         input: { task: "lookup smoke" },
         output: null,
+        trace_id: "abcd1234abcd1234abcd1234abcd1234",
         error_type: null,
         error_message: null,
+        input_tokens_total: 12,
+        output_tokens_total: 4,
+        estimated_cost_total: 0.00042,
         created_at: "2026-08-04T00:00:00Z",
         updated_at: "2026-08-04T00:01:00Z",
       },
@@ -167,6 +178,22 @@ test("live Workbench surfaces run results after lookup", async ({ page }) => {
   await page.getByRole("button", { name: "Lookup run" }).click();
   await expect(page.getByRole("heading", { name: "Results" })).toBeVisible();
   await expect(page.getByTestId("run-status")).toHaveText("waiting_approval");
+  await expect(page.getByTestId("run-observability")).toBeVisible();
+  await expect(page.getByTestId("run-trace-id")).toHaveText("abcd1234abcd1234abcd1234abcd1234");
+  await expect(page.getByTestId("run-tokens")).toHaveText("12 in / 4 out");
+  await expect(page.getByTestId("run-cost")).toHaveText("0.000420");
+  await expect(page.getByRole("link", { name: "Logs in Grafana" })).toHaveAttribute(
+    "href",
+    /127\.0\.0\.1:3090\/explore/,
+  );
+  await expect(page.getByRole("link", { name: "Trace in Grafana" })).toHaveAttribute(
+    "href",
+    /agent-kernel-tempo/,
+  );
+  await expect(page.getByRole("link", { name: "Operations dashboard" })).toHaveAttribute(
+    "href",
+    /agent-kernel-operations/,
+  );
   await expect(page.getByRole("heading", { name: /Approvals/ })).toBeVisible();
   await expect(page.getByText("external_write")).toBeVisible();
   await expect(page.getByLabel("Run events")).toContainText("run_waiting_approval");

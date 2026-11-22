@@ -80,6 +80,12 @@ test("real authenticated Web first use and independent execution evidence", asyn
     buffer: Buffer.from("# CF2 synthetic operations\n\nThe CF2 hatch is blue.\n"),
   });
   const document = await clickPost(page, "Upload document", `/knowledge-bases/${kb.id}/documents/upload`);
+  const pipeline = page.getByTestId("knowledge-pipeline");
+  await pipeline.scrollIntoViewIfNeeded();
+  if (!(await pipeline.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await pipeline.locator("summary").click();
+  }
+  await expect(pipeline).toHaveAttribute("open", "");
   await clickPost(page, "Ingest document", `/documents/${document.id}/ingest`);
   await clickPost(page, "Chunk document", `/documents/${document.id}/chunk`);
   const index = await clickPost(page, "Index document", `/documents/${document.id}/index`);
