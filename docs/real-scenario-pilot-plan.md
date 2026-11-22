@@ -1,9 +1,9 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
-PV5 people/dates. PV2 closed 2026-11-22; PV3 closed 2026-11-22 on R4 (v2); PV4
-ops gate closed 2026-11-22 — see [pv4-closure](pilots/pv4-closure.md); PV5–PV6
-not started. A separate local paid walkthrough is not full pilot acceptance
+PV5 people/dates. PV2–PV4 closed 2026-11-22. PV5–PV6 deferred (maintainer pause
+2026-11-22) — resume checklist in [pv5-pv6-pending.md](pilots/pv5-pv6-pending.md).
+A separate local paid walkthrough is not full pilot acceptance
 (updated 2026-11-22)**.
 
 Current documentation reconciliation authorizes no business-code changes,
@@ -186,8 +186,8 @@ must state applicability and cannot be passed by omission.
 | PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Seven of seven checklist items verified; CF1 disposition recorded 2026-11-22 | [Current evidence](pilots/pv2-closure.md) |
 | PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | **Closed 2026-11-22** on R4 (v2): 60/60, A 33/36, U 12/12, I+X 12/12 | [pv3-closure](pilots/pv3-closure.md); [r4 results](pilots/pv3-2026-11-22-r4-results.md) |
 | PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | **Closed 2026-11-22** (restart/backup/upgrade/load on local mock + disposable drills) | [pv4-closure](pilots/pv4-closure.md); [results](pilots/pv4-2026-11-22-results.md) |
-| PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
-| PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | Not started | None |
+| PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | **Deferred** (pause 2026-11-22; waiting on participants/dates) | [pv5-pv6-pending](pilots/pv5-pv6-pending.md) |
+| PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | **Deferred** (after PV5) | [pv5-pv6-pending](pilots/pv5-pv6-pending.md) |
 
 Missing independent participants/dates block original full-pilot sign-off and PV5, not
 offline harness work. Maintainer-only technical execution may later use a

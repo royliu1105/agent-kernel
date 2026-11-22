@@ -107,7 +107,7 @@ Current development:
 - Pilot ledger: [real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
   (PV1 technical prep finalized; PV2/PV3/PV4 closed 2026-11-22 —
   [pv3-closure](docs/pilots/pv3-closure.md), [pv4-closure](docs/pilots/pv4-closure.md);
-  PV5–PV6 open).
+  PV5–PV6 deferred — [pv5-pv6-pending](docs/pilots/pv5-pv6-pending.md)).
 - Observability ledger: [observability completion](docs/observability-completion-plan.md)
   (O1–O5). External email delivery needs inbox evidence, not only Mailpit.
 - Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)

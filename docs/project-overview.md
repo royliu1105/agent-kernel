@@ -127,7 +127,7 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 2. 保留 PV1 已定稿的技术范围；PV2 bounded 演练门与 CF1 disposition 已于 2026-11-22 收口。一次本地付费体验仍不自动解除 PV5 门槛。
 3. PV3 质量门已于 2026-11-22 在 R4（prompt v2、冻结 30×2）收口，见 [pv3-closure](pilots/pv3-closure.md)。
 4. PV4 运维门已于 2026-11-22 收口（启停/备份恢复/升级回滚/有界 mock 负载），见 [pv4-closure](pilots/pv4-closure.md)。
-5. PV5 保留两位独立试用者及使用日期要求；维护者体验有帮助，但不代替独立试用。PV6 汇总证据后作出限定范围的 go/no-go，而不是自动发布。
+5. PV5/PV6 已于 2026-11-22 **暂停待办**（缺独立试用者/日期），恢复清单见 [pv5-pv6-pending](pilots/pv5-pv6-pending.md)。维护者体验不代替独立试用；PV6 不是自动发布。
 6. CF3/CF4 的 Prompt 绑定、会话/任务和可恢复流式体验保持 deferred；CF5-CF7 的高级记忆、失败到评测的工作流、多 Agent 只按后续批准范围推进。CF8 的 RRF/混合检索/重排仅在有证据表明检索是瓶颈时再评估。
 
 下一阶段的标准不是功能清单更长，而是在确定场景里证明系统有用、可控、可恢复。维护者学习按 [学习机制](pilot-learning-guide.md)记录设计取舍、故障定位与测试实践，不将项目完成等同于个人已经达到专家水平。
