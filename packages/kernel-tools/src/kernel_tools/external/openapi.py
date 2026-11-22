@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
@@ -14,6 +15,7 @@ from jsonschema import Draft202012Validator
 from kernel_tools.errors import ToolTimeoutError, ToolValidationError
 from kernel_tools.external.config import OpenAPIBinding, OpenAPIConfig
 from kernel_tools.external.http import approved_url, validate_path
+from kernel_tools.external.response_review import save_unreviewed_response
 from kernel_tools.external.security import (
     ExternalConfigurationError,
     ExternalToolError,
@@ -111,6 +113,16 @@ class OpenAPITool:
                 data = await response.aread()
                 expected = self._binding.response_sha256
                 if expected is not None and hashlib.sha256(data).hexdigest() != expected:
+                    # Keep the unreviewed body out of Run/tool error text; store
+                    # a private bounded envelope for operator diagnosis only.
+                    with contextlib.suppress(OSError):
+                        save_unreviewed_response(
+                            tool_name=self._metadata.name,
+                            expected_sha256=expected,
+                            body=data,
+                            content_type=response.headers.get("content-type"),
+                            status_code=response.status_code,
+                        )
                     raise ExternalToolError(
                         "External response changed; operator review is required.",
                         error_type="external_response_review_required",

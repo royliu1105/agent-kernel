@@ -12,3 +12,8 @@ paid providers or real GitHub.
 
 Start the overlay with `make docker-showcase-up`, then `make showcase-happy-path`.
 Ordinary `make docker-up` does **not** load the showcase MCP tool.
+
+For the separate **live GitHub** approval→resume smoke (public API, scripted
+model, no paid LLM), see
+[local-paid-experience.md](../local-paid-experience.md#remaining-work-and-current-hold)
+and `AGENT_KERNEL_TEST_LIVE_GITHUB=1`.

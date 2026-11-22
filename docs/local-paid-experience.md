@@ -47,8 +47,9 @@ Database cases use only disposable remote CI PostgreSQL in this review, not
 the active local runtime. No new model/tool request or local Docker update is
 authorized by this submission. The current Docker images remain unchanged.
 
-The failed-response private-evidence repair remains paused and unimplemented;
-shipping the existing hash guard does not resolve the observed mismatch.
+The failed-response private-evidence repair was later implemented on 2026-11-22
+(see Remaining Work below). Shipping the earlier hash guard alone did not resolve
+the observed mismatch; pin refresh plus private evidence are both required.
 
 ## Recorded Local Activation
 
@@ -275,16 +276,37 @@ not a root-cause finding. Private response bodies remain outside tracked docs.
 
 ### Remaining Work and Current Hold
 
-The proposed minimal repair is **not implemented**: preserve bounded failed
-response evidence privately, test confidentiality/fail-closed behavior, then
-perform one separately authorized diagnostic through the actual tool transport.
-Keep the current hash and approval contract; no automatic whitelist changes or
-business-Run retries. This work was paused before implementation.
+**Implemented (2026-11-22):** when `response_sha256` mismatches, the OpenAPI
+adapter writes a bounded private evidence envelope under
+`.agent-kernel/external-response-review/` (or
+`AGENT_KERNEL_PRIVATE_EVIDENCE_DIR`) and still fails closed without putting the
+unreviewed body into Run/tool error text. Unit coverage:
+`tests/unit/test_local_github_tool.py`.
 
-The current follow-up authorizes review and separate implementation submission:
-no paid calls, task reruns or current Docker updates. The documentation-only
-commit excluded the local paid overlay and hash guard; their subsequent
-implementation CI must be evaluated separately. Budget reservations above are
-not reconciled charges.
+**Pin refresh (2026-11-22):** a public GET of the same historical run
+`43634747295` returned a different raw body than the 2026-11-15 review
+(`37637575…` → `a1b24653…`, still `conclusion=success`, `run_attempt=1`).
+Private review envelope:
+`.agent-kernel/external-response-review/pin-refresh-20261122T060822Z.json`
+(gitignored). `deploy/local-paid-tools/tools.json` now pins
+`a1b246537bc9e07143ad3daaf7dc1a9da6d03d1663b28829257f05766b11d232`. Historical
+authorization docs retain the earlier hash as period evidence.
+
+Opt-in approval→resume against live GitHub with a **scripted** (non-paid) model:
+
+```bash
+export AGENT_KERNEL_TEST_LIVE_GITHUB=1
+export AGENT_KERNEL_TEST_POSTGRES_URL=...  # disposable test DB only
+uv run pytest -q tests/integration/test_live_github_tool_resume.py
+```
+
+That path proves real GitHub tool success after approval without DeepSeek spend.
+It does **not** close PV3, reconcile billing, or replace a paid-model walkthrough.
+
+Still open: separately authorized paid-model continuation through Workbench,
+and any pin update if GitHub's body later drifts. No automatic whitelist changes.
+
+The documentation-only commit boundary for earlier docs remains historical.
+Budget reservations above are not reconciled charges.
 The [pilot plan](real-scenario-pilot-plan.md) remains the sole PV1-PV6 ledger;
 the [project overview](project-overview.md) summarizes capability boundaries.

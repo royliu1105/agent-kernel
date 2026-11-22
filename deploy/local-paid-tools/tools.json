@@ -14,7 +14,7 @@
     "access": {"allow_unscoped": true},
     "bindings": [{
       "operation_id": "github_ci_run_status",
-      "response_sha256": "37637575f2483bd19f6d91c84ae8db84a0189993e50b96ca247242a59009bc7f",
+      "response_sha256": "a1b246537bc9e07143ad3daaf7dc1a9da6d03d1663b28829257f05766b11d232",
       "contract": {
         "name": "github_ci_run_status",
         "description": "Read only approved historical GitHub CI run 43634747295, not the latest run. Human approval is mandatory; changed response content requires operator review.",

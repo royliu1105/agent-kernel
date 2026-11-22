@@ -1,6 +1,7 @@
 """Exact local GitHub binding: no real HTTP/model calls or runtime database."""
 
 import hashlib
+import json
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -136,9 +137,12 @@ async def test_wrong_arguments_never_dispatch(
 async def test_changed_response_is_not_exposed_or_retried(
     binding: tuple[ToolRegistry, list[httpx.Request], dict[str, bytes]],
     body: bytes,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry, requests, response = binding
     response["body"] = body
+    monkeypatch.setenv("AGENT_KERNEL_PRIVATE_EVIDENCE_DIR", str(tmp_path / "review"))
     with pytest.raises(ExternalToolError) as error:
         await ToolExecutor(registry=registry).execute(
             ToolRequest(tool_name="github_ci_run_status", arguments=ARGS)
@@ -146,6 +150,13 @@ async def test_changed_response_is_not_exposed_or_retried(
     assert error.value.error_type == "external_response_review_required"
     assert "unreviewed-response" not in str(error.value)
     assert len(requests) == 1
+    evidence = list((tmp_path / "review").glob("*.json"))
+    assert len(evidence) == 1
+    saved = json.loads(evidence[0].read_text(encoding="utf-8"))
+    assert saved["actual_sha256"] == hashlib.sha256(body).hexdigest()
+    assert saved["expected_sha256"] == hashlib.sha256(BODY).hexdigest()
+    if b"unreviewed-response" in body:
+        assert "unreviewed-response@example.test" in (saved.get("body_utf8") or "")
 
 
 @pytest.mark.parametrize("digest", ["bad", "A" * 64, "0" * 63, "0" * 65, "0" * 64 + "\n"])
@@ -197,7 +208,7 @@ def test_deployed_binding_is_frozen_and_bounded() -> None:
     assert len(api.bindings) == 1
     binding = api.bindings[0]
     assert binding.response_sha256 == (
-        "37637575f2483bd19f6d91c84ae8db84a0189993e50b96ca247242a59009bc7f"
+        "a1b246537bc9e07143ad3daaf7dc1a9da6d03d1663b28829257f05766b11d232"
     )
     assert binding.contract.read_only and binding.contract.idempotent
     assert binding.contract.policy_decision == "require_approval"

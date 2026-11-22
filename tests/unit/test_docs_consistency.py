@@ -442,7 +442,7 @@ def test_local_walkthrough_keeps_failure_and_evidence_limits_explicit() -> None:
     assert "separately reviewed implementation commit" in boundary
     implementation = _section("local-paid-experience.md", "Separate Implementation Follow-Up")
     assert "current docker images remain unchanged" in implementation
-    assert "private-evidence repair remains paused and unimplemented" in implementation
+    assert "private-evidence repair was later implemented" in implementation
     failure = _section("local-paid-experience.md", "Observed Approval and Failed Continuation")
     for marker in (
         "external_response_review_required",
@@ -455,9 +455,9 @@ def test_local_walkthrough_keeps_failure_and_evidence_limits_explicit() -> None:
     assert "did not preserve its raw response body" in inspection
     assert "not a root-cause finding" in inspection
     pending = _section("local-paid-experience.md", "Remaining Work and Current Hold")
-    assert "not implemented" in pending
+    assert "implemented (2026-11-22)" in pending
     assert "no automatic whitelist changes" in pending
-    assert "no paid calls" in pending
+    assert "agent_kernel_test_live_github" in pending
 
 
 @pytest.mark.parametrize(
