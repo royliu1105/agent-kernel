@@ -134,7 +134,7 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 
 ## 文档导航与状态维护
 
-- [架构](architecture.md)、[技术栈](tech-stack.md)、[模块边界](modules.md)：工程结构及其理由。
+- [架构](architecture.md)、[十视角机制说明](architecture-ten-perspectives.md)、[技术栈](tech-stack.md)、[模块边界](modules.md)：工程结构及其理由。
 - [PV2 证据](pilots/pv2-closure.md)、[PV3 收口](pilots/pv3-closure.md)、[PV4 收口](pilots/pv4-closure.md)、[Web 验收](pilots/pv2-web-acceptance.md)、[CF1 风险](reviews/cf1-risk-disposition.md)：对应范围的通过项和未决项。
 - [观测验收台账](observability-completion-plan.md)：日志、Trace、告警及外部邮件门槛。
 - [本地付费体验](local-paid-experience.md)：实际本地观察；不是新试点计划或重复执行指令。

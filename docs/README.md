@@ -21,6 +21,7 @@ CF items as in-progress delivery.
 | Need | Document |
 | --- | --- |
 | Product, architecture, capability evidence and limits | [Project Overview](project-overview.md) |
+| How the runtime fits ten Agent evaluation angles | [Architecture through ten perspectives](architecture-ten-perspectives.md) |
 | Run locally | [Quickstart](quickstart.md), [Docker operations](docker-local.md) |
 | Showcase narrative (talk track) | [Showcase narrative](showcase/narrative.md) |
 | Mock approval/resume showcase | [Showcase happy-path](showcase/mock-happy-path.md) |
@@ -46,6 +47,7 @@ CF items as in-progress delivery.
 
 1. [Project Brief](project-brief.md)
 2. [Engineering Architecture](architecture.md)
+2a. [Architecture through ten perspectives](architecture-ten-perspectives.md) — mechanism walkthrough (perception → engineering)
 3. [Technology Stack](tech-stack.md)
 4. [Storage Architecture](storage-architecture.md)
 5. [Module Boundaries](modules.md)

@@ -1,6 +1,8 @@
 # Engineering Architecture
 
 Current capability/evidence overview: [Project Overview](project-overview.md).
+For a mechanism walkthrough across ten Agent evaluation angles (with diagrams),
+see [Architecture through ten perspectives](architecture-ten-perspectives.md).
 This page preserves an explicitly labeled v0.1 snapshot below; that snapshot
 does not describe current Web, provider or observability acceptance.
 
