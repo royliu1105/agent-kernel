@@ -22,6 +22,10 @@ GitHub continuation as a separate, authorized observation.
 | CF1 | Instruction-like memory still waits on approval; SYSTEM policy + untrusted USER JSON | Not “models ignore injection”; not multi-user isolation |
 | Paid | Run `65050ea0-…` succeeded after approval `52ac5ddb-…` | Not full 30-case PV3; not billing proof; historical CI only |
 
+Optional mock add-on (same showcase overlay): TraceId log lookup + fault KB with
+refuse-when-thin — see [troubleshooting-mock](troubleshooting-mock.md)
+(`make showcase-troubleshooting`). Not one of the three interview beats above.
+
 ## Beat 1 — Mock happy-path
 
 **Point:** the product is a workbench with a durable Run lifecycle, not a chat

@@ -1,0 +1,35 @@
+{
+  "version": "showcase-troubleshooting-mock-v1",
+  "status": "template_not_executed",
+  "profile": "local-showcase-mock",
+  "paid_providers": false,
+  "real_log_platform": false,
+  "steps": {
+    "docker_ready": false,
+    "kb_indexed": false,
+    "trace_ok_tool_succeeded": false,
+    "trace_thin_refused_root_cause": false,
+    "kb_fingerprint_hit": false
+  },
+  "ids": {
+    "agent_id": null,
+    "knowledge_base_id": null,
+    "document_ids": [],
+    "run_ok_id": null,
+    "run_thin_id": null
+  },
+  "hashes": {
+    "tools_config_sha256": null,
+    "redis_runbook_sha256": null,
+    "insufficient_runbook_sha256": null,
+    "evidence_sha256": null
+  },
+  "observations": {
+    "tool_name": "showcase_trace_logs",
+    "trace_ok_fingerprint": null,
+    "trace_thin_evidence_sufficient": null,
+    "paid_providers": false,
+    "real_log_platform": false
+  },
+  "notes": "Fill from scripts/showcase_troubleshooting_demo.sh. Fixture TraceIds only (TRACE-OK / TRACE-THIN). Not PV1-PV6 acceptance."
+}

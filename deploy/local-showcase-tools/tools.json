@@ -22,6 +22,29 @@
           }
         }
       ]
+    },
+    {
+      "name": "showcase_troubleshooting",
+      "stdio": {
+        "command": "/app/.venv/bin/python",
+        "args": ["/etc/agent-kernel/showcase-tools/troubleshooting_mcp_server.py"]
+      },
+      "access": {"allow_unscoped": true},
+      "bindings": [
+        {
+          "remote_name": "trace_logs_lookup",
+          "contract": {
+            "name": "showcase_trace_logs",
+            "description": "Mock TraceId log lookup for the local troubleshooting showcase. Returns denoised fixture spans only; not a real log platform.",
+            "risk_level": "read_only",
+            "read_only": true,
+            "idempotent": true,
+            "retry_safe": true,
+            "policy_decision": "allow",
+            "timeout_ms": 10000
+          }
+        }
+      ]
     }
   ]
 }
