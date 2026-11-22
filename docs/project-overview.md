@@ -91,7 +91,7 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 | 工具协议 | 注册表、结构化参数、OpenAPI、MCP、风险元数据 | 协议及权限回归、离线请求计数 | 非任意代码沙箱；当前 GitHub 最终回答尚未成功 |
 | 人工审批 | 审批与工具记录持久化、批准/拒绝、显式 Resume、契约检查 | 离线批准/拒绝回归；真实暂停、批准、续跑后响应拦截 | 真实 GitHub 成功续答；失败响应私密证据修复尚未实施 |
 | 服务端控制面 | 身份/API Key、RBAC、Workspace、对象范围校验 | 鉴权 API/CLI 和完整 Web 首用的有界离线 CI | 公网多租户运营、企业 SSO、数据库级硬隔离不能据此宣称完成 |
-| 后台执行 | 队列、租约、心跳、所有权、检查点、退避、卡住任务恢复 | 历史及 PV2 隔离集成测试 | PV4 实际配置恢复/负载；外部副作用不保证 exactly-once |
+| 后台执行 | 队列、租约、心跳、所有权、检查点、退避、卡住任务恢复 | PV2 + PV4 本地候选启停/备份/升级/负载演练已收口 | 外部副作用不保证 exactly-once；S3 需另训 |
 | 记忆 | 持久化、范围限制、有限检索、不可信上下文与容量限制 | CF1 disposition 2026-11-22；PV3 R4 含注入/越权拒答门 | 高级语义召回、自动总结与生命周期增强 |
 | RAG | 上传、解析、分块、真实 Embedding、pgvector、引用、`kb_search` | 实际 DashScope v3/1024 索引/检索、DeepSeek 引用回答 | 30 题整体质量；混合检索/RRF/重排为条件性后续项 |
 | Prompt | PromptRegistry、试点提示词冻结版本与哈希 | 离线请求捕获和冻结材料检查 | CF3：生效版本贯穿 Run、检查点和 eval 的绑定 |
@@ -125,8 +125,8 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 
 1. 先处理当前体验阻塞：待恢复该工作时，最小化补齐失败响应私密证据与回归，再通过实际工具路径诊断。该修复当前暂停，尚未实施；不重跑任务、不自动更换哈希或关闭审批。
 2. 保留 PV1 已定稿的技术范围；PV2 bounded 演练门与 CF1 disposition 已于 2026-11-22 收口。一次本地付费体验仍不自动解除 PV5 门槛。
-3. PV3 质量门已于 2026-11-22 在 R4（prompt v2、冻结 30×2）收口，见 [pv3-closure](pilots/pv3-closure.md)。该收口不是 PV4/PV5。
-4. PV4 验证实际候选配置的恢复、备份、升级与有界负载；历史演练不能替代该配置的证据。
+3. PV3 质量门已于 2026-11-22 在 R4（prompt v2、冻结 30×2）收口，见 [pv3-closure](pilots/pv3-closure.md)。
+4. PV4 运维门已于 2026-11-22 收口（启停/备份恢复/升级回滚/有界 mock 负载），见 [pv4-closure](pilots/pv4-closure.md)。
 5. PV5 保留两位独立试用者及使用日期要求；维护者体验有帮助，但不代替独立试用。PV6 汇总证据后作出限定范围的 go/no-go，而不是自动发布。
 6. CF3/CF4 的 Prompt 绑定、会话/任务和可恢复流式体验保持 deferred；CF5-CF7 的高级记忆、失败到评测的工作流、多 Agent 只按后续批准范围推进。CF8 的 RRF/混合检索/重排仅在有证据表明检索是瓶颈时再评估。
 
@@ -135,7 +135,7 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 ## 文档导航与状态维护
 
 - [架构](architecture.md)、[技术栈](tech-stack.md)、[模块边界](modules.md)：工程结构及其理由。
-- [PV2 证据](pilots/pv2-closure.md)、[PV3 收口](pilots/pv3-closure.md)、[Web 验收](pilots/pv2-web-acceptance.md)、[CF1 风险](reviews/cf1-risk-disposition.md)：对应范围的通过项和未决项。
+- [PV2 证据](pilots/pv2-closure.md)、[PV3 收口](pilots/pv3-closure.md)、[PV4 收口](pilots/pv4-closure.md)、[Web 验收](pilots/pv2-web-acceptance.md)、[CF1 风险](reviews/cf1-risk-disposition.md)：对应范围的通过项和未决项。
 - [观测验收台账](observability-completion-plan.md)：日志、Trace、告警及外部邮件门槛。
 - [本地付费体验](local-paid-experience.md)：实际本地观察；不是新试点计划或重复执行指令。
 

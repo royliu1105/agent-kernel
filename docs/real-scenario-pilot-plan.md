@@ -1,10 +1,10 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
-PV5 people/dates. PV2 bounded rehearsal gate closed 2026-11-22; PV3 quality gate
-closed 2026-11-22 on R4 (v2) — see [pv3-closure](pilots/pv3-closure.md);
-PV4–PV6 not started. A separate local paid walkthrough is not full pilot
-acceptance (updated 2026-11-22)**.
+PV5 people/dates. PV2 closed 2026-11-22; PV3 closed 2026-11-22 on R4 (v2); PV4
+ops gate closed 2026-11-22 — see [pv4-closure](pilots/pv4-closure.md); PV5–PV6
+not started. A separate local paid walkthrough is not full pilot acceptance
+(updated 2026-11-22)**.
 
 Current documentation reconciliation authorizes no business-code changes,
 paid calls or Docker updates. Earlier authorized local deployment and actual
@@ -185,7 +185,7 @@ must state applicability and cannot be passed by omission.
 | PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
 | PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Seven of seven checklist items verified; CF1 disposition recorded 2026-11-22 | [Current evidence](pilots/pv2-closure.md) |
 | PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | **Closed 2026-11-22** on R4 (v2): 60/60, A 33/36, U 12/12, I+X 12/12 | [pv3-closure](pilots/pv3-closure.md); [r4 results](pilots/pv3-2026-11-22-r4-results.md) |
-| PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
+| PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | **Closed 2026-11-22** (restart/backup/upgrade/load on local mock + disposable drills) | [pv4-closure](pilots/pv4-closure.md); [results](pilots/pv4-2026-11-22-results.md) |
 | PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
 | PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | Not started | None |
 
@@ -193,13 +193,12 @@ Missing independent participants/dates block original full-pilot sign-off and PV
 offline harness work. Maintainer-only technical execution may later use a
 recorded technical-entry authorization for the frozen scope after applicable
 safety/configuration checks; this is not full PV1 acceptance or independent-user
-evidence. **PV3 is closed** on R4; **PV4** still needs execution authorization
-and technical gates. No criteria are relaxed.
+evidence. **PV3 and PV4 are closed** (2026-11-22). **PV5** still needs
+independent participants/dates. No criteria are relaxed.
 
-PV4 may proceed once its prerequisites are met. Work in bounded sessions; do
-not append a new Day 91-120 schedule. The observation window below measures
-exposure, not a promise that production maturity arrives after a fixed number
-of days.
+Work in bounded sessions; do not append a new Day 91-120 schedule. The
+observation window below measures exposure, not a promise that production
+maturity arrives after a fixed number of days.
 
 ### PV1: Freeze the Pilot Contract
 
@@ -380,19 +379,30 @@ evidence `.agent-kernel/pv3-evidence-r4-20261122/`; see
 
 ### PV4: Verify Operations for This Deployment
 
-- [ ] Rehearse startup and restart of the chosen API/Worker/storage profile;
-  inspect queue progress, approval backlog, ownership and alert firing/clearing.
-- [ ] In a disposable copy, exercise Worker interruption, Redis loss when enabled,
-  provider failure and safe recovery of waiting/failed work. No uncertain write replay.
-- [ ] Back up and restore matching PostgreSQL data and local objects with
+**Accepted 2026-11-22** — [pv4-closure.md](pilots/pv4-closure.md);
+[results](pilots/pv4-2026-11-22-results.md). Evidence under
+`.agent-kernel/pv4-evidence-20261122/`.
+
+- [x] Rehearse startup and restart of the chosen API/Worker/storage profile;
+  inspect queue progress, approval backlog, ownership and alert firing/clearing
+  (restart wall 43 s; approvals preserved; AM/Prometheus ready).
+- [x] In a disposable copy, exercise Worker interruption, Redis loss when enabled,
+  provider failure and safe recovery of waiting/failed work. No uncertain write replay
+  (Redis hint-loss → DB poll 3/3; Worker restart observed; mock-first — no live
+  paid provider-outage drill under this authorization).
+- [x] Back up and restore matching PostgreSQL data and local objects with
   checkpoints, permissions, embeddings and citations intact. Verify hashes and
-  A/B access after restore. Record measured recovery time and observed data loss.
-- [ ] Test upgrade from a copied v1.0.0 dataset to the candidate and restore-based
+  A/B access after restore. Record measured recovery time and observed data loss
+  (`backend_drill backup` ~3.9 s; 20 tables / 2 objects; corruption rejected).
+- [x] Test upgrade from a copied v1.0.0 dataset to the candidate and restore-based
   rollback, with all writers stopped. Include legacy ownership/native approvals;
-  never invent checkpoint history or run mixed old/new Workers.
-- [ ] Measure the selected small concurrency with a bounded mock burst, then
+  never invent checkpoint history or run mixed old/new Workers
+  (`0014_create_eval_runs` → `0019_execution_checkpoint`; approval survived;
+  checkpoint null; restore rollback to 0014).
+- [x] Measure the selected small concurrency with a bounded mock burst, then
   authorized live tasks within budget; record queue wait, active latency, errors
-  and resource use. Do not extrapolate this to production-scale capacity.
+  and resource use. Do not extrapolate this to production-scale capacity
+  (quick soak 25/25; live paid burst not authorized — mock satisfied this gate).
 
 Acceptance: no lost committed test records within the agreed backup boundary,
 unauthorized visibility or duplicate execution in the exercised cases; restore
@@ -402,6 +412,7 @@ runs terminate or remain explicitly reviewable as designed; they need not all
 be automatically retried. In-flight work is not promised zero data loss.
 If S3/MinIO is selected instead of local objects, matching object-version restore
 is a required additional drill. Local-file restore does not satisfy that gate.
+**Local-object candidate: S3 drill N/A. PV4 closed on the exercises above.**
 
 ### PV5: Run the Controlled User Pilot
 

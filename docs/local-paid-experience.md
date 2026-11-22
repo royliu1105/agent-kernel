@@ -329,8 +329,9 @@ Paid-model continuation through the paid Docker path is now observed successful
 **R4** returned to prompt v2, **met** A/U/I+X gates, and is the **accepted**
 PV3 admission — see [pv3-closure](pilots/pv3-closure.md) and
 [pv3-2026-11-22-r4-results](pilots/pv3-2026-11-22-r4-results.md).
-Still open: optional console day-lines, pin drift, PV4/PV5. Default stack
-restored with `make docker-up` (mock embedding; DeepSeek key cleared).
+Still open: optional console day-lines, pin drift, PV5. PV4 ops closed —
+[pv4-closure](pilots/pv4-closure.md). Default stack remains mock via
+`make docker-up`.
 
 The documentation-only commit boundary for earlier docs remains historical.
 Budget reservations above are not reconciled charges.
