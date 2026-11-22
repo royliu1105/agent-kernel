@@ -192,7 +192,7 @@ Day 63 durable execution closure baseline:
   `running` leases through the real CLI entrypoint.
 - Conflicting worker modes are rejected before execution.
 - The completed Day 59-63 scope is summarized in
-  [Durable Execution Summary](../durable-execution-summary.md).
+  [Durable Execution Summary](../archive/durable-execution-summary.md).
 - Day 63 does not switch worker polling to Redis by default, add
   provider-native function calling, or automatically requeue expired in-flight
   work.

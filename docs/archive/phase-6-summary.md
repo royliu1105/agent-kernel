@@ -7,7 +7,7 @@
 
 Historical phase snapshot: capabilities, limitations and next steps below refer
 to this phase's completion, not current `master`. Current status and acceptance
-live in the [capability hardening plan](capability-hardening-plan.md).
+live in the [capability hardening plan](../capability-hardening-plan.md).
 
 ## Status
 
@@ -205,4 +205,4 @@ external user can run without maintainer help:
 - Expand behavior eval coverage.
 - Capture first external-user feedback.
 
-The canonical post-v0.1 plan is [Post-v0.1 Completion Plan](post-v0.1-plan.md).
+The canonical post-v0.1 plan is [Post-v0.1 Completion Plan](../post-v0.1-plan.md).

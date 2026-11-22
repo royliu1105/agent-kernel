@@ -1,15 +1,96 @@
 # Agent Kernel
 
-Agent Kernel is a self-hosted, observable, evaluable, resumable AI Agent Runtime for building agent applications with tools, memory, knowledge bases and human approval. Production readiness is a scoped acceptance goal, not a guarantee implied by the release number.
+Self-hosted, auditable, resumable **single-agent** runtime for internal assistant
+apps: tools, policy, human approval, memory, knowledge bases, evals, and
+observability.
 
-The canonical project baseline is captured in [docs/README.md](docs/README.md).
-Read the [project overview and capability boundaries](docs/project-overview.md)
-for positioning, architecture, implemented versus verified capabilities, and next steps.
+It is a task-oriented execution platform (API + Worker + CLI + Web Workbench)—
+not a chat-only wrapper and not a public multi-tenant SaaS. Isolation uses
+**Workspace** scoping and RBAC; that is not certified public-tenant isolation.
+Production readiness is a scoped acceptance goal, not something implied by the
+release number alone.
 
-Run the Docker-only local stack with [docs/quickstart.md](docs/quickstart.md)
-and [Docker operations](docs/docker-local.md).
+## Problem
 
-If local setup gets stuck, use [docs/troubleshooting.md](docs/troubleshooting.md).
+Teams need an agent that can call tools safely, pause for approval, resume after
+interrupts, ground answers in team documents, and leave an auditable trail. Most
+“agent demos” skip durable execution, policy, and workspace scoping. Agent Kernel
+is the control plane and worker for that bounded job—not a multi-agent studio.
+
+## Architecture (sketch)
+
+```text
+Web Workbench / CLI
+        |
+        v
+FastAPI  — identity, Workspace, Agent, Run, knowledge, approvals
+        |
+        +--> PostgreSQL / pgvector   (state, checkpoints, vectors)
+        +--> Redis                   (queue hints, rate limits)
+        +--> Object store            (documents)
+        |
+        v
+Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
+                         |
+                         v
+                   events, usage, logs, traces, evals
+```
+
+Default local stack is **Docker only** (`make docker-up`): API, Worker, Web,
+PostgreSQL, Redis, and observability services in one Compose project. Details:
+[project overview](docs/project-overview.md), [architecture](docs/architecture.md).
+
+## Quickstart (Docker only)
+
+```bash
+make docker-up
+make docker-status
+```
+
+| Surface | URL |
+| --- | --- |
+| Web Workbench | http://127.0.0.1:3000 |
+| API docs | http://127.0.0.1:8000/docs |
+| Grafana | http://127.0.0.1:3090 |
+| Mailpit (local mail) | http://127.0.0.1:8025 |
+
+Default profile uses **mock models** and Mailpit—no paid provider or real SMTP.
+Auth is off on this trusted localhost profile; do not expose it publicly. Ops,
+data, and credentials: [Docker local](docs/docker-local.md). First-run commands:
+[Quickstart](docs/quickstart.md). Fresh-clone rehearsal intent:
+[clean-machine rehearsal](docs/clean-machine-rehearsal.md).
+
+```bash
+make docker-stop    # or make docker-down (keeps volumes)
+```
+
+Do not start host `api` / Worker / `next` alongside this stack.
+
+## Limits (read before claiming features)
+
+- Single-agent bounded execution; no general multi-agent DAG in the maintained runtime.
+- Default `make docker-up` uses **mock models** and local Mailpit—not paid providers.
+- Workspace ≠ finished public multi-tenant SaaS / SSO / DB-hard isolation.
+- Deferred/conditional items (streaming chat journey, hybrid BM25/Rerank, advanced
+  memory lifecycle, multi-agent) are listed in
+  [reference follow-up](docs/reference-follow-up-plan.md) as **CF3–CF8**, not as
+  current delivery.
+- Memory injection limits and resume boundaries:
+  [memory context safety](docs/specs/memory-context-safety.md).
+
+## Doc map
+
+| Need | Doc |
+| --- | --- |
+| Positioning, architecture, evidence vs limits | [Project overview](docs/project-overview.md) |
+| Full current vs archive map | [docs/README.md](docs/README.md) |
+| Run / operate locally | [Quickstart](docs/quickstart.md), [Docker operations](docs/docker-local.md) |
+| Stuck on setup | [Troubleshooting](docs/troubleshooting.md) |
+| Security limits | [SECURITY.md](SECURITY.md), [Auth and RBAC](docs/auth-rbac.md) |
+| How to contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Pilot status ledger | [Real-scenario pilot](docs/real-scenario-pilot-plan.md), [pilot learning](docs/pilot-learning-guide.md) |
+
+## Current release and development
 
 Current release:
 
@@ -17,41 +98,23 @@ Current release:
 
 Current development:
 
-- The authorized [observability completion](docs/observability-completion-plan.md)
-  workstream tracks centralized logs, trace backend and SMTP
-  alerts. Implementation/verification are tracked separately; external email
-  delivery is not accepted without inbox evidence.
-  The single-host Loki/Tempo/Alertmanager/Mailpit stack, included in default local startup, has passed
-  local end-to-end verification and exact-commit remote CI; see the ledger for evidence.
-- [Real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
-  has finalized PV1 technical preparation. PV2 offline API/Worker/profile checks
-  passed, including authenticated Web first use. CF1 maintainer risk disposition
-  remains open, so PV2 is not fully accepted. The formal PV3 cohort and PV4-PV6
-  have not started. A separately authorized [local paid walkthrough](docs/local-paid-experience.md)
-  verified one real DeepSeek/knowledge-base answer; its GitHub approval Run
-  failed closed at response-hash validation. This is not full pilot acceptance
-  or independent-user evidence.
-  Other foundation feature expansion is frozen.
-- [Reference comparison](docs/reference-project-comparison.md) records the
-  code/test review. Its [follow-up plan](docs/reference-follow-up-plan.md) owns
-  pilot-entry checks and deferred enhancements. CF1's minimal memory-context
-  repair passed code review and local regressions, with acceptance still pending;
-  see its [verification record](docs/reviews/2026-11-14-cf1-minimal-repair.md).
-  Its candidate CI passed. Subsequent local rebuilds are recorded in the paid
-  walkthrough; CF1-specific deployed acceptance and risk disposition remain
-  pending, not inferred from those rebuilds. CF2 now has an
-  [isolated authenticated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
-  using offline model fixtures. The frozen profile has offline verification;
-  [authenticated Web acceptance](docs/pilots/pv2-web-acceptance.md) passed its bounded offline journey.
-  [CF1 residual risks](docs/reviews/cf1-risk-disposition.md) require a maintainer
-  decision; CF3-CF8 remain deferred/conditional.
-- Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)
-  retains the implementation evidence and explicit limits.
-- `master` contains unreleased changes beyond the `v1.0.0` tag. Historical
+- `master` contains **unreleased changes** beyond the `v1.0.0` tag. Historical
   release CI does not verify those changes; implementation CI and pilot
-  acceptance are separate evidence. The local paid profile and hash guard are
-  a separate implementation follow-up to documentation commit `17af7db`;
-  only their own submitted-revision CI can verify them, not older CI.
+  acceptance are separate evidence.
+- Status and evidence: [project overview](docs/project-overview.md).
+- Pilot ledger: [real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
+  (PV1 technical prep finalized; bounded PV2 offline checks exist; CF1 disposition
+  still open for full PV2; formal PV3 cohort and later gates tracked in that ledger).
+- Observability ledger: [observability completion](docs/observability-completion-plan.md)
+  (O1–O5). External email delivery needs inbox evidence, not only Mailpit.
+- Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)
+  retains implementation evidence and explicit limits.
+- Follow-ups: [reference follow-up plan](docs/reference-follow-up-plan.md)
+  (CF1/CF2 pilot-entry; CF3–CF8 deferred/conditional).
+- Separately authorized [local paid walkthrough](docs/local-paid-experience.md)
+  is not full pilot or independent-user acceptance. The local paid profile and
+  hash guard are a separate implementation follow-up to documentation commit
+  `17af7db`; only their own submitted-revision CI can verify them, not older CI.
 - Review the [upgrade and migration policy](docs/upgrade-migration-policy.md)
   before upgrading an existing deployment.
 
@@ -59,7 +122,7 @@ Historical delivery:
 
 - [Public Alpha, Beta, and v1.0 plan](docs/post-v0.1-plan.md)
 - [v1.0.0 release notes](docs/releases/v1.0.0.md)
-- [Public Alpha summary](docs/public-alpha-summary.md)
+- [Public Alpha summary](docs/archive/public-alpha-summary.md)
 - [Feedback templates](.github/ISSUE_TEMPLATE)
 
 Project shape:
@@ -68,91 +131,35 @@ Project shape:
 Python API + CLI + worker + PostgreSQL/pgvector storage + RAG/memory/tools/evals + Next.js Workbench
 ```
 
-## Local Development
+## Contributor toolchain
 
-The default runtime is **Docker only**, including API, Worker, Web, PostgreSQL,
-Redis and the full observability stack. Mock models and a local Mailpit inbox
-require no external model/SMTP credentials. See [Docker operations](docs/docker-local.md)
-for data, private Grafana credentials, endpoints and the legacy-data boundary.
-
-```bash
-make docker-up
-make docker-status
-make docker-logs SERVICE=worker
-make docker-stop
-```
-
-`make docker-down` preserves data volumes. Do not start host API/Worker/Next
-processes alongside this stack. The Web is at `http://127.0.0.1:3000`, API docs
-at `http://127.0.0.1:8000/docs`, Grafana at `http://127.0.0.1:3090` and Mailpit
-at `http://127.0.0.1:8025`. This trusted localhost profile is not public hosting.
-
-### Contributor Toolchain
-
-Required tools:
-
-- Python 3.12 through `uv`
-- Node.js 24+
-- Docker Desktop
-- `direnv`
-- `pre-commit`
-
-Set up the workspace:
+Required tools: Python 3.12 (`uv`), Node.js 24+, Docker Desktop, `direnv`,
+`pre-commit`. Full workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
 uv sync
 npm install
-```
-
-Run backend checks:
-
-```bash
 uv run ruff check .
 uv run mypy .
 make test-db-up
 make test
 make test-db-down
+npm run lint && npm run build
+make verify
 ```
 
-PostgreSQL is required for database tests; there is no SQLite fallback.
-The test service has separate disposable storage from your running app.
-See [PostgreSQL-only storage and testing](docs/postgresql-only.md).
+PostgreSQL is required for database tests; there is no SQLite fallback. The test
+service is disposable and **must not** point at the live Docker runtime DB. See
+[PostgreSQL-only storage and testing](docs/postgresql-only.md).
 
-Run the CLI in the active Docker environment:
+CLI against the running stack:
 
 ```bash
 sh scripts/local-stack.sh exec -T api agent-kernel --version
 ```
 
-Run frontend checks:
-
-```bash
-npm run lint
-npm run build
-npm run test:e2e
-```
-
-Validate infrastructure config:
-
-```bash
-docker compose config
-```
-
-Use `make docker-check` for the default merged local profile. Bare
-`docker compose` refers to the lower-level base template, not the full default.
-
-Run the standard local verification set:
-
-```bash
-make verify
-make verify-web
-```
-
-`make verify` avoids browser e2e tests by default. `make verify-web` includes Playwright.
-
 ## Feedback
 
-Agent Kernel is preparing real-scenario acceptance and a controlled pilot. Please
-use GitHub Issues for reproducible bugs, focused feature requests, or first-run
+Use GitHub Issues for reproducible bugs, focused feature requests, or first-run
 feedback. Redact secrets, API keys, tokens, private documents, and private logs
-before sharing output.
+before sharing output. Security reports: [SECURITY.md](SECURITY.md).

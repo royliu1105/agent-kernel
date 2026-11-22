@@ -37,7 +37,7 @@ from kernel_observability import (
     log_event,
     trace_operation,
 )
-from kernel_policy import PolicyDecisionType, ToolPolicyEvaluator
+from kernel_policy import PolicyDecision, PolicyDecisionType, ToolPolicyEvaluator
 from kernel_providers import (
     LLMFinishReason,
     LLMMessage,
@@ -62,6 +62,7 @@ from kernel_tools import (
     ToolError,
     ToolExecutionContext,
     ToolExecutor,
+    ToolMetadata,
     ToolRegistry,
     ToolRequest,
     create_default_tool_registry,
@@ -166,8 +167,11 @@ class RunExecutionService:
             self._router = ModelRouter({provider.name: provider})
         else:
             self._router = None
+        # Production API/Worker inject create_runtime_tool_registry(...). The
+        # echo-only default exists for focused unit tests without a DB session.
         self._tool_registry = tool_registry or create_default_tool_registry()
         self._tool_executor = tool_executor or ToolExecutor(registry=self._tool_registry)
+        # Same evaluator used by PolicyAwareToolExecutor for direct (non-Run) calls.
         self._policy_evaluator = policy_evaluator or ToolPolicyEvaluator()
         self._memory_retrieval_service = memory_retrieval_service or MemoryRetrievalService()
         self._metrics_recorder = metrics_recorder or NoOpMetricsRecorder()
@@ -631,6 +635,15 @@ class RunExecutionService:
                 else str(error),
             )
 
+    def _decide_tool_policy(self, metadata: ToolMetadata) -> PolicyDecision:
+        """Shared policy entry with PolicyAwareToolExecutor (same evaluator).
+
+        Run paths persist DENY / REQUIRE_APPROVAL; they must not call
+        ``enforce_direct_execution``.
+        """
+
+        return self._policy_evaluator.evaluate(metadata)
+
     def _tool_contracts(self) -> dict[str, str]:
         return {
             metadata.name: hashlib.sha256(metadata.model_dump_json().encode()).hexdigest()
@@ -936,7 +949,7 @@ class RunExecutionService:
                     tool_call.tool_name
                 ):
                     raise RunExecutionError("Tool contract changed; create a reviewed new run.")
-                decision = self._policy_evaluator.evaluate(tool.metadata)
+                decision = self._decide_tool_policy(tool.metadata)
                 if decision.decision is PolicyDecisionType.DENY:
                     tools.record_policy_decision(
                         tool_call_id=tool_call.id,
@@ -1196,7 +1209,7 @@ class RunExecutionService:
             },
         )
 
-        decision = self._policy_evaluator.evaluate(tool.metadata)
+        decision = self._decide_tool_policy(tool.metadata)
         if decision.decision is PolicyDecisionType.DENY:
             tool_call_repository.record_policy_decision(
                 tool_call_id=tool_call.id,

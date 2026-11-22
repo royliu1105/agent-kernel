@@ -169,7 +169,7 @@ def test_worker_native_approval_resumes_through_default_api_runner_with_scope_ch
         + ("DeepSeekProvider" if provider_name == "deepseek" else "OpenAIProvider"),
         offline_openai_provider,
     )
-    monkeypatch.setattr("agent_kernel_api.main.create_rag_tool_registry", shared_registry)
+    monkeypatch.setattr("agent_kernel_api.main.create_runtime_tool_registry", shared_registry)
     monkeypatch.setenv("AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG", "")
     monkeypatch.setenv("AGENT_KERNEL_EMBEDDING_PROVIDER", "mock")
     monkeypatch.setenv("AGENT_KERNEL_OBJECT_STORE_BACKEND", "local")

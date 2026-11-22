@@ -79,7 +79,6 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 | `packages/kernel-storage` | 持久化及对象/向量存储实现 |
 | `packages/kernel-evals`、`kernel-observability` | 行为评估、报告、遥测 |
 | `tests`、`evals`、`deploy`、`docs` | 回归测试、数据集、部署配置、设计与验收记录 |
-| `resource` | 用户提供的只读参考材料，不是维护中的运行时或构建输入 |
 
 ## 能力与证据矩阵
 

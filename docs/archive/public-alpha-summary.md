@@ -7,7 +7,7 @@
 
 Historical phase snapshot: capabilities, limitations and next steps below refer
 to this phase's completion, not current `master`. Current status and acceptance
-live in the [capability hardening plan](capability-hardening-plan.md).
+live in the [capability hardening plan](../capability-hardening-plan.md).
 
 ## Status
 
@@ -154,4 +154,4 @@ Beta starts on Day 52 and should focus on production hardening:
 - More live Workbench operator views.
 - Upgrade, backup, restore, and security hardening docs.
 
-Canonical plan: [Post-v0.1 Completion Plan](post-v0.1-plan.md).
+Canonical plan: [Post-v0.1 Completion Plan](../post-v0.1-plan.md).

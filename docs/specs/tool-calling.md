@@ -1,5 +1,25 @@
 # Feature Spec: Tool Calling
 
+## How tools are invoked (current)
+
+There is one policy decision engine and two invocation modes:
+
+1. **Policy decisions** always go through `ToolPolicyEvaluator` (risk defaults and
+   explicit allow / deny / require_approval).
+2. **Production Agent Runs** (API/Worker) build a registry with
+   `create_runtime_tool_registry`, optionally register MCP/OpenAPI tools onto it,
+   then execute inside `RunExecutionService`. That path persists tool calls,
+   pauses for human approval, and resumes — it does **not** use
+   `PolicyAwareToolExecutor` or `enforce_direct_execution`.
+3. **Direct invoke** (examples, focused unit tests, operator scripts without a
+   Run) may use `PolicyAwareToolExecutor`, which calls the same evaluator and
+   then `enforce_direct_execution` (DENY / REQUIRE_APPROVAL raise; only ALLOW
+   executes).
+
+`create_default_tool_registry` is echo-only for unit tests.
+`create_rag_tool_registry` remains a deprecated alias of
+`create_runtime_tool_registry`.
+
 ## Goal
 
 Allow agents to request execution of registered tools through validated schemas, permission checks, persisted tool calls, and observable execution.
@@ -95,9 +115,10 @@ Deferred from Day 8:
 - Retry/fallback.
 - Network, shell, filesystem write, or other side-effecting tools.
 
-Day 9 policy-aware execution:
+Day 9 policy-aware execution (historical; see “How tools are invoked” above for
+current production Runs):
 
-- `PolicyAwareToolExecutor` evaluates policy before `ToolExecutor`.
+- `PolicyAwareToolExecutor` evaluates policy before `ToolExecutor` for direct invokes.
 - Allowed tools continue to schema validation and execution.
 - Denied tools fail before execution.
 - Approval-required tools fail before execution until approval persistence exists.

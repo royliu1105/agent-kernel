@@ -1,7 +1,7 @@
 # Execution Ownership and Recovery
 
 Post-v1.0 P2 contract, superseding lease-integration gaps in the historical
-[Day 59-63 summary](durable-execution-summary.md). See the
+[Day 59-63 summary](archive/durable-execution-summary.md). See the
 [canonical plan](capability-hardening-plan.md) for acceptance status.
 
 ## Claim and Fencing

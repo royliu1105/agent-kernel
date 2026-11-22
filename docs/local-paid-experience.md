@@ -61,9 +61,10 @@ DASHSCOPE_API_KEY=<private value>
 ```
 
 Never paste keys into chat, the Web sign-in form, tracked source or command-line
-arguments. The runtime does not read `resource/`. An operator may copy only the
-two previously authorized credential values from the reference config, without
-sourcing that file or printing its contents.
+arguments. The runtime does not load any private reference checkout. An operator
+may copy only the two previously authorized credential values from a private
+reference config kept outside this repository, without sourcing that file or
+printing its contents.
 
 ```bash
 make docker-paid-check

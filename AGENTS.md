@@ -20,5 +20,6 @@
   Do not recreate or restart the retired host runtime.
 - Keep credentials in ignored private runtime files, never in chat, source, or logs.
   The default local profile uses mock models and Mailpit, not paid calls or real email.
-- `resource/` is user-provided reference material, not the maintained runtime.
-  Do not modify it or include it in build contexts unless explicitly requested.
+- Do not add a `resource/` directory or vendor third-party reference trees into
+  this repository. Optional historical comparison notes live only in
+  `docs/reference-project-comparison.md` (no local reference checkout required).

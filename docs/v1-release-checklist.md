@@ -62,7 +62,7 @@ creates a release nor retroactively adds new capabilities to the v1.0.0 tag.
 - [x] `make release-load-soak`
 - [x] `docker compose config`
 - [x] `AGENT_KERNEL_API_PORT=8011 AGENT_KERNEL_WEB_PORT=3011 AGENT_KERNEL_POSTGRES_PORT=55432 AGENT_KERNEL_REDIS_PORT=56379 docker compose config`
-- [x] `git diff --check` was recorded as passed in [Day 90](daily/day-90.md).
+- [x] `git diff --check` was recorded as passed in [Day 90](archive/daily/day-90.md).
 
 ## Required Web Gates
 

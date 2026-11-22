@@ -190,7 +190,10 @@ Day 9 policy baseline:
   - `filesystem_write` -> `require_approval`
   - `network` -> `require_approval`
   - `dangerous` -> `deny`
-- `PolicyAwareToolExecutor` evaluates policy before delegating to `ToolExecutor`.
+- `ToolPolicyEvaluator` is the shared policy decision entry. Production Runs
+  apply it inside `RunExecutionService` (persist / pause / resume).
+  `PolicyAwareToolExecutor` is only for direct non-Run invokes and raises on
+  deny or approval-required via `enforce_direct_execution`.
 - Denied tools are not executed.
 - Approval-required tools are not executed on Day 9.
 - Day 9 does not persist approvals, create audit events, or move runs to `waiting_approval`.

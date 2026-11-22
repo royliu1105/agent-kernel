@@ -95,7 +95,7 @@ pilot admission or a release.
   passed because Mailpit works.
 - Keep Python + TypeScript, PostgreSQL-only and Docker-only operation. Use
   disposable databases for tests; preserve the active runtime's data/credentials.
-  `resource/` stays read-only and outside maintained build contexts.
+  Do not vendor third-party reference trees into this repository.
 - The maintainer owns scope decisions. Assign an implementer and reviewer
   before starting each authorized task. CF1 implementation and code review: Codex;
   deployment/pilot residual-risk disposition: maintainer, pending. The code

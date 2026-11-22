@@ -15,7 +15,7 @@ from kernel_observability import (
     configure_opentelemetry,
     configure_safe_logging,
 )
-from kernel_rag import create_rag_tool_registry
+from kernel_rag import create_runtime_tool_registry
 from kernel_runtime import (
     QueuedRunWorker,
     RunExecutionService,
@@ -118,7 +118,7 @@ def _create_worker(
     execution_service = RunExecutionService(
         router=create_default_model_router(),
         tool_registry=registry
-        or create_rag_tool_registry(session_factory=session_factory, metrics_recorder=metrics),
+        or create_runtime_tool_registry(session_factory=session_factory, metrics_recorder=metrics),
         metrics_recorder=metrics,
     )
     return QueuedRunWorker(
@@ -140,7 +140,9 @@ async def _run_worker(
     client = create_redis_client(settings) if settings.queue_backend == "redis" else None
     metrics = AggregatingMetricsRecorder()
     listener: MetricsHttpServer | None = None
-    registry = create_rag_tool_registry(session_factory=session_factory, metrics_recorder=metrics)
+    registry = create_runtime_tool_registry(
+        session_factory=session_factory, metrics_recorder=metrics
+    )
     try:
         if os.getenv("AGENT_KERNEL_WORKER_METRICS_ENABLED", "false").lower() == "true":
             listener = MetricsHttpServer(

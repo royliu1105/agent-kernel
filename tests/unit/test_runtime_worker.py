@@ -10,7 +10,7 @@ from kernel_core import (
     RunStatus,
 )
 from kernel_providers import LLMProviderError, MockLLMProvider
-from kernel_rag import DocumentIndexingService, create_rag_tool_registry
+from kernel_rag import DocumentIndexingService, create_runtime_tool_registry
 from kernel_runtime import ModelRouter, QueuedRunWorker, RunExecutionService
 from kernel_storage import (
     AgentRepository,
@@ -300,7 +300,7 @@ async def test_worker_executes_queued_kb_search_tool_run(
     worker = QueuedRunWorker(
         session_factory=postgres_session_factory,
         execution_service=RunExecutionService(
-            tool_registry=create_rag_tool_registry(session_factory=postgres_session_factory)
+            tool_registry=create_runtime_tool_registry(session_factory=postgres_session_factory)
         ),
     )
 

@@ -1,156 +1,100 @@
 # Agent Kernel Documentation
 
-This directory contains the canonical planning baseline for Agent Kernel. Treat these documents as the source of truth for the initial implementation plan unless a later ADR changes a decision.
+Canonical docs for the maintained runtime. Start with the **Current
+documentation** map below. Historical day/phase/release planning files are not
+current acceptance checklists.
 
-Start with the [Project Overview](project-overview.md) for the current product,
-technical architecture, capability evidence and limits. Historical delivery
-plans are not current acceptance checklists.
+Default local startup is **Docker only**: `make docker-up`. See
+[Docker-Only Local Runtime](docker-local.md).
 
-Default local startup is now **Docker only**: `make docker-up`.
-See [Docker-Only Local Runtime](docker-local.md) for the single-project stack,
-private configuration, data retention and cutover evidence.
+Published release baseline: [v1.0.0](releases/v1.0.0.md). `master` may contain
+**unreleased** work beyond that tag; treat [project overview](project-overview.md)
+and the pilot ledger as status sources, not the release number alone.
 
-The authorized [Observability Completion](observability-completion-plan.md)
-workstream (O1-O5) tracks centralized logs, trace backend and SMTP delivery. Read that ledger for
-per-capability local verification and remaining gates, not a blanket completion claim.
-External mailbox delivery is blocked pending setup, not passed by local tests.
-The subsequent user-facing stage is the
-[Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md).
-PV1 technical planning is finalized. PV2 bounded offline API/CLI/Worker/profile
-and authenticated Web checks passed; CF1 risk disposition still blocks full PV2
-acceptance. The formal PV3 cohort and PV4-PV6 have not started. The separately
-authorized [local paid walkthrough](local-paid-experience.md) produced one real
-RAG answer and an approval Run blocked by response validation; it is not
-independent-user evidence or full pilot acceptance. Foundation expansion is frozen.
-That plan owns pilot priorities, tasks, scoring and go/no-go criteria.
-Use the [pilot learning guide](pilot-learning-guide.md) alongside it: explain
-tradeoffs, investigate failures and verify tests with the maintainer, recording
-learning separately from technical acceptance.
-The [reference-project comparison](reference-project-comparison.md) records the
-2026-11-14 code/test review; the [reference follow-up plan](reference-follow-up-plan.md)
-owns CF1-CF8 priorities, tasks and acceptance. CF1/CF2 feed pilot-entry checks;
-CF3-CF8 are deferred/conditional. The explicitly authorized CF1 minimal repair
-has implementation, code review, regressions and exact-candidate CI; its
-[verification record](reviews/2026-11-14-cf1-minimal-repair.md) separates those
-results from pending scoped deployment/pilot acceptance. CF1 is not accepted. CF2 has
-[isolated API/CLI and manual provenance evidence](reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
-for offline fixtures; subsequent [PV2 checks](pilots/pv2-closure.md) and
-[authenticated Web checks](pilots/pv2-web-acceptance.md) cover the bounded profile
-and first-use journey, not live quality or public multi-tenant operation.
-The subsequently authorized [rejected-approval repair](reviews/2026-11-14-approval-rejection-repair.md)
-passed full local regression and isolated Docker checks. Later local rebuilds
-are recorded separately in the walkthrough; they do not retroactively expand
-that repair's evidence or close the remaining pilot gates.
-Completed implementation evidence remains in the
-[Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md).
-R1-R10 remediation passed scoped acceptance for `d65e833` after the earlier
-blanket acceptance was withdrawn. Subsequent N1-N5 execution work passed local
-and exact-commit remote verification for `cb25484`; evidence and explicit limits
-are recorded in that plan.
-These changes are unreleased. The published baseline is
-[v1.0.0](releases/v1.0.0.md), not a new release of this work.
-The Day 1-90 documents below
-record the earlier delivery scope; their completion does not imply that the
-new isolation, worker ownership or external-tool guarantees are implemented.
+Open-source cleanup sequencing (navigation only): [OSS cleanup PR plan](oss-cleanup-pr-plan.md).
 
-## Recommended Document Split
+## Current documentation
 
-Current hardening operator guides:
+Use these first. Status detail lives in the linked ledgers—do not treat deferred
+CF items as in-progress delivery.
 
-- [Project Overview and Capability Evidence](project-overview.md)
-- [Supervised Local Paid Experience](local-paid-experience.md)
-- [Observability Completion Plan](observability-completion-plan.md)
-- [Observability Backends and SMTP](observability-backends.md)
-- [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
-- [PV1 Runbook Assistant Contract Draft](pilots/pv1-2026-11-15-runbook-assistant.md)
-- [PV1 Frozen Content Baseline (Pilot Not Admitted)](pilots/pv1-materials/README.md)
-- [DeepSeek and Alibaba Embedding Pilot Profile](provider-compatibility.md)
-- [Pilot Provider Compatibility Contract](specs/pilot-provider-compatibility.md)
-- [Guided Learning During Pilot Acceptance](pilot-learning-guide.md)
-- [Reference Project Comparison](reference-project-comparison.md)
-- [Reference-Informed Follow-Up Plan](reference-follow-up-plan.md)
-- [Bounded Untrusted Memory Context](specs/memory-context-safety.md)
-- [Execution Ownership and Recovery](execution-ownership.md)
-- [Bounded Native Execution](specs/bounded-native-execution.md)
-- [Observability Operations](observability-operations.md)
-- [External Tools](external-tools.md)
-- [Backend Operations](backend-operations.md)
-- [Behavior Regression](behavior-regression.md)
-- [Hardening Verification](hardening-verification.md)
+| Need | Document |
+| --- | --- |
+| Product, architecture, capability evidence and limits | [Project Overview](project-overview.md) |
+| Run locally | [Quickstart](quickstart.md), [Docker operations](docker-local.md) |
+| Security and access limits | [SECURITY](../SECURITY.md), [Auth and RBAC](auth-rbac.md), [Memory context safety](specs/memory-context-safety.md) |
+| Pilot task/status ledger (not a feature backlog) | [Real-scenario pilot plan](real-scenario-pilot-plan.md) |
+| Follow-ups (CF1–CF8; CF3–CF8 deferred/conditional) | [Reference follow-up plan](reference-follow-up-plan.md) |
+| Learning alongside pilot work | [Pilot learning guide](pilot-learning-guide.md) |
 
-The plan is split into these documents:
+### Current operator and evidence guides
 
-1. [Project Brief](project-brief.md): project positioning, goals, non-goals, and target users.
-2. [Engineering Architecture](architecture.md): monorepo, modular monolith, runtime boundaries, and deployment shape.
-3. [Agent Architectures](agent-architectures.md): mainstream Agent architecture patterns and how Agent Kernel combines them.
-4. [Technology Stack](tech-stack.md): selected backend, frontend, storage, observability, testing, and deployment stack.
-5. [Storage Architecture](storage-architecture.md): PostgreSQL, pgvector, Redis, object storage and storage abstractions. See [PostgreSQL-only change and tests](postgresql-only.md) for the current database contract.
-6. [Module Boundaries](modules.md): package responsibilities and dependency rules.
-7. [Product Shape and Capabilities](product-shape.md): what the project becomes and which product capabilities it exposes.
-8. [User Experience](user-experience.md): Agent Workbench UX, where chat is an input mode rather than the whole product.
-9. [Development Environment](development-environment.md): professional local Python, Docker, Node.js, IDE, and quality-tool setup.
-10. [Quickstart](quickstart.md): real local runtime path for agent/run/worker execution.
-11. [Production Configuration](production-config.md): runtime environment, deployment topology, secrets, storage, and release hardening.
-12. [Auth and RBAC](auth-rbac.md): Beta API key auth, workspace roles, permissions, object scope, and security test matrix.
-13. [Dependency Audit Review](dependency-audit.md): npm audit findings, risk acceptance, and follow-up policy.
-14. [Troubleshooting](troubleshooting.md): local setup, Docker, uv, npm, port, worker, and release-verification failure modes.
-15. [Agent Kernel v0.1](v0.1.md): v0.1 product snapshot, capability matrix, readiness, and next steps.
-16. [Public Alpha Guide](public-alpha.md): early-user trial path, feedback workflow, and live Web API priorities.
-17. [Post-v0.1 Completion Plan](post-v0.1-plan.md): historical Public Alpha, Beta, and v1.0 delivery scope.
-18. [Public Alpha Summary](public-alpha-summary.md): completed Day 39-51 hardening work, verification scope, limitations, and Beta entry point.
-19. [Durable Execution Summary](durable-execution-summary.md): historical Day 59-63 scope. Current guarantees: [Execution Ownership](execution-ownership.md).
-20. [Beta Summary](beta-summary.md): completed Day 52-75 production hardening work, verification scope, limitations, and v1.0 RC handoff.
-21. [API and CLI Compatibility Policy](api-cli-compatibility.md): v1.0 RC stability levels, public contract, preview surfaces, and deprecation rules.
-22. [Versioned Configuration Reference](configuration.md): released configuration baseline plus unreleased additions, defaults, secrets, and change-control rules.
-23. [Upgrade and Migration Policy](upgrade-migration-policy.md): v1.0 RC upgrade sequence, Alembic rules, migration test expectations, and rollback boundaries.
-24. [Backup and Restore Guide](backup-restore.md): v1.0 RC backup scope, Postgres/object-store restore steps, validation, retention, and security expectations.
-25. [Security Hardening Checklist](security-hardening.md): v1.0 RC release gates, operator checklist, known limitations, and incident-response baseline.
-26. [Release Eval Gates](release-eval-gates.md): v1.0 RC deterministic release-blocking eval command, datasets, CI gate, and non-blocking eval boundaries.
-27. [Release Smoke Tests](release-smoke-tests.md): v1.0 RC critical-path smoke matrix and `make release-smoke` command contract.
-28. [Load and Soak Scenarios](load-soak-scenarios.md): v1.0 RC load/soak profiles, thresholds, manual infrastructure scenarios, and failure handling.
-29. [Clean-Machine Release Rehearsal](clean-machine-rehearsal.md): v1.0 RC fresh-checkout rehearsal runbook, required gates, evidence capture, and failure classification.
-30. [Clean-Machine Rehearsal Results](clean-machine-rehearsal-results.md): historical Day 85 rehearsal; the later Day 90 Docker restart evidence is in the release notes.
-31. [v1.0 Docs Consistency Audit](docs-consistency-audit.md): Day 86 docs drift audit, automated guards, and remaining release-doc follow-ups.
-32. [v1.0 Scope Freeze](v1-scope-freeze.md): Day 87 release blockers, accepted limitations, deferred scope, and v1.0 change rules.
-33. [v1.0 Release Checklist](v1-release-checklist.md): historical release gates and reconciled publication evidence, including checks that cannot be reconstructed.
-34. [Phase 1 Summary](phase-1-summary.md): completed core runtime capabilities and tradeoffs.
-35. [Phase 2 Summary](phase-2-summary.md): completed tool, policy, approval, retry, and fallback capabilities.
-36. [Phase 3 Summary](phase-3-summary.md): completed RAG and memory foundation capabilities and limitations.
-37. [Phase 4 Summary](phase-4-summary.md): completed observability and deterministic eval capabilities and limitations.
-38. [Phase 5 Summary](phase-5-summary.md): completed Agent Workbench Web UI capabilities and limitations.
-39. [Phase 6 Summary](phase-6-summary.md): completed v0.1 release-hardening work, verification, and remaining release blockers.
-40. [Product Interfaces](interfaces.md): current API, CLI, worker, and Web UI surface catalog.
-41. [Quality Strategy](quality-strategy.md): testing, evals, observability, security, and CI gates.
-42. [Development Plan](development-plan.md): v0.1 plan and daily working method.
-43. [Milestones](milestones.md): day-by-day milestone map for v0.1, Public Alpha, Beta, and v1.0.
-44. [Daily Plans](daily/README.md): per-day execution checklist and progress tracking.
-45. [Release Checklist](release-checklist.md): v0.1 release verification checklist.
-46. [v0.1.0 Release Notes](releases/v0.1.0.md): published release notes, limitations, and next steps.
-47. [Public Alpha Release Notes](releases/public-alpha.md): Public Alpha announcement draft, trial scope, limitations, and feedback request.
-48. [v1.0.0 Release Notes](releases/v1.0.0.md): published release scope, historical verification, limitations, upgrade notes, and security posture.
-49. [SDD Lite](sdd-lite.md): lightweight spec-driven development rules.
-50. [Phase 3 Realignment](phase-3-realignment.md): RAG and memory delivery correction for Days 19-24.
-51. [ADR 0001](adr/0001-modular-monolith.md): modular monolith decision.
-52. [ADR 0002](adr/0002-storage.md): storage decision.
-53. [ADR 0003](adr/0003-python-runtime.md): Python runtime decision.
-54. [ADR 0004](adr/0004-language-strategy.md): Python runtime plus TypeScript product surface decision.
+- [Supervised local paid experience](local-paid-experience.md) — separate authorized walkthrough; not full pilot acceptance
+- [Observability completion plan](observability-completion-plan.md) (O1–O5) and [backends/SMTP](observability-backends.md)
+- [PV1 runbook contract](pilots/pv1-2026-11-15-runbook-assistant.md), [PV1 materials](pilots/pv1-materials/README.md)
+- [Provider compatibility](provider-compatibility.md), [pilot provider contract](specs/pilot-provider-compatibility.md)
+- [Reference project comparison](reference-project-comparison.md) — optional historical maintainer research note; no reference tree ships with this repo
+- [Execution ownership](execution-ownership.md), [bounded native execution](specs/bounded-native-execution.md)
+- [External tools](external-tools.md), [observability operations](observability-operations.md)
+- [Backend operations](backend-operations.md), [behavior regression](behavior-regression.md)
+- [Hardening verification](hardening-verification.md), [capability hardening plan](capability-hardening-plan.md) (completed R1–R10 / N1–N5 evidence)
+- [PostgreSQL-only storage and tests](postgresql-only.md), [configuration](configuration.md), [troubleshooting](troubleshooting.md)
 
-Repository-level release docs:
+### Architecture and module references
 
-- [CONTRIBUTING](../CONTRIBUTING.md): contribution workflow and quality gates.
-- [SECURITY](../SECURITY.md): vulnerability reporting and security posture.
-- [ROADMAP](../ROADMAP.md): historical release delivery and current post-v1.0 hardening.
-- [Examples](../examples/README.md): runnable local example workflows.
+1. [Project Brief](project-brief.md)
+2. [Engineering Architecture](architecture.md)
+3. [Technology Stack](tech-stack.md)
+4. [Storage Architecture](storage-architecture.md)
+5. [Module Boundaries](modules.md)
+6. [Product Shape](product-shape.md)
+7. [User Experience](user-experience.md)
+8. [Development Environment](development-environment.md)
+9. [Production Configuration](production-config.md)
+10. [Product Interfaces](interfaces.md)
+11. [Quality Strategy](quality-strategy.md)
+12. [Agent Architectures](agent-architectures.md) — pattern notes; not a claim that every pattern is implemented
+13. [ADR 0001](adr/0001-modular-monolith.md), [ADR 0002](adr/0002-storage.md), [ADR 0003](adr/0003-python-runtime.md), [ADR 0004](adr/0004-language-strategy.md)
 
-## Current Baseline
+Repository-level entry docs:
 
-Agent Kernel uses:
+- [CONTRIBUTING](../CONTRIBUTING.md)
+- [SECURITY](../SECURITY.md)
+- [ROADMAP](../ROADMAP.md) — historical release targets; current status points here to overview + pilot
+- [Examples](../examples/README.md)
+
+## Archive / historical (not current acceptance)
+
+**Historical; not acceptance criteria.** See also [docs/archive/README.md](archive/README.md).
+
+These record how v0.1 → Public Alpha → Beta → v1.0 were delivered. Completion
+of a historical checklist does not imply current isolation, leasing, or
+external-tool guarantees. For current status use [project overview](project-overview.md)
+and [real-scenario pilot plan](real-scenario-pilot-plan.md).
+
+- [Development plan](development-plan.md) — Day 1–90 historical method and stages
+- [Milestones](milestones.md) — day-by-day historical map
+- [Daily plans stub](daily/README.md) → [archive/daily](archive/daily/README.md)
+- [Post-v0.1 completion plan](post-v0.1-plan.md)
+- [Public Alpha guide](archive/public-alpha.md), [Public Alpha summary](archive/public-alpha-summary.md), [Public Alpha release notes](releases/public-alpha.md)
+- [Beta summary](archive/beta-summary.md), [Durable execution summary](archive/durable-execution-summary.md)
+- [v0.1 snapshot](v0.1.md), [v0.1 release checklist](release-checklist.md), [v0.1.0 notes](releases/v0.1.0.md)
+- [v1.0 scope freeze](v1-scope-freeze.md), [v1.0 release checklist](v1-release-checklist.md), [v1.0.0 notes](releases/v1.0.0.md)
+- Phase summaries: [1](archive/phase-1-summary.md), [2](archive/phase-2-summary.md),
+  [3](archive/phase-3-summary.md), [4](archive/phase-4-summary.md), [5](archive/phase-5-summary.md),
+  [6](archive/phase-6-summary.md)
+- [API/CLI compatibility](api-cli-compatibility.md), [upgrade/migration](upgrade-migration-policy.md), [backup/restore](backup-restore.md)
+- [Security hardening checklist](security-hardening.md), [release eval gates](release-eval-gates.md), [release smoke](release-smoke-tests.md)
+- [Load/soak](load-soak-scenarios.md), [clean-machine rehearsal](clean-machine-rehearsal.md), [rehearsal results](archive/clean-machine-rehearsal-results.md)
+- [Docs consistency audit](archive/docs-consistency-audit.md), [SDD Lite](archive/sdd-lite.md), [Phase 3 realignment](archive/phase-3-realignment.md)
+
+## Current baseline shape
 
 ```text
 Monorepo + Modular Monolith + Worker + Pluggable Interfaces
 ```
 
-The historical delivery sequence was:
+Historical delivery sequence (complete; not the active schedule):
 
 ```text
 Day 1-38: v0.1.0 published release

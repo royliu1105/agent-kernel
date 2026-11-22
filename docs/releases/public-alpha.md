@@ -198,7 +198,7 @@ Useful links:
 
 - [README](../../README.md)
 - [Quickstart](../quickstart.md)
-- [Public Alpha Guide](../public-alpha.md)
+- [Public Alpha Guide](../archive/public-alpha.md)
 - [Public Alpha Walkthrough](../../examples/public-alpha-walkthrough.md)
 - [v0.1.0 Release Notes](v0.1.0.md)
 - [Post-v0.1 Completion Plan](../post-v0.1-plan.md)

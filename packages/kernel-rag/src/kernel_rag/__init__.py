@@ -76,7 +76,11 @@ from kernel_rag.retrieval import (
     RetrievalResult,
     Retriever,
 )
-from kernel_rag.tools import KnowledgeBaseSearchTool, create_rag_tool_registry
+from kernel_rag.tools import (
+    KnowledgeBaseSearchTool,
+    create_rag_tool_registry,
+    create_runtime_tool_registry,
+)
 
 __all__ = [
     "DashScopeEmbeddingProvider",
@@ -139,6 +143,7 @@ __all__ = [
     "TextMarkdownParser",
     "UnsupportedDocumentError",
     "create_rag_tool_registry",
+    "create_runtime_tool_registry",
     "bucket_and_key_from_s3_uri",
     "create_object_store",
     "get_openai_embedding_api_key",

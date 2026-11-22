@@ -63,7 +63,7 @@ The inventory remains 18 answerable, 6 unknown, 3 injection and 3 cross-scope
 cases, each planned twice. All results are `not_run`, human reviews `pending`,
 corpus approval false and PV1 incomplete. Only the manifest's explicit 12-file
 corpus list is eligible for later approved ingestion; answers/attack fixtures
-must not enter normal retrieval context. No resource/private runtime data is used.
+must not enter normal retrieval context. No private reference or private runtime data is used.
 
 ## Verification and Submission
 
@@ -118,5 +118,5 @@ watch confirmed the completed successful run. No failure was waived or silently
 retried as a passing test. This documentation-only follow-up records already
 observed candidate evidence, not a prediction about a later commit's CI.
 No local Docker service/data was updated, no paid interface was called, no
-source runbook changed, and no resource/private data was submitted. The 30 pilot
+source runbook changed, and no private reference or private runtime data was submitted. The 30 pilot
 cases are still unexecuted; remote mock/fixture CI is not PV3 model acceptance.

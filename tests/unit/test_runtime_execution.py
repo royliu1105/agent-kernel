@@ -26,7 +26,7 @@ from kernel_providers import (
     MessageRole,
     MockLLMProvider,
 )
-from kernel_rag import DocumentIndexingService, create_rag_tool_registry
+from kernel_rag import DocumentIndexingService, create_runtime_tool_registry
 from kernel_runtime import ModelRouter, RunExecutionError, RunExecutionService
 from kernel_storage import (
     AgentRepository,
@@ -704,7 +704,7 @@ async def test_execution_service_completes_explicit_kb_search_tool_run(
         )
 
         completed = await RunExecutionService(
-            tool_registry=create_rag_tool_registry(session_factory=postgres_session_factory)
+            tool_registry=create_runtime_tool_registry(session_factory=postgres_session_factory)
         ).execute(run_id=run.id, repository=run_repository)
         events = run_repository.list_events(run.id)
         tool_calls = ToolCallRepository(session).list_for_run(run.id)

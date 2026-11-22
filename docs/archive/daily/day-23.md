@@ -1,7 +1,7 @@
 # Day 23: Memory Retrieval and Agent Context Integration
 
 Historical delivery record. The later unreleased
-[CF1 memory context contract](../specs/memory-context-safety.md) supersedes the
+[CF1 memory context contract](../../specs/memory-context-safety.md) supersedes the
 SYSTEM-data placement below; it does not rewrite Day 23's original evidence.
 
 ## Goal

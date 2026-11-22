@@ -58,7 +58,7 @@ def test_config_has_only_owned_isolated_resources(tmp_path: Path) -> None:
                 f"{tmp_path}:/evidence",
                 "objects:/objects",
             ]
-    assert "resource/" in (ROOT / ".dockerignore").read_text().splitlines()
+    assert not (ROOT / "resource").exists()
 
 
 def test_host_environment_is_allowlisted() -> None:

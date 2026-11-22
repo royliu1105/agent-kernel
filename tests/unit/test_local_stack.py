@@ -144,7 +144,7 @@ def test_docker_default_is_documented_and_build_context_excludes_secrets() -> No
     for name in ("README.md", "docs/quickstart.md", "docs/development-environment.md", "AGENTS.md"):
         assert "make docker-up" in (ROOT / name).read_text()
     ignored = (ROOT / ".dockerignore").read_text().splitlines()
-    assert all(pattern in ignored for pattern in (".env", "**/.env.*", "resource/"))
+    assert all(pattern in ignored for pattern in (".env", "**/.env.*"))
     local = (ROOT / "deploy/local.compose.yml").read_text()
     assert "ports: !reset []" in local
     assert '"127.0.0.1:${AGENT_KERNEL_WEB_PORT:-3000}:3000"' in local
@@ -153,3 +153,20 @@ def test_docker_default_is_documented_and_build_context_excludes_secrets() -> No
     assert "AGENT_KERNEL_RUN_QUEUE_BACKEND: redis" in local
     assert local.count('DEEPSEEK_API_KEY: ""') == 2
     assert local.count('DASHSCOPE_API_KEY: ""') == 2
+
+
+def test_repository_does_not_ship_a_resource_reference_tree() -> None:
+    assert not (ROOT / "resource").exists()
+    gitignore = (ROOT / ".gitignore").read_text()
+    dockerignore = (ROOT / ".dockerignore").read_text()
+    assert "resource/" not in gitignore
+    assert "resource/**" not in gitignore
+    assert "resource/README.md" not in gitignore
+    assert "resource/" not in dockerignore.splitlines()
+    contributing = (ROOT / "CONTRIBUTING.md").read_text()
+    agents = (ROOT / "AGENTS.md").read_text()
+    for text in (contributing, agents):
+        assert "Do not add a `resource/` directory" in text
+        assert "reference-project-comparison.md" in text
+    comparison = (ROOT / "docs/reference-project-comparison.md").read_text()
+    assert "ship, track, or host a reference project tree" in comparison

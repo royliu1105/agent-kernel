@@ -5,7 +5,7 @@ The [follow-up ledger](../reference-follow-up-plan.md) owns CF1 acceptance.
 This follows the [historical read-only review](2026-11-14-cf1-memory-boundary.md),
 not a rewrite of its evidence. The maintainer authorized the minimal repair,
 tests and documentation, then code review and two separate baseline/CF1 commits,
-push and CI tracking. `resource/`, private configuration and runtime data are
+push and CI tracking. Private reference trees, private configuration and runtime data are
 excluded. Updating the active Docker environment, release, paid provider calls
 and user admission remain outside this authorization.
 
@@ -106,7 +106,7 @@ v1.0.0 tag. Its source/config/test fingerprint was **306 files**, SHA-256
 After the review fix below: **307 files**, SHA-256
 `1978cc06877cad79ad2b476ce4536d834c23d5e09595d6d0ec49f24088d4cc17`.
 Both use the historical review's source/config/test fingerprint method and exclude
-documentation, secrets, runtime data and `resource/`. Existing PostgreSQL-only,
+documentation, secrets, runtime data and private reference trees. Existing PostgreSQL-only,
 observability and Docker changes are retained as the separate baseline commit.
 Baseline commit: `8f87473`; an exported staged snapshot passed **1085 tests,
 35 skipped in 216.21 s** independently of CF1. Its pre-commit checks passed.

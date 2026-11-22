@@ -153,7 +153,7 @@ Source review found no blocking defect in the submitted scope:
   is persisted independently of approval status and checked before/after resume.
 - Random owned Compose resources, internal networking, environment allowlisting,
   private evidence, credential removal and guarded cleanup preserve the active
-  project. `resource/`, runtime data and credentials are excluded from Git.
+  project. Private reference trees, runtime data and credentials are excluded from Git.
 
 Review verification passed: **1183 passed, 35 optional skips** in 225.77 s on the
 disposable PostgreSQL service; **17** focused rejection cases and **95** document/

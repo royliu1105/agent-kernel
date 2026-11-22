@@ -8,17 +8,24 @@ paths. They do not get a separate execution API. The current Python stack is
 retained.
 
 ```python
+from kernel_rag import create_runtime_tool_registry
 from kernel_tools.external import (
     external_tools_config_from_env,
     register_external_tools,
 )
 
+registry = create_runtime_tool_registry(session_factory=session_factory)
 # API lifespan, or the worker's single top-level async main:
 async with register_external_tools(registry, external_tools_config_from_env()) as loaded:
-    # Existing runner and PolicyAwareToolExecutor must use this exact registry.
+    # RunExecutionService (and any direct PolicyAwareToolExecutor helpers) must
+    # use this exact registry for the process lifetime.
     # Serve requests / poll work here, then drain runs before leaving this block.
     ...
 ```
+
+Policy for Runs is always `ToolPolicyEvaluator` inside `RunExecutionService`.
+`PolicyAwareToolExecutor` is only for non-Run direct invokes; see
+[tool-calling.md](specs/tool-calling.md#how-tools-are-invoked-current).
 
 `AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG` names an operator-owned local JSON file.
 When unset, the loader is a no-op. Malformed config, unavailable servers,

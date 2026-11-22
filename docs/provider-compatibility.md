@@ -70,8 +70,9 @@ embeddings. `make docker-up` does not activate this pilot profile.
 
 ## Reference Credential Mapping
 
-The runtime never loads `resource/`. Before a later authorized activation,
-prepare only the required dedicated values in an ignored private pilot config:
+The runtime never loads a private reference checkout. Before a later authorized
+activation, prepare only the required dedicated values in an ignored private
+pilot config:
 
 | Reference variable | Maintained variable | Boundary |
 | --- | --- | --- |

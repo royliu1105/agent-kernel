@@ -9,7 +9,7 @@ The maintainer authorized review of the PV1 draft and minimal DeepSeek/Alibaba
 Embedding adaptation, then commit/push and exact-candidate CI tracking once
 review passes. This does not authorize paid requests, current Docker updates,
 credential copying, pilot admission, a tag or release. Budget remains USD 10;
-authorized spending remains USD 0. `resource/` and private runtime data stay
+authorized spending remains USD 0. Private reference checkouts and private runtime data stay
 excluded from the commit and from build contexts.
 
 The preparation baseline is `767e35af19d52d0596478af13d010ea2ba0ab45b`.
@@ -103,7 +103,7 @@ the separate default Docker job verifies its configured runtime/proxy contract.
 Existing Node-action deprecation and runner-image migration notices are warnings,
 not test failures; no unrelated workflow upgrade is included in this batch.
 
-Before submission, the staged paths and diff were reviewed: no `resource/`,
+Before submission, the staged paths and diff were reviewed: no private reference tree,
 private runtime/config/data paths or real credentials were included. All provider
 tests use synthetic values. This documentation-only follow-up records the already
 completed implementation CI, not a claim about any future commit. No tag/release

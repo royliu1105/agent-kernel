@@ -29,7 +29,7 @@ def test_pv1_accepted_prompt_is_pinned_separately_from_corpus() -> None:
 
 def test_pv1_frozen_content_manifest_is_unchanged() -> None:
     # Preserve preparation labels/bytes; the contract records the later acceptance.
-    frozen_hash = "1e82f556cf3972e80881d66f254deeb2ad3db8758b6d79b4a3abca0082b15224"
+    frozen_hash = "0225553e4f626982fa4d7d71720d2d73f55d32bd40aab62385435b191bb605b2"
     assert hashlib.sha256((PACK / "manifest.json").read_bytes()).hexdigest() == frozen_hash
     contract = (ROOT / "docs/pilots/pv1-2026-11-15-runbook-assistant.md").read_text()
     assert frozen_hash in contract

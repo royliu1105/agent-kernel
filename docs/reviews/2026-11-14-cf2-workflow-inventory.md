@@ -13,7 +13,7 @@ these local rehearsals did not themselves commit or remotely verify the candidat
 The maintainer selected an authenticated API/CLI-only disposable Docker rehearsal
 after the source inventory. This permits test harnesses and documentation, not
 Web-auth implementation or business-code expansion. No active Docker
-environment, data, credentials or `resource/` is changed. No active deployment,
+environment, data, credentials or a private reference checkout is changed. No active deployment,
 paid provider request, user admission, commit/push or release is included.
 Purchasing usage credits does not identify a provider, model, budget or data
 transmission approval.

@@ -4,29 +4,22 @@
 > [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
 > earlier plans or verification, not current support or new acceptance evidence.
 
-## Current Follow-Up
+## Current status
 
-The explicitly authorized [observability completion](observability-completion-plan.md)
-uses O1-O5 for per-capability status and evidence; SMTP is the selected
-notification channel and external inbox verification remains blocked by setup.
-This is a narrow exception to the feature freeze below, not a new daily schedule.
+**This file is historical delivery planning for Day 1–90.** For current status,
+capability evidence, and limits use:
 
-The [Real-Scenario Acceptance and Controlled Pilot Plan](real-scenario-pilot-plan.md)
-is the canonical next-stage plan. PV1 technical planning is finalized; bounded
-PV2 offline checks passed with CF1 disposition still open. The formal PV3 cohort
-and PV4-PV6 have not started. Separate [local paid observations](local-paid-experience.md)
-are not full pilot acceptance. The sequence remains: freeze scope, rehearse safety,
-verify live behavior and deployment recovery, run a small user pilot, then
-decide go/no-go. Foundation feature expansion is frozen; only
-reproduced blocking defects justify scoped repair after execution is authorized.
+- [Project overview](project-overview.md)
+- [Real-scenario pilot plan](real-scenario-pilot-plan.md)
+- [Pilot learning guide](pilot-learning-guide.md)
+- [Capability hardening plan](capability-hardening-plan.md) (completed evidence;
+  unreleased relative to `v1.0.0`)
+- [docs/README.md](README.md)
 
-The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) retains
-R1-R10 and N1-N5 scoped acceptance and explicit limits. Do not restart P1.1 or
-use historical CI as live-provider/user-pilot proof. This work is unreleased.
-
-The Day 1-90 schedule below is the historical delivery plan. Completed
-foundation items must not be read as proof of full object isolation,
-multi-worker fencing, Redis worker integration or external-tool support.
+Foundation feature expansion is frozen outside those ledgers. Only reproduced
+blocking defects justify scoped repair after explicit authorization. Completed
+Day 1–90 items must not be read as proof of full object isolation, multi-worker
+fencing, Redis worker integration or external-tool support.
 
 ## Delivery Target
 
@@ -156,7 +149,7 @@ Acceptance:
 
 ## Phase 3: Day 14-24 RAG Retrieval, Agent Integration, and Memory
 
-Phase 3 is realigned in [Phase 3 Realignment](phase-3-realignment.md).
+Phase 3 is realigned in [Phase 3 Realignment](archive/phase-3-realignment.md).
 
 ### Phase 3A: Day 14-18 RAG Ingestion and Indexing Foundation
 
@@ -369,7 +362,7 @@ Acceptance:
 - [x] GitHub CI is green.
 - [x] Public feedback path is documented.
 
-Summary: [Public Alpha Summary](public-alpha-summary.md).
+Summary: [Public Alpha Summary](archive/public-alpha-summary.md).
 
 ## Stage 8: Day 52-75 Beta Production Hardening
 
@@ -433,7 +426,7 @@ Acceptance:
 - [x] RAG can run with real embeddings and pgvector.
 - [x] Storage backends can be switched by configuration.
 
-Summary: [Beta Summary](beta-summary.md).
+Summary: [Beta Summary](archive/beta-summary.md).
 
 ## Stage 9: Day 76-90 v1.0 Release Candidate
 
@@ -494,7 +487,7 @@ Do not keep adding every daily prompt to this file. This document is the phase-l
 Daily execution checklists live in:
 
 ```text
-docs/daily/day-XX.md
+docs/archive/daily/day-XX.md
 ```
 
 At the start of each development day:
@@ -514,7 +507,7 @@ future days.
 Use this prompt pattern to begin a development day:
 
 ```text
-开始 Day N：请按照 docs/daily/day-NN.md 执行今天的计划。
+开始 Day N：请按照 docs/archive/daily/day-NN.md 执行今天的计划。
 
 要求：
 - 先检查 git 状态，不要覆盖用户已有改动。
@@ -522,7 +515,7 @@ Use this prompt pattern to begin a development day:
 - 只实现当天 scope 内的内容，不提前做后续阶段。
 - 如果行为或架构决策变化，更新对应 spec 或 ADR。
 - 完成后运行当天 plan 中的 verification commands。
-- 更新 docs/daily/day-NN.md 的 checklist。
+- 更新 docs/archive/daily/day-NN.md 的 checklist。
 - 如 phase-level progress 变化，更新 docs/milestones.md。
 - 最后总结完成内容、验证结果、已知风险和下一步。
 ```
@@ -530,5 +523,5 @@ Use this prompt pattern to begin a development day:
 For example, Day 2 should use:
 
 ```text
-开始 Day 2：请按照 docs/daily/day-02.md 执行今天的计划。
+开始 Day 2：请按照 docs/archive/daily/day-02.md 执行今天的计划。
 ```

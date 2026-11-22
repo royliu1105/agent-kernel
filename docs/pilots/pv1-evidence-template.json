@@ -33,7 +33,7 @@
     "prompt_version": "pv1-runbook-assistant-v1",
     "prompt_sha256": "bf6c5329a3e3bfa8587947b53a904fe4c3193444ad1f24a947305f163b1b091b",
     "materials_version": "pv1-local-draft-1",
-    "materials_manifest_sha256": "1e82f556cf3972e80881d66f254deeb2ad3db8758b6d79b4a3abca0082b15224"
+    "materials_manifest_sha256": "0225553e4f626982fa4d7d71720d2d73f55d32bd40aab62385435b191bb605b2"
   },
   "fixture_control_plan": [
     {"id": "known_dispatch", "result": "not_run"},

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from kernel_core import RiskLevel
 from kernel_observability import AggregatingMetricsRecorder
 from kernel_observability.metrics import MetricLabels
-from kernel_rag import MockEmbeddingProvider, Retriever, create_rag_tool_registry
+from kernel_rag import MockEmbeddingProvider, Retriever, create_runtime_tool_registry
 from kernel_storage import ApprovalRepository, KnowledgeBaseRepository, ToolCallRepository
 from kernel_storage.models import ApprovalRecord, RunEventRecord
 from kernel_tools import ToolExecutionFailedError, ToolExecutor, ToolRegistry, ToolRequest
@@ -195,7 +195,7 @@ def test_api_registry_reuses_injected_retriever_and_recorder(
     with postgres_session_factory() as session:
         kb = KnowledgeBaseRepository(session).create(name="observed")
     captured: list[ToolRegistry] = []
-    factory = create_rag_tool_registry
+    factory = create_runtime_tool_registry
 
     def capture(**kwargs: object) -> ToolRegistry:
         assert kwargs["retriever"] is retriever
@@ -204,7 +204,7 @@ def test_api_registry_reuses_injected_retriever_and_recorder(
         captured.append(registry)
         return registry
 
-    monkeypatch.setattr(main, "create_rag_tool_registry", capture)
+    monkeypatch.setattr(main, "create_runtime_tool_registry", capture)
     with (
         TestClient(
             create_app(

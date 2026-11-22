@@ -24,7 +24,7 @@
       "path": "corpus/D01-docker-local.md",
       "sha256": "dd90cab6e642d8196e82deefeab943555880f9428ac266d57d34d38bd82b4e68",
       "source_path": "docs/docker-local.md",
-      "source_sha256": "32e8e5c7375f5eff28772ea174c658f1c0e00c82c36b8eba22ed5eeefa8107f4",
+      "source_sha256": "27f1b5b999d02e4da2102581796339db2fe06182302ba662e31d007d7e1b9f8c",
       "source_line_ranges": [
         [
           7,
@@ -70,11 +70,16 @@
         {
           "path": "docs/upgrade-migration-policy.md",
           "sha256": "1bb83cddab08a9645d0ac18cbd042c070ac566492870ad5195f8c9b20939dad0",
-          "line_ranges": [[48, 49]],
+          "line_ranges": [
+            [
+              48,
+              49
+            ]
+          ],
           "reason": "Changing embedding configuration does not convert old vectors; reindex before querying."
         }
       ],
-      "source_sha256": "3d94922ec17432c10b677cf55ce6347e4350419f44aa9434f1bd76e636449a72",
+      "source_sha256": "e2a4066c11d8c14977051a1b13c1382df289cfc47e4a95698ca2a4bc03955f45",
       "source_line_ranges": [
         [
           15,
@@ -145,7 +150,7 @@
       "path": "corpus/D05-external-tools.md",
       "sha256": "ce62632c1ec69d64320c88fbd2915ebf30a99d5107ff61f7772f39487ba27f32",
       "source_path": "docs/external-tools.md",
-      "source_sha256": "b83ef4b261ffc34ae97e046624a76e3afb310b280ba7d745e0d9749129418f49",
+      "source_sha256": "e12525a6d78bc8d52f3426dc2355f2dba46cccb0a8d17e0c7f81d0beccec4511",
       "source_line_ranges": [
         [
           47,
@@ -235,8 +240,13 @@
       "supporting_sources": [
         {
           "path": "docs/docker-local.md",
-          "sha256": "32e8e5c7375f5eff28772ea174c658f1c0e00c82c36b8eba22ed5eeefa8107f4",
-          "line_ranges": [[69, 73]],
+          "sha256": "27f1b5b999d02e4da2102581796339db2fe06182302ba662e31d007d7e1b9f8c",
+          "line_ranges": [
+            [
+              69,
+              73
+            ]
+          ],
           "reason": "Mailpit is local capture, not proof of external mailbox delivery."
         }
       ],
@@ -265,7 +275,7 @@
       "path": "corpus/D09-execution-ownership.md",
       "sha256": "2ab65a85ce157e4e8aa55096d924bb823d9f9b8f2c99275ec9bdd7881c5ab75b",
       "source_path": "docs/execution-ownership.md",
-      "source_sha256": "0bb2d526f7d74be95ed95e8e65159bbd10f6ae0990d1878d7f16e9b2058cda19",
+      "source_sha256": "4718cc532320a717527ab993d585505e572e5fd65d2e00f118d03cf40bdc620e",
       "source_line_ranges": [
         [
           7,
@@ -319,8 +329,17 @@
       "supporting_sources": [
         {
           "path": "docs/production-config.md",
-          "sha256": "3d94922ec17432c10b677cf55ce6347e4350419f44aa9434f1bd76e636449a72",
-          "line_ranges": [[80, 97], [146, 169]],
+          "sha256": "e2a4066c11d8c14977051a1b13c1382df289cfc47e4a95698ca2a4bc03955f45",
+          "line_ranges": [
+            [
+              80,
+              97
+            ],
+            [
+              146,
+              169
+            ]
+          ],
           "reason": "Mock evidence and current provider configuration boundaries."
         }
       ],

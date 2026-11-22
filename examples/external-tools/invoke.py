@@ -31,6 +31,7 @@ async def main() -> None:
         else ToolPolicy()
     )
     async with load_external_tools(registry, config):
+        # Direct invoke (no Run lifecycle). Production Runs use RunExecutionService.
         executor = PolicyAwareToolExecutor(
             registry=registry, evaluator=ToolPolicyEvaluator(policy=policy)
         )

@@ -2,7 +2,7 @@
 
 Historical delivery record. Publication follow-up, reconciled 2026-11-14:
 v1.0.0 was published on 2026-08-07 for `4684931`, with successful release-commit
-CI. See the [v1.0 release checklist](../v1-release-checklist.md) for exact evidence
+CI. See the [v1.0 release checklist](../../v1-release-checklist.md) for exact evidence
 and unreconstructed process checks. The results below retain their Day 90 scope.
 
 Goal:

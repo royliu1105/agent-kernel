@@ -45,7 +45,12 @@ class EchoTool:
 
 
 def create_default_tool_registry() -> ToolRegistry:
-    """Return the default safe built-in tools for local runtime execution."""
+    """Return echo-only built-ins for focused unit tests.
+
+    Production API/Worker processes should use
+    ``kernel_rag.create_runtime_tool_registry`` (plus optional external-tool
+    registration), not this factory alone.
+    """
 
     registry = ToolRegistry()
     registry.register(EchoTool())

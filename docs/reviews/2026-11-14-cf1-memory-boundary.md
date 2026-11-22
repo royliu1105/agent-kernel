@@ -15,7 +15,7 @@ been approved by this review. No commit/push or external call was performed.
 HEAD is `d599fc2ab44c054af009aabb7cab298d4988f4eb`, but the reviewed runtime is
 the dirty working tree, not that commit alone. Before this review's documentation
 updates: 143 tracked modified files, 33 untracked maintained files and zero
-staged paths. `resource/` is excluded from these counts and must not be staged
+staged paths. Private reference trees are excluded from these counts and must not be staged
 as part of baseline consolidation. Existing changes were not reverted.
 
 Source/config/test fingerprint: **303 files**, SHA-256

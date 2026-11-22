@@ -34,7 +34,7 @@ No remaining blocking issue was found in the reviewed document/test scope:
   enforcement is claimed by document tests.
 - A local read of retained private evidence confirms 14622 bytes, the recorded
   digest, repository/run/attempt/SHA and completed/success result. No request was
-  repeated. Raw headers/body and resource/ remain ignored and are excluded from
+  repeated. Raw headers/body and private reference checkouts remain ignored and are excluded from
   this submission. No raw author/email value or credential is committed.
 - The earlier manual curl query is explicitly not Agent approval/dispatch
   evidence or a call through the maintained guarded transport. API version

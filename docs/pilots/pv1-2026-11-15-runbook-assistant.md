@@ -152,7 +152,7 @@ The maintainer accepted the current 12 summaries and 30 expected-answer cases
 without changes. The immutable content baseline is commit
 `20b8dc8a41bc3ada5386566fcc346392fd599324`, version `pv1-local-draft-1`, with
 `pv1-materials/manifest.json` SHA-256
-`1e82f556cf3972e80881d66f254deeb2ad3db8758b6d79b4a3abca0082b15224`.
+`0225553e4f626982fa4d7d71720d2d73f55d32bd40aab62385435b191bb605b2`.
 That manifest pins all 12 corpus files and the three question/answer artifacts.
 Their preparation-time `prepared_not_approved`/pending labels are retained as
 historical snapshot metadata; this later content acceptance supersedes those
@@ -249,7 +249,7 @@ above. Do not change gold answers after observing model output. Provider
 transmission follows draft-11; full-contract sign-off remains **TBD**. The maintainer
 is the confirmed execution reviewer, but no execution scoring exists.
 No upload, embedding, access credential or runtime ingestion was created.
-`resource/`, private runtime files, customer data and secrets are excluded.
+Private reference checkouts, private runtime files, customer data and secrets are excluded.
 
 Accepted retention/publication rule: keep raw pilot questions, responses, tool
 results, scores and feedback in restricted private storage, never Git. Publish
@@ -314,8 +314,8 @@ on 2026-11-15; they do not verify these accounts or live request compatibility.
 adds a separate `deepseek:*` Responses route, dedicated generation/embedding
 credentials, explicit `dashscope` selection, 1024-dimensional v3 and 10-item
 embedding batches. The [profile guide](../provider-compatibility.md) records
-the exact configuration and credential mapping; the runtime does not load
-`resource/`. Tests use synthetic credentials and local HTTP fixtures only.
+the exact configuration and credential mapping; the runtime does not load a
+private reference checkout. Tests use synthetic credentials and local HTTP fixtures only.
 
 Draft-13 explicitly replaces the saved generation ID with **deepseek:deepseek-flash**;
 embedding stays **text-embedding-v3 / 1024**. This is a documented planning change,

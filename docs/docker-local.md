@@ -154,7 +154,8 @@ fault/SMTP tests. No real-email, live-model, pilot or remote-CI claim is implied
   Loki/Tempo data, 7 healthy scrape targets, Grafana and local inbox).
 - `AGENT_KERNEL_TEST_DOCKER_WEB=1 npm run test:e2e`: **3 passed**, targeting Docker
   without a host Next server. Desktop 1440px and mobile 390px screenshots checked;
-  the real API status is reachable. Existing preview sections remain previews.
+  the real API status is reachable. Use `/` only; the former `/preview` fixture UI
+  has been removed.
 - `make docker-down` followed by `make docker-up`: original successful Run,
   indexed document retrieval, Loki records and Tempo trace all remain queryable.
   Redis AOF is enabled. This is clean-restart evidence, not crash-loss/HA proof.

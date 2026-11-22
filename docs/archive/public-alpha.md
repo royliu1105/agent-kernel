@@ -2,8 +2,8 @@
 
 Historical Day 39-51 guide. Public Alpha and Beta are no longer the current
 development stage: v1.0.0 is published. Use the
-[capability hardening plan](capability-hardening-plan.md) for current work and
-the [release checklist](v1-release-checklist.md) for publication evidence.
+[capability hardening plan](../capability-hardening-plan.md) for current work and
+the [release checklist](../v1-release-checklist.md) for publication evidence.
 Status observations below belong to the Alpha checkpoint.
 
 Agent Kernel completed the Day 39-51 Public Alpha hardening milestone after the
@@ -22,25 +22,25 @@ Primary goal: make first-run experience and feedback loops reliable
 
 Start here:
 
-- [README](../README.md)
-- [Quickstart](quickstart.md)
-- [Troubleshooting](troubleshooting.md)
-- [Public Alpha Release Notes](releases/public-alpha.md)
+- [README](../../README.md)
+- [Quickstart](../quickstart.md)
+- [Troubleshooting](../troubleshooting.md)
+- [Public Alpha Release Notes](../releases/public-alpha.md)
 - [Public Alpha Summary](public-alpha-summary.md)
-- [v0.1 Snapshot](v0.1.md)
-- [Post-v0.1 Completion Plan](post-v0.1-plan.md)
+- [v0.1 Snapshot](../v0.1.md)
+- [Post-v0.1 Completion Plan](../post-v0.1-plan.md)
 
 ## What Early Users Should Try
 
 Recommended first-run order:
 
 1. Install dependencies with `uv sync` and `npm install`.
-2. Start the Docker PostgreSQL stack using [Quickstart](quickstart.md).
+2. Start the Docker PostgreSQL stack using [Quickstart](../quickstart.md).
 3. Create a mock agent run; the Docker Worker processes the queue continuously.
 4. Run the RAG workflow.
 5. Run the memory workflow.
 6. Run the deterministic eval.
-7. Run the [Public Alpha Walkthrough](../examples/public-alpha-walkthrough.md)
+7. Run the [Public Alpha Walkthrough](../../examples/public-alpha-walkthrough.md)
    for a guided end-to-end examples path.
 8. Open the Web Workbench.
 9. Try the full Docker Compose stack if Docker Desktop is available.

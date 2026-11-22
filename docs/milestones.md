@@ -4,39 +4,22 @@
 > [PostgreSQL-only storage](postgresql-only.md). SQLite mentions below record
 > earlier plans or verification, not current support or new acceptance evidence.
 
-## Active Follow-Up: Observability Completion
+## Current status
 
-[O1-O5](observability-completion-plan.md) are explicitly authorized; the ledger
-records per-capability evidence. Central logs, traces and SMTP delivery have independent
-verification gates. This is not a new day-number schedule.
+**This file is a historical day-by-day map, not current acceptance.** For
+current status and evidence use:
 
-## Next Stage: Real-Scenario Acceptance and Controlled Pilot
+- [Project overview](project-overview.md)
+- [Real-scenario pilot plan](real-scenario-pilot-plan.md)
+- [docs/README.md](README.md) (current vs archive doc map)
 
-Status: technical preparation and bounded offline verification exist; full
-pilot acceptance remains open. The
-[pilot plan](real-scenario-pilot-plan.md) owns PV1-PV6 task status, priorities,
-evidence and go/no-go criteria. Foundation feature expansion is frozen.
-Do not restart PV1 confirmations or the daily sequence. The
-[project overview](project-overview.md) and [local paid walkthrough](local-paid-experience.md)
-distinguish the real RAG sample and blocked GitHub continuation from the formal
-PV3 cohort and independent-user acceptance.
-
-## Completed Capability Hardening
-
-Status: R1-R10 remediation passed scoped acceptance for implementation `d65e833`.
-The earlier blanket acceptance based on `6c9fa92` was withdrawn after audit.
-Subsequent N1-N5 bounded-execution work passed local and exact-commit remote
-verification for `cb25484`. See the canonical plan for evidence and explicit limits.
-These changes are unreleased; v1.0.0 remains the published release.
-
-The [Post-v1.0 Capability Hardening Plan](capability-hardening-plan.md) owns the
-P0-P5 scope, R1-R10 remediation, N1-N5 follow-up and acceptance evidence.
-Keep that history; track new pilot work in PV1-PV6, not duplicated checklists here.
+Completed hardening evidence remains in
+[capability-hardening-plan.md](capability-hardening-plan.md). Do not duplicate
+PV/CF/O ledgers here or restart the daily sequence as an active schedule.
 
 The completed foundation tasks below reflect their original delivery scope.
 They do not certify full resource isolation, execution-path leasing/fencing,
-or a production-integrated Redis queue. The current plan records the separate
-implementation and acceptance evidence for those stronger guarantees.
+or a production-integrated Redis queue.
 
 ## Timeline
 
@@ -418,7 +401,7 @@ Closure notes:
   approvals, approval mutations, knowledge base list, and retrieval search.
 - Remaining preview-backed Workbench areas are documented as Beta/v1.0 follow-up
   work rather than Public Alpha blockers.
-- See [Public Alpha Summary](public-alpha-summary.md).
+- See [Public Alpha Summary](archive/public-alpha-summary.md).
 
 ## Beta: Day 52-75
 
@@ -498,7 +481,7 @@ Acceptance:
 
 Closure notes:
 
-- See [Beta Summary](beta-summary.md).
+- See [Beta Summary](archive/beta-summary.md).
 - Redis is complete as a queue adapter foundation and coordination port. The
   default worker loop remains database-first and Redis-first scheduling is a
   v1.0 RC hardening follow-up.

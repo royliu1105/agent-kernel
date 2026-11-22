@@ -132,11 +132,11 @@ Exit criteria:
 - Known limitations are clearly listed.
 - At least one external-user feedback path is documented.
 
-Closure summary: [Public Alpha Summary](public-alpha-summary.md).
+Closure summary: [Public Alpha Summary](archive/public-alpha-summary.md).
 
 ## Stage 2: Beta Production Hardening
 
-Status: historical scope complete; see [Beta Summary](beta-summary.md) for
+Status: historical scope complete; see [Beta Summary](archive/beta-summary.md) for
 verification and limitations. This is not acceptance of later hardening work.
 
 Suggested days:

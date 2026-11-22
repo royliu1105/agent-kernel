@@ -140,13 +140,19 @@ class KnowledgeBaseSearchTool:
         }
 
 
-def create_rag_tool_registry(
+def create_runtime_tool_registry(
     *,
     session_factory: sessionmaker[Session],
     metrics_recorder: MetricsRecorder | None = None,
     retriever: Retriever | None = None,
 ) -> ToolRegistry:
-    """Return default tools plus RAG-backed tools."""
+    """Build the production tool registry for API/Worker Run execution.
+
+    Starts from the echo-only built-ins, then adds RAG-backed tools such as
+    ``kb_search``. Callers that load MCP/OpenAPI bindings register onto this
+    same registry. Prefer this factory over ``create_default_tool_registry``
+    outside focused unit tests.
+    """
 
     registry = create_default_tool_registry()
     registry.register(
@@ -155,3 +161,18 @@ def create_rag_tool_registry(
         )
     )
     return registry
+
+
+def create_rag_tool_registry(
+    *,
+    session_factory: sessionmaker[Session],
+    metrics_recorder: MetricsRecorder | None = None,
+    retriever: Retriever | None = None,
+) -> ToolRegistry:
+    """Deprecated alias for :func:`create_runtime_tool_registry`."""
+
+    return create_runtime_tool_registry(
+        session_factory=session_factory,
+        metrics_recorder=metrics_recorder,
+        retriever=retriever,
+    )

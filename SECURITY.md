@@ -26,6 +26,35 @@ Include:
 
 Do not include real secrets or customer data in the report.
 
+## Isolation model and non-goals
+
+Agent Kernel scopes agents, runs, approvals, and related objects with
+**Workspace** membership and RBAC. That is the isolation model for self-hosted
+deployments.
+
+It is **not**:
+
+- A finished public multi-tenant SaaS product.
+- Certified hard tenant isolation at the database or network layer.
+- End-user browser login, OIDC, or SSO.
+- A substitute for your own perimeter, secret store, and threat model.
+
+Do not deploy Agent Kernel as a public multi-tenant SaaS without additional
+tenant isolation, network controls, and managed secret storage. See
+[Auth and RBAC](docs/auth-rbac.md) for what is implemented vs deferred.
+
+## Localhost default (auth disabled)
+
+`make docker-up` is a **trusted localhost** profile:
+
+- Application API authentication is off by default.
+- Ports bind to loopback only; still treat the machine as trusted.
+- Mock models and Mailpit avoid paid calls and real email by default.
+
+Do not publish this profile to the internet. Enable API-key auth and tighten
+network exposure before any shared or production-like deployment. Operator
+detail: [Docker local](docs/docker-local.md), [configuration](docs/configuration.md).
+
 ## Current Security Posture
 
 Agent Kernel currently includes:
@@ -52,11 +81,9 @@ Agent Kernel does not yet include:
 - Secrets manager integration.
 - Complete object-level scoping for every secondary resource.
 
-Do not deploy Agent Kernel as a public multi-tenant SaaS without additional
-tenant isolation, network controls, and managed secret storage.
-
 The v1.0 release candidate security checklist is documented in
-[docs/security-hardening.md](docs/security-hardening.md).
+[docs/security-hardening.md](docs/security-hardening.md). Memory injection
+limits: [docs/specs/memory-context-safety.md](docs/specs/memory-context-safety.md).
 
 ## Secret Handling
 
@@ -68,8 +95,11 @@ Never commit:
 - Auth signing keys.
 - Encryption keys.
 - Production logs containing sensitive payloads.
+- Grafana or other generated local passwords under `.agent-kernel/`.
 
-Use environment variables or deployment secret stores.
+Use environment variables or deployment secret stores. Prefer
+`.env.example` as the public shape; keep real values in ignored private runtime
+files.
 
 ## Tool Safety
 
@@ -84,6 +114,8 @@ New tools must define:
 
 Network, filesystem write, and external write tools should require explicit
 policy review and human approval unless they are intentionally constrained.
+Production Runs go through `RunExecutionService` and the shared
+`ToolPolicyEvaluator`; see [tool calling](docs/specs/tool-calling.md).
 
 ## Dependency Security
 

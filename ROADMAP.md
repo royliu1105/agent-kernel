@@ -1,43 +1,21 @@
 # Agent Kernel Roadmap
 
-## Current Follow-Up
+## Current status
 
-The explicitly authorized [observability completion](docs/observability-completion-plan.md)
-is tracked in O1-O5. Logs, trace backend and SMTP delivery have
-separate implementation/local/external gates; real email setup is not available.
+**This file is historical release targeting.** For current product status,
+capability evidence, and limits, use:
 
-Use the [Real-Scenario Acceptance and Controlled Pilot Plan](docs/real-scenario-pilot-plan.md)
-for subsequent pilot work and status. PV1 technical planning is finalized;
-PV2 bounded offline checks passed with CF1 disposition still open. The formal
-PV3 cohort and PV4-PV6 have not started. The separately authorized
-[local paid walkthrough](docs/local-paid-experience.md) verified one RAG answer
-and an approval Run that failed closed at response validation, not full pilot
-acceptance. See the [project overview](docs/project-overview.md).
-Other foundation feature expansion is frozen;
-prioritize scoped safety/effectiveness evidence,
-operational drills and actual user feedback, not new infrastructure.
+- [Project overview](docs/project-overview.md)
+- [Real-scenario pilot plan](docs/real-scenario-pilot-plan.md) (PV ledger)
+- [Reference follow-up plan](docs/reference-follow-up-plan.md) (CF1–CF8;
+  CF3–CF8 deferred/conditional—not current delivery)
+- [Observability completion](docs/observability-completion-plan.md) (O1–O5)
+- [Capability hardening plan](docs/capability-hardening-plan.md) (completed
+  R1–R10 / N1–N5 evidence; unreleased relative to `v1.0.0`)
+- Doc map: [docs/README.md](docs/README.md)
 
-The [reference comparison](docs/reference-project-comparison.md) and
-[reference follow-up plan](docs/reference-follow-up-plan.md) record later
-code/test findings and proposed completion work. CF1/CF2 feed pilot entry;
-CF3-CF8 remain deferred/conditional. The explicitly authorized CF1 minimal repair
-now has implementation, code review, regression and candidate CI evidence; final
-acceptance and deployment remain separately tracked in its
-[repair record](docs/reviews/2026-11-14-cf1-minimal-repair.md). CF2 has a verified
-[isolated API/CLI rehearsal](docs/reviews/2026-11-14-cf2-workflow-inventory.md#docker-rehearsal-evidence)
-with offline provider fixtures and private request/config evidence. Subsequent
-frozen-profile and authenticated Web checks passed their bounded offline scope;
-CF1 residual-risk disposition and full pilot acceptance remain open. Local
-walkthrough deployment is not a shared-user admission decision.
-No new calendar phase or broader foundation expansion is introduced here.
-
-The [Post-v1.0 Capability Hardening Plan](docs/capability-hardening-plan.md)
-retains implementation evidence. R1-R10 remediation passed scoped acceptance for
-`d65e833` after the earlier blanket acceptance was withdrawn. Subsequent N1-N5
-bounded-execution work passed local and exact-commit remote verification for
-`cb25484`. Evidence and explicit limits live in that completed workstream record.
-No new release is implied. The earlier release targets below are historical scope, not
-evidence that every production guarantee is already implemented.
+Foundation feature expansion remains frozen outside those ledgers. No new
+calendar phase is introduced here.
 
 ## Historical Release Targets
 
@@ -92,7 +70,7 @@ Completed release hardening:
 
 ## Public Alpha
 
-Status: historical scope complete; see [Public Alpha Summary](docs/public-alpha-summary.md).
+Status: historical scope complete; see [Public Alpha Summary](docs/archive/public-alpha-summary.md).
 
 Goal:
 
@@ -116,7 +94,7 @@ Original stage scope (historical):
 
 ## Beta
 
-Status: historical scope complete; see [Beta Summary](docs/beta-summary.md).
+Status: historical scope complete; see [Beta Summary](docs/archive/beta-summary.md).
 
 Goal:
 

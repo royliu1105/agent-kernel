@@ -175,7 +175,7 @@ Use this prompt to begin implementation:
   - `uv run agent-kernel run queue <run-id>`
   - `uv run agent-kernel run cancel <run-id>`
 - Added deterministic E2E integration test for API-created runs executed by worker.
-- Added [Quickstart](../quickstart.md) with the current real local runtime path.
+- Added [Quickstart](../../quickstart.md) with the current real local runtime path.
 - Updated provider spec, run lifecycle spec, docs index, README, and Phase 1 milestone progress.
 
 Verification passed:

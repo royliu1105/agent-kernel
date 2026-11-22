@@ -7,7 +7,7 @@
 
 Historical phase snapshot: capabilities, limitations and next steps below refer
 to this phase's completion, not current `master`. Current status and acceptance
-live in the [capability hardening plan](capability-hardening-plan.md).
+live in the [capability hardening plan](../capability-hardening-plan.md).
 
 ## Status
 
@@ -96,7 +96,7 @@ create memory -> list/inspect/delete -> explicit scoped retrieval -> model conte
 - Deterministic memory prompt rendering.
 - Explicit runtime memory config parsing.
 - Historical Agent model context injection through a system message, superseded
-  by the unreleased [CF1 untrusted-context contract](specs/memory-context-safety.md).
+  by the unreleased [CF1 untrusted-context contract](../specs/memory-context-safety.md).
 - `memory_retrieved` run event visibility.
 - Model run output metadata showing memory item IDs used.
 

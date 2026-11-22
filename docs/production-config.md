@@ -331,7 +331,7 @@ Durable retry and restart visibility:
 - The completed worker leasing, recovery, retry visibility, queue adapter, and
   operator command scope is summarized in
   [Execution Ownership and Recovery](execution-ownership.md); the
-  [Durable Execution Summary](durable-execution-summary.md) is historical scope.
+  [Durable Execution Summary](archive/durable-execution-summary.md) is historical scope.
 - Eligible in-process provider/read-only tool retries use capped exponential
   backoff with full jitter (base 0.25s, cap 30s), honor safe `Retry-After`, and
   retain lease heartbeats/cancellation while waiting. Oversized hints fail closed.

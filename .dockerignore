@@ -20,4 +20,3 @@ test-results/
 .env.*
 **/.env
 **/.env.*
-resource/

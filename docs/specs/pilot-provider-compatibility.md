@@ -31,7 +31,7 @@ readiness gates. No release, credential disclosure or feature expansion is appro
 - Readiness validates configuration without calling models. Merely supplying a
   key does not enable paid indexing or change the default model. The local Docker
   profile continues clearing paid-provider keys and selecting mock embeddings.
-- The maintained runtime never reads `resource/`. Later authorized activation
+- The maintained runtime never reads a private reference checkout. Later authorized activation
   requires privately mapping reference credentials to the dedicated variables.
   Neither model nor token bounds constitute a hard invoice cap.
 
@@ -103,7 +103,7 @@ The 35 skips are explicit Docker-local/monitoring/full-observability/promtool,
 backup drill, Redis/shared-admission and self-hosted deployment gates. No skipped
 gate is reported passed. No Web change/browser test, real provider call, balance
 query, actual credential loading/copy, live quality eval or pilot deployment was
-performed. Existing active data and `resource/` were not modified.
+performed. Existing active data and any private reference checkout were not modified.
 
 Learning demonstrated: sharing a wire format does not make credentials or
 provider-native continuation interchangeable. Tests inspect destination/auth

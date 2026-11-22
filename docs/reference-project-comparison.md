@@ -3,9 +3,16 @@
 Review date: **2026-11-14**. Status: **Read-only comparison recorded; no
 remediation or feature acceptance implied**.
 
+This document is an optional **historical maintainer research note**. It is not
+a product dependency, example pack, or CI input. This repository does **not**
+ship, track, or host a reference project tree. Do not recreate a `resource/`
+directory here or vendor third-party source into the maintained product.
+
 Implementation priorities and status live in the separate
 [reference follow-up plan](reference-follow-up-plan.md). User-facing validation
 still belongs to the [PV1-PV6 pilot plan](real-scenario-pilot-plan.md).
+CF1–CF8 decisions in that follow-up plan stay as recorded; this note does not
+reopen foundation expansion.
 
 ## Scope and Evidence Boundary
 
@@ -13,12 +20,13 @@ still belongs to the [PV1-PV6 pilot plan](real-scenario-pilot-plan.md).
   `d599fc2ab44c054af009aabb7cab298d4988f4eb`, including existing uncommitted
   Docker-only, PostgreSQL-only and observability changes. This is NOT an audit
   of that commit alone, the published v1.0.0 tag, or a clean release candidate.
-- Reference: the user-provided `resource/agent-kernel` TypeScript project.
-  Its upstream provenance/commit and redistribution license were not verified.
-  It is not a maintained dependency or a second runtime to deploy.
-- Reference paths below are relative to `resource/agent-kernel`. They are
-  intentionally code locators rather than required Markdown links: a normal
-  checkout need not contain this local reference material.
+- Reference: a private TypeScript tree the reviewer inspected on 2026-11-14,
+  kept **outside** this repository. Upstream provenance, commit, and
+  redistribution license were not verified. It is not a maintained dependency
+  or a second runtime to deploy.
+- Reference path strings below are relative to that private local tree only.
+  They are intentional plain-text locators—not Markdown links and not files in
+  this git tree. CI must not resolve or require them.
 - Inspection covered execution entry points, providers, tools, storage,
   approvals, memory/RAG, prompts, UI, evals, observability, deployment and tests.
   This was not an exhaustive security audit, load test or live-model benchmark.
@@ -89,7 +97,11 @@ TypeScript product surface; borrow behavior and tests, not whole directories.
   and [transport tests](../tests/unit/test_external_http_transport.py): citation
   lineage, replaceable storage and DNS/connection boundary checks.
 
-### Reference Source and Test Anchors
+### Reference Source and Test Anchors (private local tree only)
+
+The following paths are **not in this repository**. They name files inside the
+reviewer's private reference checkout from 2026-11-14. Skip this subsection if
+you have no local reference; the Maintained anchors above are sufficient.
 
 - `src/server/routes/console.ts`, `src/server/routes/chat.ts`,
   `src/server/run-executor.ts` and `src/__tests__/run-executor.test.ts`:
@@ -109,8 +121,9 @@ TypeScript product surface; borrow behavior and tests, not whole directories.
 ## Findings and Adoption Restrictions
 
 These findings are not repair acceptance. Reference-only defects do not imply
-the maintained project has those same defects, and do not authorize editing
-`resource/`. Severity describes exposure if the affected path is used.
+the maintained project has those same defects, and do not authorize editing or
+vendoring any private reference tree into this repository. Severity describes
+exposure if the affected reference path is used.
 
 | ID | Finding and evidence | Confidence and consequence | Follow-up |
 | --- | --- | --- | --- |

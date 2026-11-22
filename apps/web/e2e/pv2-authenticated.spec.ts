@@ -92,6 +92,7 @@ test("real authenticated Web first use and independent execution evidence", asyn
   await expect(page.getByTestId("retrieval-results")).toContainText(document.id);
 
   const createWaiting = async (name: string) => {
+    await page.getByText("Advanced options", { exact: true }).click();
     await page.getByLabel("System prompt", { exact: true }).fill(readFileSync(
       path.resolve("../../docs/pilots/prompts/pv1-runbook-assistant-v1.txt"), "utf8",
     ));

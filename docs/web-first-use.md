@@ -7,7 +7,8 @@ These instructions do not authorize starting or changing a deployment.
 
 ## Access Boundary
 
-The maintained entrypoint is `/`; sample screens are explicitly at `/preview`.
+The maintained entrypoint is `/` (Agent Workbench). The former `/preview`
+fixture UI was removed; do not use sample/fixture screens as operator evidence.
 Use the workspace API key issued by your operator, never a model-provider key.
 The key exists only in the current page's memory. Reloading requires sign-in
 again; no local storage, session storage or authentication cookie is used.
@@ -76,7 +77,7 @@ synchronous API operations, not a new durable-resume queue.
 The remote-only `python scripts/cf2_rehearsal.py --web` harness uses a fresh owned
 Compose project, real Web/API/Worker/PostgreSQL/Redis and real tool execution
 against a counted synthetic MCP fixture. No Playwright business-route mocking
-stands in for this journey. Separate preview smoke tests are not its evidence.
+stands in for this journey. Workbench smoke tests exercise the live `/` entry.
 The frozen PV1 prompt is checked at the initial and resumed provider boundaries.
 The Web fixture uses `openai:cf2-offline`, mock embeddings, a synthetic document
 and an eight-model-call ceiling to exercise retrieval, approval and final output.

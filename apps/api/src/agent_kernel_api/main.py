@@ -57,7 +57,7 @@ from kernel_rag import (
     Retriever,
     create_embedding_provider,
     create_object_store,
-    create_rag_tool_registry,
+    create_runtime_tool_registry,
 )
 from kernel_rag import (
     KnowledgeBaseNotFoundError as RetrievalKnowledgeBaseNotFoundError,
@@ -197,7 +197,7 @@ def create_app(
     retrieval_service = retriever or Retriever(
         embedding_provider=create_embedding_provider(), metrics_recorder=process_metrics
     )
-    registry = create_rag_tool_registry(
+    registry = create_runtime_tool_registry(
         session_factory=factory,
         metrics_recorder=process_metrics,
         retriever=retrieval_service,

@@ -1,14 +1,43 @@
 import { expect, test } from "@playwright/test";
 
-test("operator can navigate core Workbench views", async ({ page }) => {
+const agentId = "11111111-1111-4111-8111-111111111111";
+const kbId = "33333333-3333-4333-8333-333333333333";
+const runId = "22222222-2222-4222-8222-222222222222";
+
+test("live Workbench sign-in and core flow sections are available", async ({ page }) => {
+  await page.route("**/api/agent-kernel/health", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: { state: "online", baseUrl: "http://api:8000" },
+    });
+  });
+  await page.route("**/api/agent-kernel/auth/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        authenticated: false,
+        principal_id: null,
+        display_name: null,
+        workspace_id: null,
+        role: null,
+        permissions: [],
+      },
+    });
+  });
+  await page.route("**/api/agent-kernel/agents", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: [{ id: agentId, name: "Ops Agent", status: "active", created_at: "2026-08-04T00:00:00Z" }],
+    });
+  });
   await page.route("**/api/agent-kernel/knowledge-bases", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       json: [
         {
-          id: "33333333-3333-4333-8333-333333333333",
+          id: kbId,
           name: "Live Operations KB",
-          description: "Knowledge base returned by live API",
+          description: null,
           status: "active",
           metadata: {},
           created_at: "2026-08-04T00:00:00Z",
@@ -17,132 +46,94 @@ test("operator can navigate core Workbench views", async ({ page }) => {
       ],
     });
   });
-  await page.route(
-    "**/api/agent-kernel/knowledge-bases/33333333-3333-4333-8333-333333333333/retrieve",
-    async (route) => {
-      await route.fulfill({
-        contentType: "application/json",
-        json: {
-          knowledge_base_id: "33333333-3333-4333-8333-333333333333",
-          query: "rollback",
-          model: "mock-embedding",
-          results: [
-            {
-              content: "Use the rollback playbook when deployment health checks fail.",
-              score: 0.9123,
-              citation: {
-                knowledge_base_id: "33333333-3333-4333-8333-333333333333",
-                document_id: "44444444-4444-4444-8444-444444444444",
-                document_title: "Rollback Playbook",
-                document_source_uri: "memory://rollback-playbook.md",
-                chunk_id: "55555555-5555-4555-8555-555555555555",
-                chunk_index: 0,
-                start_char: 0,
-                end_char: 62,
-              },
-              metadata: {},
-            },
-          ],
-        },
-      });
-    },
-  );
-  await page.route("**/api/agent-kernel/evals/runs", async (route) => {
+  await page.route(`**/api/agent-kernel/knowledge-bases/${kbId}/documents`, async (route) => {
+    await route.fulfill({ contentType: "application/json", json: [] });
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
+  await expect(page.getByLabel("Runtime status")).toContainText(/Checking API|API reachable|API unreachable/);
+  await expect(page.getByRole("heading", { name: "Workspace sign in" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Continue anonymously" }).click();
+  await expect(page.getByText("Anonymous (authentication disabled)")).toBeVisible();
+  await expect(page.getByLabel("Workbench flow")).toContainText("Agents");
+  await expect(page.getByLabel("Workbench flow")).toContainText("Results");
+  await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Knowledge" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Agents" }).getByRole("combobox")).toContainText("Ops Agent");
+  await expect(page.getByRole("region", { name: "Knowledge" }).getByRole("combobox").first())
+    .toContainText("Live Operations KB");
+  await expect(page.getByText("Advanced options")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Results" })).toHaveCount(0);
+});
+
+test("live Workbench surfaces run results after lookup", async ({ page }) => {
+  await page.route("**/api/agent-kernel/health", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: { state: "online", baseUrl: "http://api:8000" },
+    });
+  });
+  await page.route("**/api/agent-kernel/auth/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        authenticated: false,
+        principal_id: null,
+        display_name: null,
+        workspace_id: null,
+        role: null,
+        permissions: [],
+      },
+    });
+  });
+  await page.route("**/api/agent-kernel/agents", async (route) => {
+    await route.fulfill({ contentType: "application/json", json: [] });
+  });
+  await page.route("**/api/agent-kernel/knowledge-bases", async (route) => {
+    await route.fulfill({ contentType: "application/json", json: [] });
+  });
+  await page.route(`**/api/agent-kernel/runs/${runId}`, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        id: runId,
+        agent_id: agentId,
+        status: "waiting_approval",
+        input: { task: "lookup smoke" },
+        output: null,
+        error_type: null,
+        error_message: null,
+        created_at: "2026-08-04T00:00:00Z",
+        updated_at: "2026-08-04T00:01:00Z",
+      },
+    });
+  });
+  await page.route(`**/api/agent-kernel/runs/${runId}/events`, async (route) => {
     await route.fulfill({
       contentType: "application/json",
       json: [
         {
-          id: "66666666-6666-4666-8666-666666666666",
-          name: "rag-smoke-live",
-          suite_type: "rag",
-          status: "succeeded",
-          passed: true,
-          case_count: 1,
-          passed_count: 1,
-          failed_count: 0,
-          report: {
-            name: "rag-smoke-live",
-            cases: [
-              {
-                name: "Return cited rollback guidance",
-                passed: true,
-                error_type: null,
-                error_message: null,
-                assertions: [
-                  {
-                    name: "citation_required",
-                    passed: true,
-                    message: "Citation returned from live eval run",
-                  },
-                ],
-              },
-            ],
-          },
-          error_type: null,
-          error_message: null,
-          trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          metadata: {},
-          created_at: "2026-08-06T00:00:00Z",
-          started_at: null,
-          completed_at: "2026-08-06T00:00:01Z",
+          id: "evt-1",
+          run_id: runId,
+          sequence: 1,
+          type: "run_waiting_approval",
+          payload: { reason: "tool requires review" },
+          created_at: "2026-08-04T00:01:00Z",
         },
       ],
     });
   });
-
-  await page.goto("/preview");
-
-  await expect(page.getByRole("heading", { name: "Agent Workbench" })).toBeVisible();
-  await expect(page.getByLabel("Runtime status")).toContainText(
-    /Checking API|API reachable|API unreachable/,
-  );
-  await expect(page.getByLabel("Workbench data scope")).toContainText("Public Alpha");
-  await expect(page.getByText("Live where it matters for first-run verification.")).toBeVisible();
-
-  await page.getByRole("button", { name: "Agents" }).click();
-  await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Research Agent" })).toBeVisible();
-  await expect(page.getByText("memory_search")).toBeVisible();
-
-  await page.getByRole("button", { name: "Knowledge" }).click();
-  await expect(page.getByRole("heading", { name: "Knowledge", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Knowledge base list" })).toBeVisible();
-  await expect(page.getByText("Live Operations KB")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Retrieval search" })).toBeVisible();
-  await page.getByRole("button", { name: "Use for search" }).click();
-  await page.getByLabel("Search query").fill("rollback");
-  await page.getByRole("button", { name: "Search live" }).click();
-  await expect(page.getByText("Rollback Playbook", { exact: true })).toBeVisible();
-  await expect(page.getByText("memory://rollback-playbook.md")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Document ingestion" })).toBeVisible();
-  await expect(page.getByText("rollback-playbook.md", { exact: true })).toBeVisible();
-
-  await page.getByRole("button", { name: "Release Notes" }).click();
-  await expect(page.getByText("2026-07-release-notes.md")).toBeVisible();
-  await expect(page.getByText("migration-checklist.md")).toBeVisible();
-
-  await page.getByRole("button", { name: "Evals" }).click();
-  await expect(page.getByRole("heading", { name: "Evals" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Behavior cases" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /rag-smoke-live/ })).toBeVisible();
-  await expect(page.getByText("Return cited rollback guidance")).toBeVisible();
-  await expect(page.getByText("Citation returned from live eval run")).toBeVisible();
-
-  await page.getByRole("button", { name: "Settings" }).click();
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-  await expect(page.getByText("API endpoint")).toBeVisible();
-  await expect(page.getByText("approval required")).toBeVisible();
-});
-
-test("operator can inspect runs and approve tool calls locally", async ({ page }) => {
   await page.route("**/api/agent-kernel/approvals", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       json: [
         {
           id: "live_appr_001",
-          run_id: "11111111-1111-4111-8111-111111111111",
-          tool_call_id: "22222222-2222-4222-8222-222222222222",
+          run_id: runId,
+          tool_call_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
           status: "requested",
           reason: "Live external write requires review",
           requested_by: null,
@@ -155,56 +146,29 @@ test("operator can inspect runs and approve tool calls locally", async ({ page }
       ],
     });
   });
-  await page.route("**/api/agent-kernel/approvals/live_appr_001/approve", async (route) => {
+  await page.route("**/api/agent-kernel/approvals/live_appr_001/tool-call", async (route) => {
     await route.fulfill({
       contentType: "application/json",
       json: {
-        id: "live_appr_001",
-        run_id: "11111111-1111-4111-8111-111111111111",
-        tool_call_id: "22222222-2222-4222-8222-222222222222",
-        status: "approved",
-        reason: "Live external write requires review",
-        requested_by: null,
-        reviewed_by: null,
-        decision_note: "Approved from Workbench",
-        trace_id: "live-trace",
-        requested_at: "2026-08-04T00:00:00Z",
-        resolved_at: "2026-08-04T00:01:00Z",
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        run_id: runId,
+        approval_id: "live_appr_001",
+        tool_name: "external_write",
+        arguments: { path: "/tmp/demo" },
+        risk_level: "high",
+        status: "waiting_approval",
       },
     });
   });
 
-  await page.goto("/preview");
-
-  await page.getByRole("button", { name: "Runs" }).click();
-  await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Run lookup" })).toBeVisible();
-
-  await page.getByRole("button", { name: "Lookup" }).click();
-  await expect(page.getByText("Enter a run ID first.")).toBeVisible();
-
-  await expect(page.getByRole("heading", { name: "run_9b1c" })).toBeVisible();
-  await expect(page.getByText("Approval waiting")).toBeVisible();
-  await expect(page.getByText("Tool call ID")).toBeVisible();
-  await expect(page.getByText("tool_902")).toBeVisible();
-
-  await page.getByRole("button", { name: /Search release notes knowledge base/ }).click();
-  await expect(page.getByRole("heading", { name: "run_7e42" })).toBeVisible();
-  await expect(page.getByText("kb_search completed")).toBeVisible();
-  await expect(page.getByText("tool_812")).toBeVisible();
-
-  await page.getByRole("button", { name: "Approvals" }).click();
-  await expect(page.getByRole("heading", { name: "Approval inbox" })).toBeVisible();
-  await expect(page.getByLabel("Live approvals status")).toContainText(
-    /Loading live approvals|live approvals from API|Live approvals unavailable|Approval list/,
-  );
-  await expect(page.getByText("Live external write requires review")).toBeVisible();
-  await page.getByRole("button", { name: "Approve live" }).click();
-  await expect(page.getByText("approved · 2026-08-04T00:01:00Z")).toBeVisible();
-  await expect(page.getByText(/approval cards below are preview data/)).toBeVisible();
-
-  await page.getByRole("button", { name: /^Approve$/ }).first().click();
-  await expect(page.getByText("approved · just now")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Decision history" })).toBeVisible();
-  await expect(page.getByText("appr_421")).toBeVisible();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Continue anonymously" }).click();
+  await page.getByLabel("Run ID").fill(runId);
+  await page.getByRole("button", { name: "Lookup run" }).click();
+  await expect(page.getByRole("heading", { name: "Results" })).toBeVisible();
+  await expect(page.getByTestId("run-status")).toHaveText("waiting_approval");
+  await expect(page.getByRole("heading", { name: /Approvals/ })).toBeVisible();
+  await expect(page.getByText("external_write")).toBeVisible();
+  await expect(page.getByLabel("Run events")).toContainText("run_waiting_approval");
+  await expect(page.getByTestId("run-output")).toContainText("No output yet.");
 });
