@@ -1,6 +1,6 @@
 .PHONY: setup test lint format typecheck cheap-eval release-eval release-smoke release-load-soak verify verify-web web-lint web-build web-e2e docker-config
 .PHONY: docker-init docker-up docker-build docker-stop docker-down docker-status docker-logs docker-check
-.PHONY: docker-paid-up docker-paid-check
+.PHONY: docker-paid-up docker-paid-check docker-showcase-up docker-showcase-check showcase-happy-path
 .PHONY: test-db-up test-db-down
 .DEFAULT_GOAL := docker-init
 
@@ -25,6 +25,15 @@ docker-paid-up:
 
 docker-paid-check:
 	sh scripts/local-stack.sh paid-config
+
+docker-showcase-up:
+	sh scripts/local-stack.sh showcase-up
+
+docker-showcase-check:
+	sh scripts/local-stack.sh showcase-config
+
+showcase-happy-path:
+	sh scripts/showcase_mock_happy_path.sh
 
 docker-build:
 	sh scripts/local-stack.sh build

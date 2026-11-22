@@ -8,6 +8,10 @@ mock models and Docker PostgreSQL.
 
 ## Start Here
 
+For the approval → resume engineering showcase (mock MCP, no paid calls):
+
+- [Mock happy-path](../docs/showcase/mock-happy-path.md) (`make docker-showcase-up` then `make showcase-happy-path`)
+
 Use the full walkthrough when trying the project as an early external user:
 
 - [Public Alpha Walkthrough](public-alpha-walkthrough.md)

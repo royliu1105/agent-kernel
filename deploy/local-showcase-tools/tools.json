@@ -1,0 +1,27 @@
+{
+  "mcp": [
+    {
+      "name": "showcase_inventory",
+      "stdio": {
+        "command": "/app/.venv/bin/python",
+        "args": ["/etc/agent-kernel/showcase-tools/showcase_mcp_server.py"]
+      },
+      "access": {"allow_unscoped": true},
+      "bindings": [
+        {
+          "remote_name": "inventory_lookup",
+          "contract": {
+            "name": "showcase_inventory_lookup",
+            "description": "Mock inventory lookup for the local approval showcase. Requires human approval before any call.",
+            "risk_level": "read_only",
+            "read_only": true,
+            "idempotent": true,
+            "retry_safe": false,
+            "policy_decision": "require_approval",
+            "timeout_ms": 10000
+          }
+        }
+      ]
+    }
+  ]
+}

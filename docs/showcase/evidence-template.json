@@ -1,0 +1,40 @@
+{
+  "version": "showcase-mock-happy-path-v1",
+  "status": "template_not_executed",
+  "profile": "local-showcase-mock",
+  "paid_providers": false,
+  "real_github": false,
+  "steps": {
+    "docker_ready": false,
+    "kb_indexed": false,
+    "memory_written": false,
+    "run_waiting_approval": false,
+    "approval_recorded": false,
+    "tool_dispatches_before_resume": null,
+    "run_succeeded_after_resume": false,
+    "eval_report": false
+  },
+  "ids": {
+    "agent_id": null,
+    "knowledge_base_id": null,
+    "document_id": null,
+    "memory_id": null,
+    "run_id": null,
+    "approval_id": null,
+    "tool_call_id": null
+  },
+  "hashes": {
+    "tools_config_sha256": null,
+    "playbook_sha256": null,
+    "evidence_sha256": null
+  },
+  "observations": {
+    "run_status_final": null,
+    "tool_name": "showcase_inventory_lookup",
+    "tool_result_calls": null,
+    "event_types": [],
+    "memory_did_not_bypass_approval": null,
+    "cf1_disposition_claimed": false
+  },
+  "notes": "Fill from scripts/showcase_mock_happy_path.sh. Keep secrets out. Do not treat this as PV1-PV6 pilot acceptance."
+}

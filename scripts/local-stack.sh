@@ -7,8 +7,8 @@ STATE="$ROOT/.agent-kernel/docker-local"
 ACTION=${1:-up}
 if [ "$#" -gt 0 ]; then shift; fi
 case "$ACTION" in
-  init|up|paid-up|paid-config|build|stop|down|ps|logs|config|exec) ;;
-  *) printf 'Usage: sh scripts/local-stack.sh {init|up|paid-up|paid-config|build|stop|down|ps|logs|config|exec}\n' >&2; exit 2 ;;
+  init|up|paid-up|paid-config|showcase-up|showcase-config|build|stop|down|ps|logs|config|exec) ;;
+  *) printf 'Usage: sh scripts/local-stack.sh {init|up|paid-up|paid-config|showcase-up|showcase-config|build|stop|down|ps|logs|config|exec}\n' >&2; exit 2 ;;
 esac
 if [ "$ACTION" = down ] && [ "$#" -ne 0 ]; then
   printf 'down preserves data; volume deletion is deliberately not supported here.\n' >&2
@@ -42,6 +42,7 @@ chmod 600 "$STATE/config.env" "$STATE/grafana-password"
 chmod 644 "$STATE/monitoring-token" "$STATE/smtp-password"
 
 PAID=0
+SHOWCASE=0
 case "$ACTION" in
   paid-up|paid-config)
     if [ ! -f "$STATE/paid.env" ]; then
@@ -51,11 +52,17 @@ case "$ACTION" in
     chmod 600 "$STATE/paid.env"
     PAID=1
     ;;
+  showcase-up|showcase-config)
+    SHOWCASE=1
+    ;;
 esac
 
 compose() {
   if [ "$PAID" = 1 ]; then
     set -- --env-file "$STATE/paid.env" -f "$ROOT/deploy/local-paid.compose.yml" "$@"
+  fi
+  if [ "$SHOWCASE" = 1 ]; then
+    set -- -f "$ROOT/deploy/local-showcase.compose.yml" "$@"
   fi
   # Ignore direnv/root .env and host provider keys. Docker client settings survive.
   env -i PATH="$PATH" HOME="$HOME" \
@@ -78,13 +85,16 @@ case "$ACTION" in
     printf 'Private config: %s\nGrafana user: admin; password file: %s\n' \
       "$STATE/config.env" "$STATE/grafana-password"
     ;;
-  up|paid-up)
+  up|paid-up|showcase-up)
     compose config --quiet
     compose up --build --detach --wait --wait-timeout 240 "$@"
     compose ps
     printf 'All runtime services use Docker. See docs/docker-local.md for URLs and commands.\n'
+    if [ "$SHOWCASE" = 1 ]; then
+      printf 'Showcase overlay active (mock MCP approval tool). See docs/showcase/mock-happy-path.md.\n'
+    fi
     ;;
-  config|paid-config) compose config --quiet ;;
+  config|paid-config|showcase-config) compose config --quiet ;;
   logs) compose logs --tail 100 "$@" ;;
   down) compose down ;;
   *) compose "$ACTION" "$@" ;;

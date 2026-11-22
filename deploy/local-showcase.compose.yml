@@ -1,0 +1,15 @@
+# Explicit local mock showcase overlay. Never loaded by ordinary docker-up.
+# Enables a credential-free MCP tool that requires approval before execution.
+# Still mock models / Mailpit — not paid providers and not GitHub.
+x-showcase-environment: &showcase-environment
+  AGENT_KERNEL_EXTERNAL_TOOLS_CONFIG: /etc/agent-kernel/showcase-tools/tools.json
+
+services:
+  api:
+    environment: *showcase-environment
+    volumes:
+      - ./deploy/local-showcase-tools:/etc/agent-kernel/showcase-tools:ro
+  worker:
+    environment: *showcase-environment
+    volumes:
+      - ./deploy/local-showcase-tools:/etc/agent-kernel/showcase-tools:ro
