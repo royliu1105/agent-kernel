@@ -92,8 +92,15 @@ test("real authenticated Web first use and independent execution evidence", asyn
   await expect(page.getByTestId("retrieval-results")).toContainText(document.id);
 
   const createWaiting = async (name: string) => {
-    await page.getByText("Advanced options", { exact: true }).click();
-    await page.getByLabel("System prompt", { exact: true }).fill(readFileSync(
+    const advanced = page.getByTestId("run-advanced-options");
+    await advanced.scrollIntoViewIfNeeded();
+    // Keep the panel open across repeated createWaiting calls; a second summary
+    // click would close it and make System prompt unfillable.
+    if (!(await advanced.evaluate((el) => (el as HTMLDetailsElement).open))) {
+      await advanced.locator("summary").click();
+    }
+    await expect(advanced).toHaveAttribute("open", "");
+    await advanced.getByLabel("System prompt", { exact: true }).fill(readFileSync(
       path.resolve("../../docs/pilots/prompts/pv1-runbook-assistant-v1.txt"), "utf8",
     ));
     await page.getByLabel("Model", { exact: true }).fill("openai:cf2-offline");

@@ -1,13 +1,14 @@
 # PV2 Authenticated Web Acceptance
 
-Date: 2026-11-15. Status: **bounded authenticated Web journey passed on 6466aba;
-CF1 disposition and full PV2 acceptance remain pending**.
+Date: 2026-11-15 (Web evidence); update **2026-11-22** (CF1 disposition linked).
+Status: **bounded authenticated Web journey passed on 6466aba; composite PV2
+gate closed after CF1 disposition**.
 
-This is the evidence checklist for the remaining authenticated Web/first-run
-portion of [PV2](../real-scenario-pilot-plan.md#pv2-rehearse-the-existing-workflow-without-paid-calls),
+This is the evidence checklist for the authenticated Web/first-run portion of
+[PV2](../real-scenario-pilot-plan.md#pv2-rehearse-the-existing-workflow-without-paid-calls),
 not a second pilot ledger. The [PV2 closure record](pv2-closure.md) retains the
-five earlier checked items plus the newly verified first-use item and their historical evidence. Only the bounded offline Web pass is added here; no active-local deployment,
-paid-model proof or full PV2 completion is claimed.
+historical technical evidence and the 2026-11-22 disposition link. No paid-model
+proof or PV5 user admission is claimed here.
 
 ## Bounded Implementation Contract
 
@@ -114,17 +115,14 @@ scope and cannot be relabeled as this Web candidate's acceptance.
 ## Closure Boundary
 
 - The authenticated first-run item is checked using the scoped evidence above.
-- The second unchecked PV2 item also requires CF2 actual workflow/provenance
-  reconciliation and the maintainer's explicit
-  [CF1 residual-risk disposition](../reviews/cf1-risk-disposition.md).
-  CI cannot make that human decision, even when all technical checks pass.
-- Intended-environment CF1 deployment verification remains distinct from a
-  disposable CI deployment. The active Docker environment is not updated or
-  certified by this work. PV3 live/paid behavior and PV5 independent-user evidence
-  remain separate, unstarted gates.
+- The composite CF1/CF2 PV2 item is checked after the maintainer's
+  [CF1 residual-risk disposition](../reviews/cf1-risk-disposition.md)
+  (2026-11-22) plus existing CF2 workflow/provenance evidence.
+- Intended-environment CF1 repair presence was verified on local Docker
+  2026-11-22 (see the disposition record). PV3 live/paid behavior and PV5
+  independent-user evidence remain separate gates.
 
-The Web item is closed for the bounded offline journey. The composite CF1/CF2
-item remains unchecked until the maintainer supplies the CF1 disposition.
-No maintainer acceptance is inferred. The CI browser originally lacked CJK fonts;
+The Web item remains closed for the bounded offline journey. The CI browser
+originally lacked CJK fonts;
 the follow-up corrects npm argument forwarding so Playwright installs its system
 font dependencies. Input bytes and frozen prompt hash were already verified.

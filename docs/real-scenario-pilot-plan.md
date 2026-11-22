@@ -1,17 +1,17 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
-PV5 people/dates. PV2 API/CLI offline and isolated remote deployment checks
-passed; authenticated Web passed on 6466aba; CF1 disposition remains open;
-formal PV3 cohort and PV4-PV6 not started. A separate local paid walkthrough
-has one successful RAG sample and a GitHub approval Run blocked by response
-validation, not full pilot acceptance (2026-11-15)**.
+PV5 people/dates. PV2 bounded rehearsal gate closed 2026-11-22 (API/CLI/Web
+evidence plus CF1 disposition); formal PV3 cohort and PV4-PV6 not started. A
+separate local paid walkthrough has prior RAG/GitHub observations and is not
+full pilot acceptance (updated 2026-11-22)**.
 
 Current documentation reconciliation authorizes no business-code changes,
 paid calls or Docker updates. Earlier authorized local deployment and actual
 calls are recorded in [local paid experience](local-paid-experience.md), a
 trusted single-user exception, not the authenticated frozen pilot cohort.
-CF1 disposition and human-pilot requirements are not waived by this exception.
+CF1 bounded-path disposition is recorded; human-pilot (PV5) requirements are
+not waived by the paid walkthrough exception.
 The earlier PV2 review used disposable remote CI services. The
 [pv1-config-v1 profile](pilots/pv1-2026-11-15-runbook-assistant.md#finalized-technical-profile)
 and first USD 2 worksheet are now fixed on paper. Historical preparation
@@ -183,8 +183,8 @@ must state applicability and cannot be passed by omission.
 | ID | Priority | Dependency | Delivery | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
-| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Six of seven checklist items verified; CF1 maintainer disposition remains open | [Current evidence and remaining gates](pilots/pv2-closure.md) |
-| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Formal cohort not started; separate local observations are not acceptance | [Local walkthrough](local-paid-experience.md): one RAG success; GitHub approval continuation blocked; no full case-set or billing pass |
+| PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Seven of seven checklist items verified; CF1 disposition recorded 2026-11-22 | [Current evidence](pilots/pv2-closure.md) |
+| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Formal cohort not started; separate local observations are not acceptance | [Local walkthrough](local-paid-experience.md): RAG success; paid GitHub approve→resume succeeded 2026-11-22; no full 30-case cohort or billing pass |
 | PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
 | PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
 | PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | Not started | None |
@@ -281,11 +281,12 @@ subset may be reported separately but cannot claim the full approval track passe
 Current evidence: [PV2 closure record](pilots/pv2-closure.md) links the verified
 remote database cases and the new isolated container control job. It explicitly
 distinguishes the CF2 mock profile from the frozen PV1 profile and preserves the
-unresolved CF1 disposition gate; full PV2 is not marked complete.
+resolved CF1 disposition (2026-11-22); PV2 bounded rehearsal gate is complete.
 The [Web acceptance matrix](pilots/pv2-web-acceptance.md) tracks the bounded
 implementation verified by the remote Docker/browser job on 6466aba,
 CI 43681752996. The [CF1 residual-risk decision list](reviews/cf1-risk-disposition.md)
-awaits explicit maintainer disposition, not an agent or CI acceptance.
+records maintainer scoped acceptance of R01–R11 on 2026-11-22 for the bounded
+authenticated local path.
 
 Offline integration checkpoint (2026-11-15): shared fixture manifest/admission
 ledger and maintained provider/embedding transport tests are implemented; see
@@ -307,11 +308,11 @@ acceptance. Verify each exact submission; keep incomplete full PV2 gates uncheck
   scoped credentials, private monitoring and real Workbench/API responses.
   See the [authenticated Web evidence](pilots/pv2-web-acceptance.md), including
   independent effects, rejection, logout/revocation and sealed owned cleanup.
-- [ ] Link reviewed CF1 disposition and CF2 actual workflow/provenance evidence
+- [x] Link reviewed CF1 disposition and CF2 actual workflow/provenance evidence
   from the follow-up ledger. Inspect effective initial/resumed provider requests;
   do not treat a registry object or fixture page as runtime version binding.
-  [CF1 risks and decisions](reviews/cf1-risk-disposition.md) remain pending the
-  maintainer; a Web pass alone cannot close this composite item.
+  [CF1 disposition](reviews/cf1-risk-disposition.md) recorded 2026-11-22;
+  CF2 offline/Web evidence remains in the PV2 records.
 - [x] Rehearse approve, reject, repeated decision/resume, new-executor resume,
   concurrent resume and recovery with existing fixtures and disposable data.
 - [x] Verify zero lookup invocation before approval or after rejection, and one

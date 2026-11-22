@@ -328,7 +328,7 @@ function LiveWorkspace({ session, onUnauthorized }: { session: Session; onUnauth
           setRun(created); setRunIdInput(created.id); setEvents([]); setApprovals([]); setResumeApprovalId("");
         })}>
           <label>Model<input value={model} onChange={(event) => setModel(event.target.value)} maxLength={255} /></label>
-          <details className={styles.advanced}>
+          <details className={styles.advanced} data-testid="run-advanced-options">
             <summary>Advanced options</summary>
             <label>System prompt<textarea aria-label="System prompt" value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} rows={3} maxLength={64000} /></label>
           </details>

@@ -1,20 +1,22 @@
 # PV2 Evidence and Remaining Gates
 
-Date: 2026-11-15. Status: **in progress; full PV2 not accepted**.
+Date: 2026-11-15 (technical evidence); update **2026-11-22** (CF1 disposition).
+Status: **PV2 bounded rehearsal gate closed**; not PV3/PV5 acceptance.
 The canonical checklist remains [the pilot plan](../real-scenario-pilot-plan.md).
 This records evidence, not a replacement or a relaxation of its requirements.
 
 The authorized API/CLI offline technical work is verified on cbe8c42, with
-authenticated Web verified on 6466aba. **Six of seven canonical checklist items
-are checked**; the remaining item requires CF1 maintainer residual-risk disposition.
-CF2's bounded offline workflow/provenance has technical evidence. This is not another implementation/preparation loop for the
-completed offline harness, and no PV3 paid calls or PV5 user sessions are claimed.
+authenticated Web verified on 6466aba. **All seven canonical PV2 checklist items
+are checked** as of 2026-11-22 after CF1 maintainer residual-risk disposition.
+CF2's bounded offline workflow/provenance has technical evidence. This closes
+the PV2 rehearsal gate for the bounded path; it is not PV3 paid cohort evidence
+or PV5 user admission.
 
 The bounded Web implementation passed its actual Docker/browser journey and
 evidence sealing in [CI 43681752996](https://github.com/royliu1105/agent-kernel/actions/runs/43681752996);
 see the [acceptance matrix](pv2-web-acceptance.md). The consolidated
-[CF1 decision list](../reviews/cf1-risk-disposition.md) is pending the maintainer's
-explicit disposition. That decision cannot be supplied by a green CI.
+[CF1 decision list](../reviews/cf1-risk-disposition.md) records maintainer
+scoped acceptance of R01–R11 on 2026-11-22.
 
 ## Verified Baseline
 
@@ -99,15 +101,15 @@ Desktop 1440px and mobile 390px screenshots were inspected; see the
 [Web record](pv2-web-acceptance.md). This supplements, rather than relabels, the
 historical API/CLI results. Do not mark all seven PV2 boxes done from CI alone.
 
-The other non-test gate is the maintainer's CF1 residual-risk disposition. The
+The former non-test gate was the maintainer's CF1 residual-risk disposition. The
 [reviewed repair](../reviews/2026-11-14-cf1-minimal-repair.md) and adversarial
-memory fixture establish bounded implementation evidence, not that disposition.
-The [consolidated risk list](../reviews/cf1-risk-disposition.md) separates exact
-risks, consequences, existing mitigations and evidence limits; every decision
-remains pending. The Web CI pass cannot supply maintainer acceptance.
-The accepted retrieval/memory scope was explicitly not a general risk waiver.
-Do not invent a maintainer sign-off or admit real pilot users from these results.
-Two independent participants and dates remain PV5 inputs, not extra PV2 coding.
+memory fixture established bounded implementation evidence; the
+[consolidated risk list](../reviews/cf1-risk-disposition.md) now records
+2026-11-22 scoped acceptance of R01–R11 for the authenticated local path, with
+intended-environment repair presence verified the same day. That closes the
+composite PV2 CF1/CF2 item for the bounded path. It is not a general risk
+waiver, shared-user admission, or PV3 live-injection proof. Two independent
+participants and dates remain PV5 inputs, not extra PV2 coding.
 
 Before paid admission, verify the exact-profile/container observer and budget
 binding on the candidate, including its request and approval case matrix.

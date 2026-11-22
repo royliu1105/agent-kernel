@@ -104,8 +104,8 @@ Current development:
   acceptance are separate evidence.
 - Status and evidence: [project overview](docs/project-overview.md).
 - Pilot ledger: [real-scenario acceptance and controlled pilot](docs/real-scenario-pilot-plan.md)
-  (PV1 technical prep finalized; bounded PV2 offline checks exist; CF1 disposition
-  still open for full PV2; formal PV3 cohort and later gates tracked in that ledger).
+  (PV1 technical prep finalized; PV2 bounded rehearsal gate closed 2026-11-22
+  after CF1 disposition; formal PV3 cohort and later gates tracked in that ledger).
 - Observability ledger: [observability completion](docs/observability-completion-plan.md)
   (O1–O5). External email delivery needs inbox evidence, not only Mailpit.
 - Completed [post-v1.0 capability hardening](docs/capability-hardening-plan.md)

@@ -102,13 +102,14 @@ sh scripts/local-stack.sh exec -T api agent-kernel eval report evals/rag-smoke.j
 
 ## CF1 memory boundary story (Goal 3)
 
-This showcase **demonstrates** the shipped CF1 trust-boundary behavior; it does
-**not** close maintainer risk disposition or PV2 admission.
+This showcase **demonstrates** the shipped CF1 trust-boundary behavior. Maintainer
+R01–R11 disposition for the bounded path is recorded separately; the showcase
+itself is still not PV3 live-injection proof or shared-user admission.
 
 - Contract: [memory-context-safety](../specs/memory-context-safety.md)
 - Repair record: [CF1 minimal repair](../reviews/2026-11-14-cf1-minimal-repair.md)
-- Disposition still pending: [cf1-risk-disposition](../reviews/cf1-risk-disposition.md)
-- Ledger status: [reference-follow-up-plan](../reference-follow-up-plan.md) (CF1 in progress)
+- Disposition: [cf1-risk-disposition](../reviews/cf1-risk-disposition.md) (scoped accept 2026-11-22)
+- Ledger status: [reference-follow-up-plan](../reference-follow-up-plan.md) (CF1 bounded path closed)
 
 Observed in the happy-path:
 

@@ -33,7 +33,7 @@ or prove notification receipt. This authorized exception precedes pilot executio
 The maintainer requested a validation/pilot plan on 2026-11-14, not more
 foundation features. [Real-Scenario Acceptance and Controlled Pilot](real-scenario-pilot-plan.md)
 is the canonical next-stage checklist. PV1 technical planning is finalized;
-bounded PV2 offline checks passed with CF1 disposition still open. The formal
+PV2 bounded rehearsal gate closed 2026-11-22 after CF1 disposition. The formal
 PV3 cohort and PV4-PV6 have not started. The separate
 [local paid walkthrough](local-paid-experience.md) has live observations, not
 full pilot or independent-user acceptance.
@@ -535,9 +535,9 @@ Preserve the Python backend and TypeScript Web. R1-R10 and N1-N5 are accepted
 within their documented scope; baseline d599fc2 has green CI 43468114477.
 PV1 technical planning is finalized; do not restart its questionnaire.
 Read the current pilot ledger and docs/local-paid-experience.md before continuing.
-PV2 bounded offline checks passed; CF1 disposition remains open. The formal PV3
-cohort and PV4-PV6 have not started. A local RAG success and blocked GitHub
-continuation are separate observations, not full pilot acceptance.
+PV2 bounded rehearsal gate closed after CF1 disposition (2026-11-22). The formal
+PV3 cohort and PV4-PV6 have not started. A local RAG success and later GitHub
+continuation work are separate observations, not full pilot acceptance.
 Do not expand foundation features or restart P1.1/Day 1-90. Use existing paths;
 only reproduced pilot blockers justify a minimal repair with regression evidence.
 Keep fixture, real-backend, live-provider and human-pilot outcomes separate.

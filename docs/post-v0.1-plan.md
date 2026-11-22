@@ -16,9 +16,10 @@ next stage is the [real-scenario pilot plan](real-scenario-pilot-plan.md).
 
 The authorized prerequisite is [observability completion](observability-completion-plan.md),
 with per-capability local and external acceptance gates. The pilot track below
-has finalized PV1 technical planning and bounded PV2 offline checks, with CF1
-disposition still open. Separate [local paid observations](local-paid-experience.md)
-are not formal PV3 or independent-user acceptance.
+has finalized PV1 technical planning and closed the PV2 bounded rehearsal gate
+(including CF1 disposition, 2026-11-22). Separate
+[local paid observations](local-paid-experience.md) are not formal PV3 or
+independent-user acceptance.
 
 ```text
 v0.1.0: Published

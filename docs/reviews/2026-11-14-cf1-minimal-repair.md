@@ -1,7 +1,10 @@
 # CF1 Minimal Repair Verification
 
-Date: **2026-11-14**. Status: **code review, local verification and candidate CI passed; deployment/pilot pending**.
-The [follow-up ledger](../reference-follow-up-plan.md) owns CF1 acceptance.
+Date: **2026-11-14** (verification); disposition/intended-env update **2026-11-22**.
+Status: **code review, local verification and candidate CI passed; maintainer
+residual-risk disposition recorded; intended local Docker repair presence
+verified 2026-11-22**. The [follow-up ledger](../reference-follow-up-plan.md)
+owns CF1 acceptance.
 This follows the [historical read-only review](2026-11-14-cf1-memory-boundary.md),
 not a rewrite of its evidence. The maintainer authorized the minimal repair,
 tests and documentation, then code review and two separate baseline/CF1 commits,
@@ -34,8 +37,11 @@ and user admission remain outside this authorization.
   no remaining blocking finding in the reviewed CF1 change. This is not an
   independent security audit or live-model safety acceptance.
 - [x] Record candidate `5952ba7` and exact-revision remote CI: all four jobs passed.
-- [ ] Maintainer disposition of residual risk for the intended deployment/pilot.
-- [ ] Deploy the approved candidate to the intended environment and verify it there.
+- [x] Maintainer disposition of residual risk for the intended deployment/pilot.
+  See [cf1-risk-disposition](cf1-risk-disposition.md) (2026-11-22, R01–R11 scoped accept).
+- [x] Verify the approved repair in the intended local Docker environment
+  (2026-11-22 API/Worker boundary check + 44 CF1 regressions). Shared-user
+  admission and paid memory-bearing runs remain separately gated.
 
 Deployment and pilot admission are not implicitly authorized by code review.
 At this CF1 checkpoint, CF2 and PV1-PV6 had not started. The later

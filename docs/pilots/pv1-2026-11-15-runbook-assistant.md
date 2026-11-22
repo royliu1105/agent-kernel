@@ -629,7 +629,9 @@ not access authorization or acceptance. Do not use the active Docker environment
 as a drill target, add a connector, or substitute the CF2 synthetic fixture for
 the real lookup. Missing evidence still blocks the full approval track.
 
-CF1 deployment and residual-risk disposition remain open. Omitting `input.memory`
+CF1 residual-risk disposition for the bounded path is recorded 2026-11-22;
+re-verify images after rebuilds before memory-bearing paid/multi-user use.
+Omitting `input.memory`
 from examples is not enforced exclusion of memory. No pilot user is admitted
 before the applicable CF1/CF2 and PV2/PV4 gates pass.
 

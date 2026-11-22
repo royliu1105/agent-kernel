@@ -1,10 +1,11 @@
 # Supervised Local Paid Experience
 
-Status (2026-11-15): configuration verified; subsequent real RAG Run succeeded.
-GitHub approval was granted and resumed, then failed closed at response-hash
-validation. The complete GitHub answer, billing reconciliation and full pilot
-acceptance remain unverified. Earlier configuration-only evidence below is
-historical, not a claim that no later paid request occurred.
+Status (2026-11-22): configuration verified; real RAG Run succeeded earlier;
+paid DeepSeek + GitHub approve→resume continuation **succeeded** on Run
+`65050ea0-1a4f-4924-a795-64027f624d45` after pin refresh. Billing reconciliation
+and full pilot / PV3 cohort acceptance remain unverified. Earlier
+configuration-only and failed-continuation evidence below is retained as
+history.
 
 ## Documentation-Only Commit Boundary
 
@@ -248,8 +249,27 @@ Read-only inspection and the maintainer's Workbench observations established:
   consumed the rejected response. No final CI answer was produced.
 
 These are local state/usage observations, not an independent socket-level
-exactly-once certificate or a passing live approval cohort. They do not close
-PV2/CF1 or authorize more tasks, disclosure, retries or budget.
+exactly-once certificate or a passing live approval cohort. They did not close
+PV2/CF1 at the time. A later successful continuation is recorded below; it still
+does not authorize unbounded tasks, disclosure, retries or budget.
+
+### Successful Paid Approve→Resume (2026-11-22)
+
+After the private-evidence repair and pin refresh to `a1b24653…`, the maintainer
+authorized one new paid DeepSeek walkthrough (same frozen system prompt, no KB):
+
+- Run `65050ea0-1a4f-4924-a795-64027f624d45` → `waiting_approval` after one
+  DeepSeek call (`github_ci_run_status` proposed with the fixed historical args).
+- Approval `52ac5ddb-f8bc-4e51-9f40-1e7ada75e9f2` approved, then explicit resume.
+- Tool dispatch returned HTTP 200 against pin `a1b24653…`; Run **succeeded**.
+- Totals: 6464 input / 884 output tokens on `deepseek-flash`. Answer reported
+  run_id `43634747295`, `run_attempt=1`, `conclusion=success`, and stated this
+  is historical evidence only (not current deploy status).
+- Private summary (gitignored):
+  `.agent-kernel/external-response-review/paid-github-resume-20261122.json`.
+
+This closes the previously open paid-model GitHub continuation observation. It
+is not billing reconciliation, PV3 cohort acceptance, or shared-user admission.
 
 ### Subsequent Read-Only Response Inspection
 
@@ -303,8 +323,9 @@ uv run pytest -q tests/integration/test_live_github_tool_resume.py
 That path proves real GitHub tool success after approval without DeepSeek spend.
 It does **not** close PV3, reconcile billing, or replace a paid-model walkthrough.
 
-Still open: separately authorized paid-model continuation through Workbench,
-and any pin update if GitHub's body later drifts. No automatic whitelist changes.
+Paid-model continuation through the paid Docker path is now observed successful
+(2026-11-22). Still open: billing reconciliation, any pin update if GitHub's body
+later drifts, and PV3/PV5 gates. No automatic whitelist changes.
 
 The documentation-only commit boundary for earlier docs remains historical.
 Budget reservations above are not reconciled charges.

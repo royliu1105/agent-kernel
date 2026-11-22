@@ -1,14 +1,17 @@
 # Reference-Informed Follow-Up Plan
 
-Status: **CF1 historical candidate CI passed, maintainer risk decision pending;
-CF2 bounded offline API/CLI/profile and authenticated Web checks passed; deployment/pilot acceptance pending (2026-11-15)**.
+Status: **CF1 repair candidate CI passed; maintainer residual-risk disposition
+recorded 2026-11-22 for the bounded local Docker path; intended-environment
+repair presence verified the same day. CF2 bounded offline API/CLI/profile and
+authenticated Web checks previously passed; shared-user / full pilot admission
+and PV3–PV6 remain separate (2026-11-22)**.
 
 The bounded Web implementation and checks in the
 [Web acceptance record](pilots/pv2-web-acceptance.md) passed on 6466aba / CI 43681752996.
-The [CF1 risk decision list](reviews/cf1-risk-disposition.md) awaits the maintainer,
-not CI. The later [local paid walkthrough](local-paid-experience.md) records
-authorized rebuilds and real observations, not CF1 deployed acceptance or a
-risk decision. This documentation update performs no deployment or paid calls.
+The [CF1 risk decision list](reviews/cf1-risk-disposition.md) records scoped
+maintainer acceptance of R01–R11 for the admitted path. The later
+[local paid walkthrough](local-paid-experience.md) remains separate from this
+disposition and does not by itself authorize new paid spend.
 
 ## Historical Authorization Sequence
 
@@ -98,10 +101,10 @@ pilot admission or a release.
   Do not vendor third-party reference trees into this repository.
 - The maintainer owns scope decisions. Assign an implementer and reviewer
   before starting each authorized task. CF1 implementation and code review: Codex;
-  deployment/pilot residual-risk disposition: maintainer, pending. The code
-  review is not an independent security audit. Codex also implements/reviews the
-  selected CF2 rehearsal; maintainer risk disposition remains pending. CF3-CF8
-  have not been assigned.
+  deployment/pilot residual-risk disposition: maintainer, recorded 2026-11-22 for
+  the bounded path. The code review is not an independent security audit. Codex
+  also implements/reviews the selected CF2 rehearsal. CF3-CF8 have not been
+  assigned.
   Follow the [learning guide](pilot-learning-guide.md) for tradeoff, failure
   diagnosis and assertion exercises, without claiming learner mastery from CI.
 
@@ -116,8 +119,8 @@ need and separate scope decision are required. None means complete.
 
 | ID | Priority | Delivery | Prerequisite / pilot relationship | Current status | Acceptance evidence |
 | --- | --- | --- | --- | --- | --- |
-| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | In progress: code review/local verification/candidate CI passed; scoped deployed acceptance and maintainer risk disposition pending | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): candidate `5952ba7` CI passed; [risk decision list](reviews/cf1-risk-disposition.md) pending; later local rebuilds are not CF1-specific deployed acceptance |
-| CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Verified for bounded offline scope: authenticated API/CLI/Web and frozen-profile provenance; not live quality or pilot admission | [PV2 evidence](pilots/pv2-closure.md): cbe8c42 CI passed; [Web evidence](pilots/pv2-web-acceptance.md) passed on 6466aba; no live quality or full PV2 acceptance |
+| CF1 | P0: safety gate | Memory/context trust-boundary review, minimal repair if required and adversarial regressions | CUR-1; disposition required before PV2 passes and before memory-bearing live/user admission | Bounded path closed: code review/local verification/candidate CI passed; maintainer R01–R11 disposition recorded 2026-11-22; intended local Docker repair presence verified. Shared-user admission and PV3 live injection remain open | [Repair verification](reviews/2026-11-14-cf1-minimal-repair.md): candidate `5952ba7` CI passed; [risk decision list](reviews/cf1-risk-disposition.md) scoped accept; 2026-11-22 Docker+pytest intended-env note |
+| CF2 | P0: pilot-entry gate | Verified live/preview workflow map and reproducible prompt/config provenance | CUR-2; freeze assumptions in PV1, verify actual workflow in PV2 | Verified for bounded offline scope: authenticated API/CLI/Web and frozen-profile provenance; not live quality or shared-user admission | [PV2 evidence](pilots/pv2-closure.md): cbe8c42 CI passed; [Web evidence](pilots/pv2-web-acceptance.md) passed on 6466aba; PV2 bounded gate closed with CF1 disposition |
 | CF3 | P1: reproducibility | Effective prompt-version binding to Run/checkpoint/eval | After PV6 prioritization or explicit earlier scope approval; CF1 context contract | Deferred; not started | None |
 | CF4 | P1: product journey | Scoped session/task submission and resumable streaming Web flow | After pilot evidence/scope approval; CF3 or an explicitly approved equivalent provenance contract | Deferred; not started | None |
 | CF5 | P2: memory effectiveness | Bounded summaries, semantic recall and controlled memory lifecycle | CF1 and CF3; pilot must identify a memory-specific need | Deferred; not started | None |
@@ -175,14 +178,18 @@ not an authorization mechanism or a live-model safety guarantee.
 - [x] Complete code review and repair the reproduced validation-response issue;
   no remaining blocking finding in the reviewed CF1 scope.
 - [x] Record candidate `5952ba7` and its exact-revision CI: all four jobs passed.
-- [ ] Record maintainer residual-risk disposition for deployment/pilot admission.
-  Use the [consolidated decision list](reviews/cf1-risk-disposition.md); all
-  R01-R11 decisions remain pending, and CI cannot accept them for the maintainer.
-- [ ] Verify the approved implementation in the intended deployed environment.
+- [x] Record maintainer residual-risk disposition for deployment/pilot admission.
+  See the [consolidated decision list](reviews/cf1-risk-disposition.md); R01–R11
+  scoped accepts recorded 2026-11-22 for the bounded authenticated local path.
+- [x] Verify the approved implementation in the intended deployed environment
+  (2026-11-22: `agent-kernel-local` API/Worker expose v1 untrusted boundary;
+  44 disposable-DB CF1 regressions passed). Re-verify after image rebuilds
+  before memory-bearing paid or multi-user use.
 
-Checked items above mean implementation, review and scoped local/CI verification,
-not CF1 accepted. Later authorized local rebuilds do not close the deployed
-memory-boundary acceptance item or authorize memory-bearing pilot admission.
+Checked items above mean implementation, review, scoped local/CI verification,
+maintainer disposition and intended local Docker repair presence for the bounded
+path. They do not waive PV3 live injection/quality, shared-user admission, or
+unrestricted paid spend.
 
 Acceptance: unit/request-capture tests establish data placement and bounds;
 actual runtime tests show no unauthorized data access or tool side effect, no
