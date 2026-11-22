@@ -1,10 +1,10 @@
 # Real-Scenario Acceptance and Controlled Pilot
 
 Status: **PV1 technical contract finalized; original full-pilot sign-off pending
-PV5 people/dates. PV2 bounded rehearsal gate closed 2026-11-22 (API/CLI/Web
-evidence plus CF1 disposition); formal PV3 cohort and PV4-PV6 not started. A
-separate local paid walkthrough has prior RAG/GitHub observations and is not
-full pilot acceptance (updated 2026-11-22)**.
+PV5 people/dates. PV2 bounded rehearsal gate closed 2026-11-22; PV3 quality gate
+closed 2026-11-22 on R4 (v2) — see [pv3-closure](pilots/pv3-closure.md);
+PV4–PV6 not started. A separate local paid walkthrough is not full pilot
+acceptance (updated 2026-11-22)**.
 
 Current documentation reconciliation authorizes no business-code changes,
 paid calls or Docker updates. Earlier authorized local deployment and actual
@@ -184,7 +184,7 @@ must state applicability and cannot be passed by omission.
 | --- | --- | --- | --- | --- | --- |
 | PV1 | 0: technical entry | None | Freeze scenario, candidate, owners, data, model, limits, budget and scoring | Technical planning finalized; original full-pilot acceptance pending PV5 human fields | [Technical closure](pilots/pv1-2026-11-15-runbook-assistant.md#technical-closure), [content baseline](pilots/pv1-materials/README.md); not live-tested |
 | PV2 | 0: safety blocker | Frozen PV1 technical scope for offline preparation; separately authorized technical entry for execution | Credential-free setup, access, approval and stop-path rehearsal | Seven of seven checklist items verified; CF1 disposition recorded 2026-11-22 | [Current evidence](pilots/pv2-closure.md) |
-| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | Formal cohort not started; separate local observations are not acceptance | [Local walkthrough](local-paid-experience.md): RAG success; paid GitHub approve→resume succeeded 2026-11-22; no full 30-case cohort or billing pass |
+| PV3 | 1: effectiveness | PV1 technical entry and PV2 safety acceptance plus explicit paid-call approval | Live model/embedding acceptance on frozen cases | **Closed 2026-11-22** on R4 (v2): 60/60, A 33/36, U 12/12, I+X 12/12 | [pv3-closure](pilots/pv3-closure.md); [r4 results](pilots/pv3-2026-11-22-r4-results.md) |
 | PV4 | 0: user-admission blocker | PV1 technical entry and PV2 safety acceptance; same candidate/profile as PV3; explicit environment/drill approval | Actual-profile recovery, upgrade and bounded-load evidence | Not started | None |
 | PV5 | 1: usability | Full PV1 sign-off, two independent participants/dates, PV3 and PV4 pass; participant/deployment approval | Small controlled user pilot | Not started | None |
 | PV6 | 2: closure | PV1-PV5 evidence complete | Findings, scoped go/no-go and next-release recommendation | Not started | None |
@@ -193,13 +193,13 @@ Missing independent participants/dates block original full-pilot sign-off and PV
 offline harness work. Maintainer-only technical execution may later use a
 recorded technical-entry authorization for the frozen scope after applicable
 safety/configuration checks; this is not full PV1 acceptance or independent-user
-evidence. PV3/PV4 still need their execution authorization and technical gates;
-the current no-environment/no-paid-call hold remains. No criteria are relaxed.
+evidence. **PV3 is closed** on R4; **PV4** still needs execution authorization
+and technical gates. No criteria are relaxed.
 
-PV3 and PV4 may run independently once their prerequisites are met. Work in
-bounded sessions; do not append a new Day 91-120 schedule. The observation
-window below measures exposure, not a promise that production maturity arrives
-after a fixed number of days.
+PV4 may proceed once its prerequisites are met. Work in bounded sessions; do
+not append a new Day 91-120 schedule. The observation window below measures
+exposure, not a promise that production maturity arrives after a fixed number
+of days.
 
 ### PV1: Freeze the Pilot Contract
 
@@ -347,30 +347,36 @@ admission still requires applicable scope/risk and subsequent PV3/PV4 gates.
 
 ### PV3: Verify Real Model and Embedding Behavior
 
-The formal frozen-case cohort remains unstarted. The separate
-[local walkthrough](local-paid-experience.md) established real embedding/RAG
-behavior for one D01 question and an approval response-hash failure. Do not
-tick the cohort, successful live continuation, cost reconciliation or independent
-dispatch-evidence gates from these observations. Preserve that failed Run;
-failure-response evidence repair is proposed and paused, not implemented.
+**Accepted 2026-11-22** on admission **R4** (prompt v2, same bounds as R2):
+60/60 terminal; A 33/36; U 12/12; I+X 12/12. Closure:
+[pv3-closure.md](pilots/pv3-closure.md); results:
+[r4 results](pilots/pv3-2026-11-22-r4-results.md). Same-day history (first /
+re-run / R2 / R3) remains non-accepting evidence only.
 
-- [ ] Record paid-call authorization; run the existing one-request
+- [x] Record paid-call authorization; run the existing one-request
   [live smoke](behavior-regression.md#optional-live-provider-smoke) first.
-- [ ] Index the approved corpus with the selected real embedding backend and
+- [x] Index the approved corpus with the selected real embedding backend and
   verify retrieval against source passages, not mock-vector scores.
-- [ ] Run all 30 frozen cases twice as separate runs (60 attempts total), recording
+- [x] Run all 30 frozen cases twice as separate runs (60 attempts total), recording
   every attempt, timeout, retry, refusal, cost estimate and terminal outcome.
-- [ ] Have the domain reviewer score answers and inspect cited source passages.
-- [ ] Exercise live native lookup/approval continuation on the approved target;
+- [x] Have the domain reviewer score answers and inspect cited source passages
+  (assistant draft; maintainer-accepted with R4 closure
+  [pv3-closure.md](pilots/pv3-closure.md)).
+- [x] Exercise live native lookup/approval continuation on the approved target;
   cover approve, reject and a second approval round. Keep repeated-resume/concurrent
   fault drills separate from business-quality scores.
-- [ ] Reconcile observed usage with the provider's usage/billing evidence and
-  record unknown or delayed charges rather than treating them as zero.
+- [x] Reconcile observed usage with the provider's usage/billing evidence and
+  record unknown or delayed charges rather than treating them as zero
+  (R4: DeepSeek balance CNY 199.38; generation tariff ~CNY 2.97; DashScope
+  estimate labeled; console day-lines still unknown).
 
 Acceptance: the scoring gates below pass on one frozen candidate/profile. The
 one-request smoke only checks connectivity/basic response behavior; it is not
 the RAG/Agent benchmark. A provider outage is an observed failure, not a silently
 excluded case. Record reruns separately; never retain only the best response.
+**Accepted on R4 (2026-11-22):** A 33/36, U 12/12, I+X 12/12; 60/60 terminal;
+evidence `.agent-kernel/pv3-evidence-r4-20261122/`; see
+[pv3-closure.md](pilots/pv3-closure.md).
 
 ### PV4: Verify Operations for This Deployment
 

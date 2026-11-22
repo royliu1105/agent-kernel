@@ -92,12 +92,12 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 | 人工审批 | 审批与工具记录持久化、批准/拒绝、显式 Resume、契约检查 | 离线批准/拒绝回归；真实暂停、批准、续跑后响应拦截 | 真实 GitHub 成功续答；失败响应私密证据修复尚未实施 |
 | 服务端控制面 | 身份/API Key、RBAC、Workspace、对象范围校验 | 鉴权 API/CLI 和完整 Web 首用的有界离线 CI | 公网多租户运营、企业 SSO、数据库级硬隔离不能据此宣称完成 |
 | 后台执行 | 队列、租约、心跳、所有权、检查点、退避、卡住任务恢复 | 历史及 PV2 隔离集成测试 | PV4 实际配置恢复/负载；外部副作用不保证 exactly-once |
-| 记忆 | 持久化、范围限制、有限检索、不可信上下文与容量限制 | CF1 请求边界、旧检查点和越权负例回归；bounded-path disposition 2026-11-22 | PV3 实模注入/质量；高级语义召回、自动总结与生命周期增强 |
+| 记忆 | 持久化、范围限制、有限检索、不可信上下文与容量限制 | CF1 disposition 2026-11-22；PV3 R4 含注入/越权拒答门 | 高级语义召回、自动总结与生命周期增强 |
 | RAG | 上传、解析、分块、真实 Embedding、pgvector、引用、`kb_search` | 实际 DashScope v3/1024 索引/检索、DeepSeek 引用回答 | 30 题整体质量；混合检索/RRF/重排为条件性后续项 |
 | Prompt | PromptRegistry、试点提示词冻结版本与哈希 | 离线请求捕获和冻结材料检查 | CF3：生效版本贯穿 Run、检查点和 eval 的绑定 |
 | Workflow / 多 Agent | 单 Agent 执行状态机与工具交互流程 | 当前单 Agent 路径 | CF7：持久化多 Agent DAG 和有范围约束的 handoff；不是已交付的通用图引擎 |
 | 可观测 | 指标、日志、Trace、关联信息、本地告警邮件 | O1-O5 中的本地端到端与对应 CI 证据 | 真实外部邮箱送达、高可用运维；费用估算不是账单 |
-| 评估 | 单元/集成/Web 测试、持久化 eval、检索/工具/时间线评估、离线 harness | 确定性回归与有界容器验收 | PV3 真实质量、PV5 独立用户结果；不能用测试数量代替效果 |
+| 评估 | 单元/集成/Web 测试、持久化 eval、检索/工具/时间线评估、离线 harness | 确定性回归；PV3 R4 冻结 30×2 实模质量门已收口 | PV5 独立用户结果；不能用测试数量代替效果 |
 
 ## 安全、观测与部署边界
 
@@ -124,18 +124,18 @@ Worker --> Runtime --> Provider / Tools / Policy / Memory / RAG
 [PV1-PV6 试点计划](real-scenario-pilot-plan.md)是唯一试点任务与状态台账；[CF1-CF8 计划](reference-follow-up-plan.md)拥有参考工程补齐项。本文不增加开发天数或新的功能阶段。
 
 1. 先处理当前体验阻塞：待恢复该工作时，最小化补齐失败响应私密证据与回归，再通过实际工具路径诊断。该修复当前暂停，尚未实施；不重跑任务、不自动更换哈希或关闭审批。
-2. 保留 PV1 已定稿的技术范围；PV2 bounded 演练门与 CF1 disposition 已于 2026-11-22 收口。一次本地付费体验仍不自动解除 PV3/PV5 门槛。
-3. PV3 在满足准入条件后，按冻结的 12 篇资料和 30 道题验证质量、引用、拒答、延迟与成本。当前真实样本只作补充观察，正式 cohort 未开始。
+2. 保留 PV1 已定稿的技术范围；PV2 bounded 演练门与 CF1 disposition 已于 2026-11-22 收口。一次本地付费体验仍不自动解除 PV5 门槛。
+3. PV3 质量门已于 2026-11-22 在 R4（prompt v2、冻结 30×2）收口，见 [pv3-closure](pilots/pv3-closure.md)。该收口不是 PV4/PV5。
 4. PV4 验证实际候选配置的恢复、备份、升级与有界负载；历史演练不能替代该配置的证据。
 5. PV5 保留两位独立试用者及使用日期要求；维护者体验有帮助，但不代替独立试用。PV6 汇总证据后作出限定范围的 go/no-go，而不是自动发布。
-6. CF3/CF4 的 Prompt 绑定、会话/任务和可恢复流式体验保持 deferred；CF5-CF7 的高级记忆、失败到评测的工作流、多 Agent 只按后续批准范围推进。CF8 的 RRF/混合检索/重排只有在 PV3 证明检索是瓶颈时才评估。
+6. CF3/CF4 的 Prompt 绑定、会话/任务和可恢复流式体验保持 deferred；CF5-CF7 的高级记忆、失败到评测的工作流、多 Agent 只按后续批准范围推进。CF8 的 RRF/混合检索/重排仅在有证据表明检索是瓶颈时再评估。
 
 下一阶段的标准不是功能清单更长，而是在确定场景里证明系统有用、可控、可恢复。维护者学习按 [学习机制](pilot-learning-guide.md)记录设计取舍、故障定位与测试实践，不将项目完成等同于个人已经达到专家水平。
 
 ## 文档导航与状态维护
 
 - [架构](architecture.md)、[技术栈](tech-stack.md)、[模块边界](modules.md)：工程结构及其理由。
-- [PV2 证据](pilots/pv2-closure.md)、[Web 验收](pilots/pv2-web-acceptance.md)、[CF1 风险](reviews/cf1-risk-disposition.md)：对应范围的通过项和未决项。
+- [PV2 证据](pilots/pv2-closure.md)、[PV3 收口](pilots/pv3-closure.md)、[Web 验收](pilots/pv2-web-acceptance.md)、[CF1 风险](reviews/cf1-risk-disposition.md)：对应范围的通过项和未决项。
 - [观测验收台账](observability-completion-plan.md)：日志、Trace、告警及外部邮件门槛。
 - [本地付费体验](local-paid-experience.md)：实际本地观察；不是新试点计划或重复执行指令。
 

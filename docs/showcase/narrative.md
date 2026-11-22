@@ -1,8 +1,8 @@
 # Showcase Narrative
 
 Status: **operator / interview talking points** (2026-11-22). This is how to
-explain the three completed demo goals. It is **not** PV3 cohort acceptance,
-billing reconciliation, or shared-user admission.
+explain the completed demo goals. PV3 quality gate is **closed on R4 (v2)**;
+this narrative is still not full-pilot (PV5) or shared-user admission.
 
 Lead with the engineering story: durable Run → human approval → explicit resume
 → one tool effect. Then name the trust boundary. Only then mention the paid
@@ -68,7 +68,7 @@ deploy status; answer marked the tool result untrusted.
 | --- | --- |
 | PV2 bounded rehearsal | Closed (offline + Web + CF1 disposition) |
 | CF1 bounded path | Disposition + intended local Docker check recorded |
-| PV3 formal cohort | **Not started** (30×2, scoring, billing) |
+| PV3 formal cohort | Closed on R4 (v2): A 33/36, U+I+X 12/12 — [pv3-closure](../pilots/pv3-closure.md) |
 | CF3–CF8 | Deferred / conditional — not part of this narrative |
 
 Canonical ledgers:
@@ -81,4 +81,5 @@ Canonical ledgers:
 2. “Memory is untrusted data in the prompt; approval is the execution gate.”
 3. “We also ran the gate once with DeepSeek and a pinned GitHub lookup; that
    proves the paid path, not pilot quality or billing.”
-4. Stop. Offer PV3 only if the listener asks for formal live acceptance.
+4. If asked about formal live acceptance: PV3 is **closed** on R4 (v2,
+   2026-11-22). That is not PV4 ops or PV5 user admission.

@@ -27,6 +27,38 @@ def test_pv1_accepted_prompt_is_pinned_separately_from_corpus() -> None:
     )
 
 
+def test_pv1_prompt_v2_cross_workspace_refuse_is_pinned() -> None:
+    version = "pv1-runbook-assistant-v2"
+    prompt = ROOT / f"docs/pilots/prompts/{version}.txt"
+    raw = prompt.read_bytes()
+    expected_hash = "f3946b22fc4bbafc7274602ced1342a19e30073e647847ad26872f2b0f7cb783"
+    assert hashlib.sha256(raw).hexdigest() == expected_hash
+    assert not raw.startswith(b"\xef\xbb\xbf") and b"\r" not in raw
+    assert raw.endswith(b"\n") and not raw.endswith(b"\n\n")
+    text = raw.decode("utf-8")
+    assert re.findall(r"^([1-8])\. ", text, re.MULTILINE) == list("12345678")
+    assert "其他工作区" in text and "不得用当前知识库内容顶替" in text
+    assert "完整终答文本" in text
+    note = (ROOT / f"docs/pilots/prompts/{version}.md").read_text()
+    assert expected_hash in note and f"{version}.txt" in note
+
+
+def test_pv1_prompt_v3_multi_constraint_completeness_is_pinned() -> None:
+    version = "pv1-runbook-assistant-v3"
+    prompt = ROOT / f"docs/pilots/prompts/{version}.txt"
+    raw = prompt.read_bytes()
+    expected_hash = "70fbf3e26ce99243991e4063a078d5d0b5d6f4312eea45cf1a2154be3bf70e02"
+    assert hashlib.sha256(raw).hexdigest() == expected_hash
+    assert not raw.startswith(b"\xef\xbb\xbf") and b"\r" not in raw
+    assert raw.endswith(b"\n") and not raw.endswith(b"\n\n")
+    text = raw.decode("utf-8")
+    assert re.findall(r"^([1-9]|10)\. ", text, re.MULTILINE) == list("123456789")
+    assert "多约束运维题必须按检索到的材料把要点答全" in text
+    assert "默认本地捕获" in text and "另行配置、授权与收件验证" in text
+    note = (ROOT / f"docs/pilots/prompts/{version}.md").read_text()
+    assert expected_hash in note and "Agent task prompt" in note
+
+
 def test_pv1_frozen_content_manifest_is_unchanged() -> None:
     # Preserve preparation labels/bytes; the contract records the later acceptance.
     frozen_hash = "0225553e4f626982fa4d7d71720d2d73f55d32bd40aab62385435b191bb605b2"

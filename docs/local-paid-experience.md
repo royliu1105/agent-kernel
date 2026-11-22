@@ -3,7 +3,8 @@
 Status (2026-11-22): configuration verified; real RAG Run succeeded earlier;
 paid DeepSeek + GitHub approve→resume continuation **succeeded** on Run
 `65050ea0-1a4f-4924-a795-64027f624d45` after pin refresh. Billing reconciliation
-and full pilot / PV3 cohort acceptance remain unverified. Earlier
+and full pilot (PV5) admission remain unverified; PV3 quality gate is closed on
+R4 (v2). Earlier
 configuration-only and failed-continuation evidence below is retained as
 history.
 
@@ -324,8 +325,12 @@ That path proves real GitHub tool success after approval without DeepSeek spend.
 It does **not** close PV3, reconcile billing, or replace a paid-model walkthrough.
 
 Paid-model continuation through the paid Docker path is now observed successful
-(2026-11-22). Still open: billing reconciliation, any pin update if GitHub's body
-later drifts, and PV3/PV5 gates. No automatic whitelist changes.
+(2026-11-22). Formal PV3 same-day admissions: R2 short on A; R3 (v3) regressed;
+**R4** returned to prompt v2, **met** A/U/I+X gates, and is the **accepted**
+PV3 admission — see [pv3-closure](pilots/pv3-closure.md) and
+[pv3-2026-11-22-r4-results](pilots/pv3-2026-11-22-r4-results.md).
+Still open: optional console day-lines, pin drift, PV4/PV5. Default stack
+restored with `make docker-up` (mock embedding; DeepSeek key cleared).
 
 The documentation-only commit boundary for earlier docs remains historical.
 Budget reservations above are not reconciled charges.

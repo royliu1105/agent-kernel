@@ -134,8 +134,10 @@ def test_paid_override_is_bounded_and_does_not_change_storage() -> None:
     env = api["environment"]
     assert env["DEEPSEEK_API_KEY"].startswith("${DEEPSEEK_API_KEY:?")
     assert env["DASHSCOPE_API_KEY"].startswith("${DASHSCOPE_API_KEY:?")
-    assert env["AGENT_KERNEL_MAX_MODEL_CALLS"] == "2"
-    assert env["AGENT_KERNEL_MAX_OUTPUT_TOKENS"] == "2048"
+    assert env["AGENT_KERNEL_MAX_MODEL_CALLS"] == "8"
+    assert env["AGENT_KERNEL_MAX_ACTIVE_SECONDS"] == "300"
+    assert env["AGENT_KERNEL_MAX_TOTAL_TOKENS"] == "128000"
+    assert env["AGENT_KERNEL_MAX_OUTPUT_TOKENS"] == "4096"
     assert env["AGENT_KERNEL_EMBEDDING_PROVIDER"] == "dashscope"
     assert env["DASHSCOPE_EMBEDDING_DIMENSIONS"] == "1024"
 
