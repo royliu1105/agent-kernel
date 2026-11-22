@@ -5,7 +5,9 @@ inventory tool. Not paid-provider acceptance, not real GitHub success, and not
 PV1–PV6 pilot closure.
 
 Goal: one reproducible chain that shows durable execution, human approval, tool
-resume, knowledge indexing, and the CF1 memory trust boundary.
+resume, knowledge indexing, and the CF1 memory trust boundary. For the short
+interview talk track across mock + CF1 + paid continuation, see
+[narrative.md](narrative.md).
 
 ```text
 make docker-showcase-up

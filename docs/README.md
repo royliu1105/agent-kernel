@@ -22,6 +22,7 @@ CF items as in-progress delivery.
 | --- | --- |
 | Product, architecture, capability evidence and limits | [Project Overview](project-overview.md) |
 | Run locally | [Quickstart](quickstart.md), [Docker operations](docker-local.md) |
+| Showcase narrative (talk track) | [Showcase narrative](showcase/narrative.md) |
 | Mock approval/resume showcase | [Showcase happy-path](showcase/mock-happy-path.md) |
 | Security and access limits | [SECURITY](../SECURITY.md), [Auth and RBAC](auth-rbac.md), [Memory context safety](specs/memory-context-safety.md) |
 | Pilot task/status ledger (not a feature backlog) | [Real-scenario pilot plan](real-scenario-pilot-plan.md) |

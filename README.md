@@ -88,6 +88,7 @@ Do not start host `api` / Worker / `next` alongside this stack.
 | Stuck on setup | [Troubleshooting](docs/troubleshooting.md) |
 | Security limits | [SECURITY.md](SECURITY.md), [Auth and RBAC](docs/auth-rbac.md) |
 | How to contribute | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Showcase talk track | [Showcase narrative](docs/showcase/narrative.md) |
 | Mock engineering showcase | [Showcase happy-path](docs/showcase/mock-happy-path.md) |
 | Pilot status ledger | [Real-scenario pilot](docs/real-scenario-pilot-plan.md), [pilot learning](docs/pilot-learning-guide.md) |
 

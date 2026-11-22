@@ -6,6 +6,7 @@ paid providers or real GitHub.
 
 | Doc | Purpose |
 | --- | --- |
+| [Narrative](narrative.md) | Interview / operator talking points for the three demo beats |
 | [Mock happy-path](mock-happy-path.md) | Docker → KB → memory → approval → resume → eval + pinned evidence |
 | [Evidence template](evidence-template.json) | Field skeleton filled by `scripts/showcase_mock_happy_path.sh` |
 | [Clean-machine results (2026-11-22)](clean-machine-rehearsal-results.md) | Fresh-tree gates + showcase run evidence (not PV) |
@@ -13,7 +14,7 @@ paid providers or real GitHub.
 Start the overlay with `make docker-showcase-up`, then `make showcase-happy-path`.
 Ordinary `make docker-up` does **not** load the showcase MCP tool.
 
-For the separate **live GitHub** approval→resume smoke (public API, scripted
-model, no paid LLM), see
-[local-paid-experience.md](../local-paid-experience.md#remaining-work-and-current-hold)
-and `AGENT_KERNEL_TEST_LIVE_GITHUB=1`.
+Start with [narrative.md](narrative.md) if you need the story order; use the
+happy-path for the hands-on mock demo. Paid DeepSeek + GitHub continuation is
+recorded in [local-paid-experience.md](../local-paid-experience.md), separate
+from this mock overlay.
