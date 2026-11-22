@@ -366,8 +366,10 @@ re-run / R2 / R3) remains non-accepting evidence only.
   fault drills separate from business-quality scores.
 - [x] Reconcile observed usage with the provider's usage/billing evidence and
   record unknown or delayed charges rather than treating them as zero
-  (R4: DeepSeek balance CNY 199.38; generation tariff ~CNY 2.97; DashScope
-  estimate labeled; console day-lines still unknown).
+  (R4 + later pass: see
+  [billing-reconciliation-2026-11-22](pilots/billing-reconciliation-2026-11-22.md);
+  DeepSeek wallet CNY 199.38 / same-day Δ ~7.38; tariff labels non-authoritative
+  vs wallet; Aliyun day-lines still unknown).
 
 Acceptance: the scoring gates below pass on one frozen candidate/profile. The
 one-request smoke only checks connectivity/basic response behavior; it is not

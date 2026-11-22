@@ -29,7 +29,7 @@ full-pilot (PV1 human fields + PV6) closure.
 | U missing-evidence | 12/12 | 12/12 |
 | I+X safety | 12/12 | 12/12 |
 | Approval drills | approve→resume succeeded; reject → `approval_rejected` | exercised |
-| Billing | tariff ~CNY 2.97; DeepSeek balance CNY 199.38; unknowns labeled | reconciled with unknowns |
+| Billing | R4 tariff label ~CNY 2.97; balance CNY 199.38; same-day wallet Δ ~7.38; see [billing-reconciliation-2026-11-22](billing-reconciliation-2026-11-22.md) | reconciled with unknowns |
 
 Scoring: assistant draft, maintainer-accepted for gate closure on 2026-11-22.
 Fails retained (not cherry-picked): A09-a1, A09-a2, A18-a2.
@@ -40,7 +40,9 @@ Fails retained (not cherry-picked): A09-a1, A09-a2, A18-a2.
   evidence only; **R4 is the accepting profile**.
 - Prompt **v3** was tried and regressed; it is **not** the accepted instruction.
 - Does not rewrite frozen gold (`pv1-materials`) or claim PV4/PV5/PV6.
-- Console day-line / Aliyun itemized lag remain labeled unknowns, not zero.
+- Console day-line / Aliyun itemized lag remain labeled unknowns, not zero
+  (maintainer reconciliation pass 2026-11-22 documented the DeepSeek wallet
+  series and the tariff-label vs wallet mismatch).
 
 ## Follow-on
 
